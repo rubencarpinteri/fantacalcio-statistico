@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/matchdays',    label: 'Giornate',     icon: '📅' },
   { href: '/competitions', label: 'Competizioni', icon: '⚔', adminOnly: true },
   { href: '/standings',    label: 'Classifica',   icon: '🏆' },
+  { href: '/methodology',  label: 'Metodologia',  icon: '📐' },
   { href: '/audit',        label: 'Audit Log',    icon: '🔍', adminOnly: true },
 ]
 
