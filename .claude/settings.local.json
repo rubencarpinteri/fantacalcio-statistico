@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/\")",
+      "Bash(\"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/supabase/migrations/20260318000010_published_team_scores.sql\":*)",
+      "Bash(\"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/domain/competitions/goalThresholds.ts\":*)",
+      "Bash(npx next:*)",
+      "Bash(./node_modules/.bin/next build:*)",
+      "Bash(NEXT_TURBO=0 ./node_modules/.bin/next build)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(grep -v \"^$\")",
+      "Bash(cut -d'\\(' -f1)",
+      "Bash(node -e \"const p = require\\(''./node_modules/@supabase/postgrest-js/package.json''\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const p = require\\(''./node_modules/@supabase/supabase-js/package.json''\\); console.log\\(p.version\\)\")",
+      "Bash(grep -r PostgrestVersion '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/@supabase/postgrest-js/dist' --include=*.d.ts -l)",
+      "Bash(find '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/@supabase' -name *.d.ts)",
+      "Bash(find '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/@supabase/postgrest-js' -name *.d.ts)",
+      "Bash(find '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/@supabase/postgrest-js' -name *.d.cts)",
+      "Bash(grep -r GenericSchema '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/@supabase/postgrest-js/dist' --include=*.d.ts -l)",
+      "Bash(npx tsc:*)",
+      "Bash(find \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/@supabase/supabase-js\" -name \"*.d.ts\" -exec grep -l \"SupabaseClient\" {})",
+      "Bash(find app:*)"
+    ]
+  }
+}

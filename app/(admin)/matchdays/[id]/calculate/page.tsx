@@ -1,0 +1,224 @@
+import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { requireLeagueAdmin } from '@/lib/league'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { CalculationPreview } from './CalculationPreview'
+import type { CalcPlayerRow } from './CalculationPreview'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data } = await supabase.from('matchdays').select('name').eq('id', id).single()
+  return { title: `Calcolo — ${data?.name ?? 'Giornata'}` }
+}
+
+export default async function CalculatePage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const ctx = await requireLeagueAdmin()
+  const { id: matchdayId } = await params
+  const supabase = await createClient()
+
+  const { data: matchday } = await supabase
+    .from('matchdays')
+    .select('id, name, status')
+    .eq('id', matchdayId)
+    .eq('league_id', ctx.league.id)
+    .single()
+
+  if (!matchday) notFound()
+
+  // All calculation runs, newest first
+  const { data: runs } = await supabase
+    .from('calculation_runs')
+    .select('id, run_number, status, engine_version, triggered_at, published_at')
+    .eq('matchday_id', matchdayId)
+    .order('run_number', { ascending: false })
+
+  // Official current pointer (only set on publish — this is the published run)
+  const { data: currentPtr } = await supabase
+    .from('matchday_current_calculation')
+    .select('run_id')
+    .eq('matchday_id', matchdayId)
+    .maybeSingle()
+
+  const publishedRunId = currentPtr?.run_id ?? null
+
+  // Preview uses the LATEST run (draft or published), not the pointer.
+  // This allows admins to see draft calculations before deciding to publish.
+  const latestRun = runs?.[0] ?? null
+  const previewRunId = latestRun?.id ?? null
+  const previewRunStatus = latestRun?.status ?? null
+
+  // Fetch player_calculations for the preview run
+  let previewCalcs: CalcPlayerRow[] = []
+
+  if (previewRunId) {
+    const { data: calcs } = await supabase
+      .from('player_calculations')
+      .select(`
+        id,
+        player_id,
+        is_provisional,
+        minutes_factor,
+        z_combined,
+        z_sofascore,
+        z_whoscored,
+        z_fotmob,
+        z_adjusted,
+        b0,
+        role_multiplier,
+        b1,
+        defensive_correction,
+        voto_base,
+        bonus_malus_breakdown,
+        total_bonus_malus,
+        fantavoto,
+        is_override,
+        weights_used,
+        league_players ( full_name, club, rating_class )
+      `)
+      .eq('run_id', previewRunId)
+      .order('fantavoto', { ascending: false, nullsFirst: false })
+
+    previewCalcs = (calcs ?? []) as unknown as CalcPlayerRow[]
+  }
+
+  // Stats readiness indicators
+  const { count: statsCount } = await supabase
+    .from('player_match_stats')
+    .select('id', { count: 'exact', head: true })
+    .eq('matchday_id', matchdayId)
+
+  const { count: provisionalCount } = await supabase
+    .from('player_match_stats')
+    .select('id', { count: 'exact', head: true })
+    .eq('matchday_id', matchdayId)
+    .eq('is_provisional', true)
+
+  const canTrigger = ['scoring', 'published'].includes(matchday.status)
+  // Can publish when there is a preview run that is not yet published
+  const canPublish = previewRunId !== null && previewRunStatus !== 'published' && canTrigger
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <a
+            href={`/matchdays/${matchdayId}`}
+            className="text-sm text-[#55556a] hover:text-indigo-400"
+          >
+            ← {matchday.name}
+          </a>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-xl font-bold text-white">Calcolo punteggi</h1>
+            <Badge variant={matchday.status === 'published' ? 'success' : 'muted'}>
+              {matchday.status}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Stats readiness panel */}
+        <div className="rounded-xl border border-[#2e2e42] bg-[#111118] p-4 text-sm min-w-[200px]">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+            Statistiche
+          </p>
+          <div className="space-y-1">
+            <div className="flex justify-between gap-6">
+              <span className="text-[#8888aa]">Inserite</span>
+              <span className="font-mono text-white">{statsCount ?? 0}</span>
+            </div>
+            <div className="flex justify-between gap-6">
+              <span className="text-[#8888aa]">Provvisorie</span>
+              <span className={`font-mono ${(provisionalCount ?? 0) > 0 ? 'text-amber-400' : 'text-green-400'}`}>
+                {provisionalCount ?? 0}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {!canTrigger && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-400">
+          Il calcolo è disponibile solo in stato <strong>scoring</strong> o{' '}
+          <strong>published</strong>. Stato attuale: <strong>{matchday.status}</strong>.
+        </div>
+      )}
+
+      {/* Run history */}
+      {runs && runs.length > 0 && (
+        <Card>
+          <CardHeader title="Storico run" />
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
+                  <th className="px-6 py-2.5">Run</th>
+                  <th className="px-6 py-2.5">Engine</th>
+                  <th className="px-6 py-2.5">Stato</th>
+                  <th className="px-6 py-2.5">Data</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e1e2e]">
+                {runs.map((r) => (
+                  <tr
+                    key={r.id}
+                    className={[
+                      r.id === previewRunId ? 'bg-indigo-500/5' : '',
+                    ].join('')}
+                  >
+                    <td className="px-6 py-2.5 font-mono text-white">
+                      #{r.run_number}
+                      {r.id === previewRunId && (
+                        <span className="ml-2 text-xs text-indigo-400">anteprima</span>
+                      )}
+                      {r.id === publishedRunId && r.id !== previewRunId && (
+                        <span className="ml-2 text-xs text-green-400">pubblicato</span>
+                      )}
+                      {r.id === publishedRunId && r.id === previewRunId && (
+                        <span className="ml-2 text-xs text-green-400">pubblicato · anteprima</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-2.5 text-[#8888aa]">{r.engine_version}</td>
+                    <td className="px-6 py-2.5">
+                      <Badge
+                        variant={
+                          r.status === 'published' ? 'success'
+                          : r.status === 'draft' ? 'muted'
+                          : 'warning'
+                        }
+                      >
+                        {r.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-2.5 text-[#55556a]">
+                      {new Intl.DateTimeFormat('it-IT', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      }).format(new Date(r.triggered_at))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Preview / action panel */}
+      <CalculationPreview
+        matchdayId={matchdayId}
+        matchdayStatus={matchday.status}
+        currentRunId={previewRunId}
+        currentRunStatus={previewRunStatus}
+        calcs={previewCalcs}
+        canTrigger={canTrigger}
+        canPublish={canPublish}
+      />
+    </div>
+  )
+}
