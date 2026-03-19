@@ -583,7 +583,7 @@ create table player_calculations (
   -- Flags
   is_provisional       boolean not null default false,
   is_override          boolean not null default false,
-  override_id          uuid references score_overrides,
+  override_id          uuid, -- FK to score_overrides added below after that table is created
 
   calculated_at        timestamptz not null default now(),
 
@@ -627,6 +627,11 @@ create table score_overrides (
 );
 
 create index idx_score_overrides_matchday on score_overrides (matchday_id);
+
+-- FK deferred until after score_overrides is created
+alter table player_calculations
+  add constraint player_calculations_override_id_fkey
+  foreign key (override_id) references score_overrides;
 
 -- ============================================================
 -- STANDINGS SNAPSHOTS

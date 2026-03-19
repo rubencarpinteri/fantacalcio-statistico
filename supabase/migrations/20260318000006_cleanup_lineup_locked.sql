@@ -35,33 +35,28 @@
 alter table lineup_submissions drop column if exists locked_at;
 alter table lineup_submissions drop column if exists locked_snapshot_json;
 
--- ---- Step 2: Simplify the submitted_at check constraint ---------
--- Old: status = 'draft' OR status in ('submitted','locked') AND submitted_at IS NOT NULL
--- New: status = 'draft' OR (status = 'submitted' AND submitted_at IS NOT NULL)
+-- ---- Step 2 & 3: Replace lineup_status enum and fix constraint --
+-- Order matters: drop constraint → rename type → create new type →
+-- drop default → alter column → restore default → restore constraint → drop old type.
 
 alter table lineup_submissions drop constraint if exists chk_submitted_at;
+
+alter type lineup_status rename to lineup_status_old;
+
+create type lineup_status as enum ('draft', 'submitted');
+
+alter table lineup_submissions alter column status drop default;
+
+alter table lineup_submissions
+  alter column status type lineup_status
+  using status::text::lineup_status;
+
+alter table lineup_submissions alter column status set default 'draft';
 
 alter table lineup_submissions
   add constraint chk_submitted_at check (
     status = 'draft'
     or (status = 'submitted' and submitted_at is not null)
   );
-
--- ---- Step 3: Replace lineup_status enum -------------------------
--- Postgres cannot remove enum values directly.
--- We rename the old type, create a new one without 'locked',
--- update the column, then drop the old type.
-
-alter type lineup_status rename to lineup_status_old;
-
-create type lineup_status as enum ('draft', 'submitted');
-
--- Cast the column to the new type.
--- Any existing 'locked' rows would fail here, confirming the
--- invariant that no such rows exist. If they did, this migration
--- would surface the problem explicitly.
-alter table lineup_submissions
-  alter column status type lineup_status
-  using status::text::lineup_status;
 
 drop type lineup_status_old;
