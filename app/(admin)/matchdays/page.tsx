@@ -18,6 +18,21 @@ export default async function MatchdaysPage() {
     .order('matchday_number', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: true })
 
+  // Per-matchday provisional stat count — single query, counted in JS.
+  // Only fetched for admins; managers have no operational use for this signal.
+  const provisionalByMatchday = new Map<string, number>()
+  if (isAdmin && (matchdays?.length ?? 0) > 0) {
+    const ids = (matchdays ?? []).map((m) => m.id)
+    const { data: provRows } = await supabase
+      .from('player_match_stats')
+      .select('matchday_id')
+      .eq('is_provisional', true)
+      .in('matchday_id', ids)
+    for (const row of provRows ?? []) {
+      provisionalByMatchday.set(row.matchday_id, (provisionalByMatchday.get(row.matchday_id) ?? 0) + 1)
+    }
+  }
+
   const fmt = (dt: string | null) =>
     dt
       ? new Intl.DateTimeFormat('it-IT', { dateStyle: 'short', timeStyle: 'short' }).format(
@@ -69,7 +84,14 @@ export default async function MatchdaysPage() {
                     <td className="px-6 py-3 text-[#8888aa]">{fmt(m.opens_at)}</td>
                     <td className="px-6 py-3 text-[#8888aa]">{fmt(m.locks_at)}</td>
                     <td className="px-6 py-3">
-                      <MatchdayStatusBadge status={m.status} />
+                      <div className="flex items-center gap-2">
+                        <MatchdayStatusBadge status={m.status} />
+                        {isAdmin && (provisionalByMatchday.get(m.id) ?? 0) > 0 && (
+                          <span className="text-xs text-amber-400">
+                            ~ {provisionalByMatchday.get(m.id)} prov.
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

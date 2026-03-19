@@ -3,6 +3,7 @@
 import { Fragment, useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { triggerCalculationAction, publishCalculationAction } from './actions'
+import type { CompetitionCascadeResult } from './actions'
 import type { BonusMalusItem } from '@/domain/engine/v1/types'
 
 // ---- Types -------------------------------------------------
@@ -89,6 +90,7 @@ export function CalculationPreview({
   const [isPending, startTransition] = useTransition()
   const [triggerResult, setTriggerResult] = useState<string | null>(null)
   const [publishResult, setPublishResult] = useState<string | null>(null)
+  const [compResults, setCompResults] = useState<CompetitionCascadeResult[]>([])
   const [filterNV, setFilterNV] = useState(false)
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
@@ -113,12 +115,14 @@ export function CalculationPreview({
   const handlePublish = () => {
     if (!currentRunId) return
     setPublishResult(null)
+    setCompResults([])
     startTransition(async () => {
       const result = await publishCalculationAction(matchdayId, currentRunId)
       if (result.error) {
         setPublishResult(`Errore: ${result.error}`)
       } else {
         setPublishResult('Punteggi pubblicati. La giornata è ora in stato "published".')
+        setCompResults(result.competitions_updated)
       }
     })
   }
@@ -169,6 +173,23 @@ export function CalculationPreview({
             <p className={`mt-3 text-sm ${publishResult.startsWith('Errore') ? 'text-red-400' : 'text-green-400'}`}>
               {publishResult}
             </p>
+          )}
+          {compResults.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {compResults.map((cr) => (
+                <div key={cr.round_id} className="flex items-baseline gap-2 text-xs">
+                  <span className={cr.error ? 'text-red-400' : 'text-emerald-400'}>
+                    {cr.error ? '✗' : '✓'}
+                  </span>
+                  <span className="text-[#8888aa]">
+                    {cr.competition_name} — {cr.round_name}
+                  </span>
+                  {cr.error && (
+                    <span className="text-red-400">{cr.error}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

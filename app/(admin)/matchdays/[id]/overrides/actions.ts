@@ -27,6 +27,10 @@ const createSchema = z.object({
 export interface CreateOverrideResult {
   error: string | null
   success: boolean
+  // Non-null when the matchday is already published: the override was saved but
+  // published_team_scores and competition standings are now stale until a new
+  // calculation run is triggered and published.
+  stale_warning: string | null
 }
 
 export async function createOverrideAction(
@@ -37,7 +41,7 @@ export async function createOverrideAction(
 
   const parsed = createSchema.safeParse(raw)
   if (!parsed.success) {
-    return { error: parsed.error.errors.map((e) => e.message).join('; '), success: false }
+    return { error: parsed.error.errors.map((e) => e.message).join('; '), success: false, stale_warning: null }
   }
 
   const { matchday_id, player_id, override_fantavoto, reason } = parsed.data
@@ -50,10 +54,14 @@ export async function createOverrideAction(
     .eq('league_id', ctx.league.id)
     .single()
 
-  if (!matchday) return { error: 'Giornata non trovata.', success: false }
+  if (!matchday) return { error: 'Giornata non trovata.', success: false, stale_warning: null }
   if (matchday.status === 'archived') {
-    return { error: 'Non è possibile aggiungere override su una giornata archiviata.', success: false }
+    return { error: 'Non è possibile aggiungere override su una giornata archiviata.', success: false, stale_warning: null }
   }
+
+  const stale_warning = matchday.status === 'published'
+    ? 'La giornata è già pubblicata. I punteggi e le classifiche di competizione sono ora non aggiornati — vai a "Calcolo punteggi" e pubblica un nuovo run per aggiornare.'
+    : null
 
   // Verify player belongs to this league
   const { data: player } = await supabase
@@ -63,7 +71,7 @@ export async function createOverrideAction(
     .eq('league_id', ctx.league.id)
     .single()
 
-  if (!player) return { error: 'Giocatore non trovato in questa lega.', success: false }
+  if (!player) return { error: 'Giocatore non trovato in questa lega.', success: false, stale_warning: null }
 
   // Guard against duplicate active overrides for the same (matchday, player)
   const { data: existing } = await supabase
@@ -78,6 +86,7 @@ export async function createOverrideAction(
     return {
       error: `Esiste già un override attivo per ${player.full_name}. Rimuovilo prima di crearne uno nuovo.`,
       success: false,
+      stale_warning: null,
     }
   }
 
@@ -113,7 +122,7 @@ export async function createOverrideAction(
     .single()
 
   if (insertError || !created) {
-    return { error: `Errore durante la creazione: ${insertError?.message ?? 'sconosciuto'}`, success: false }
+    return { error: `Errore durante la creazione: ${insertError?.message ?? 'sconosciuto'}`, success: false, stale_warning: null }
   }
 
   await writeAuditLog({
@@ -136,7 +145,7 @@ export async function createOverrideAction(
   revalidatePath(`/matchdays/${matchday_id}/overrides`)
   revalidatePath(`/matchdays/${matchday_id}/calculate`)
 
-  return { error: null, success: true }
+  return { error: null, success: true, stale_warning }
 }
 
 // ============================================================
@@ -148,6 +157,7 @@ export async function createOverrideAction(
 export interface RemoveOverrideResult {
   error: string | null
   success: boolean
+  stale_warning: string | null
 }
 
 export async function removeOverrideAction(
@@ -165,8 +175,8 @@ export async function removeOverrideAction(
     .eq('matchday_id', matchdayId)
     .single()
 
-  if (!override) return { error: 'Override non trovato.', success: false }
-  if (override.removed_at !== null) return { error: 'Override già rimosso.', success: false }
+  if (!override) return { error: 'Override non trovato.', success: false, stale_warning: null }
+  if (override.removed_at !== null) return { error: 'Override già rimosso.', success: false, stale_warning: null }
 
   // Verify matchday belongs to this league
   const { data: matchday } = await supabase
@@ -176,17 +186,21 @@ export async function removeOverrideAction(
     .eq('league_id', ctx.league.id)
     .single()
 
-  if (!matchday) return { error: 'Giornata non trovata.', success: false }
+  if (!matchday) return { error: 'Giornata non trovata.', success: false, stale_warning: null }
   if (matchday.status === 'archived') {
-    return { error: 'Non è possibile modificare override su una giornata archiviata.', success: false }
+    return { error: 'Non è possibile modificare override su una giornata archiviata.', success: false, stale_warning: null }
   }
+
+  const stale_warning = matchday.status === 'published'
+    ? 'La giornata è già pubblicata. I punteggi e le classifiche di competizione sono ora non aggiornati — vai a "Calcolo punteggi" e pubblica un nuovo run per aggiornare.'
+    : null
 
   const { error: updateError } = await supabase
     .from('score_overrides')
     .update({ removed_at: new Date().toISOString(), removed_by: ctx.userId })
     .eq('id', overrideId)
 
-  if (updateError) return { error: updateError.message, success: false }
+  if (updateError) return { error: updateError.message, success: false, stale_warning: null }
 
   await writeAuditLog({
     supabase,
@@ -201,5 +215,5 @@ export async function removeOverrideAction(
   revalidatePath(`/matchdays/${matchdayId}/overrides`)
   revalidatePath(`/matchdays/${matchdayId}/calculate`)
 
-  return { error: null, success: true }
+  return { error: null, success: true, stale_warning }
 }

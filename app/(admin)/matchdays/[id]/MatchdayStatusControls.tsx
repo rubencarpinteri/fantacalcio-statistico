@@ -52,13 +52,6 @@ const STATUS_ACTIONS: Partial<Record<MatchdayStatus, StatusAction[]>> = {
   ],
   scoring: [
     {
-      label: 'Pubblica risultati',
-      newStatus: 'published',
-      variant: 'primary',
-      requireNote: false,
-      confirmMessage: 'Pubblicare i risultati? Saranno visibili a tutti i manager.',
-    },
-    {
       label: 'Torna a blocco',
       newStatus: 'locked',
       variant: 'secondary',
@@ -135,6 +128,19 @@ export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
 
           {error && (
             <p className="text-xs text-red-400">{error}</p>
+          )}
+
+          {matchday.status === 'scoring' && (
+            <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-3 py-2.5 text-xs text-indigo-300">
+              <span className="font-semibold">Per pubblicare i risultati</span> devi eseguire il calcolo
+              punteggi e pubblicarlo dalla pagina dedicata.{' '}
+              <a
+                href={`/matchdays/${matchday.id}/calculate`}
+                className="font-semibold underline hover:text-indigo-200"
+              >
+                Vai al calcolo →
+              </a>
+            </div>
           )}
 
           <a

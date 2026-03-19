@@ -99,6 +99,37 @@ export default async function CalculatePage({
     .eq('matchday_id', matchdayId)
     .eq('is_provisional', true)
 
+  // Stale-output checks: detect changes made after the last published run.
+  // Only evaluated when a published run exists and matchday is still 'published'
+  // (archived is terminal; scoring has no stable reference point to compare against).
+  // All timestamps compared are server-set and cannot be spoofed by application code.
+  let hasStaleOverrides = false
+  let hasStaleStats = false
+
+  if (matchday.status === 'published' && publishedRunId) {
+    const publishedRun = (runs ?? []).find((r) => r.id === publishedRunId)
+    const publishedAt = publishedRun?.published_at ?? null
+
+    if (publishedAt) {
+      // Override staleness: any score_override created or removed after last publish.
+      const { count: staleOverrideCount } = await supabase
+        .from('score_overrides')
+        .select('id', { count: 'exact', head: true })
+        .eq('matchday_id', matchdayId)
+        .or(`created_at.gt.${publishedAt},removed_at.gt.${publishedAt}`)
+      hasStaleOverrides = (staleOverrideCount ?? 0) > 0
+
+      // Stats staleness: any player_match_stats row updated after last publish.
+      // updated_at is maintained by a BEFORE UPDATE DB trigger — reliable server timestamp.
+      const { count: staleStatsCount } = await supabase
+        .from('player_match_stats')
+        .select('id', { count: 'exact', head: true })
+        .eq('matchday_id', matchdayId)
+        .gt('updated_at', publishedAt)
+      hasStaleStats = (staleStatsCount ?? 0) > 0
+    }
+  }
+
   const canTrigger = ['scoring', 'published'].includes(matchday.status)
   // Can publish when there is a preview run that is not yet published
   const canPublish = previewRunId !== null && previewRunStatus !== 'published' && canTrigger
@@ -141,6 +172,20 @@ export default async function CalculatePage({
           </div>
         </div>
       </div>
+
+      {hasStaleOverrides && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+          <span className="mr-1.5 font-semibold">⚠ Punteggi non aggiornati.</span>
+          Sono state apportate modifiche agli override dopo l&apos;ultima pubblicazione — esegui un nuovo calcolo e pubblica per aggiornare i punteggi e le classifiche di competizione.
+        </div>
+      )}
+
+      {hasStaleStats && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+          <span className="mr-1.5 font-semibold">⚠ Statistiche modificate.</span>
+          Una o più statistiche sono state aggiornate dopo l&apos;ultima pubblicazione — esegui un nuovo calcolo e pubblica per aggiornare i punteggi e le classifiche di competizione.
+        </div>
+      )}
 
       {!canTrigger && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-400">

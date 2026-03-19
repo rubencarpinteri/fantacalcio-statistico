@@ -6,6 +6,7 @@ import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import { computeMatchday } from '@/domain/engine/v1/engine'
 import { buildEngineConfig } from '@/domain/engine/v1/config'
+import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
 import type { EnginePlayerInput, PlayerCalculationResult } from '@/domain/engine/v1/types'
 import type { Json, RatingClass } from '@/types/database.types'
 
@@ -314,9 +315,18 @@ export async function triggerCalculationAction(
 // transitions matchday to 'published', writes standings snapshot.
 // ============================================================
 
+// Per-round outcome from the competition cascade triggered at publish time.
+export interface CompetitionCascadeResult {
+  competition_name: string
+  round_name: string
+  round_id: string
+  error: string | null
+}
+
 export interface PublishCalculationResult {
   error: string | null
   success: boolean
+  competitions_updated: CompetitionCascadeResult[]
 }
 
 export async function publishCalculationAction(
@@ -326,6 +336,10 @@ export async function publishCalculationAction(
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
+  const fail = (error: string): PublishCalculationResult => ({
+    error, success: false, competitions_updated: [],
+  })
+
   // Verify run belongs to this matchday + league
   const { data: run } = await supabase
     .from('calculation_runs')
@@ -334,8 +348,8 @@ export async function publishCalculationAction(
     .eq('matchday_id', matchdayId)
     .single()
 
-  if (!run) return { error: 'Run non trovato.', success: false }
-  if (run.status === 'published') return { error: 'Run già pubblicato.', success: false }
+  if (!run) return fail('Run non trovato.')
+  if (run.status === 'published') return fail('Run già pubblicato.')
 
   const { data: matchday } = await supabase
     .from('matchdays')
@@ -344,8 +358,8 @@ export async function publishCalculationAction(
     .eq('league_id', ctx.league.id)
     .single()
 
-  if (!matchday) return { error: 'Giornata non trovata.', success: false }
-  if (matchday.status === 'archived') return { error: 'La giornata è archiviata.', success: false }
+  if (!matchday) return fail('Giornata non trovata.')
+  if (matchday.status === 'archived') return fail('La giornata è archiviata.')
 
   // Mark run as published
   const { error: runUpdateError } = await supabase
@@ -357,7 +371,7 @@ export async function publishCalculationAction(
     })
     .eq('id', runId)
 
-  if (runUpdateError) return { error: runUpdateError.message, success: false }
+  if (runUpdateError) return fail(runUpdateError.message)
 
   // Update official current pointer (ONLY happens at publish)
   const { error: ptrError } = await supabase
@@ -368,7 +382,7 @@ export async function publishCalculationAction(
       updated_at: new Date().toISOString(),
     })
 
-  if (ptrError) return { error: `Errore puntatore: ${ptrError.message}`, success: false }
+  if (ptrError) return fail(`Errore puntatore: ${ptrError.message}`)
 
   // Build standings snapshot — per-team fantavoto sum for non-bench starters
   const { data: pointers } = await supabase
@@ -487,5 +501,45 @@ export async function publishCalculationAction(
   revalidatePath(`/matchdays/${matchdayId}`)
   revalidatePath(`/matchdays`)
 
-  return { error: null, success: true }
+  // ----------------------------------------------------------------
+  // Competition cascade (non-fatal)
+  // ----------------------------------------------------------------
+  // After publishing team scores, compute every active competition
+  // round that is linked to this matchday and is not yet locked.
+  // Failures are collected and returned to the UI but do NOT prevent
+  // the publish from succeeding.
+  // ----------------------------------------------------------------
+  const competitions_updated: CompetitionCascadeResult[] = []
+
+  const { data: linkedRounds } = await supabase
+    .from('competition_rounds')
+    .select('id, name, competitions(id, name, status, league_id)')
+    .eq('matchday_id', matchdayId)
+    .neq('status', 'locked')
+
+  for (const round of linkedRounds ?? []) {
+    const comp = round.competitions as unknown as {
+      id: string; name: string; status: string; league_id: string
+    } | null
+
+    // Only cascade to active competitions belonging to this league
+    if (!comp || comp.league_id !== ctx.league.id || comp.status !== 'active') continue
+
+    let cascadeError: string | null = null
+    try {
+      const roundResult = await computeRoundAction(round.id)
+      cascadeError = roundResult.error
+    } catch (err) {
+      cascadeError = err instanceof Error ? err.message : 'Errore sconosciuto'
+    }
+
+    competitions_updated.push({
+      competition_name: comp.name,
+      round_name:       round.name,
+      round_id:         round.id,
+      error:            cascadeError,
+    })
+  }
+
+  return { error: null, success: true, competitions_updated }
 }

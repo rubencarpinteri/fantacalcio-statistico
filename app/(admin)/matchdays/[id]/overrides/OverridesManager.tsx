@@ -48,6 +48,7 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [staleWarning, setStaleWarning] = useState<string | null>(null)
 
   // Form state
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
@@ -63,6 +64,7 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
   const handleCreate = () => {
     setError(null)
     setSuccess(null)
+    setStaleWarning(null)
     const fv = parseFloat(overrideValue.replace(',', '.'))
     if (!selectedPlayerId) return setError('Seleziona un giocatore.')
     if (isNaN(fv)) return setError('Inserisci un valore numerico valido per il fantavoto.')
@@ -79,6 +81,7 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
         setError(result.error)
       } else {
         setSuccess('Override creato. Ricalcola i punteggi per applicarlo al prossimo run.')
+        setStaleWarning(result.stale_warning)
         setSelectedPlayerId('')
         setOverrideValue('')
         setReason('')
@@ -90,12 +93,14 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
     if (!confirm(`Rimuovere l'override per ${playerName}?`)) return
     setError(null)
     setSuccess(null)
+    setStaleWarning(null)
     startTransition(async () => {
       const result = await removeOverrideAction(overrideId, matchdayId)
       if (result.error) {
         setError(result.error)
       } else {
-        setSuccess(`Override rimosso. Ricalcola i punteggi per applicare la modifica.`)
+        setSuccess('Override rimosso. Ricalcola i punteggi per applicare la modifica.')
+        setStaleWarning(result.stale_warning)
       }
     })
   }
@@ -238,6 +243,12 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
         <p className="rounded-lg border border-green-500/30 bg-green-500/5 px-4 py-3 text-sm text-green-400">
           {success}
         </p>
+      )}
+      {staleWarning && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/8 px-4 py-3 text-sm text-amber-300">
+          <span className="mr-1.5 font-semibold">⚠ Punteggi non aggiornati.</span>
+          {staleWarning}
+        </div>
       )}
 
       {/* Player list with rc badge (read-only reference) */}
