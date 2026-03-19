@@ -55,11 +55,28 @@ export default async function StandingsPage() {
   const snapshots: Record<string, { rows: TeamStandingRow[]; round_name: string | null }> = {}
 
   for (const comp of list) {
+    // Step 1: find the highest computed round for this competition
+    const { data: latestRound } = await supabase
+      .from('competition_rounds')
+      .select('id, name')
+      .eq('competition_id', comp.id)
+      .eq('status', 'computed')
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!latestRound) {
+      snapshots[comp.id] = { rows: [], round_name: null }
+      continue
+    }
+
+    // Step 2: fetch the latest snapshot version for that specific round
     const { data: snap } = await supabase
       .from('competition_standings_snapshots')
-      .select('snapshot_json, after_round_id')
+      .select('snapshot_json')
       .eq('competition_id', comp.id)
-      .order('created_at', { ascending: false })
+      .eq('after_round_id', latestRound.id)
+      .order('version_number', { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -71,16 +88,7 @@ export default async function StandingsPage() {
     const json = snap.snapshot_json as { type?: string; rows?: TeamStandingRow[] }
     const rows = json.type === 'table' && Array.isArray(json.rows) ? json.rows : []
 
-    // Get round name
-    const { data: round } = snap.after_round_id
-      ? await supabase
-          .from('competition_rounds')
-          .select('name')
-          .eq('id', snap.after_round_id)
-          .single()
-      : { data: null }
-
-    snapshots[comp.id] = { rows: rows.slice(0, 5), round_name: round?.name ?? null }
+    snapshots[comp.id] = { rows: rows.slice(0, 5), round_name: latestRound.name }
   }
 
   // Collect all team IDs across all snapshots and resolve names once
@@ -102,6 +110,37 @@ export default async function StandingsPage() {
     .eq('status', 'setup')
     .order('created_at', { ascending: true })
   const setupList = (setupComps ?? []) as Competition[]
+
+  // Raw published fantavoto aggregate — all published team scores for this league,
+  // grouped by team in JS. One query; no GROUP BY needed at DB level.
+  const { data: rawScores } = await supabase
+    .from('published_team_scores')
+    .select('team_id, total_fantavoto')
+    .eq('league_id', ctx.league.id)
+
+  type RawTeamRow = { team_id: string; total: number; count: number; avg: number }
+  const rawByTeam = new Map<string, { total: number; count: number }>()
+  for (const row of rawScores ?? []) {
+    const existing = rawByTeam.get(row.team_id) ?? { total: 0, count: 0 }
+    existing.total += Number(row.total_fantavoto)
+    existing.count += 1
+    rawByTeam.set(row.team_id, existing)
+  }
+
+  const rawTeamIds = [...rawByTeam.keys()]
+  const { data: rawTeams } = rawTeamIds.length > 0
+    ? await supabase.from('fantasy_teams').select('id, name').in('id', rawTeamIds)
+    : { data: [] }
+  const rawTeamNameMap = new Map((rawTeams ?? []).map((t) => [t.id, t.name]))
+
+  const rawRows: RawTeamRow[] = [...rawByTeam.entries()]
+    .map(([team_id, { total, count }]) => ({
+      team_id,
+      total,
+      count,
+      avg: count > 0 ? total / count : 0,
+    }))
+    .sort((a, b) => b.total - a.total)
 
   return (
     <div className="space-y-8">
@@ -149,14 +188,12 @@ export default async function StandingsPage() {
                   : `${TYPE_LABEL[comp.type] ?? comp.type}${comp.season ? ` · ${comp.season}` : ''}`
               }
               action={
-                ctx.role === 'league_admin' ? (
-                  <a
-                    href={`/competitions/${comp.id}/standings`}
-                    className="text-xs text-indigo-400 hover:text-indigo-300"
-                  >
-                    Classifica completa →
-                  </a>
-                ) : undefined
+                <a
+                  href={`/competitions/${comp.id}/standings`}
+                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                >
+                  Classifica completa →
+                </a>
               }
             />
 
@@ -237,21 +274,65 @@ export default async function StandingsPage() {
                   </tbody>
                 </table>
 
-                {ctx.role === 'league_admin' && (
-                  <div className="border-t border-[#1e1e2e] px-4 py-2">
-                    <a
-                      href={`/competitions/${comp.id}/standings`}
-                      className="text-xs text-indigo-400 hover:underline"
-                    >
-                      Classifica completa →
-                    </a>
-                  </div>
-                )}
+                <div className="border-t border-[#1e1e2e] px-4 py-2">
+                  <a
+                    href={`/competitions/${comp.id}/standings`}
+                    className="text-xs text-indigo-400 hover:underline"
+                  >
+                    Classifica completa →
+                  </a>
+                </div>
               </CardContent>
             )}
           </Card>
         )
       })}
+
+      {/* Raw fantavoto aggregate — competition-format-agnostic, published matchdays only */}
+      {rawRows.length > 0 && (
+        <Card>
+          <CardHeader
+            title="Fantavoto complessivo"
+            description="Totale pubblicato per squadra · tutte le giornate"
+          />
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#1e1e2e]">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Pos</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Squadra</th>
+                  <th className="px-4 py-2.5 text-center text-xs font-medium text-[#55556a]">G</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[#55556a]">Media FV</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[#55556a]">Totale FV</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e1e2e]">
+                {rawRows.map((row, idx) => (
+                  <tr key={row.team_id} className="hover:bg-[#0f0f1a]">
+                    <td className="px-4 py-2.5">
+                      <span className={`text-sm font-semibold ${
+                        idx === 0 ? 'text-amber-400' : idx <= 2 ? 'text-indigo-300' : 'text-[#55556a]'
+                      }`}>
+                        {idx + 1}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 font-medium text-white">
+                      {rawTeamNameMap.get(row.team_id) ?? '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.count}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
+                      {row.avg.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono font-bold text-white">
+                      {row.total.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Setup competitions (no standings yet, just a placeholder) */}
       {setupList.length > 0 && (

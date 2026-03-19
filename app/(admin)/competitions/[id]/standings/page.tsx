@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireLeagueAdmin } from '@/lib/league'
+import { requireLeagueContext } from '@/lib/league'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 interface TeamStandingRow {
@@ -28,7 +28,7 @@ export default async function CompetitionStandingsPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const ctx = await requireLeagueAdmin()
+  const ctx = await requireLeagueContext()
   const { id } = await params
   const supabase = await createClient()
 
@@ -41,23 +41,47 @@ export default async function CompetitionStandingsPage({
 
   if (!comp) notFound()
 
-  // Latest snapshot (the most recently computed round)
-  const { data: latestSnapshot } = await supabase
-    .from('competition_standings_snapshots')
-    .select('snapshot_json, after_round_id, version_number, created_at')
+  // Step 1: find the highest computed round for this competition
+  const { data: latestComputedRound } = await supabase
+    .from('competition_rounds')
+    .select('id, round_number, name, matchday_id')
     .eq('competition_id', id)
-    .order('created_at', { ascending: false })
+    .eq('status', 'computed')
+    .order('round_number', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  // Resolve the round info for the snapshot
-  const { data: afterRound } = latestSnapshot?.after_round_id
+  // Step 2: fetch the latest snapshot version for that specific round
+  const { data: latestSnapshot } = latestComputedRound
     ? await supabase
-        .from('competition_rounds')
-        .select('round_number, name')
-        .eq('id', latestSnapshot.after_round_id)
-        .single()
+        .from('competition_standings_snapshots')
+        .select('snapshot_json, after_round_id, version_number, created_at')
+        .eq('competition_id', id)
+        .eq('after_round_id', latestComputedRound.id)
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle()
     : { data: null }
+
+  // afterRound is already resolved from latestComputedRound — no extra query needed
+  const afterRound = latestComputedRound ?? null
+
+  // Stale check: if the matchday linked to the latest round is no longer published
+  // or archived, the snapshot may be temporarily outdated (e.g. admin reverted the
+  // matchday to 'scoring' to correct stats and has not yet re-published).
+  // Silent when no snapshot, no round, or no linked matchday.
+  let isStaleSnapshot = false
+  if (afterRound?.matchday_id) {
+    const { data: linkedMatchday } = await supabase
+      .from('matchdays')
+      .select('status')
+      .eq('id', afterRound.matchday_id)
+      .eq('league_id', ctx.league.id)
+      .maybeSingle()
+    isStaleSnapshot =
+      linkedMatchday !== null &&
+      !['published', 'archived'].includes(linkedMatchday.status)
+  }
 
   const standingRows: TeamStandingRow[] = []
   if (latestSnapshot?.snapshot_json) {
@@ -83,8 +107,11 @@ export default async function CompetitionStandingsPage({
   return (
     <div className="space-y-6">
       <div>
-        <a href={`/competitions/${id}`} className="text-sm text-[#55556a] hover:text-indigo-400">
-          ← {comp.name}
+        <a
+          href={ctx.role === 'league_admin' ? `/competitions/${id}` : '/standings'}
+          className="text-sm text-[#55556a] hover:text-indigo-400"
+        >
+          ← {ctx.role === 'league_admin' ? comp.name : 'Classifiche'}
         </a>
         <h1 className="mt-1 text-xl font-bold text-white">Classifica</h1>
         <p className="text-sm text-[#8888aa]">
@@ -92,6 +119,13 @@ export default async function CompetitionStandingsPage({
           {afterRound ? ` · aggiornata al turno ${afterRound.round_number} (${afterRound.name})` : ''}
         </p>
       </div>
+
+      {isStaleSnapshot && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+          <span className="mr-1.5 font-semibold">⚠ Classifica provvisoria.</span>
+          La classifica mostrata si basa sull&apos;ultimo snapshot disponibile, ma la giornata collegata al turno più recente non è ancora ripubblicata — i dati potrebbero essere temporaneamente non aggiornati.
+        </div>
+      )}
 
       {standingRows.length === 0 ? (
         <Card>
@@ -109,12 +143,14 @@ export default async function CompetitionStandingsPage({
               ? `Aggiornata il ${new Date(latestSnapshot.created_at).toLocaleString('it-IT')}`
               : undefined}
             action={
-              <a
-                href={`/competitions/${id}/rounds`}
-                className="text-xs text-indigo-400 hover:text-indigo-300"
-              >
-                Gestisci turni →
-              </a>
+              ctx.role === 'league_admin' ? (
+                <a
+                  href={`/competitions/${id}/rounds`}
+                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                >
+                  Gestisci turni →
+                </a>
+              ) : undefined
             }
           />
           <CardContent className="p-0">
@@ -192,10 +228,10 @@ export default async function CompetitionStandingsPage({
 
       <div className="text-right">
         <a
-          href={`/competitions/${id}`}
+          href={ctx.role === 'league_admin' ? `/competitions/${id}` : '/standings'}
           className="text-sm text-[#55556a] hover:text-indigo-400"
         >
-          ← Torna alla competizione
+          {ctx.role === 'league_admin' ? '← Torna alla competizione' : '← Classifiche'}
         </a>
       </div>
     </div>

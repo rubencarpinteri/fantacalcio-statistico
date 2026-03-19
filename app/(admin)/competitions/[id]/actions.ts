@@ -219,6 +219,12 @@ export async function linkRoundToMatchdayAction(
   const comp = round.competitions as unknown as { league_id: string } | null
   if (comp?.league_id !== ctx.league.id) return { error: 'Non autorizzato.', success: false }
   if (round.status === 'locked') return { error: 'Il turno è bloccato.', success: false }
+  if (round.status === 'computed') {
+    return {
+      error:   'Il turno è già stato calcolato e non può essere ricollegato a una giornata diversa. Usa "Ricalcola" per aggiornare i risultati con la giornata già collegata.',
+      success: false,
+    }
+  }
 
   // Verify matchday belongs to same league
   const { data: matchday } = await supabase
@@ -289,8 +295,8 @@ export async function computeRoundAction(
     .single()
 
   if (!matchday) return fail('Giornata collegata non trovata.')
-  if (matchday.status !== 'published') {
-    return fail(`La giornata deve essere in stato "pubblicata" per calcolare. Stato attuale: "${matchday.status}".`)
+  if (!['published', 'archived'].includes(matchday.status)) {
+    return fail(`La giornata deve essere in stato "pubblicata" o "archiviata" per calcolare. Stato attuale: "${matchday.status}".`)
   }
 
   // 3. Fetch published_team_scores for the matchday
@@ -368,20 +374,55 @@ export async function computeRoundAction(
     }))
   }
 
-  // 5. Load prior standings (from the most recent snapshot for this competition)
-  const { data: priorSnap } = await supabase
-    .from('competition_standings_snapshots')
-    .select('snapshot_json')
-    .eq('competition_id', competition.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
+  // 5. Load prior standings from the immediately preceding computed round.
+  // Two-step to avoid the created_at trap: a recomputed earlier round gets a
+  // newer created_at and would be incorrectly preferred over a later round's
+  // snapshot if we sort by created_at across all prior rounds.
+  // Correct rule: highest round_number < current that has a snapshot → latest
+  // version_number for that specific round.
   const priorStandings: TeamStandingRow[] = []
-  if (priorSnap?.snapshot_json) {
-    const json = priorSnap.snapshot_json as { type?: string; rows?: TeamStandingRow[] }
-    if (json.type === 'table' && Array.isArray(json.rows)) {
-      priorStandings.push(...json.rows)
+
+  if (round.round_number > 1) {
+    // Step A: which prior rounds have at least one snapshot?
+    const { data: snapshotRoundRows } = await supabase
+      .from('competition_standings_snapshots')
+      .select('after_round_id')
+      .eq('competition_id', competition.id)
+
+    const roundIdsWithSnapshot = [...new Set(
+      (snapshotRoundRows ?? []).map((s) => s.after_round_id)
+    )]
+
+    if (roundIdsWithSnapshot.length > 0) {
+      // Step B: among those, pick the highest round_number strictly below current
+      const { data: precedingRound } = await supabase
+        .from('competition_rounds')
+        .select('id')
+        .eq('competition_id', competition.id)
+        .lt('round_number', round.round_number)
+        .in('id', roundIdsWithSnapshot)
+        .order('round_number', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (precedingRound) {
+        // Step C: latest snapshot version for that specific round
+        const { data: priorSnap } = await supabase
+          .from('competition_standings_snapshots')
+          .select('snapshot_json')
+          .eq('competition_id', competition.id)
+          .eq('after_round_id', precedingRound.id)
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (priorSnap?.snapshot_json) {
+          const json = priorSnap.snapshot_json as { type?: string; rows?: TeamStandingRow[] }
+          if (json.type === 'table' && Array.isArray(json.rows)) {
+            priorStandings.push(...json.rows)
+          }
+        }
+      }
     }
   }
 
