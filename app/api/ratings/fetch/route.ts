@@ -35,8 +35,6 @@ export type MatchedPlayer = {
   league_player_name: string
   club: string
   stat: FetchedPlayerStat
-  /** true if the name match was exact, false if fuzzy */
-  exact_match: boolean
 }
 
 export type UnmatchedPlayer = {
@@ -63,23 +61,6 @@ function normalizeName(name: string): string {
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-}
-
-// Levenshtein distance (simple O(m*n))
-function levenshtein(a: string, b: string): number {
-  const m = a.length
-  const n = b.length
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  )
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i]![j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1]![j - 1]!
-        : 1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!)
-    }
-  }
-  return dp[m]![n]!
 }
 
 // ---------------------------------------------------------------------------
@@ -383,7 +364,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const unmatched: UnmatchedPlayer[] = []
 
   for (const stat of allFetched) {
-    // Exact normalized name match
     const exact = dbPlayers.find((p) => p.normalized === stat.normalized_name)
     if (exact) {
       matched.push({
@@ -391,29 +371,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
         league_player_name: exact.full_name,
         club: exact.club,
         stat,
-        exact_match: true,
-      })
-      continue
-    }
-
-    // Fuzzy: find DB player with minimum Levenshtein distance ≤ 3
-    let best: typeof dbPlayers[number] | null = null
-    let bestDist = Infinity
-    for (const p of dbPlayers) {
-      const d = levenshtein(stat.normalized_name, p.normalized)
-      if (d < bestDist) { bestDist = d; best = p }
-    }
-
-    if (best && bestDist <= 3) {
-      matched.push({
-        league_player_id: best.id,
-        league_player_name: best.full_name,
-        club: best.club,
-        stat,
-        exact_match: false,
       })
     } else {
-      unmatched.push({ stat, closest_name: best?.full_name ?? null })
+      unmatched.push({ stat, closest_name: null })
     }
   }
 

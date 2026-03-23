@@ -34,6 +34,9 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   competition_status_change:      'Cambio stato competizione',
   competition_round_compute:      'Calcola turno',
   competition_calendario_generate:'Genera calendario',
+  rosa_assign:                    'Assegna giocatore rosa',
+  rosa_release:                   'Rilascia giocatore rosa',
+  pool_import:                    'Import pool giocatori',
 }
 
 const ACTION_COLOR: Partial<Record<AuditAction, string>> = {

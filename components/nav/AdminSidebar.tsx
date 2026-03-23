@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/players',      label: 'Giocatori',    icon: '👤' },
   { href: '/formations',   label: 'Formazioni',   icon: '⊞',  adminOnly: true },
   { href: '/roster',       label: 'Rose',         icon: '📋', adminOnly: true },
+  { href: '/pool',         label: 'Pool Giocatori', icon: '⚽', adminOnly: true },
   { href: '/matchdays',    label: 'Giornate',     icon: '📅' },
   { href: '/competitions', label: 'Competizioni', icon: '⚔', adminOnly: true },
   { href: '/standings',    label: 'Classifica',   icon: '🏆' },

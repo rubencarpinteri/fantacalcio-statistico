@@ -68,8 +68,9 @@ export default async function MatchdayFixturesPage({
           contribuisce solo al voto SofaScore.
         </p>
         <p>
-          Gli abbinamenti fuzzy (in giallo nell&apos;anteprima) vanno verificati prima
-          dell&apos;importazione.
+          L&apos;abbinamento è esatto: il nome del giocatore nell&apos;API deve corrispondere
+          esattamente al nome nel database (ignorando maiuscole e accenti). I giocatori non
+          abbinati vengono mostrati nell&apos;anteprima per verifica manuale.
         </p>
       </div>
 

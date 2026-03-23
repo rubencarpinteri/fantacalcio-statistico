@@ -4,7 +4,7 @@ import { useActionState, useTransition } from 'react'
 import { addFixtureAction, removeFixtureAction, importRatingsAction } from './actions'
 import type { AddFixtureState, ImportMatch } from './actions'
 import type { MatchdayFixture } from '@/types/database.types'
-import type { FetchRatingsResponse, MatchedPlayer } from '@/app/api/ratings/fetch/route'
+import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
 
 // ---------------------------------------------------------------------------
 // Fixtures list + add form
@@ -235,8 +235,6 @@ function PreviewTable({
   onReset: () => void
 }) {
   const { matched, unmatched, errors } = data
-  const fuzzy = matched.filter((m) => !m.exact_match)
-  const exact = matched.filter((m) => m.exact_match)
 
   return (
     <div className="space-y-4">
@@ -244,9 +242,6 @@ function PreviewTable({
         <div>
           <p className="text-sm text-[#f0f0fa]">
             <span className="font-semibold text-white">{matched.length}</span> giocatori abbinati
-            {fuzzy.length > 0 && (
-              <span className="ml-2 text-amber-400">({fuzzy.length} fuzzy)</span>
-            )}
             {unmatched.length > 0 && (
               <span className="ml-2 text-red-400">· {unmatched.length} non abbinati</span>
             )}
@@ -271,13 +266,6 @@ function PreviewTable({
           </button>
         </div>
       </div>
-
-      {/* Fuzzy matches warning */}
-      {fuzzy.length > 0 && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
-          I seguenti abbinamenti sono approssimativi — verifica che siano corretti prima di importare.
-        </div>
-      )}
 
       {/* Matched table */}
       <div className="overflow-x-auto">
@@ -328,10 +316,10 @@ function PreviewTable({
   )
 }
 
-function MatchedRow({ m }: { m: MatchedPlayer }) {
+function MatchedRow({ m }: { m: FetchRatingsResponse['matched'][number] }) {
   const s = m.stat
   return (
-    <tr className={m.exact_match ? 'hover:bg-[#1a1a24]' : 'bg-amber-500/5 hover:bg-amber-500/10'}>
+    <tr className="hover:bg-[#1a1a24]">
       <td className="px-3 py-1.5">
         <span className="text-[#f0f0fa]">{m.league_player_name}</span>
         <span className="ml-1 text-[#55556a]">{m.club}</span>

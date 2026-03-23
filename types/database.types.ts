@@ -55,6 +55,9 @@ export type AuditAction =
   | 'competition_status_change'
   | 'competition_round_compute'
   | 'competition_calendario_generate'
+  | 'rosa_assign'
+  | 'rosa_release'
+  | 'pool_import'
 
 // ---- Row types ---------------------------------------------
 
@@ -141,6 +144,20 @@ export type RosterImportBatch = {
   created_at: string
 }
 
+export type SerieAPlayer = {
+  id: string
+  full_name: string
+  club: string
+  mantra_roles: string[]
+  rating_class: RatingClass
+  sofascore_id: number | null
+  fotmob_id: number | null
+  season: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export type LeaguePlayer = {
   id: string
   league_id: string
@@ -151,6 +168,7 @@ export type LeaguePlayer = {
   rating_class: RatingClass
   is_active: boolean
   notes: string | null
+  serie_a_player_id: string | null
   created_at: string
   updated_at: string
 }
@@ -565,15 +583,29 @@ export type Database = {
       }
       league_players: {
         Row: LeaguePlayer
-        Insert: Omit<LeaguePlayer, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'notes' | 'primary_mantra_role'> & {
+        Insert: Omit<LeaguePlayer, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'notes' | 'primary_mantra_role' | 'serie_a_player_id'> & {
           id?: string
           created_at?: string
           updated_at?: string
           is_active?: boolean
           notes?: string | null
           primary_mantra_role?: string | null
+          serie_a_player_id?: string | null
         }
         Update: Partial<Omit<LeaguePlayer, 'id'>>
+        Relationships: never[]
+      }
+      serie_a_players: {
+        Row: SerieAPlayer
+        Insert: Omit<SerieAPlayer, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'sofascore_id' | 'fotmob_id'> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          is_active?: boolean
+          sofascore_id?: number | null
+          fotmob_id?: number | null
+        }
+        Update: Partial<Omit<SerieAPlayer, 'id'>>
         Relationships: never[]
       }
       player_role_history: {

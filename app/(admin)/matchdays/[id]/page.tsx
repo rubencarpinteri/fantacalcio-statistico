@@ -192,6 +192,31 @@ export default async function MatchdayDetailPage({
           </Card>
         )}
 
+        {/* Live scores — visible to everyone when scoring */}
+        {matchday.status === 'scoring' && (
+          <Card>
+            <CardHeader
+              title="Punteggi Live"
+              description="Aggiornamento automatico ogni 60s"
+            />
+            <CardContent>
+              <p className="mb-3 text-sm text-[#8888aa]">
+                Fantavoti in tempo reale con sostituzioni dalla panchina.
+              </p>
+              <a
+                href={`/matchdays/${id}/live`}
+                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                </span>
+                Apri Live →
+              </a>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Admin: calculation / publication link when matchday is in scoring or published */}
         {isAdmin && ['scoring', 'published'].includes(matchday.status) && (
           <Card>
