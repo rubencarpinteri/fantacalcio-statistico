@@ -77,6 +77,8 @@ export type League = {
   lock_behavior: LockBehavior
   advanced_bonuses_enabled: boolean
   bench_size: number
+  source_weight_sofascore: number
+  source_weight_fotmob: number
   created_at: string
   updated_at: string
 }
@@ -169,8 +171,18 @@ export type FormationSlot = {
   slot_name: string
   slot_order: number
   allowed_mantra_roles: string[]
+  extended_mantra_roles: string[]
   is_bench: boolean
   bench_order: number | null
+}
+
+export type MatchdayFixture = {
+  id: string
+  matchday_id: string
+  fotmob_match_id: number | null
+  sofascore_event_id: number | null
+  label: string
+  created_at: string
 }
 
 export type Matchday = {
@@ -238,7 +250,6 @@ export type PlayerMatchStats = {
   rating_class_override: RatingClass | null
 
   sofascore_rating: number | null
-  whoscored_rating: number | null
   fotmob_rating: number | null
 
   tackles_won: number
@@ -300,7 +311,6 @@ export type PlayerCalculation = {
   stats_id: string
 
   z_sofascore: number | null
-  z_whoscored: number | null
   z_fotmob: number | null
   z_combined: number | null
   weights_used: Json | null
@@ -601,6 +611,17 @@ export type Database = {
         Update: Record<string, unknown>
         Relationships: never[]
       }
+      matchday_fixtures: {
+        Row: MatchdayFixture
+        Insert: Omit<MatchdayFixture, 'id' | 'created_at'> & {
+          id?: string
+          created_at?: string
+          fotmob_match_id?: number | null
+          sofascore_event_id?: number | null
+        }
+        Update: Partial<Omit<MatchdayFixture, 'id'>>
+        Relationships: never[]
+      }
       lineup_submissions: {
         Row: LineupSubmission
         Insert: Omit<LineupSubmission, 'id' | 'created_at'> & {
@@ -652,7 +673,7 @@ export type Database = {
       player_calculations: {
         Row: PlayerCalculation
         Insert: Omit<PlayerCalculation, 'id' | 'calculated_at' | 'override_id' |
-          'z_sofascore' | 'z_whoscored' | 'z_fotmob' | 'z_combined' | 'weights_used' |
+          'z_sofascore' | 'z_fotmob' | 'z_combined' | 'weights_used' |
           'minutes_factor' | 'z_adjusted' | 'b0' | 'role_multiplier' | 'b1' |
           'defensive_correction' | 'voto_base' | 'bonus_malus_breakdown' |
           'total_bonus_malus' | 'fantavoto'

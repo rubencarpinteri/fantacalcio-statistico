@@ -25,7 +25,6 @@ interface ExistingStat {
   minutes_played: number
   rating_class_override: RatingClass | null
   sofascore_rating: number | null
-  whoscored_rating: number | null
   fotmob_rating: number | null
   tackles_won: number
   interceptions: number
@@ -73,7 +72,6 @@ function emptyRow(playerId: string): StatRowInput {
     minutes_played: 0,
     rating_class_override: null,
     sofascore_rating: null,
-    whoscored_rating: null,
     fotmob_rating: null,
     tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
     aerial_duels_won: 0, dribbled_past: 0, saves: 0,
@@ -450,7 +448,6 @@ function StatRow({
       {activeTab === 'voti' && (
         <>
           {num('sofascore_rating')}
-          {num('whoscored_rating')}
           {num('fotmob_rating')}
         </>
       )}

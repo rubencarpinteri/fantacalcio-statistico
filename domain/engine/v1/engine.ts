@@ -258,7 +258,7 @@ export function calculatePlayerScore(
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: true,
-      z_sofascore: null, z_whoscored: null, z_fotmob: null,
+      z_sofascore: null, z_fotmob: null,
       z_combined: null,
       weights_used: {},
       minutes_factor: null,
@@ -283,9 +283,6 @@ export function calculatePlayerScore(
   const z_sofascore = input.sofascore_rating !== null
     ? round((input.sofascore_rating - norm.sofascore.mean) / norm.sofascore.std)
     : null
-  const z_whoscored = input.whoscored_rating !== null
-    ? round((input.whoscored_rating - norm.whoscored.mean) / norm.whoscored.std)
-    : null
   const z_fotmob = input.fotmob_rating !== null
     ? round((input.fotmob_rating - norm.fotmob.mean) / norm.fotmob.std)
     : null
@@ -296,7 +293,6 @@ export function calculatePlayerScore(
   const rawWeights = config.source_weights
   const sourceMap = [
     { z: z_sofascore, weight: rawWeights.sofascore, key: 'sofascore' },
-    { z: z_whoscored, weight: rawWeights.whoscored, key: 'whoscored' },
     { z: z_fotmob,    weight: rawWeights.fotmob,    key: 'fotmob'    },
   ]
   const available = sourceMap.filter((s) => s.z !== null)
@@ -382,7 +378,7 @@ export function calculatePlayerScore(
     kind: 'scored',
     player_id, stats_id, is_provisional,
     decisive_event_exception: false,
-    z_sofascore, z_whoscored, z_fotmob,
+    z_sofascore, z_fotmob,
     z_combined,
     weights_used,
     minutes_factor,

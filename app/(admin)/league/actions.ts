@@ -15,6 +15,8 @@ const leagueSettingsSchema = z.object({
   lock_behavior: z.enum(['auto', 'manual']),
   advanced_bonuses_enabled: z.coerce.boolean(),
   bench_size: z.coerce.number().int().min(1).max(10),
+  source_weight_sofascore: z.coerce.number().int().min(0).max(100),
+  source_weight_fotmob:    z.coerce.number().int().min(0).max(100),
 })
 
 export interface LeagueSettingsState {
@@ -38,12 +40,24 @@ export async function updateLeagueSettingsAction(
     lock_behavior: formData.get('lock_behavior'),
     advanced_bonuses_enabled: formData.get('advanced_bonuses_enabled') === 'true',
     bench_size: formData.get('bench_size'),
+    source_weight_sofascore: formData.get('source_weight_sofascore'),
+    source_weight_fotmob:    formData.get('source_weight_fotmob'),
   }
 
   const parsed = leagueSettingsSchema.safeParse(raw)
   if (!parsed.success) {
     return {
       error: parsed.error.errors[0]?.message ?? 'Dati non validi',
+      success: false,
+    }
+  }
+
+  const weightSum =
+    parsed.data.source_weight_sofascore +
+    parsed.data.source_weight_fotmob
+  if (weightSum !== 100) {
+    return {
+      error: `I pesi delle fonti devono sommare a 100% (attuale: ${weightSum}%).`,
       success: false,
     }
   }

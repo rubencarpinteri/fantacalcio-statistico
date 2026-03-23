@@ -66,7 +66,6 @@ export default async function CalculatePage({
         minutes_factor,
         z_combined,
         z_sofascore,
-        z_whoscored,
         z_fotmob,
         z_adjusted,
         b0,

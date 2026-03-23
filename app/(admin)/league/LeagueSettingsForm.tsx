@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -44,6 +44,11 @@ const initialState: LeagueSettingsState = { error: null, success: false }
 
 export function LeagueSettingsForm({ league }: { league: League }) {
   const [state, formAction] = useActionState(updateLeagueSettingsAction, initialState)
+
+  const [wSofa, setWSofa] = useState(league.source_weight_sofascore)
+  const [wFot,  setWFot]  = useState(league.source_weight_fotmob)
+  const weightSum = wSofa + wFot
+  const weightOk  = weightSum === 100
 
   return (
     <form action={formAction} className="space-y-4">
@@ -119,6 +124,37 @@ export function LeagueSettingsForm({ league }: { league: League }) {
         defaultValue={league.bench_size}
         hint="Numero di giocatori in panchina per formazione (1–10)"
       />
+
+      {/* Source weights */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+          Pesi fonti di voto (%)
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="SofaScore"
+            name="source_weight_sofascore"
+            type="number"
+            min={0}
+            max={100}
+            value={wSofa}
+            onChange={(e) => setWSofa(Number(e.target.value))}
+          />
+          <Input
+            label="FotMob"
+            name="source_weight_fotmob"
+            type="number"
+            min={0}
+            max={100}
+            value={wFot}
+            onChange={(e) => setWFot(Number(e.target.value))}
+          />
+        </div>
+        <p className={`text-xs ${weightOk ? 'text-emerald-400' : 'text-amber-400'}`}>
+          Totale: {weightSum}%
+          {weightOk ? ' ✓' : ' — deve sommare a 100%'}
+        </p>
+      </div>
 
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.success && (

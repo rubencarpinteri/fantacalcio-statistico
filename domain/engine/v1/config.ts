@@ -32,7 +32,6 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
    */
   source_normalization: {
     sofascore: { mean: 6.87, std: 0.54 },
-    whoscored: { mean: 6.62, std: 0.67 },
     fotmob:    { mean: 6.87, std: 0.79 },
   },
 
@@ -41,9 +40,8 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
    * Among available (non-null) sources, weights are re-normalised to sum to 1.0.
    */
   source_weights: {
-    sofascore: 0.40,
-    whoscored: 0.25,
-    fotmob:    0.35,
+    sofascore: 0.55,
+    fotmob:    0.45,
   },
 
   /**
@@ -189,15 +187,20 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
 }
 
 /**
- * Build a per-league engine config, overriding the advanced bonus flag.
+ * Build a per-league engine config, overriding the advanced bonus flag and
+ * optionally the source weights (as decimal fractions, e.g. 0.40).
  * Call this at trigger time, not at config definition time.
  */
-export function buildEngineConfig(advancedBonusesEnabled: boolean): EngineConfig {
+export function buildEngineConfig(
+  advancedBonusesEnabled: boolean,
+  sourceWeights?: { sofascore: number; fotmob: number }
+): EngineConfig {
   return {
     ...DEFAULT_ENGINE_CONFIG,
     advanced_bonus: {
       ...DEFAULT_ENGINE_CONFIG.advanced_bonus,
       enabled: advancedBonusesEnabled,
     },
+    ...(sourceWeights ? { source_weights: sourceWeights } : {}),
   }
 }

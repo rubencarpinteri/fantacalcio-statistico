@@ -16,7 +16,6 @@ const coerceInt = (min = 0) =>
 
 // Provider-specific float coercers with correct bounds:
 //   SofaScore  1.0 – 10.0
-//   WhoScored  1.0 – 10.0
 //   FotMob     0.0 – 10.0
 const coerceFloat = (min: number, max = 10) =>
   z.union([z.string(), z.number(), z.null()])
@@ -31,7 +30,6 @@ export const statRowSchema = z.object({
 
   // Source ratings — null means not yet entered
   sofascore_rating:  coerceFloat(1.0),   // SofaScore: 1.0 – 10.0
-  whoscored_rating:  coerceFloat(1.0),   // WhoScored: 1.0 – 10.0
   fotmob_rating:     coerceFloat(0.0),   // FotMob:    0.0 – 10.0
 
   // Defensive / GK

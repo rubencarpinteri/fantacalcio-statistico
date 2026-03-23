@@ -85,12 +85,17 @@ function Step({ n, label }: { n: number; label: string }) {
 // ─── page ────────────────────────────────────────────────────────────────────
 
 export default async function MethodologyPage() {
-  await requireLeagueContext()
+  const ctx = await requireLeagueContext()
+
+  // Live weights from league config (integer % → decimal fraction)
+  const liveWeights = {
+    sofascore: ctx.league.source_weight_sofascore / 100,
+    fotmob:    ctx.league.source_weight_fotmob    / 100,
+  }
 
   const sourceRows = [
-    { name: 'SofaScore', key: 'sofascore', weight: cfg.source_weights.sofascore, mean: cfg.source_normalization.sofascore.mean, std: cfg.source_normalization.sofascore.std },
-    { name: 'FotMob',    key: 'fotmob',    weight: cfg.source_weights.fotmob,    mean: cfg.source_normalization.fotmob.mean,    std: cfg.source_normalization.fotmob.std    },
-    { name: 'WhoScored', key: 'whoscored', weight: cfg.source_weights.whoscored, mean: cfg.source_normalization.whoscored.mean, std: cfg.source_normalization.whoscored.std  },
+    { name: 'SofaScore', key: 'sofascore', weight: liveWeights.sofascore, mean: cfg.source_normalization.sofascore.mean, std: cfg.source_normalization.sofascore.std },
+    { name: 'FotMob',    key: 'fotmob',    weight: liveWeights.fotmob,    mean: cfg.source_normalization.fotmob.mean,    std: cfg.source_normalization.fotmob.std    },
   ] as const
 
   const roleRows = [
@@ -147,7 +152,7 @@ export default async function MethodologyPage() {
         <CardHeader title="Pipeline di calcolo" description="Il percorso dal voto fonte al fantavoto finale" />
         <CardContent>
           <div className="space-y-3">
-            <Step n={1} label="Recupero voti dalle fonti (SofaScore · FotMob · WhoScored)" />
+            <Step n={1} label="Recupero voti dalle fonti (SofaScore · FotMob)" />
             <Step n={2} label="Normalizzazione a z-score per ciascuna fonte disponibile" />
             <Step n={3} label="Media ponderata degli z-score → z_combined" />
             <Step n={4} label="Fattore minuti: NV se 0', ×0.5 se 1–44', ×1.0 se ≥ 45'" />
@@ -177,7 +182,7 @@ export default async function MethodologyPage() {
 
       {/* ── Fonti & pesi ─────────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Fonti di voto e pesi" description="Le tre piattaforme di statistica e il loro contributo al voto combinato" />
+        <CardHeader title="Fonti di voto e pesi" description="Le due piattaforme di statistica e il loro contributo al voto combinato" />
         <CardContent className="p-0">
           <TableWrap>
             <thead>
@@ -225,7 +230,7 @@ export default async function MethodologyPage() {
             <span className="text-[#8888aa]">σ</span>
           </div>
           <Note>
-            La normalizzazione consente di comparare voti provenienti da scale diverse: SofaScore e FotMob usano medie simili ma dispersioni differenti, WhoScored tende a essere più conservativa.
+            La normalizzazione consente di comparare voti provenienti da scale diverse: SofaScore e FotMob usano medie simili ma dispersioni differenti.
             Uno z-score pari a 0 corrisponde esattamente al giocatore medio; valori positivi indicano una prestazione sopra la media.
           </Note>
         </CardContent>

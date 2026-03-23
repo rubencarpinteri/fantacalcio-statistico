@@ -15,7 +15,6 @@ export interface CalcPlayerRow {
   minutes_factor: number | null
   z_combined: number | null
   z_sofascore: number | null
-  z_whoscored: number | null
   z_fotmob: number | null
   z_adjusted: number | null
   b0: number | null
@@ -290,7 +289,6 @@ export function CalculationPreview({
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
                                   ['SofaScore z', fmt(c.z_sofascore)],
-                                  ['WhoScored z', fmt(c.z_whoscored)],
                                   ['FotMob z', fmt(c.z_fotmob)],
                                   ['z_combined', fmt(c.z_combined)],
                                   ['z_adjusted', fmt(c.z_adjusted)],

@@ -62,12 +62,16 @@ export default async function FormationDetailPage({
       </div>
 
       {/* Slot compatibility model explanation */}
-      <div className="rounded-lg border border-[#2e2e42] bg-[#111118] px-4 py-3 text-sm text-[#8888aa]">
+      <div className="rounded-lg border border-[#2e2e42] bg-[#111118] px-4 py-3 text-sm text-[#8888aa] space-y-1">
         <p className="font-medium text-[#f0f0fa]">Come funzionano gli slot</p>
-        <p className="mt-1">
-          Ogni slot titolare definisce i ruoli Mantra accettati. Un giocatore soddisfa uno slot
-          se almeno uno dei suoi ruoli Mantra appare nella lista. Gli slot panchina accettano
-          qualsiasi ruolo per default, ma puoi restringerli.
+        <p>
+          <span className="text-indigo-400">Ruoli nativi</span> — un giocatore di panchina con uno di questi ruoli può coprire lo slot senza penalità.
+        </p>
+        <p>
+          <span className="text-amber-400">Ruoli fuori posizione (−1)</span> — può coprire lo slot ma con −1 al fantavoto (sostituzione Mantra fuori ruolo).
+        </p>
+        <p>
+          Il portiere titolare assente è sempre sostituito per primo dal portiere di panchina, indipendentemente dall&apos;ordine di panchina.
         </p>
       </div>
 

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireLeagueAdmin } from '@/lib/league'
+import { requireLeagueContext } from '@/lib/league'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type { BonusMalusItem } from '@/domain/engine/v1/types'
 
@@ -16,7 +16,7 @@ export default async function MatchdayResultsPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const ctx = await requireLeagueAdmin()
+  const ctx = await requireLeagueContext()
   const { id: matchdayId } = await params
   const supabase = await createClient()
 

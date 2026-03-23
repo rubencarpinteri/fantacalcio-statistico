@@ -174,12 +174,20 @@ export default async function MatchdayDetailPage({
               <p className="mb-3 text-sm text-[#8888aa]">
                 Inserisci voti, eventi e dati difensivi per questa giornata.
               </p>
-              <a
-                href={`/matchdays/${id}/stats`}
-                className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
-              >
-                Apri tabella statistiche →
-              </a>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href={`/matchdays/${id}/stats`}
+                  className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
+                >
+                  Apri tabella statistiche →
+                </a>
+                <a
+                  href={`/matchdays/${id}/fixtures`}
+                  className="inline-block rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-4 py-2 text-sm font-medium text-indigo-400 hover:bg-indigo-500/10"
+                >
+                  Fetch automatico voti
+                </a>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -262,12 +270,20 @@ export default async function MatchdayDetailPage({
                 )}
 
                 {['published', 'archived'].includes(matchday.status) && (
-                  <a
-                    href={`/matchdays/${id}/my-results`}
-                    className="block text-sm text-indigo-400 hover:underline"
-                  >
-                    Vedi i tuoi risultati →
-                  </a>
+                  <div className="flex flex-col gap-1">
+                    <a
+                      href={`/matchdays/${id}/my-results`}
+                      className="text-sm text-indigo-400 hover:underline"
+                    >
+                      I tuoi risultati →
+                    </a>
+                    <a
+                      href={`/matchdays/${id}/results`}
+                      className="text-sm text-[#8888aa] hover:text-indigo-400"
+                    >
+                      Tutti i risultati →
+                    </a>
+                  </div>
                 )}
               </div>
             </CardContent>

@@ -9,6 +9,8 @@ export default async function DashboardPage() {
   const ctx = await requireLeagueContext()
   const supabase = await createClient()
 
+  const isAdmin = ctx.role === 'league_admin'
+
   const [teamsResult, playersResult, matchdaysResult] = await Promise.all([
     supabase
       .from('fantasy_teams')
@@ -32,7 +34,70 @@ export default async function DashboardPage() {
   const playerCount = playersResult.count ?? 0
   const activeMatchdays = matchdaysResult.data ?? []
 
-  const isAdmin = ctx.role === 'league_admin'
+  // Manager-specific data: their team, current submission status, last published score
+  type ManagerTeamData = {
+    teamId: string
+    teamName: string
+    openMatchday: { id: string; name: string; hasSubmission: boolean } | null
+    lastScore: { matchdayName: string; total: number; nv: number } | null
+  }
+  let managerData: ManagerTeamData | null = null
+
+  if (!isAdmin) {
+    const { data: myTeam } = await supabase
+      .from('fantasy_teams')
+      .select('id, name')
+      .eq('league_id', ctx.league.id)
+      .eq('manager_id', ctx.userId)
+      .maybeSingle()
+
+    if (myTeam) {
+      // Check submission for the first open matchday
+      const openMatchday = activeMatchdays.find((m) => m.status === 'open') ?? null
+      let hasSubmission = false
+      if (openMatchday) {
+        const { data: ptr } = await supabase
+          .from('lineup_current_pointers')
+          .select('submission_id')
+          .eq('matchday_id', openMatchday.id)
+          .eq('team_id', myTeam.id)
+          .maybeSingle()
+        hasSubmission = !!ptr
+      }
+
+      // Last published score
+      const { data: lastScoreRow } = await supabase
+        .from('published_team_scores')
+        .select('total_fantavoto, nv_count, matchday_id')
+        .eq('team_id', myTeam.id)
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      let lastScore: ManagerTeamData['lastScore'] = null
+      if (lastScoreRow) {
+        const { data: md } = await supabase
+          .from('matchdays')
+          .select('name')
+          .eq('id', lastScoreRow.matchday_id)
+          .single()
+        lastScore = {
+          matchdayName: md?.name ?? '—',
+          total: Number(lastScoreRow.total_fantavoto),
+          nv: lastScoreRow.nv_count,
+        }
+      }
+
+      managerData = {
+        teamId: myTeam.id,
+        teamName: myTeam.name,
+        openMatchday: openMatchday
+          ? { id: openMatchday.id, name: openMatchday.name, hasSubmission }
+          : null,
+        lastScore,
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -63,6 +128,89 @@ export default async function DashboardPage() {
           small
         />
       </div>
+
+      {/* Manager team card */}
+      {managerData && (
+        <Card>
+          <CardHeader
+            title={managerData.teamName}
+            description="La tua squadra"
+          />
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Open matchday CTA */}
+              <div className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] p-4">
+                {managerData.openMatchday ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+                      Formazione aperta
+                    </p>
+                    <p className="text-sm font-medium text-white">
+                      {managerData.openMatchday.name}
+                    </p>
+                    <p className="text-xs text-[#8888aa]">
+                      {managerData.openMatchday.hasSubmission
+                        ? 'Formazione inviata'
+                        : 'Non ancora inviata'}
+                    </p>
+                    <a
+                      href={`/matchdays/${managerData.openMatchday.id}/lineup`}
+                      className="inline-block rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500"
+                    >
+                      {managerData.openMatchday.hasSubmission ? 'Modifica' : 'Schiera'}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+                      Formazione
+                    </p>
+                    <p className="text-sm text-[#55556a]">Nessuna giornata aperta.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Last score */}
+              <div className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] p-4">
+                {managerData.lastScore ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+                      Ultimo punteggio
+                    </p>
+                    <p className="text-2xl font-bold text-white">
+                      {managerData.lastScore.total.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-[#8888aa]">
+                      {managerData.lastScore.matchdayName}
+                      {managerData.lastScore.nv > 0 && (
+                        <span className="ml-1 text-amber-400">
+                          · {managerData.lastScore.nv} NV
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+                      Ultimo punteggio
+                    </p>
+                    <p className="text-sm text-[#55556a]">Nessun risultato pubblicato.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-4">
+              <a href="/matchdays" className="text-xs text-indigo-400 hover:underline">
+                Tutte le giornate →
+              </a>
+              <a href="/standings" className="text-xs text-[#8888aa] hover:text-indigo-400">
+                Classifica →
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Active matchdays */}
       {activeMatchdays.length > 0 && (

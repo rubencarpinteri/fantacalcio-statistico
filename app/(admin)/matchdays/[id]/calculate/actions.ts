@@ -57,8 +57,14 @@ export async function triggerCalculationAction(
     )
   }
 
-  // Build per-league engine config (advanced bonuses flag)
-  const engineConfig = buildEngineConfig(ctx.league.advanced_bonuses_enabled)
+  // Build per-league engine config (advanced bonuses flag + configured source weights)
+  const engineConfig = buildEngineConfig(
+    ctx.league.advanced_bonuses_enabled,
+    {
+      sofascore: ctx.league.source_weight_sofascore / 100,
+      fotmob:    ctx.league.source_weight_fotmob    / 100,
+    }
+  )
 
   // Fetch all stat rows for this matchday — all fields needed by engine
   const { data: statsRows } = await supabase
@@ -69,7 +75,6 @@ export async function triggerCalculationAction(
       minutes_played,
       rating_class_override,
       sofascore_rating,
-      whoscored_rating,
       fotmob_rating,
       is_provisional,
       goals_scored,
@@ -121,7 +126,6 @@ export async function triggerCalculationAction(
       is_provisional:  s.is_provisional,
 
       sofascore_rating: s.sofascore_rating,
-      whoscored_rating: s.whoscored_rating,
       fotmob_rating:    s.fotmob_rating,
 
       goals_scored:       s.goals_scored,
@@ -199,7 +203,7 @@ export async function triggerCalculationAction(
         stats_id:  output.stats_id,
         is_provisional: output.is_provisional,
         is_override: false,
-        z_sofascore: null, z_whoscored: null, z_fotmob: null,
+        z_sofascore: null, z_fotmob: null,
         z_combined: null, weights_used: null, minutes_factor: null,
         z_adjusted: null, b0: null, role_multiplier: null, b1: null,
         defensive_correction: null, voto_base: null,
@@ -217,7 +221,6 @@ export async function triggerCalculationAction(
       is_provisional: r.is_provisional,
       is_override: false,
       z_sofascore:          r.z_sofascore,
-      z_whoscored:          r.z_whoscored,
       z_fotmob:             r.z_fotmob,
       z_combined:           r.z_combined,
       weights_used:         r.weights_used as unknown as Json,
@@ -384,7 +387,18 @@ export async function publishCalculationAction(
 
   if (ptrError) return fail(`Errore puntatore: ${ptrError.message}`)
 
-  // Build standings snapshot — per-team fantavoto sum for non-bench starters
+  // ----------------------------------------------------------------
+  // Build standings snapshot — MASTER mode Mantra bench substitution
+  //
+  // Rules:
+  // 1. GK priority: if the starter GK (Por) is NV, the bench GK
+  //    enters automatically BEFORE bench_order logic.
+  // 2. MASTER field substitution: iterate remaining bench players in
+  //    bench_order; each takes the best available NV field slot
+  //    (prefer native = no penalty, then extended = −1 penalty).
+  //    A bench GK cannot fill a field slot and vice-versa.
+  // 3. NV starters with no valid sub contribute 0 (nv_count++).
+  // ----------------------------------------------------------------
   const { data: pointers } = await supabase
     .from('lineup_current_pointers')
     .select('team_id, submission_id')
@@ -392,13 +406,36 @@ export async function publishCalculationAction(
 
   const submissionIds = (pointers ?? []).map((p) => p.submission_id)
 
+  // Fetch ALL lineup players (starters + bench) with role/slot info
   const { data: lineupPlayers } = submissionIds.length > 0
     ? await supabase
         .from('lineup_submission_players')
-        .select('submission_id, player_id, is_bench')
+        .select('submission_id, player_id, slot_id, is_bench, bench_order, assigned_mantra_role')
         .in('submission_id', submissionIds)
-        .eq('is_bench', false)
     : { data: [] }
+
+  // Fetch both native and extended roles for every starter slot
+  const starterSlotIds = [
+    ...new Set(
+      (lineupPlayers ?? [])
+        .filter((lp) => !lp.is_bench && lp.slot_id)
+        .map((lp) => lp.slot_id as string)
+    ),
+  ]
+
+  const { data: formationSlots } = starterSlotIds.length > 0
+    ? await supabase
+        .from('formation_slots')
+        .select('id, allowed_mantra_roles, extended_mantra_roles')
+        .in('id', starterSlotIds)
+    : { data: [] }
+
+  const slotRolesMap = new Map<string, { native: string[]; extended: string[] }>(
+    (formationSlots ?? []).map((s) => [
+      s.id,
+      { native: s.allowed_mantra_roles ?? [], extended: s.extended_mantra_roles ?? [] },
+    ])
+  )
 
   const submissionTeamMap = new Map<string, string>(
     (pointers ?? []).map((p) => [p.submission_id, p.team_id])
@@ -416,18 +453,121 @@ export async function publishCalculationAction(
   type TeamScore = { team_id: string; total_fantavoto: number; player_count: number; nv_count: number }
   const teamScores: Record<string, TeamScore> = {}
 
-  for (const lp of lineupPlayers ?? []) {
+  type LPlayer = {
+    submission_id: string
+    player_id: string
+    slot_id: string | null
+    is_bench: boolean
+    bench_order: number | null
+    assigned_mantra_role: string | null
+  }
+
+  const teamStartersMap = new Map<string, LPlayer[]>()
+  const teamBenchMap    = new Map<string, LPlayer[]>()
+
+  for (const lp of (lineupPlayers ?? []) as LPlayer[]) {
     const teamId = submissionTeamMap.get(lp.submission_id)
     if (!teamId) continue
-    if (!teamScores[teamId]) {
-      teamScores[teamId] = { team_id: teamId, total_fantavoto: 0, player_count: 0, nv_count: 0 }
-    }
-    const fv = fantaVotoMap.get(lp.player_id) ?? null
-    teamScores[teamId]!.player_count++
-    if (fv !== null) {
-      teamScores[teamId]!.total_fantavoto += fv
+    if (lp.is_bench) {
+      if (!teamBenchMap.has(teamId)) teamBenchMap.set(teamId, [])
+      teamBenchMap.get(teamId)!.push(lp)
     } else {
-      teamScores[teamId]!.nv_count++
+      if (!teamStartersMap.has(teamId)) teamStartersMap.set(teamId, [])
+      teamStartersMap.get(teamId)!.push(lp)
+    }
+  }
+
+  // Sort each team's bench by bench_order ascending (MASTER: bench order is primary)
+  for (const bench of teamBenchMap.values()) {
+    bench.sort((a, b) => (a.bench_order ?? 99) - (b.bench_order ?? 99))
+  }
+
+  for (const [teamId, starters] of teamStartersMap) {
+    const bench = teamBenchMap.get(teamId) ?? []
+    const usedBenchIds  = new Set<string>()
+    // Tracks NV starters that still need a sub (removed when a sub is found)
+    const needsSubIds = new Set<string>(
+      starters
+        .filter((s) => (fantaVotoMap.get(s.player_id) ?? null) === null)
+        .map((s) => s.player_id)
+    )
+
+    teamScores[teamId] = { team_id: teamId, total_fantavoto: 0, player_count: 0, nv_count: 0 }
+
+    // ── Phase 1: GK priority ──────────────────────────────────────
+    // Any NV starter with role 'Por' is covered by the first available
+    // bench 'Por' player, before bench_order logic runs for field players.
+    for (const nvStarter of starters.filter(
+      (s) => s.assigned_mantra_role === 'Por' && needsSubIds.has(s.player_id)
+    )) {
+      const benchGK = bench.find(
+        (b) =>
+          !usedBenchIds.has(b.player_id) &&
+          b.assigned_mantra_role === 'Por' &&
+          (fantaVotoMap.get(b.player_id) ?? null) !== null
+      )
+      if (benchGK) {
+        teamScores[teamId]!.total_fantavoto += fantaVotoMap.get(benchGK.player_id)!
+        usedBenchIds.add(benchGK.player_id)
+        needsSubIds.delete(nvStarter.player_id)
+      }
+    }
+
+    // ── Phase 2: MASTER field substitution ───────────────────────
+    // Iterate bench in bench_order; each bench player takes the best
+    // available NV field slot (native → no penalty; extended → −1).
+    for (const benchPlayer of bench) {
+      if (usedBenchIds.has(benchPlayer.player_id)) continue
+      if ((fantaVotoMap.get(benchPlayer.player_id) ?? null) === null) continue
+      const role = benchPlayer.assigned_mantra_role
+      if (!role || role === 'Por') continue  // GK handled above; skip GK in field phase
+
+      // Find best NV field slot for this bench player
+      let bestStarter: LPlayer | null = null
+      let bestIsExtended = false
+
+      for (const nvStarter of starters) {
+        if (!needsSubIds.has(nvStarter.player_id)) continue
+        if (nvStarter.assigned_mantra_role === 'Por') continue  // GK slot: skip
+
+        const slotRoles = nvStarter.slot_id
+          ? (slotRolesMap.get(nvStarter.slot_id) ?? { native: [], extended: [] })
+          : { native: [], extended: [] }
+
+        if (slotRoles.native.includes(role)) {
+          // Native match — best possible, take it immediately
+          bestStarter   = nvStarter
+          bestIsExtended = false
+          break
+        }
+        if (!bestStarter && slotRoles.extended.includes(role)) {
+          // Extended match — keep as candidate, continue looking for native
+          bestStarter   = nvStarter
+          bestIsExtended = true
+        }
+      }
+
+      if (bestStarter) {
+        const subFv    = fantaVotoMap.get(benchPlayer.player_id)!
+        const penalty  = bestIsExtended ? -1 : 0
+        teamScores[teamId]!.total_fantavoto += subFv + penalty
+        usedBenchIds.add(benchPlayer.player_id)
+        needsSubIds.delete(bestStarter.player_id)
+      }
+    }
+
+    // ── Final tally ───────────────────────────────────────────────
+    for (const starter of starters) {
+      teamScores[teamId]!.player_count++
+      const fv = fantaVotoMap.get(starter.player_id) ?? null
+      if (fv !== null) {
+        // Starter played
+        teamScores[teamId]!.total_fantavoto += fv
+      } else if (needsSubIds.has(starter.player_id)) {
+        // NV, no sub found — contributes 0
+        teamScores[teamId]!.nv_count++
+      }
+      // NV but substituted: sub's fv already added in phase 1 or 2 above
     }
   }
 

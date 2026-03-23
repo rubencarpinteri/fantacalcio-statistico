@@ -6,18 +6,23 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 
+const parseRoles = (s: unknown) =>
+  String(s ?? '')
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean)
+
 const slotSchema = z.object({
   slot_name: z.string().min(1, 'Il nome dello slot è obbligatorio').max(30),
   slot_order: z.coerce.number().int().min(1),
   allowed_mantra_roles: z
     .string()
     .min(1, 'Almeno un ruolo Mantra è richiesto')
-    .transform((s) =>
-      s
-        .split(',')
-        .map((r) => r.trim())
-        .filter(Boolean)
-    ),
+    .transform(parseRoles),
+  extended_mantra_roles: z
+    .string()
+    .optional()
+    .transform((s) => parseRoles(s ?? '')),
   is_bench: z.coerce.boolean(),
   bench_order: z.coerce.number().int().min(1).optional().nullable(),
 })
@@ -60,6 +65,7 @@ export async function createSlotAction(
     slot_name: formData.get('slot_name'),
     slot_order: formData.get('slot_order'),
     allowed_mantra_roles: formData.get('allowed_mantra_roles'),
+    extended_mantra_roles: formData.get('extended_mantra_roles'),
     is_bench: isBench,
     bench_order: isBench ? formData.get('bench_order') : null,
   }
@@ -78,6 +84,7 @@ export async function createSlotAction(
     slot_name: parsed.data.slot_name,
     slot_order: parsed.data.slot_order,
     allowed_mantra_roles: parsed.data.allowed_mantra_roles,
+    extended_mantra_roles: parsed.data.extended_mantra_roles,
     is_bench: parsed.data.is_bench,
     bench_order: parsed.data.is_bench ? (parsed.data.bench_order ?? null) : null,
   })
@@ -128,6 +135,7 @@ export async function updateSlotAction(
     slot_name: formData.get('slot_name'),
     slot_order: formData.get('slot_order'),
     allowed_mantra_roles: formData.get('allowed_mantra_roles'),
+    extended_mantra_roles: formData.get('extended_mantra_roles'),
     is_bench: isBench,
     bench_order: isBench ? formData.get('bench_order') : null,
   }
@@ -143,6 +151,7 @@ export async function updateSlotAction(
       slot_name: parsed.data.slot_name,
       slot_order: parsed.data.slot_order,
       allowed_mantra_roles: parsed.data.allowed_mantra_roles,
+      extended_mantra_roles: parsed.data.extended_mantra_roles,
       is_bench: parsed.data.is_bench,
       bench_order: parsed.data.is_bench ? (parsed.data.bench_order ?? null) : null,
     })

@@ -32,7 +32,6 @@ export interface EnginePlayerInput {
 
   // Source ratings — null if not provided for this matchday
   sofascore_rating: number | null
-  whoscored_rating: number | null
   fotmob_rating: number | null
 
   // Event counts
@@ -140,8 +139,8 @@ export interface EngineConfig {
   scale_factor: number
   /** Shrink factor for z_combined when only one source is available (0.75 = 25% shrink toward 0) */
   one_source_shrink: number
-  source_normalization: Record<'sofascore' | 'whoscored' | 'fotmob', SourceNormalization>
-  source_weights: Record<'sofascore' | 'whoscored' | 'fotmob', number>
+  source_normalization: Record<'sofascore' | 'fotmob', SourceNormalization>
+  source_weights: Record<'sofascore' | 'fotmob', number>
   /** Role multiplier used in b1 = base_score + multiplier * (b0 - base_score) */
   role_multiplier: Record<RatingClass, number>
   defensive: Record<RatingClass, DefensiveRoleConfig>
@@ -176,7 +175,6 @@ export interface PlayerCalculationResult {
 
   // Per-source z-scores (null if source missing OR decisive_event_exception)
   z_sofascore: number | null
-  z_whoscored: number | null
   z_fotmob: number | null
   z_combined: number | null
   weights_used: Record<string, number>

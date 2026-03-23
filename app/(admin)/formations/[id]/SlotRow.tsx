@@ -76,7 +76,7 @@ export function SlotRow({
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
-                Ruoli accettati
+                Ruoli nativi (nessuna penalità)
               </label>
               <input
                 name="allowed_mantra_roles"
@@ -87,6 +87,18 @@ export function SlotRow({
               <p className="text-xs text-[#55556a]">
                 Tutti disponibili: {ALL_MANTRA_ROLES.join(', ')}
               </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                Ruoli fuori posizione (−1)
+              </label>
+              <input
+                name="extended_mantra_roles"
+                defaultValue={slot.extended_mantra_roles.join(', ')}
+                placeholder="Lascia vuoto se non applicabile"
+                className="w-full rounded-lg border border-[#2e2e42] bg-[#111118] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+              />
             </div>
 
             {slot.is_bench && (
@@ -127,12 +139,23 @@ export function SlotRow({
         <td className="px-6 py-3 text-[#8888aa]">{slot.bench_order ?? '—'}</td>
       )}
       <td className="px-6 py-3">
-        <div className="flex flex-wrap gap-1">
-          {slot.allowed_mantra_roles.map((role) => (
-            <Badge key={role} variant="accent">
-              {role}
-            </Badge>
-          ))}
+        <div className="space-y-1">
+          <div className="flex flex-wrap gap-1">
+            {slot.allowed_mantra_roles.map((role) => (
+              <Badge key={role} variant="accent">
+                {role}
+              </Badge>
+            ))}
+          </div>
+          {slot.extended_mantra_roles.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {slot.extended_mantra_roles.map((role) => (
+                <Badge key={role} variant="warning">
+                  {role} −1
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </td>
       <td className="px-6 py-3">

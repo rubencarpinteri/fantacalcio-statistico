@@ -1,0 +1,367 @@
+'use client'
+
+import { useActionState, useTransition } from 'react'
+import { addFixtureAction, removeFixtureAction, importRatingsAction } from './actions'
+import type { AddFixtureState, ImportMatch } from './actions'
+import type { MatchdayFixture } from '@/types/database.types'
+import type { FetchRatingsResponse, MatchedPlayer } from '@/app/api/ratings/fetch/route'
+
+// ---------------------------------------------------------------------------
+// Fixtures list + add form
+// ---------------------------------------------------------------------------
+
+export function FixturesManager({
+  matchdayId,
+  fixtures,
+}: {
+  matchdayId: string
+  fixtures: MatchdayFixture[]
+}) {
+  const [state, formAction] = useActionState<AddFixtureState, FormData>(addFixtureAction, {})
+  const [removing, startRemove] = useTransition()
+
+  return (
+    <div className="space-y-6">
+      {/* Existing fixtures */}
+      {fixtures.length > 0 && (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
+              <th className="px-4 py-2">Label</th>
+              <th className="px-4 py-2">FotMob ID</th>
+              <th className="px-4 py-2">SofaScore ID</th>
+              <th className="px-4 py-2" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#1e1e2e]">
+            {fixtures.map((fx) => (
+              <tr key={fx.id} className="hover:bg-[#1a1a24]">
+                <td className="px-4 py-2 text-[#f0f0fa]">{fx.label || '—'}</td>
+                <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.fotmob_match_id ?? '—'}</td>
+                <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.sofascore_event_id ?? '—'}</td>
+                <td className="px-4 py-2 text-right">
+                  <button
+                    disabled={removing}
+                    onClick={() => startRemove(() => removeFixtureAction(fx.id, matchdayId))}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-40"
+                  >
+                    Rimuovi
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {fixtures.length === 0 && (
+        <p className="text-sm text-[#55556a]">Nessuna fixture configurata.</p>
+      )}
+
+      {/* Add fixture form */}
+      <form action={formAction} className="space-y-3">
+        <input type="hidden" name="matchdayId" value={matchdayId} />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="block text-xs text-[#8888aa] mb-1">Label (es. Milan-Torino)</label>
+            <input
+              name="label"
+              placeholder="opzionale"
+              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#8888aa] mb-1">FotMob Match ID</label>
+            <input
+              name="fotmob_match_id"
+              placeholder="es. 4803335"
+              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#8888aa] mb-1">SofaScore Event ID</label>
+            <input
+              name="sofascore_event_id"
+              placeholder="es. 13981724"
+              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            />
+          </div>
+        </div>
+        {state.error && <p className="text-xs text-red-400">{state.error}</p>}
+        {state.success && <p className="text-xs text-green-400">Fixture aggiunta.</p>}
+        <button
+          type="submit"
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+        >
+          Aggiungi fixture
+        </button>
+      </form>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Fetch & Preview
+// ---------------------------------------------------------------------------
+
+type FetchState =
+  | { phase: 'idle' }
+  | { phase: 'fetching' }
+  | { phase: 'preview'; data: FetchRatingsResponse }
+  | { phase: 'importing' }
+  | { phase: 'done'; imported: number }
+  | { phase: 'error'; message: string }
+
+import { useState } from 'react'
+
+export function FetchPreview({
+  matchdayId,
+  hasFixtures,
+}: {
+  matchdayId: string
+  hasFixtures: boolean
+}) {
+  const [state, setState] = useState<FetchState>({ phase: 'idle' })
+  // overrides: league_player_id → player_id to use instead
+  const [overrides, setOverrides] = useState<Map<string, string>>(new Map())
+
+  async function handleFetch() {
+    setState({ phase: 'fetching' })
+    try {
+      const res = await fetch('/api/ratings/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchdayId }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = (await res.json()) as FetchRatingsResponse
+      setState({ phase: 'preview', data })
+    } catch (e) {
+      setState({ phase: 'error', message: String(e) })
+    }
+  }
+
+  async function handleImport(data: FetchRatingsResponse) {
+    setState({ phase: 'importing' })
+    const toImport: ImportMatch[] = data.matched.map((m) => ({
+      league_player_id: m.league_player_id,
+      sofascore_rating: m.stat.sofascore_rating,
+      fotmob_rating: m.stat.fotmob_rating,
+      minutes_played: m.stat.minutes_played,
+      goals_scored: m.stat.goals_scored,
+      assists: m.stat.assists,
+      own_goals: m.stat.own_goals,
+      yellow_cards: m.stat.yellow_cards,
+      red_cards: m.stat.red_cards,
+      penalties_scored: m.stat.penalties_scored,
+      penalties_missed: m.stat.penalties_missed,
+      penalties_saved: m.stat.penalties_saved,
+      goals_conceded: m.stat.goals_conceded,
+      saves: m.stat.saves,
+    }))
+
+    const result = await importRatingsAction(matchdayId, toImport)
+    if (result.error) setState({ phase: 'error', message: result.error })
+    else setState({ phase: 'done', imported: result.imported ?? toImport.length })
+  }
+
+  if (!hasFixtures) {
+    return (
+      <p className="text-sm text-[#55556a]">
+        Aggiungi almeno una fixture sopra per abilitare il fetch automatico.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {state.phase === 'idle' && (
+        <button
+          onClick={handleFetch}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+        >
+          Fetch voti da FotMob + SofaScore
+        </button>
+      )}
+
+      {state.phase === 'fetching' && (
+        <p className="text-sm text-[#8888aa] animate-pulse">Caricamento in corso…</p>
+      )}
+
+      {state.phase === 'error' && (
+        <div className="space-y-2">
+          <p className="text-sm text-red-400">{state.message}</p>
+          <button
+            onClick={() => setState({ phase: 'idle' })}
+            className="text-xs text-[#8888aa] hover:text-indigo-400"
+          >
+            ← Riprova
+          </button>
+        </div>
+      )}
+
+      {state.phase === 'done' && (
+        <p className="text-sm text-green-400">
+          {state.imported} giocatori importati con successo.
+        </p>
+      )}
+
+      {state.phase === 'preview' && (
+        <PreviewTable
+          data={state.data}
+          overrides={overrides}
+          setOverrides={setOverrides}
+          onConfirm={() => handleImport(state.data)}
+          onReset={() => setState({ phase: 'idle' })}
+        />
+      )}
+
+      {state.phase === 'importing' && (
+        <p className="text-sm text-[#8888aa] animate-pulse">Importazione in corso…</p>
+      )}
+    </div>
+  )
+}
+
+function PreviewTable({
+  data,
+  onConfirm,
+  onReset,
+}: {
+  data: FetchRatingsResponse
+  overrides: Map<string, string>
+  setOverrides: React.Dispatch<React.SetStateAction<Map<string, string>>>
+  onConfirm: () => void
+  onReset: () => void
+}) {
+  const { matched, unmatched, errors } = data
+  const fuzzy = matched.filter((m) => !m.exact_match)
+  const exact = matched.filter((m) => m.exact_match)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-[#f0f0fa]">
+            <span className="font-semibold text-white">{matched.length}</span> giocatori abbinati
+            {fuzzy.length > 0 && (
+              <span className="ml-2 text-amber-400">({fuzzy.length} fuzzy)</span>
+            )}
+            {unmatched.length > 0 && (
+              <span className="ml-2 text-red-400">· {unmatched.length} non abbinati</span>
+            )}
+          </p>
+          {errors.map((e, i) => (
+            <p key={i} className="text-xs text-red-400">{e}</p>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onReset}
+            className="text-xs text-[#8888aa] hover:text-indigo-400"
+          >
+            ← Annulla
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={matched.length === 0}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
+          >
+            Importa {matched.length} giocatori
+          </button>
+        </div>
+      </div>
+
+      {/* Fuzzy matches warning */}
+      {fuzzy.length > 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+          I seguenti abbinamenti sono approssimativi — verifica che siano corretti prima di importare.
+        </div>
+      )}
+
+      {/* Matched table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-[#2e2e42] text-left text-[#55556a]">
+              <th className="px-3 py-2">Giocatore DB</th>
+              <th className="px-3 py-2">Nome API</th>
+              <th className="px-3 py-2 text-right">SS</th>
+              <th className="px-3 py-2 text-right">FM</th>
+              <th className="px-3 py-2 text-right">Min</th>
+              <th className="px-3 py-2 text-right">G</th>
+              <th className="px-3 py-2 text-right">A</th>
+              <th className="px-3 py-2 text-right">GC</th>
+              <th className="px-3 py-2 text-right">OG</th>
+              <th className="px-3 py-2 text-right">Y</th>
+              <th className="px-3 py-2 text-right">R</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#1e1e2e]">
+            {matched.map((m) => (
+              <MatchedRow key={m.league_player_id} m={m} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Unmatched */}
+      {unmatched.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+            Non abbinati ({unmatched.length})
+          </p>
+          <div className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-4 py-3 space-y-1">
+            {unmatched.map((u, i) => (
+              <div key={i} className="flex gap-4 text-xs">
+                <span className="text-red-400">{u.stat.name}</span>
+                <span className="text-[#55556a]">{u.stat.team_label}</span>
+                {u.closest_name && (
+                  <span className="text-[#55556a]">→ più simile: {u.closest_name}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MatchedRow({ m }: { m: MatchedPlayer }) {
+  const s = m.stat
+  return (
+    <tr className={m.exact_match ? 'hover:bg-[#1a1a24]' : 'bg-amber-500/5 hover:bg-amber-500/10'}>
+      <td className="px-3 py-1.5">
+        <span className="text-[#f0f0fa]">{m.league_player_name}</span>
+        <span className="ml-1 text-[#55556a]">{m.club}</span>
+      </td>
+      <td className="px-3 py-1.5 text-[#8888aa]">{s.name}</td>
+      <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">
+        {s.sofascore_rating != null ? s.sofascore_rating.toFixed(1) : '—'}
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">
+        {s.fotmob_rating != null ? s.fotmob_rating.toFixed(2) : '—'}
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">{s.minutes_played}</td>
+      <td className="px-3 py-1.5 text-right font-mono">
+        <span className={s.goals_scored > 0 ? 'text-green-400' : 'text-[#55556a]'}>{s.goals_scored}</span>
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono">
+        <span className={s.assists > 0 ? 'text-blue-400' : 'text-[#55556a]'}>{s.assists}</span>
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono">
+        <span className={s.goals_conceded > 0 ? 'text-red-400' : 'text-[#55556a]'}>{s.goals_conceded}</span>
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono">
+        <span className={s.own_goals > 0 ? 'text-red-400' : 'text-[#55556a]'}>{s.own_goals}</span>
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono">
+        <span className={s.yellow_cards > 0 ? 'text-yellow-400' : 'text-[#55556a]'}>{s.yellow_cards}</span>
+      </td>
+      <td className="px-3 py-1.5 text-right font-mono">
+        <span className={s.red_cards > 0 ? 'text-red-400' : 'text-[#55556a]'}>{s.red_cards}</span>
+      </td>
+    </tr>
+  )
+}

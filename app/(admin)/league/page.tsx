@@ -36,6 +36,18 @@ export default async function LeagueSettingsPage() {
             <CardContent>
               <nav className="space-y-1">
                 <a
+                  href="/league/members"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-[#1a1a24]"
+                >
+                  <div>
+                    <p className="font-medium text-white">Membri e inviti</p>
+                    <p className="text-xs text-[#8888aa]">
+                      Invita manager, cambia ruoli, gestisci le squadre
+                    </p>
+                  </div>
+                  <span className="text-[#55556a]">→</span>
+                </a>
+                <a
                   href="/league/role-rules"
                   className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-[#1a1a24]"
                 >

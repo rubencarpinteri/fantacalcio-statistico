@@ -55,7 +55,7 @@ export function AddSlotForm({
 
       <div className="space-y-1.5">
         <label className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
-          Ruoli Mantra accettati
+          Ruoli nativi (nessuna penalità)
         </label>
         <input
           name="allowed_mantra_roles"
@@ -64,8 +64,21 @@ export function AddSlotForm({
           className="w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
         />
         <p className="text-xs text-[#55556a]">
-          Separati da virgola. Un giocatore soddisfa questo slot se ha <em>almeno uno</em> di
-          questi ruoli. Tutti i ruoli disponibili: {ALL_MANTRA_ROLES.join(', ')}
+          Separati da virgola. Ruoli compatibili senza penalità. Tutti i ruoli: {ALL_MANTRA_ROLES.join(', ')}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+          Ruoli fuori posizione (−1)
+        </label>
+        <input
+          name="extended_mantra_roles"
+          placeholder="es. M, C (opzionale)"
+          className="w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+        />
+        <p className="text-xs text-[#55556a]">
+          Ruoli che possono coprire questo slot con penalità −1 al fantavoto (sostituzione fuori posizione).
         </p>
       </div>
 
