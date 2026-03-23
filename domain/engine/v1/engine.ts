@@ -10,7 +10,7 @@
 //   3.  NO_RATINGS guard          (all z null)
 //   4.  Weighted average          z_combined
 //   5.  One-source shrink         ×0.75 when only 1 source available
-//   6.  Minutes factor            0.70 / 0.85 / 1.00 by band
+//   6.  Minutes factor            configurable 2-band (default: < 45 → 0.50, >= 45 → 1.00)
 //   7.  z_adjusted                z_combined × minutes_factor
 //   8.  b0 (Italian scale)        6.0 + 1.15 × z_adjusted
 //   9.  b1 (role distance)        6.0 + multiplier × (b0 - 6.0)
@@ -24,6 +24,7 @@
 import { DEFAULT_ENGINE_CONFIG } from './config'
 import type {
   EngineConfig,
+  MinutesFactorConfig,
   EnginePlayerInput,
   PlayerEngineOutput,
   PlayerCalculationResult,
@@ -70,17 +71,12 @@ function hasDecisiveEvent(input: EnginePlayerInput): boolean {
 // ---- Minutes factor -----------------------------------------
 
 /**
- * Returns the minutes factor for 10+ minute players.
- * Callers must handle the 0–9 minute case separately.
- *
- *   30+  min  → 1.00
- *   15–29 min → 0.85
- *   10–14 min → 0.70
+ * Returns the minutes factor for players with 10+ minutes.
+ * Uses a configurable 2-band system: below threshold → partial, >= threshold → full.
+ * The 0-minute NV gate and decisive-event exception are handled separately.
  */
-function getMinutesFactor(minutes: number): number {
-  if (minutes >= 30) return 1.00
-  if (minutes >= 15) return 0.85
-  return 0.70 // 10–14
+function getMinutesFactor(minutes: number, cfg: MinutesFactorConfig): number {
+  return minutes >= cfg.threshold ? cfg.full : cfg.partial
 }
 
 // ---- Defensive correction -----------------------------------
@@ -329,7 +325,7 @@ export function calculatePlayerScore(
   // ----------------------------------------------------------------
   // Step 5 — Minutes factor (10+ min only; 0–9 handled above)
   // ----------------------------------------------------------------
-  const minutes_factor = getMinutesFactor(input.minutes_played)
+  const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
 
   // ----------------------------------------------------------------
   // Step 6 — z_adjusted

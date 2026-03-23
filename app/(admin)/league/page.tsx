@@ -60,6 +60,18 @@ export default async function LeagueSettingsPage() {
                   <span className="text-[#55556a]">→</span>
                 </a>
                 <a
+                  href="/league/engine-config"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-[#1a1a24]"
+                >
+                  <div>
+                    <p className="font-medium text-white">Motore di calcolo</p>
+                    <p className="text-xs text-[#8888aa]">
+                      Bonus, malus e fattore minuti personalizzabili
+                    </p>
+                  </div>
+                  <span className="text-[#55556a]">→</span>
+                </a>
+                <a
                   href="/formations"
                   className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-[#1a1a24]"
                 >

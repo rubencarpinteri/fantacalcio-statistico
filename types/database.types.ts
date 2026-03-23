@@ -83,6 +83,35 @@ export type League = {
   updated_at: string
 }
 
+export type LeagueEngineConfig = {
+  id: string
+  league_id: string
+  minutes_factor_threshold: number
+  minutes_factor_partial: number
+  minutes_factor_full: number
+  goal_bonus_gk: number
+  goal_bonus_def: number
+  goal_bonus_mid: number
+  goal_bonus_att: number
+  penalty_scored_discount: number
+  brace_bonus: number
+  hat_trick_bonus: number
+  assist: number
+  own_goal: number
+  yellow_card: number
+  red_card: number
+  penalty_missed: number
+  penalty_saved: number
+  clean_sheet_gk: number
+  clean_sheet_def: number
+  clean_sheet_min_minutes: number
+  goals_conceded_gk: number
+  goals_conceded_def: number
+  goals_conceded_def_min_minutes: number
+  created_at: string
+  updated_at: string
+}
+
 export type LeagueUser = {
   id: string
   league_id: string
@@ -814,6 +843,16 @@ export type Database = {
           updated_at?: string
         }
         Update: Partial<Omit<AppSetting, 'id'>>
+        Relationships: never[]
+      }
+      league_engine_config: {
+        Row: LeagueEngineConfig
+        Insert: Omit<LeagueEngineConfig, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Omit<LeagueEngineConfig, 'id' | 'league_id'>>
         Relationships: never[]
       }
     }

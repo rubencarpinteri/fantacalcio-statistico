@@ -1,6 +1,8 @@
 import { requireLeagueContext } from '@/lib/league'
+import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { DEFAULT_ENGINE_CONFIG } from '@/domain/engine/v1/config'
+import type { LeagueEngineConfig } from '@/types/database.types'
 
 export const metadata = { title: 'Metodologia — Fantacalcio Statistico' }
 
@@ -86,8 +88,49 @@ function Step({ n, label }: { n: number; label: string }) {
 
 export default async function MethodologyPage() {
   const ctx = await requireLeagueContext()
+  const supabase = await createClient()
 
-  // Live weights from league config (integer % → decimal fraction)
+  // Fetch per-league engine config (falls back to DEFAULT_ENGINE_CONFIG when null)
+  const { data: dbEngCfg } = await supabase
+    .from('league_engine_config')
+    .select('*')
+    .eq('league_id', ctx.league.id)
+    .maybeSingle() as { data: LeagueEngineConfig | null }
+
+  const bm = cfg.bonus_malus
+
+  // Effective values: DB row if present, else DEFAULT_ENGINE_CONFIG
+  const eff = {
+    minutes_factor_threshold: dbEngCfg?.minutes_factor_threshold ?? cfg.minutes_factor.threshold,
+    minutes_factor_partial:   dbEngCfg?.minutes_factor_partial   ?? cfg.minutes_factor.partial,
+    minutes_factor_full:      dbEngCfg?.minutes_factor_full      ?? cfg.minutes_factor.full,
+
+    goal_gk:  dbEngCfg?.goal_bonus_gk  ?? bm.goal_by_role.GK,
+    goal_def: dbEngCfg?.goal_bonus_def ?? bm.goal_by_role.DEF,
+    goal_mid: dbEngCfg?.goal_bonus_mid ?? bm.goal_by_role.MID,
+    goal_att: dbEngCfg?.goal_bonus_att ?? bm.goal_by_role.ATT,
+
+    penalty_scored_discount: dbEngCfg?.penalty_scored_discount ?? bm.penalty_scored_discount,
+    brace_bonus:             dbEngCfg?.brace_bonus             ?? bm.brace_bonus,
+    hat_trick_bonus:         dbEngCfg?.hat_trick_bonus         ?? bm.hat_trick_bonus,
+
+    assist:         dbEngCfg?.assist         ?? bm.assist,
+    own_goal:       dbEngCfg?.own_goal       ?? bm.own_goal,
+    yellow_card:    dbEngCfg?.yellow_card    ?? bm.yellow_card,
+    red_card:       dbEngCfg?.red_card       ?? bm.red_card,
+    penalty_missed: dbEngCfg?.penalty_missed ?? bm.penalty_missed,
+    penalty_saved:  dbEngCfg?.penalty_saved  ?? bm.penalty_saved,
+
+    clean_sheet_gk:           dbEngCfg?.clean_sheet_gk           ?? (bm.clean_sheet_by_role.GK  ?? 0),
+    clean_sheet_def:          dbEngCfg?.clean_sheet_def          ?? (bm.clean_sheet_by_role.DEF ?? 0),
+    clean_sheet_min_minutes:  dbEngCfg?.clean_sheet_min_minutes  ?? bm.clean_sheet_min_minutes,
+
+    goals_conceded_gk:               dbEngCfg?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
+    goals_conceded_def:              dbEngCfg?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
+    goals_conceded_def_min_minutes:  dbEngCfg?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
+  }
+
+  // Live weights from league config
   const liveWeights = {
     sofascore: ctx.league.source_weight_sofascore / 100,
     fotmob:    ctx.league.source_weight_fotmob    / 100,
@@ -99,10 +142,10 @@ export default async function MethodologyPage() {
   ] as const
 
   const roleRows = [
-    { rc: 'GK',  label: 'Portiere',   mult: cfg.role_multiplier.GK  },
-    { rc: 'DEF', label: 'Difensore',  mult: cfg.role_multiplier.DEF },
+    { rc: 'GK',  label: 'Portiere',       mult: cfg.role_multiplier.GK  },
+    { rc: 'DEF', label: 'Difensore',      mult: cfg.role_multiplier.DEF },
     { rc: 'MID', label: 'Centrocampista', mult: cfg.role_multiplier.MID },
-    { rc: 'ATT', label: 'Attaccante', mult: cfg.role_multiplier.ATT },
+    { rc: 'ATT', label: 'Attaccante',     mult: cfg.role_multiplier.ATT },
   ]
 
   const rcColor: Record<string, string> = {
@@ -111,30 +154,11 @@ export default async function MethodologyPage() {
 
   const round1 = (n: number) => Math.round(n * 10) / 10
   const goalRows = [
-    { rc: 'GK',  label: 'Portiere',       normal: cfg.bonus_malus.goal_by_role.GK,  penalty: round1(cfg.bonus_malus.goal_by_role.GK  - cfg.bonus_malus.penalty_scored_discount) },
-    { rc: 'DEF', label: 'Difensore',      normal: cfg.bonus_malus.goal_by_role.DEF, penalty: round1(cfg.bonus_malus.goal_by_role.DEF - cfg.bonus_malus.penalty_scored_discount) },
-    { rc: 'MID', label: 'Centrocampista', normal: cfg.bonus_malus.goal_by_role.MID, penalty: round1(cfg.bonus_malus.goal_by_role.MID - cfg.bonus_malus.penalty_scored_discount) },
-    { rc: 'ATT', label: 'Attaccante',     normal: cfg.bonus_malus.goal_by_role.ATT, penalty: round1(cfg.bonus_malus.goal_by_role.ATT - cfg.bonus_malus.penalty_scored_discount) },
+    { rc: 'GK',  label: 'Portiere',       normal: eff.goal_gk,  penalty: round1(eff.goal_gk  - eff.penalty_scored_discount) },
+    { rc: 'DEF', label: 'Difensore',      normal: eff.goal_def, penalty: round1(eff.goal_def - eff.penalty_scored_discount) },
+    { rc: 'MID', label: 'Centrocampista', normal: eff.goal_mid, penalty: round1(eff.goal_mid - eff.penalty_scored_discount) },
+    { rc: 'ATT', label: 'Attaccante',     normal: eff.goal_att, penalty: round1(eff.goal_att - eff.penalty_scored_discount) },
   ]
-
-  // Partial<Record<...>> access returns number | undefined — coerce to null for uniform display
-  const w = {
-    gk: cfg.defensive.GK.weights,
-    def: cfg.defensive.DEF.weights,
-  }
-  const gkDefRows: Array<{ stat: string; key: string; gk: number | null; def: number | null }> = [
-    { stat: 'Parate',                  key: 'saves',                 gk: w.gk.saves                 ?? null, def: null },
-    { stat: 'Goal subiti',             key: 'goals_conceded',        gk: w.gk.goals_conceded         ?? null, def: null },
-    { stat: 'Tackle vinti',            key: 'tackles_won',           gk: null,                                def: w.def.tackles_won           ?? null },
-    { stat: 'Intercettazioni',         key: 'interceptions',         gk: null,                                def: w.def.interceptions         ?? null },
-    { stat: 'Respinte',                key: 'clearances',            gk: null,                                def: w.def.clearances            ?? null },
-    { stat: 'Tiri bloccati',           key: 'blocks',                gk: null,                                def: w.def.blocks                ?? null },
-    { stat: 'Duelli aerei vinti',      key: 'aerial_duels_won',      gk: null,                                def: w.def.aerial_duels_won      ?? null },
-    { stat: 'Dribblati',               key: 'dribbled_past',         gk: null,                                def: w.def.dribbled_past         ?? null },
-    { stat: 'Errore → gol avversario', key: 'error_leading_to_goal', gk: w.gk.error_leading_to_goal  ?? null, def: w.def.error_leading_to_goal ?? null },
-  ]
-
-  const adv = cfg.advanced_bonus
 
   return (
     <div className="space-y-8 pb-12">
@@ -155,27 +179,18 @@ export default async function MethodologyPage() {
             <Step n={1} label="Recupero voti dalle fonti (SofaScore · FotMob)" />
             <Step n={2} label="Normalizzazione a z-score per ciascuna fonte disponibile" />
             <Step n={3} label="Media ponderata degli z-score → z_combined" />
-            <Step n={4} label="Fattore minuti: NV se 0', ×0.5 se 1–44', ×1.0 se ≥ 45'" />
+            <Step n={4} label={`Fattore minuti: NV se 0', ×${eff.minutes_factor_partial} se 1–${eff.minutes_factor_threshold - 1}', ×${eff.minutes_factor_full} se ≥ ${eff.minutes_factor_threshold}'`} />
             <Step n={5} label={`Voto base: b₀ = ${cfg.base_score} + ${cfg.scale_factor} × z_adjusted`} />
             <Step n={6} label="Moltiplicatore ruolo: amplifica/comprime lo scostamento da 6.0" />
-            <Step n={7} label="Correzione difensiva (solo GK / DEF) — statistiche di fase difensiva" />
-            <Step n={8} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
-            <Step n={9} label="Fantavoto finale = somma di tutti i contributi precedenti" />
+            <Step n={7} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
+            <Step n={8} label="Fantavoto finale = somma di tutti i contributi precedenti" />
           </div>
           <div className="mt-5 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-4 py-3 font-mono text-xs text-[#8888aa]">
             <span className="text-white">Fantavoto</span>
             {' = '}
             <span className="text-indigo-300">voto_base</span>
             {' + '}
-            <span className="text-blue-300">corr_difensiva</span>
-            {' + '}
             <span className="text-emerald-300">bonus_malus</span>
-            {adv.enabled && (
-              <>
-                {' + '}
-                <span className="text-amber-300">bonus_avanzati</span>
-              </>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -255,13 +270,13 @@ export default async function MethodologyPage() {
                 <Td right dim>Non valutato — non contribuisce al totale di squadra</Td>
               </tr>
               <tr className="hover:bg-[#0f0f1a]">
-                <Td>1 – 44 minuti</Td>
-                <Td right mono><Pill color="indigo">× 0.5</Pill></Td>
-                <Td right dim>Partecipazione parziale — z ridotto a metà</Td>
+                <Td>1 – {eff.minutes_factor_threshold - 1} minuti</Td>
+                <Td right mono><Pill color="indigo">× {eff.minutes_factor_partial}</Pill></Td>
+                <Td right dim>Partecipazione parziale — z ridotto</Td>
               </tr>
               <tr className="hover:bg-[#0f0f1a]">
-                <Td>≥ 45 minuti</Td>
-                <Td right mono><Pill color="emerald">× 1.0</Pill></Td>
+                <Td>≥ {eff.minutes_factor_threshold} minuti</Td>
+                <Td right mono><Pill color="emerald">× {eff.minutes_factor_full}</Pill></Td>
                 <Td right dim>Partecipazione piena — z invariato</Td>
               </tr>
             </tbody>
@@ -339,71 +354,6 @@ export default async function MethodologyPage() {
         </CardContent>
       </Card>
 
-      {/* ── Correzione difensiva ──────────────────────────────────────────── */}
-      <Card>
-        <CardHeader
-          title="Correzione difensiva"
-          description="Aggiustamento basato su statistiche difensive — solo per GK e DEF"
-        />
-        <CardContent className="p-0">
-          <TableWrap>
-            <thead>
-              <tr className="border-b border-[#1e1e2e]">
-                <Th>Statistica</Th>
-                <Th right>
-                  <span className={`font-bold ${rcColor.GK}`}>GK</span>
-                </Th>
-                <Th right>
-                  <span className={`font-bold ${rcColor.DEF}`}>DEF</span>
-                </Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1e1e2e]">
-              {gkDefRows.map((row) => {
-                const showGk  = row.gk  !== null && row.gk  !== undefined
-                const showDef = row.def !== null && row.def !== undefined
-                if (!showGk && !showDef) return null
-                const gkVal  = row.gk  as number | null
-                const defVal = row.def as number | null
-                return (
-                  <tr key={row.key} className="hover:bg-[#0f0f1a]">
-                    <Td>{row.stat}</Td>
-                    <Td right mono>
-                      {showGk
-                        ? <span className={gkVal! >= 0 ? 'text-emerald-400' : 'text-red-400'}>{sign(gkVal!)}</span>
-                        : <span className="text-[#2e2e42]">—</span>}
-                    </Td>
-                    <Td right mono>
-                      {showDef
-                        ? <span className={defVal! >= 0 ? 'text-emerald-400' : 'text-red-400'}>{sign(defVal!)}</span>
-                        : <span className="text-[#2e2e42]">—</span>}
-                    </Td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-[#2e2e42]">
-                <Td dim>Cap correzione</Td>
-                <Td right mono>
-                  <span className="text-[#8888aa]">[{cfg.defensive.GK.cap_min}, +{cfg.defensive.GK.cap_max}]</span>
-                </Td>
-                <Td right mono>
-                  <span className="text-[#8888aa]">[{cfg.defensive.DEF.cap_min}, +{cfg.defensive.DEF.cap_max}]</span>
-                </Td>
-              </tr>
-            </tfoot>
-          </TableWrap>
-          <div className="border-t border-[#1e1e2e] px-4 py-3">
-            <Note>
-              La correzione viene calcolata come somma pesata delle statistiche, poi cappata nell&apos;intervallo indicato.
-              Il cap impedisce che una singola giornata eccezionale (o disastrosa) distorca eccessivamente il punteggio.
-              Per i DEF, le statistiche della correzione si aggiungono ai bonus/malus ordinari (clean sheet, goal subiti).
-            </Note>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* ── Bonus / Malus ─────────────────────────────────────────────────── */}
       <Card>
         <CardHeader title="Bonus e Malus" description="Contributi fissi per eventi di partita" />
@@ -434,9 +384,9 @@ export default async function MethodologyPage() {
               </tbody>
             </TableWrap>
             <p className="mt-2 text-xs text-[#55556a]">
-              Gol su rigore = bonus ruolo − {cfg.bonus_malus.penalty_scored_discount}.
-              Doppietta: +{cfg.bonus_malus.brace_bonus} aggiuntivo.
-              Tripletta: +{cfg.bonus_malus.hat_trick_bonus} aggiuntivo (sostituisce il bonus doppietta).
+              Gol su rigore = bonus ruolo − {eff.penalty_scored_discount}.
+              Doppietta: +{eff.brace_bonus} aggiuntivo.
+              Tripletta: +{eff.hat_trick_bonus} aggiuntivo (sostituisce il bonus doppietta).
             </p>
           </div>
 
@@ -445,12 +395,12 @@ export default async function MethodologyPage() {
             <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#55556a]">Altri eventi</p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-3">
               {[
-                { label: 'Assist',            val: cfg.bonus_malus.assist,         cond: null },
-                { label: 'Autorete',          val: cfg.bonus_malus.own_goal,        cond: null },
-                { label: 'Ammonizione',       val: cfg.bonus_malus.yellow_card,     cond: null },
-                { label: 'Espulsione',        val: cfg.bonus_malus.red_card,        cond: null },
-                { label: 'Rigore fallito',    val: cfg.bonus_malus.penalty_missed,  cond: null },
-                { label: 'Rigore parato',     val: cfg.bonus_malus.penalty_saved,   cond: 'solo GK' },
+                { label: 'Assist',            val: eff.assist,         cond: null },
+                { label: 'Autorete',          val: eff.own_goal,        cond: null },
+                { label: 'Ammonizione',       val: eff.yellow_card,     cond: null },
+                { label: 'Espulsione',        val: eff.red_card,        cond: null },
+                { label: 'Rigore fallito',    val: eff.penalty_missed,  cond: null },
+                { label: 'Rigore parato',     val: eff.penalty_saved,   cond: 'solo GK' },
               ].map(({ label, val, cond }) => (
                 <div key={label} className="flex items-center justify-between gap-2 rounded px-2 py-1.5">
                   <span className="text-sm text-[#c8c8e8]">{label}</span>
@@ -470,13 +420,13 @@ export default async function MethodologyPage() {
             <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#55556a]">Clean sheet</p>
             <div className="space-y-1.5">
               {[
-                { rc: 'GK',  val: cfg.bonus_malus.clean_sheet_by_role.GK  ?? 0 },
-                { rc: 'DEF', val: cfg.bonus_malus.clean_sheet_by_role.DEF ?? 0 },
+                { rc: 'GK',  val: eff.clean_sheet_gk },
+                { rc: 'DEF', val: eff.clean_sheet_def },
               ].map(({ rc, val }) => (
                 <div key={rc} className="flex items-center gap-3">
                   <span className={`font-mono text-xs font-bold ${rcColor[rc]}`}>{rc}</span>
                   <span className="text-sm text-emerald-400 font-mono font-semibold">{sign(val)}</span>
-                  <span className="text-xs text-[#55556a]">se ≥ {cfg.bonus_malus.clean_sheet_min_minutes}&apos; giocati</span>
+                  <span className="text-xs text-[#55556a]">se ≥ {eff.clean_sheet_min_minutes}&apos; giocati</span>
                 </div>
               ))}
             </div>
@@ -488,88 +438,18 @@ export default async function MethodologyPage() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
                 <span className={`font-mono text-xs font-bold ${rcColor.GK}`}>GK</span>
-                <span className="text-sm text-red-400 font-mono font-semibold">{sign(cfg.bonus_malus.goals_conceded_by_role.GK  ?? 0)}</span>
+                <span className="text-sm text-red-400 font-mono font-semibold">{sign(eff.goals_conceded_gk)}</span>
                 <span className="text-xs text-[#55556a]">sempre (nessun minimo)</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`font-mono text-xs font-bold ${rcColor.DEF}`}>DEF</span>
-                <span className="text-sm text-red-400 font-mono font-semibold">{sign(cfg.bonus_malus.goals_conceded_by_role.DEF ?? 0)}</span>
-                <span className="text-xs text-[#55556a]">se ≥ {cfg.bonus_malus.goals_conceded_def_min_minutes}&apos; giocati</span>
+                <span className="text-sm text-red-400 font-mono font-semibold">{sign(eff.goals_conceded_def)}</span>
+                <span className="text-xs text-[#55556a]">se ≥ {eff.goals_conceded_def_min_minutes}&apos; giocati</span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* ── Bonus avanzati ────────────────────────────────────────────────── */}
-      {adv.enabled && (
-        <Card>
-          <CardHeader
-            title="Bonus avanzati"
-            description={`Ricompensano prestazioni tecniche eccezionali — cap totale +${adv.total_cap}`}
-          />
-          <CardContent className="p-0">
-            <div className="divide-y divide-[#1e1e2e]">
-
-              {/* Creative */}
-              <div className="px-4 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-medium text-white">Visione di gioco</p>
-                    <p className="mt-0.5 text-xs text-[#55556a]">
-                      ≥ {adv.creative_key_passes_threshold} passaggi chiave
-                      <span className="mx-1.5 text-[#2e2e42]">oppure</span>
-                      ≥ {adv.creative_expected_assists_threshold} xA attesi
-                    </p>
-                  </div>
-                  <Pill color="emerald">{sign(adv.creative_bonus)}</Pill>
-                </div>
-              </div>
-
-              {/* Dribbling */}
-              <div className="px-4 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-medium text-white">Dribbling</p>
-                    <p className="mt-0.5 text-xs text-[#55556a]">
-                      ≥ {adv.dribbling_successful_threshold} dribbling riusciti
-                      <span className="mx-1.5 text-[#2e2e42]">e</span>
-                      ≥ {adv.dribbling_success_rate_threshold}% di successo
-                    </p>
-                  </div>
-                  <Pill color="emerald">{sign(adv.dribbling_bonus)}</Pill>
-                </div>
-              </div>
-
-              {/* Passing */}
-              <div className="px-4 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-medium text-white">Controllo del palleggio</p>
-                    <p className="mt-0.5 text-xs text-[#55556a]">
-                      ≥ {adv.passing_completed_threshold} passaggi completati
-                      <span className="mx-1.5 text-[#2e2e42]">e</span>
-                      ≥ {adv.passing_accuracy_threshold}% accuratezza
-                      <span className="mx-1.5 text-[#2e2e42]">e</span>
-                      (≥ {adv.passing_final_third_threshold} nel terzo avversario
-                      <span className="mx-1.5 text-[#2e2e42]">oppure</span>
-                      ≥ {adv.passing_progressive_threshold} progressivi)
-                    </p>
-                  </div>
-                  <Pill color="emerald">{sign(adv.passing_bonus)}</Pill>
-                </div>
-              </div>
-
-            </div>
-            <div className="border-t border-[#1e1e2e] px-4 py-3">
-              <Note>
-                I bonus avanzati sono <strong className="text-[#c8c8e8]">indipendenti</strong> tra loro — tutti e tre possono scattare nella stessa partita.
-                Il totale è tuttavia cappato a <strong className="text-[#c8c8e8]">+{adv.total_cap}</strong> per evitare distorsioni eccessive.
-              </Note>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* ── Note generali ─────────────────────────────────────────────────── */}
       <Card>
@@ -594,15 +474,15 @@ export default async function MethodologyPage() {
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Il <strong className="text-[#c8c8e8]">fantavoto di squadra</strong> è la somma dei fantavoti dei titolari (no panchina).
-                I giocatori NV contribuiscono 0 al totale — non viene applicata nessuna sostituzione automatica dalla panchina in questa versione.
+                Il <strong className="text-[#c8c8e8]">fantavoto di squadra</strong> è la somma dei fantavoti dei titolari in campo, con sostituzione automatica dalla panchina per i giocatori NV (logica Mantra MASTER).
               </span>
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Tutti i valori in questa pagina riflettono la configurazione <span className="font-mono text-indigo-300">{cfg.engine_version}</span> attiva.
-                Qualsiasi modifica futura ai parametri si rifletterà automaticamente qui.
+                I bonus/malus e il fattore minuti sono <strong className="text-[#c8c8e8]">personalizzabili per lega</strong> dalla sezione{' '}
+                <a href="/league/engine-config" className="text-indigo-300 hover:underline">Configurazione motore</a>.
+                Tutti i valori in questa pagina riflettono la configurazione attiva della tua lega.
               </span>
             </li>
           </ul>

@@ -57,13 +57,21 @@ export async function triggerCalculationAction(
     )
   }
 
-  // Build per-league engine config (advanced bonuses flag + configured source weights)
+  // Fetch per-league engine config (bonus values, minutes factor)
+  // If no row exists yet, buildEngineConfig falls back to DEFAULT_ENGINE_CONFIG values.
+  const { data: dbEngineConfig } = await supabase
+    .from('league_engine_config')
+    .select('*')
+    .eq('league_id', ctx.league.id)
+    .maybeSingle()
+
+  // Build per-league engine config
   const engineConfig = buildEngineConfig(
-    ctx.league.advanced_bonuses_enabled,
     {
       sofascore: ctx.league.source_weight_sofascore / 100,
       fotmob:    ctx.league.source_weight_fotmob    / 100,
-    }
+    },
+    dbEngineConfig ?? null
   )
 
   // Fetch all stat rows for this matchday — all fields needed by engine

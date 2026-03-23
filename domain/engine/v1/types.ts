@@ -131,6 +131,13 @@ export interface AdvancedBonusConfig {
   passing_bonus: number
 }
 
+export interface MinutesFactorConfig {
+  /** Players with minutes < threshold get factor_partial; >= threshold get factor_full */
+  threshold: number
+  partial: number
+  full: number
+}
+
 export interface EngineConfig {
   engine_version: string
   /** Baseline score that z-deviations are applied around (6.0) */
@@ -141,6 +148,8 @@ export interface EngineConfig {
   one_source_shrink: number
   source_normalization: Record<'sofascore' | 'fotmob', SourceNormalization>
   source_weights: Record<'sofascore' | 'fotmob', number>
+  /** Configurable 2-band minutes factor */
+  minutes_factor: MinutesFactorConfig
   /** Role multiplier used in b1 = base_score + multiplier * (b0 - base_score) */
   role_multiplier: Record<RatingClass, number>
   defensive: Record<RatingClass, DefensiveRoleConfig>

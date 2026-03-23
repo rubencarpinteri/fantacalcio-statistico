@@ -7,6 +7,7 @@
 // ============================================================
 
 import type { EngineConfig } from './types'
+import type { LeagueEngineConfig } from '@/types/database.types'
 
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   engine_version: 'v1',
@@ -42,6 +43,18 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   source_weights: {
     sofascore: 0.55,
     fotmob:    0.45,
+  },
+
+  /**
+   * Configurable 2-band minutes factor.
+   * Players with minutes_played < threshold get factor_partial applied to z_combined.
+   * Players with minutes_played >= threshold get factor_full (no shrink).
+   * The 0-minute NV gate and decisive-event exception are separate, unaffected by this.
+   */
+  minutes_factor: {
+    threshold: 45,
+    partial:   0.50,
+    full:      1.00,
   },
 
   /**
@@ -187,20 +200,64 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
 }
 
 /**
- * Build a per-league engine config, overriding the advanced bonus flag and
- * optionally the source weights (as decimal fractions, e.g. 0.40).
+ * Build a per-league engine config from league settings + optional DB engine config row.
  * Call this at trigger time, not at config definition time.
+ *
+ * @param sourceWeights   Decimal fractions from leagues.source_weight_* (e.g. 0.55)
+ * @param dbConfig        Row from league_engine_config, or null to use defaults
  */
 export function buildEngineConfig(
-  advancedBonusesEnabled: boolean,
-  sourceWeights?: { sofascore: number; fotmob: number }
+  sourceWeights: { sofascore: number; fotmob: number },
+  dbConfig: LeagueEngineConfig | null
 ): EngineConfig {
+  const base = DEFAULT_ENGINE_CONFIG
+
+  if (!dbConfig) {
+    return {
+      ...base,
+      source_weights: sourceWeights,
+      advanced_bonus: { ...base.advanced_bonus, enabled: false },
+    }
+  }
+
   return {
-    ...DEFAULT_ENGINE_CONFIG,
-    advanced_bonus: {
-      ...DEFAULT_ENGINE_CONFIG.advanced_bonus,
-      enabled: advancedBonusesEnabled,
+    ...base,
+    source_weights: sourceWeights,
+    advanced_bonus: { ...base.advanced_bonus, enabled: false },
+
+    minutes_factor: {
+      threshold: dbConfig.minutes_factor_threshold,
+      partial:   dbConfig.minutes_factor_partial,
+      full:      dbConfig.minutes_factor_full,
     },
-    ...(sourceWeights ? { source_weights: sourceWeights } : {}),
+
+    bonus_malus: {
+      ...base.bonus_malus,
+      goal_by_role: {
+        GK:  dbConfig.goal_bonus_gk,
+        DEF: dbConfig.goal_bonus_def,
+        MID: dbConfig.goal_bonus_mid,
+        ATT: dbConfig.goal_bonus_att,
+      },
+      penalty_scored_discount: dbConfig.penalty_scored_discount,
+      brace_bonus:             dbConfig.brace_bonus,
+      hat_trick_bonus:         dbConfig.hat_trick_bonus,
+      assist:                  dbConfig.assist,
+      own_goal:                dbConfig.own_goal,
+      yellow_card:             dbConfig.yellow_card,
+      red_card:                dbConfig.red_card,
+      penalty_missed:          dbConfig.penalty_missed,
+      penalty_saved:           dbConfig.penalty_saved,
+      clean_sheet_by_role: {
+        GK:  dbConfig.clean_sheet_gk,
+        DEF: dbConfig.clean_sheet_def,
+      },
+      clean_sheet_min_minutes:        dbConfig.clean_sheet_min_minutes,
+      goals_conceded_by_role: {
+        GK:  dbConfig.goals_conceded_gk,
+        DEF: dbConfig.goals_conceded_def,
+      },
+      goals_conceded_def_min_minutes: dbConfig.goals_conceded_def_min_minutes,
+    },
   }
 }
