@@ -485,6 +485,41 @@ export type CompetitionStandingsSnapshot = {
   created_at: string
 }
 
+export type LiveScore = {
+  matchday_id: string
+  team_id: string
+  league_id: string
+  total_fantavoto: number
+  player_count: number
+  nv_count: number
+  refreshed_at: string
+}
+
+export type LivePlayerScore = {
+  matchday_id: string
+  team_id: string
+  player_id: string
+  assigned_mantra_role: string | null
+  is_bench: boolean
+  bench_order: number | null
+  sub_status: string
+  extended_penalty: number
+  voto_base: number | null
+  fantavoto: number | null
+  sofascore_rating: number | null
+  fotmob_rating: number | null
+  minutes_played: number
+  goals_scored: number
+  assists: number
+  yellow_cards: number
+  red_cards: number
+  own_goals: number
+  penalties_scored: number
+  saves: number
+  goals_conceded: number
+  refreshed_at: string
+}
+
 export type AuditLog = {
   id: string
   league_id: string | null
@@ -885,6 +920,18 @@ export type Database = {
           updated_at?: string
         }
         Update: Partial<Omit<LeagueEngineConfig, 'id' | 'league_id'>>
+        Relationships: never[]
+      }
+      live_scores: {
+        Row: LiveScore
+        Insert: Omit<LiveScore, 'refreshed_at'> & { refreshed_at?: string }
+        Update: Partial<LiveScore>
+        Relationships: never[]
+      }
+      live_player_scores: {
+        Row: LivePlayerScore
+        Insert: Omit<LivePlayerScore, 'refreshed_at'> & { refreshed_at?: string }
+        Update: Partial<LivePlayerScore>
         Relationships: never[]
       }
     }
