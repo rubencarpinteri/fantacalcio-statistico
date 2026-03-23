@@ -23,7 +23,7 @@ export const DEFAULT_ROLE_MAP: Readonly<Record<string, RatingClass>> = {
   // 'E' is intentionally absent — it is ambiguous (DEF or MID)
   M:   'MID',
   C:   'MID',
-  W:   'MID',
+  W:   'ATT',
   T:   'ATT',
   A:   'ATT',
   Pc:  'ATT',
