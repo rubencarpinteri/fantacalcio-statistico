@@ -27,6 +27,17 @@ export async function GET(request: NextRequest) {
     const leagueId = (searchParams.get('league_id') ?? '').trim()
     const season = (searchParams.get('season') ?? '2024-25').trim()
 
+    // Normalize query: strip diacritics + handle standalone special chars (Ø→o, Æ→ae, etc.)
+    const normalizedQ = q
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[øØ]/g, 'o')
+      .replace(/[æÆ]/g, 'ae')
+      .replace(/[åÅ]/g, 'a')
+      .replace(/[ðÐ]/g, 'd')
+      .replace(/[þÞ]/g, 'th')
+      .toLowerCase()
+
     if (!q || q.length < 2) {
       return NextResponse.json({ results: [] })
     }
@@ -75,7 +86,7 @@ export async function GET(request: NextRequest) {
       .select('id, full_name, club, mantra_roles, rating_class')
       .eq('season', season)
       .eq('is_active', true)
-      .ilike('full_name', `%${q}%`)
+      .ilike('search_name', `%${normalizedQ}%`)
       .order('full_name', { ascending: true })
       .limit(20) // fetch more to allow exclusion
 
