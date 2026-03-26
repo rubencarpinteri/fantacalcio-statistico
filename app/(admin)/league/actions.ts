@@ -14,7 +14,7 @@ const leagueSettingsSchema = z.object({
   display_rounding: z.enum(['one_decimal', 'nearest_half']),
   lock_behavior: z.enum(['auto', 'manual']),
   advanced_bonuses_enabled: z.coerce.boolean(),
-  bench_size: z.coerce.number().int().min(1).max(10),
+  bench_size: z.coerce.number().int().min(1).max(12),
   source_weight_sofascore: z.coerce.number().int().min(0).max(100),
   source_weight_fotmob:    z.coerce.number().int().min(0).max(100),
 })
