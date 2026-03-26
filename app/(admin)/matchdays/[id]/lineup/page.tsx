@@ -7,11 +7,14 @@ export const metadata = { title: 'Inserisci Formazione' }
 
 export default async function LineupPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ team?: string }>
 }) {
   const ctx = await requireLeagueContext()
   const { id: matchdayId } = await params
+  const { team: requestedTeamId } = await searchParams
   const supabase = await createClient()
 
   // Validate matchday
@@ -30,12 +33,16 @@ export default async function LineupPage({
   }
 
   // Resolve team
-  const { data: team } = await supabase
+  const { data: teams } = await supabase
     .from('fantasy_teams')
     .select('id, name')
     .eq('league_id', ctx.league.id)
     .eq('manager_id', ctx.userId)
-    .single()
+    .order('name')
+
+  const team = requestedTeamId
+    ? (teams ?? []).find(t => t.id === requestedTeamId) ?? teams?.[0] ?? null
+    : teams?.[0] ?? null
 
   // For admins: allow picking any team
   // For now, always use the user's own team
@@ -143,6 +150,25 @@ export default async function LineupPage({
         <h1 className="mt-1 text-xl font-bold text-white">
           {ctx.role === 'manager' ? 'La tua formazione' : `Formazione — ${team?.name ?? ''}`}
         </h1>
+        {/* Team switcher — shown when user manages multiple teams */}
+        {(teams ?? []).length > 1 && (
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            {(teams ?? []).map(t => (
+              <a
+                key={t.id}
+                href={`/matchdays/${matchdayId}/lineup?team=${t.id}`}
+                className={[
+                  'rounded-full px-3 py-1 text-xs font-semibold border transition-colors',
+                  team?.id === t.id
+                    ? 'bg-indigo-600 border-indigo-500 text-white'
+                    : 'border-[#2e2e42] text-[#8888aa] hover:border-indigo-500 hover:text-white',
+                ].join(' ')}
+              >
+                {t.name}
+              </a>
+            ))}
+          </div>
+        )}
         {matchday.locks_at && (
           <p className="text-sm text-amber-400">
             Scadenza:{' '}
