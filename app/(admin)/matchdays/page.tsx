@@ -86,6 +86,9 @@ export default async function MatchdaysPage() {
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
                         <MatchdayStatusBadge status={m.status} />
+                        {m.is_frozen && (
+                          <span className="text-sm" title="Congelata">🧊</span>
+                        )}
                         {isAdmin && (provisionalByMatchday.get(m.id) ?? 0) > 0 && (
                           <span className="text-xs text-amber-400">
                             ~ {provisionalByMatchday.get(m.id)} prov.

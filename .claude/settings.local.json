@@ -41,7 +41,13 @@
       "Bash(curl -s \"https://www.sofascore.com/api/v1/event/13981724/lineups\" -H \"User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/124.0.0.0 Safari/537.36\" -H \"Accept: application/json\" -H \"Accept-Language: it-IT,it;q=0.9\" -H \"Referer: https://www.sofascore.com/ac-milan-torino/Vkb\" -H \"Sec-Fetch-Dest: empty\" -H \"Sec-Fetch-Mode: cors\" -H \"Sec-Fetch-Site: same-origin\" -H \"Cache-Control: no-cache\" -w \"\\\\nHTTP:%{http_code}\")",
       "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/pool/\")",
       "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/roster/\")",
-      "Bash(cat app/\\\\\\(admin\\\\\\)/league/LeagueSettingsForm.tsx)"
+      "Bash(cat app/\\\\\\(admin\\\\\\)/league/LeagueSettingsForm.tsx)",
+      "Bash(find \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]\" -type f)",
+      "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/page.tsx\")",
+      "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/page.tsx\")",
+      "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/actions.ts\")",
+      "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/FixturesManager.tsx\")",
+      "Bash(grep -n \"generateMatchdaysAction\\\\|toggleFreezeAction\\\\|saveFixturesBulkAction\" app/\\\\\\(admin\\\\\\)/matchdays/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/fixtures/actions.ts)"
     ]
   }
 }

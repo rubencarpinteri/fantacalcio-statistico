@@ -1,13 +1,13 @@
 'use client'
 
 import { useActionState, useTransition } from 'react'
-import { addFixtureAction, removeFixtureAction, importRatingsAction } from './actions'
-import type { AddFixtureState, ImportMatch } from './actions'
+import { saveFixturesBulkAction, removeFixtureAction, importRatingsAction } from './actions'
+import type { SaveFixturesBulkState, ImportMatch } from './actions'
 import type { MatchdayFixture } from '@/types/database.types'
 import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
 
 // ---------------------------------------------------------------------------
-// Fixtures list + add form
+// Fixtures list + paste-based bulk save form
 // ---------------------------------------------------------------------------
 
 export function FixturesManager({
@@ -17,85 +17,101 @@ export function FixturesManager({
   matchdayId: string
   fixtures: MatchdayFixture[]
 }) {
-  const [state, formAction] = useActionState<AddFixtureState, FormData>(addFixtureAction, {})
+  const [state, formAction] = useActionState<SaveFixturesBulkState, FormData>(
+    saveFixturesBulkAction,
+    {}
+  )
   const [removing, startRemove] = useTransition()
 
   return (
     <div className="space-y-6">
-      {/* Existing fixtures */}
-      {fixtures.length > 0 && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
-              <th className="px-4 py-2">Label</th>
-              <th className="px-4 py-2">FotMob ID</th>
-              <th className="px-4 py-2">SofaScore ID</th>
-              <th className="px-4 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#1e1e2e]">
-            {fixtures.map((fx) => (
-              <tr key={fx.id} className="hover:bg-[#1a1a24]">
-                <td className="px-4 py-2 text-[#f0f0fa]">{fx.label || '—'}</td>
-                <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.fotmob_match_id ?? '—'}</td>
-                <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.sofascore_event_id ?? '—'}</td>
-                <td className="px-4 py-2 text-right">
-                  <button
-                    disabled={removing}
-                    onClick={() => startRemove(() => removeFixtureAction(fx.id, matchdayId))}
-                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-40"
-                  >
-                    Rimuovi
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* Hint */}
+      <p className="text-xs text-[#55556a]">
+        Incolla gli ID numerici delle 10 partite di Serie A, uno per riga. L&apos;ordine non
+        è importante.
+      </p>
 
-      {fixtures.length === 0 && (
-        <p className="text-sm text-[#55556a]">Nessuna fixture configurata.</p>
-      )}
-
-      {/* Add fixture form */}
-      <form action={formAction} className="space-y-3">
+      {/* Paste form */}
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="matchdayId" value={matchdayId} />
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-xs text-[#8888aa] mb-1">Label (es. Milan-Torino)</label>
-            <input
-              name="label"
-              placeholder="opzionale"
-              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            <label className="block text-xs font-medium text-[#8888aa] mb-1">
+              ID FotMob (uno per riga)
+            </label>
+            <textarea
+              name="fotmobIds"
+              rows={11}
+              placeholder={"4803335\n4803336\n..."}
+              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm font-mono text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none resize-none"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#8888aa] mb-1">FotMob Match ID</label>
-            <input
-              name="fotmob_match_id"
-              placeholder="es. 4803335"
-              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-[#8888aa] mb-1">SofaScore Event ID</label>
-            <input
-              name="sofascore_event_id"
-              placeholder="es. 13981724"
-              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            <label className="block text-xs font-medium text-[#8888aa] mb-1">
+              ID SofaScore (uno per riga)
+            </label>
+            <textarea
+              name="sofascoreIds"
+              rows={11}
+              placeholder={"13981724\n13981725\n..."}
+              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm font-mono text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none resize-none"
             />
           </div>
         </div>
+
         {state.error && <p className="text-xs text-red-400">{state.error}</p>}
-        {state.success && <p className="text-xs text-green-400">Fixture aggiunta.</p>}
+        {state.success && (
+          <p className="text-xs text-green-400">
+            {state.count} fixture salvate con successo.
+          </p>
+        )}
+
         <button
           type="submit"
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
         >
-          Aggiungi fixture
+          Salva fixture
         </button>
       </form>
+
+      {/* Current fixtures table */}
+      {fixtures.length > 0 ? (
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#55556a]">
+            Fixture salvate ({fixtures.length})
+          </p>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
+                <th className="px-4 py-2">#</th>
+                <th className="px-4 py-2">FotMob ID</th>
+                <th className="px-4 py-2">SofaScore ID</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1e1e2e]">
+              {fixtures.map((fx, idx) => (
+                <tr key={fx.id} className="hover:bg-[#1a1a24]">
+                  <td className="px-4 py-2 text-[#55556a]">{idx + 1}</td>
+                  <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.fotmob_match_id ?? '—'}</td>
+                  <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.sofascore_event_id ?? '—'}</td>
+                  <td className="px-4 py-2 text-right">
+                    <button
+                      disabled={removing}
+                      onClick={() => startRemove(() => removeFixtureAction(fx.id, matchdayId))}
+                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-40"
+                    >
+                      Rimuovi
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-sm text-[#55556a]">Nessuna fixture configurata.</p>
+      )}
     </div>
   )
 }

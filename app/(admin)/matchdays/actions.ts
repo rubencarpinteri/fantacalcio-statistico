@@ -190,3 +190,91 @@ export async function transitionMatchdayStatusAction(
 
   return { error: null }
 }
+
+// ---------------------------------------------------------------------------
+// Generate matchdays from competition rounds (campionato only)
+// ---------------------------------------------------------------------------
+
+export async function generateMatchdaysAction(
+  competitionId: string
+): Promise<{ error?: string; created?: number }> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  // Verify competition belongs to this league
+  const { data: competition } = await supabase
+    .from('competitions')
+    .select('id, type, status, league_id')
+    .eq('id', competitionId)
+    .eq('league_id', ctx.league.id)
+    .single()
+
+  if (!competition) return { error: 'Competizione non trovata.' }
+  if (competition.type !== 'campionato') return { error: 'Solo le competizioni di tipo Campionato supportano la generazione automatica delle giornate.' }
+
+  // Get all competition rounds
+  const { data: rounds, error: roundsError } = await supabase
+    .from('competition_rounds')
+    .select('id, round_number, name, matchday_id')
+    .eq('competition_id', competitionId)
+    .order('round_number', { ascending: true })
+
+  if (roundsError || !rounds) return { error: 'Impossibile recuperare i turni della competizione.' }
+
+  let created = 0
+
+  for (const round of rounds) {
+    // Skip if already has a matchday
+    if (round.matchday_id) continue
+
+    // Insert the matchday
+    const { data: matchday, error: insertError } = await supabase
+      .from('matchdays')
+      .insert({
+        league_id: ctx.league.id,
+        name: round.name,
+        round_number: round.round_number,
+        matchday_number: round.round_number,
+        opens_at: null,
+        locks_at: null,
+        status: 'draft',
+        is_frozen: false,
+        created_by: ctx.userId,
+      })
+      .select('id')
+      .single()
+
+    if (insertError || !matchday) {
+      // ON CONFLICT DO NOTHING equivalent: skip duplicates silently
+      continue
+    }
+
+    // Link the competition round to the new matchday
+    await supabase
+      .from('competition_rounds')
+      .update({ matchday_id: matchday.id })
+      .eq('id', round.id)
+
+    await writeAuditLog({
+      supabase,
+      leagueId: ctx.league.id,
+      actorUserId: ctx.userId,
+      actionType: 'matchday_create',
+      entityType: 'matchday',
+      entityId: matchday.id,
+      afterJson: {
+        name: round.name,
+        round_number: round.round_number,
+        competition_id: competitionId,
+        competition_round_id: round.id,
+      },
+    })
+
+    created++
+  }
+
+  revalidatePath('/matchdays')
+  revalidatePath(`/competitions/${competitionId}`)
+
+  return { created }
+}

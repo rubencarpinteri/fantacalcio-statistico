@@ -4,6 +4,7 @@ import { requireLeagueContext } from '@/lib/league'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge, MatchdayStatusBadge } from '@/components/ui/badge'
 import type { Competition, CompetitionMatchup, FantasyTeam } from '@/types/database.types'
+import { GenerateMatchdaysForm } from './GenerateMatchdaysForm'
 
 const TYPE_LABEL: Record<string, string> = {
   campionato: 'Campionato', battle_royale: 'Battle Royale', coppa: 'Coppa',
@@ -221,12 +222,21 @@ export default async function CompetitionDetailPage({
           </p>
         </div>
         {isAdmin && (
-          <a
-            href={`/competitions/${id}/rounds`}
-            className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm text-[#8888aa] hover:bg-[#1a1a24] hover:text-white transition-colors"
-          >
-            Gestisci turni →
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={`/competitions/${id}/rounds`}
+              className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm text-[#8888aa] hover:bg-[#1a1a24] hover:text-white transition-colors"
+            >
+              Gestisci turni →
+            </a>
+            {competition.type === 'campionato' && competition.status === 'active' && (
+              <GenerateMatchdaysForm
+                competitionId={id}
+                linkedCount={rounds.filter((r) => r.matchday_id !== null).length}
+                totalRounds={rounds.length}
+              />
+            )}
+          </div>
         )}
       </div>
 

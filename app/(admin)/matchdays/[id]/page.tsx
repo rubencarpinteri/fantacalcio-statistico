@@ -4,6 +4,7 @@ import { requireLeagueContext } from '@/lib/league'
 import { MatchdayStatusBadge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MatchdayStatusControls } from './MatchdayStatusControls'
+import { FreezeButton } from './FreezeButton'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -143,9 +144,14 @@ export default async function MatchdayDetailPage({
           <a href="/matchdays" className="text-sm text-[#55556a] hover:text-indigo-400">
             ← Giornate
           </a>
-          <div className="mt-1 flex items-center gap-3">
+          <div className="mt-1 flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold text-white">{matchday.name}</h1>
             <MatchdayStatusBadge status={matchday.status} />
+            {matchday.is_frozen && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">
+                🧊 Congelata
+              </span>
+            )}
           </div>
           {matchday.matchday_number && (
             <p className="text-sm text-[#8888aa]">Giornata n. {matchday.matchday_number}</p>
@@ -245,7 +251,19 @@ export default async function MatchdayDetailPage({
 
         {/* Admin controls or manager submission CTA */}
         {isAdmin ? (
-          <MatchdayStatusControls matchday={matchday} />
+          <div className="space-y-3">
+            <MatchdayStatusControls matchday={matchday} />
+            {['locked', 'scoring'].includes(matchday.status) && (
+              <div className="flex items-center gap-3">
+                <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
+                {matchday.is_frozen && (
+                  <span className="text-xs text-[#55556a]">
+                    Giornata congelata — le formazioni sono bloccate.
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <Card>
             <CardHeader title="La tua formazione" />

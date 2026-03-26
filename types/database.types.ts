@@ -241,6 +241,7 @@ export type Matchday = {
   opens_at: string | null
   locks_at: string | null
   status: MatchdayStatus
+  is_frozen: boolean
   created_by: string
   created_at: string
   updated_at: string
@@ -703,11 +704,12 @@ export type Database = {
       }
       matchdays: {
         Row: Matchday
-        Insert: Omit<Matchday, 'id' | 'created_at' | 'updated_at' | 'round_number'> & {
+        Insert: Omit<Matchday, 'id' | 'created_at' | 'updated_at' | 'round_number' | 'is_frozen'> & {
           id?: string
           created_at?: string
           updated_at?: string
           round_number?: number | null
+          is_frozen?: boolean
         }
         Update: Partial<Omit<Matchday, 'id'>>
         Relationships: never[]

@@ -66,6 +66,86 @@ export async function removeFixtureAction(fixtureId: string, matchdayId: string)
 }
 
 // ---------------------------------------------------------------------------
+// Bulk paste-based fixture save
+// ---------------------------------------------------------------------------
+
+export type SaveFixturesBulkState = { error?: string; success?: boolean; count?: number }
+
+export async function saveFixturesBulkAction(
+  _prev: SaveFixturesBulkState,
+  formData: FormData,
+): Promise<SaveFixturesBulkState> {
+  try {
+    await requireLeagueAdmin()
+  } catch {
+    return { error: 'Non autorizzato.' }
+  }
+
+  const matchdayId = (formData.get('matchdayId') as string | null) ?? ''
+  if (!matchdayId) return { error: 'ID giornata mancante.' }
+
+  const fotmobRaw = (formData.get('fotmobIds') as string | null) ?? ''
+  const sofascoreRaw = (formData.get('sofascoreIds') as string | null) ?? ''
+
+  const parseIds = (raw: string): { ids: number[]; error?: string } => {
+    const lines = raw
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+
+    const ids: number[] = []
+    for (const line of lines) {
+      const n = parseInt(line, 10)
+      if (isNaN(n) || String(n) !== line) {
+        return { ids: [], error: `"${line}" non è un numero intero valido.` }
+      }
+      ids.push(n)
+    }
+    return { ids }
+  }
+
+  const fm = parseIds(fotmobRaw)
+  if (fm.error) return { error: `ID FotMob non valido: ${fm.error}` }
+
+  const ss = parseIds(sofascoreRaw)
+  if (ss.error) return { error: `ID SofaScore non valido: ${ss.error}` }
+
+  // Both lists must have the same length, unless one is entirely empty
+  if (fm.ids.length > 0 && ss.ids.length > 0 && fm.ids.length !== ss.ids.length) {
+    return {
+      error: `Il numero di ID FotMob (${fm.ids.length}) e SofaScore (${ss.ids.length}) deve essere uguale.`,
+    }
+  }
+
+  const count = Math.max(fm.ids.length, ss.ids.length)
+  if (count === 0) return { error: 'Inserisci almeno un ID.' }
+
+  const supabase = await createClient()
+
+  // Delete all existing fixtures for this matchday
+  const { error: deleteError } = await supabase
+    .from('matchday_fixtures')
+    .delete()
+    .eq('matchday_id', matchdayId)
+
+  if (deleteError) return { error: 'Errore durante la cancellazione delle fixture esistenti.' }
+
+  // Build new rows
+  const rows = Array.from({ length: count }, (_, i) => ({
+    matchday_id: matchdayId,
+    fotmob_match_id: fm.ids[i] ?? null,
+    sofascore_event_id: ss.ids[i] ?? null,
+    label: `Partita ${i + 1}`,
+  }))
+
+  const { error: insertError } = await supabase.from('matchday_fixtures').insert(rows)
+  if (insertError) return { error: 'Errore durante il salvataggio delle fixture.' }
+
+  revalidatePath(`/matchdays/${matchdayId}/fixtures`)
+  return { success: true, count }
+}
+
+// ---------------------------------------------------------------------------
 // Import confirmed ratings from the fetch preview
 // ---------------------------------------------------------------------------
 
