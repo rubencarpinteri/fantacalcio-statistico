@@ -179,6 +179,28 @@ type SofaScoreStat = {
   minutes_played: number
 }
 
+function parseSofaScoreStats(json: Record<string, unknown>): SofaScoreStat[] {
+  const out: SofaScoreStat[] = []
+  for (const side of ['home', 'away'] as const) {
+    const team = json[side] as Record<string, unknown> | undefined
+    const players = team?.['players'] as Array<Record<string, unknown>> | undefined
+    for (const p of players ?? []) {
+      const player = p['player'] as Record<string, unknown> | undefined
+      const stats = p['statistics'] as Record<string, unknown> | undefined
+      if (!player) continue
+      const rating = stats?.['rating'] != null ? Number(stats['rating']) : null
+      out.push({
+        sofascore_id: Number(player['id']),
+        name: String(player['name'] ?? ''),
+        position: String(p['position'] ?? ''),
+        rating,
+        minutes_played: Number(stats?.['minutesPlayed'] ?? 0),
+      })
+    }
+  }
+  return out
+}
+
 async function fetchSofaScore(eventId: number): Promise<{ data: SofaScoreStat[] | null; status: number }> {
   const url = `https://api.sofascore.com/api/v1/event/${eventId}/lineups`
   let res: Response
@@ -200,27 +222,7 @@ async function fetchSofaScore(eventId: number): Promise<{ data: SofaScoreStat[] 
   if (!res.ok) return { data: null, status: res.status }
 
   const json = await res.json() as Record<string, unknown>
-  const out: SofaScoreStat[] = []
-
-  for (const side of ['home', 'away'] as const) {
-    const team = json[side] as Record<string, unknown> | undefined
-    const players = team?.['players'] as Array<Record<string, unknown>> | undefined
-    for (const p of players ?? []) {
-      const player = p['player'] as Record<string, unknown> | undefined
-      const stats = p['statistics'] as Record<string, unknown> | undefined
-      if (!player) continue
-      const rating = stats?.['rating'] != null ? Number(stats['rating']) : null
-      out.push({
-        sofascore_id: Number(player['id']),
-        name: String(player['name'] ?? ''),
-        position: String(p['position'] ?? ''),
-        rating: rating,
-        minutes_played: Number(stats?.['minutesPlayed'] ?? 0),
-      })
-    }
-  }
-
-  return { data: out, status: 200 }
+  return { data: parseSofaScoreStats(json), status: 200 }
 }
 
 // ---------------------------------------------------------------------------
@@ -323,6 +325,12 @@ function mergeFixtureStats(
 // POST /api/ratings/fetch
 // ---------------------------------------------------------------------------
 
+type RequestBody = {
+  matchdayId?: string
+  /** Pre-fetched SofaScore lineups keyed by sofascore_event_id (fetched browser-side to bypass Cloudflare) */
+  sofascoreByEventId?: Record<string, Record<string, unknown>>
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsResponse>> {
   try {
     await requireLeagueAdmin()
@@ -331,7 +339,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   }
 
   const supabase = await createClient()
-  const { matchdayId } = await req.json() as { matchdayId?: string }
+  const body = await req.json() as RequestBody
+  const { matchdayId, sofascoreByEventId } = body
   if (!matchdayId) {
     return NextResponse.json({ matched: [], unmatched: [], errors: ['matchdayId required'] }, { status: 400 })
   }
@@ -351,10 +360,20 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
 
   // Fetch fixtures sequentially to avoid rate-limiting
   for (const fx of fixtures ?? []) {
-    const [fotmobResult, ssResult] = await Promise.all([
-      fx.fotmob_match_id ? fetchFotMob(fx.fotmob_match_id) : Promise.resolve({ data: null, status: 0 }),
-      fx.sofascore_event_id ? fetchSofaScore(fx.sofascore_event_id) : Promise.resolve({ data: null, status: 0 }),
-    ])
+    // FotMob: always fetch server-side (requires x-mas token)
+    const fotmobResult = fx.fotmob_match_id
+      ? await fetchFotMob(fx.fotmob_match_id)
+      : { data: null, status: 0 }
+
+    // SofaScore: use pre-fetched browser data if available, otherwise try server-side
+    let ssResult: { data: SofaScoreStat[] | null; status: number }
+    if (fx.sofascore_event_id && sofascoreByEventId?.[String(fx.sofascore_event_id)]) {
+      ssResult = { data: parseSofaScoreStats(sofascoreByEventId[String(fx.sofascore_event_id)]!), status: 200 }
+    } else if (fx.sofascore_event_id) {
+      ssResult = await fetchSofaScore(fx.sofascore_event_id)
+    } else {
+      ssResult = { data: null, status: 0 }
+    }
 
     const label = fx.label ? ` (${fx.label})` : ''
     if (fx.fotmob_match_id && !fotmobResult.data) {

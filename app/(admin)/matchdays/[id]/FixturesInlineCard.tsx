@@ -34,10 +34,21 @@ export function FixturesInlineCard({
   async function handleFetch() {
     setFetchState({ phase: 'fetching' })
     try {
+      // Fetch SofaScore from browser (bypasses Cloudflare — real browser has cf-clearance)
+      const sofascoreByEventId: Record<string, Record<string, unknown>> = {}
+      for (const fx of fixtures) {
+        if (!fx.sofascore_event_id) continue
+        try {
+          const r = await fetch(`https://api.sofascore.com/api/v1/event/${fx.sofascore_event_id}/lineups`)
+          if (r.ok) sofascoreByEventId[String(fx.sofascore_event_id)] = await r.json() as Record<string, unknown>
+        } catch { /* ignore — server will note missing data */ }
+      }
+
+      // Server fetches FotMob (needs x-mas token), processes everything
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
+        body: JSON.stringify({ matchdayId, sofascoreByEventId }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() as FetchRatingsResponse
