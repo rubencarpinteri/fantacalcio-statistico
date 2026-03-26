@@ -120,9 +120,9 @@ export function LeagueSettingsForm({ league }: { league: League }) {
         name="bench_size"
         type="number"
         min={1}
-        max={10}
+        max={12}
         defaultValue={league.bench_size}
-        hint="Numero di giocatori in panchina per formazione (1–10)"
+        hint="Numero di giocatori in panchina per formazione (1–12)"
       />
 
       {/* Source weights */}

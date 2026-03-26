@@ -17,6 +17,14 @@ export default async function EngineConfigPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <a
+          href="/league"
+          className="flex items-center gap-1.5 text-sm text-[#8888aa] hover:text-white transition-colors"
+        >
+          ← Impostazioni lega
+        </a>
+      </div>
       <div>
         <h1 className="text-xl font-bold text-white">Configurazione motore di calcolo</h1>
         <p className="mt-0.5 text-sm text-[#8888aa]">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { saveEngineConfigAction } from './actions'
 import type { LeagueEngineConfig } from '@/types/database.types'
@@ -79,43 +79,48 @@ interface Props {
 
 export function EngineConfigForm({ current }: Props) {
   const [state, action] = useActionState(saveEngineConfigAction, { error: null, success: false })
+  const [resetKey, setResetKey] = useState(0)
+  const [useDefaults, setUseDefaults] = useState(false)
 
   // Use DB values if available, otherwise fall back to DEFAULT_ENGINE_CONFIG
   const bm = DEFAULT_ENGINE_CONFIG.bonus_malus
   const mf = DEFAULT_ENGINE_CONFIG.minutes_factor
 
+  // When resetKey changes, form remounts with default values
+  const src = useDefaults ? null : current
+
   const v = {
-    minutes_factor_threshold: current?.minutes_factor_threshold ?? mf.threshold,
-    minutes_factor_partial:   current?.minutes_factor_partial   ?? mf.partial,
-    minutes_factor_full:      current?.minutes_factor_full      ?? mf.full,
+    minutes_factor_threshold: src?.minutes_factor_threshold ?? mf.threshold,
+    minutes_factor_partial:   src?.minutes_factor_partial   ?? mf.partial,
+    minutes_factor_full:      src?.minutes_factor_full      ?? mf.full,
 
-    goal_bonus_gk:  current?.goal_bonus_gk  ?? bm.goal_by_role.GK,
-    goal_bonus_def: current?.goal_bonus_def ?? bm.goal_by_role.DEF,
-    goal_bonus_mid: current?.goal_bonus_mid ?? bm.goal_by_role.MID,
-    goal_bonus_att: current?.goal_bonus_att ?? bm.goal_by_role.ATT,
+    goal_bonus_gk:  src?.goal_bonus_gk  ?? bm.goal_by_role.GK,
+    goal_bonus_def: src?.goal_bonus_def ?? bm.goal_by_role.DEF,
+    goal_bonus_mid: src?.goal_bonus_mid ?? bm.goal_by_role.MID,
+    goal_bonus_att: src?.goal_bonus_att ?? bm.goal_by_role.ATT,
 
-    penalty_scored_discount: current?.penalty_scored_discount ?? bm.penalty_scored_discount,
-    brace_bonus:             current?.brace_bonus             ?? bm.brace_bonus,
-    hat_trick_bonus:         current?.hat_trick_bonus         ?? bm.hat_trick_bonus,
+    penalty_scored_discount: src?.penalty_scored_discount ?? bm.penalty_scored_discount,
+    brace_bonus:             src?.brace_bonus             ?? bm.brace_bonus,
+    hat_trick_bonus:         src?.hat_trick_bonus         ?? bm.hat_trick_bonus,
 
-    assist:         current?.assist         ?? bm.assist,
-    own_goal:       current?.own_goal       ?? bm.own_goal,
-    yellow_card:    current?.yellow_card    ?? bm.yellow_card,
-    red_card:       current?.red_card       ?? bm.red_card,
-    penalty_missed: current?.penalty_missed ?? bm.penalty_missed,
-    penalty_saved:  current?.penalty_saved  ?? bm.penalty_saved,
+    assist:         src?.assist         ?? bm.assist,
+    own_goal:       src?.own_goal       ?? bm.own_goal,
+    yellow_card:    src?.yellow_card    ?? bm.yellow_card,
+    red_card:       src?.red_card       ?? bm.red_card,
+    penalty_missed: src?.penalty_missed ?? bm.penalty_missed,
+    penalty_saved:  src?.penalty_saved  ?? bm.penalty_saved,
 
-    clean_sheet_gk:           current?.clean_sheet_gk           ?? (bm.clean_sheet_by_role.GK  ?? 0),
-    clean_sheet_def:          current?.clean_sheet_def          ?? (bm.clean_sheet_by_role.DEF ?? 0),
-    clean_sheet_min_minutes:  current?.clean_sheet_min_minutes  ?? bm.clean_sheet_min_minutes,
+    clean_sheet_gk:           src?.clean_sheet_gk           ?? (bm.clean_sheet_by_role.GK  ?? 0),
+    clean_sheet_def:          src?.clean_sheet_def          ?? (bm.clean_sheet_by_role.DEF ?? 0),
+    clean_sheet_min_minutes:  src?.clean_sheet_min_minutes  ?? bm.clean_sheet_min_minutes,
 
-    goals_conceded_gk:               current?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
-    goals_conceded_def:              current?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
-    goals_conceded_def_min_minutes:  current?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
+    goals_conceded_gk:               src?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
+    goals_conceded_def:              src?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
+    goals_conceded_def_min_minutes:  src?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
   }
 
   return (
-    <form action={action} className="space-y-8">
+    <form key={resetKey} action={action} className="space-y-8">
 
       {/* ── Fattore minuti ──────────────────────────────────────────── */}
       <FieldGroup title="Fattore minuti">
@@ -220,8 +225,15 @@ export function EngineConfigForm({ current }: Props) {
       </FieldGroup>
 
       {/* ── Submit ──────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <SubmitButton />
+        <button
+          type="button"
+          onClick={() => { setUseDefaults(true); setResetKey(k => k + 1) }}
+          className="rounded-lg border border-[#2e2e42] px-5 py-2 text-sm font-medium text-[#8888aa] transition-colors hover:border-white/30 hover:text-white"
+        >
+          Ripristina valori standard
+        </button>
         {state.success && (
           <span className="text-sm text-emerald-400">Configurazione salvata.</span>
         )}
