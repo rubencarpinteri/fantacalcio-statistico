@@ -11,12 +11,13 @@ import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
 const MANTRA_ROLES = ['Por', 'Dc', 'Dd', 'Ds', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc']
 
 function parseRow(line: string): string[] {
-  // Handles quoted fields like "W;A" correctly
+  // Handles quoted fields like "W;A" correctly; strips \r
   const result: string[] = []
   let current = ''
   let inQuotes = false
   for (const c of line) {
-    if (c === '"') { inQuotes = !inQuotes }
+    if (c === '\r') { continue }
+    else if (c === '"') { inQuotes = !inQuotes }
     else if (c === ';' && !inQuotes) { result.push(current.trim()); current = '' }
     else { current += c }
   }
@@ -67,7 +68,8 @@ export type ParseResult =
   | { ok: false; error: string }
 
 function parseLegheCSV(csv: string): ParsedMatchup[] {
-  const lines = csv.split('\n')
+  // Normalise line endings (Windows \r\n → \n) and strip trailing \r from cells
+  const lines = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
   const rows = lines.map(parseRow)
   const matchups: ParsedMatchup[] = []
 
