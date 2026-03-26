@@ -44,10 +44,15 @@ export default async function MatchdaysPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Giornate</h1>
-          <p className="mt-0.5 text-sm text-[#8888aa]">
-            {matchdays?.length ?? 0} giornate configurate
-          </p>
+          <h1 className="text-xl font-bold text-white">Campionato</h1>
+          <div className="mt-1 flex items-center gap-4">
+            <p className="text-sm text-[#8888aa]">
+              {matchdays?.length ?? 0} giornate
+            </p>
+            <a href="/campionato" className="text-sm text-indigo-400 hover:text-indigo-300">
+              Classifica →
+            </a>
+          </div>
         </div>
         {isAdmin && <CreateMatchdayButton />}
       </div>

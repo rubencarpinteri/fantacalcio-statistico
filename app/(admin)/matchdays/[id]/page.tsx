@@ -178,17 +178,15 @@ export default async function MatchdayDetailPage({
         {isAdmin && (
           <div className="space-y-4">
 
-            {/* STEP 1 — ID Partite: shown whenever locked/scoring (full width, prominent when empty) */}
-            {['locked', 'scoring', 'published', 'archived'].includes(matchday.status) && (
-              <div>
-                {fixtures.length === 0 && ['locked', 'scoring'].includes(matchday.status) && (
-                  <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
-                    ⚠ Inserisci gli ID delle 10 partite di Serie A per abilitare il fetch automatico dei voti.
-                  </div>
-                )}
-                <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
-              </div>
-            )}
+            {/* STEP 1 — ID Partite: always visible for admin */}
+            <div>
+              {fixtures.length === 0 && (
+                <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+                  ⚠ Inserisci gli ID delle 10 partite di Serie A per abilitare il fetch automatico dei voti.
+                </div>
+              )}
+              <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
+            </div>
 
             {/* STEP 2 — Stato e controlli */}
             <div className="flex flex-wrap items-start gap-4">
