@@ -92,8 +92,14 @@ type FotMobData = { stats: FotMobStat[]; events: FotMobEvent[] }
 
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
+/** FotMob requires a daily-rotating x-mas token: base64(day:month:year:FotMob) */
+function xMasToken(): string {
+  const d = new Date()
+  return Buffer.from(`${d.getDate()}:${d.getMonth() + 1}:${d.getFullYear()}:FotMob`).toString('base64')
+}
+
 async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; status: number }> {
-  const url = `https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`
+  const url = `https://www.fotmob.com/api/matchDetails?matchId=${matchId}`
   let res: Response
   try {
     res = await fetch(url, {
@@ -103,6 +109,7 @@ async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; 
         'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
         'Referer': 'https://www.fotmob.com/',
         'Origin': 'https://www.fotmob.com',
+        'x-mas': xMasToken(),
         'Cache-Control': 'no-cache',
       },
       cache: 'no-store',
@@ -173,7 +180,7 @@ type SofaScoreStat = {
 }
 
 async function fetchSofaScore(eventId: number): Promise<{ data: SofaScoreStat[] | null; status: number }> {
-  const url = `https://www.sofascore.com/api/v1/event/${eventId}/lineups`
+  const url = `https://api.sofascore.com/api/v1/event/${eventId}/lineups`
   let res: Response
   try {
     res = await fetch(url, {

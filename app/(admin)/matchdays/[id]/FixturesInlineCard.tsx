@@ -7,7 +7,7 @@ import type { MatchdayFixture } from '@/types/database.types'
 import type { ProcessRatingsResponse, MatchedPlayer } from '@/app/api/ratings/process/route'
 
 const FOTMOB_URL = (id: number) => `https://www.fotmob.com/api/matchDetails?matchId=${id}`
-const SOFASCORE_URL = (id: number) => `https://www.sofascore.com/api/v1/event/${id}/lineups`
+const SOFASCORE_URL = (id: number) => `https://api.sofascore.com/api/v1/event/${id}/lineups`
 
 type FetchState =
   | { phase: 'idle' }
