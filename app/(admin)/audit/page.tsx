@@ -119,10 +119,6 @@ export default async function AuditLogPage({
             name="action"
             defaultValue={actionParam ?? ''}
             className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-1.5 text-sm text-[#f0f0fa] focus:border-indigo-500 focus:outline-none"
-            onChange={(e) => {
-              // client-side change — handled by form submit
-              void e
-            }}
           >
             <option value="">Tutte le azioni</option>
             {(Object.keys(ACTION_LABEL) as AuditAction[]).map((a) => (
