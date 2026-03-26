@@ -2,9 +2,11 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueContext } from '@/lib/league'
 import { MatchdayStatusBadge } from '@/components/ui/badge'
+import type { MatchdayFixture } from '@/types/database.types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MatchdayStatusControls } from './MatchdayStatusControls'
 import { FreezeButton } from './FreezeButton'
+import { FixturesInlineCard } from './FixturesInlineCard'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -38,6 +40,17 @@ export default async function MatchdayDetailPage({
     .eq('matchday_id', id)
     .order('changed_at', { ascending: false })
     .limit(10)
+
+  // Fixtures — always fetch for admin
+  let fixtures: MatchdayFixture[] = []
+  if (isAdmin) {
+    const { data: fx } = await supabase
+      .from('matchday_fixtures')
+      .select('*')
+      .eq('matchday_id', id)
+      .order('created_at', { ascending: true })
+    fixtures = (fx ?? []) as MatchdayFixture[]
+  }
 
   // Published results — only fetch when needed
   type PublishedScore = {
@@ -159,112 +172,96 @@ export default async function MatchdayDetailPage({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Info card */}
-        <Card>
-          <CardHeader title="Dettagli" />
-          <CardContent>
-            <dl className="space-y-3 text-sm">
-              <Row label="Apertura" value={fmt(matchday.opens_at)} />
-              <Row label="Scadenza" value={fmt(matchday.locks_at)} />
-              <Row label="Stato" value={<MatchdayStatusBadge status={matchday.status} />} />
-            </dl>
-          </CardContent>
-        </Card>
+      <div className="space-y-4">
 
-        {/* Admin: stats entry link when matchday is in scoring or later */}
-        {isAdmin && ['scoring', 'published', 'archived'].includes(matchday.status) && (
-          <Card>
-            <CardHeader title="Statistiche" />
-            <CardContent>
-              <p className="mb-3 text-sm text-[#8888aa]">
-                Inserisci voti, eventi e dati difensivi per questa giornata.
-              </p>
+        {/* ── ADMIN WORKFLOW ── */}
+        {isAdmin && (
+          <div className="space-y-4">
+
+            {/* STEP 1 — ID Partite: shown whenever locked/scoring (full width, prominent when empty) */}
+            {['locked', 'scoring', 'published', 'archived'].includes(matchday.status) && (
+              <div>
+                {fixtures.length === 0 && ['locked', 'scoring'].includes(matchday.status) && (
+                  <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+                    ⚠ Inserisci gli ID delle 10 partite di Serie A per abilitare il fetch automatico dei voti.
+                  </div>
+                )}
+                <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
+              </div>
+            )}
+
+            {/* STEP 2 — Stato e controlli */}
+            <div className="flex flex-wrap items-start gap-4">
+              <div className="min-w-[220px] flex-1">
+                <MatchdayStatusControls matchday={matchday} />
+              </div>
+              {['locked', 'scoring'].includes(matchday.status) && (
+                <div className="flex items-center gap-2 pt-1">
+                  <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
+                  {matchday.is_frozen && (
+                    <span className="text-xs text-[#55556a]">Formazioni bloccate</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* STEP 3 — Statistiche e calcolo */}
+            {['scoring', 'published', 'archived'].includes(matchday.status) && (
               <div className="flex flex-wrap gap-3">
                 <a
                   href={`/matchdays/${id}/stats`}
                   className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
                 >
-                  Apri tabella statistiche →
+                  Tabella statistiche →
                 </a>
-                <a
-                  href={`/matchdays/${id}/fixtures`}
-                  className="inline-block rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-4 py-2 text-sm font-medium text-indigo-400 hover:bg-indigo-500/10"
-                >
-                  Fetch automatico voti
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Live scores — visible to everyone when scoring */}
-        {matchday.status === 'scoring' && (
-          <Card>
-            <CardHeader
-              title="Punteggi Live"
-              description="Aggiornamento automatico ogni 60s"
-            />
-            <CardContent>
-              <p className="mb-3 text-sm text-[#8888aa]">
-                Fantavoti in tempo reale con sostituzioni dalla panchina.
-              </p>
-              <a
-                href={`/matchdays/${id}/live`}
-                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                </span>
-                Apri Live →
-              </a>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Admin: calculation / publication link when matchday is in scoring or published */}
-        {isAdmin && ['scoring', 'published'].includes(matchday.status) && (
-          <Card>
-            <CardHeader title="Calcolo punteggi" />
-            <CardContent>
-              <p className="mb-3 text-sm text-[#8888aa]">
-                Esegui il motore di calcolo, anteprima dei fantavoti e pubblica i risultati.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href={`/matchdays/${id}/calculate`}
-                  className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
-                >
-                  Apri calcolo →
-                </a>
-                <a
-                  href={`/matchdays/${id}/overrides`}
-                  className="inline-block rounded-lg border border-orange-500/30 bg-orange-500/5 px-4 py-2 text-sm font-medium text-orange-400 hover:bg-orange-500/10"
-                >
-                  Override ★
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Admin controls or manager submission CTA */}
-        {isAdmin ? (
-          <div className="space-y-3">
-            <MatchdayStatusControls matchday={matchday} />
-            {['locked', 'scoring'].includes(matchday.status) && (
-              <div className="flex items-center gap-3">
-                <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
-                {matchday.is_frozen && (
-                  <span className="text-xs text-[#55556a]">
-                    Giornata congelata — le formazioni sono bloccate.
-                  </span>
+                {['scoring', 'published'].includes(matchday.status) && (
+                  <>
+                    <a
+                      href={`/matchdays/${id}/calculate`}
+                      className="inline-block rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/20"
+                    >
+                      Calcolo punteggi →
+                    </a>
+                    <a
+                      href={`/matchdays/${id}/overrides`}
+                      className="inline-block rounded-lg border border-orange-500/30 bg-orange-500/5 px-4 py-2 text-sm font-medium text-orange-400 hover:bg-orange-500/10"
+                    >
+                      Override ★
+                    </a>
+                  </>
+                )}
+                {matchday.status === 'scoring' && (
+                  <a
+                    href={`/matchdays/${id}/live`}
+                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
+                  >
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                    </span>
+                    Live →
+                  </a>
                 )}
               </div>
             )}
+
+            {/* Formazioni link — always accessible */}
+            <p className="text-xs text-[#55556a]">
+              <a href={`/matchdays/${id}/lineup`} className="hover:text-indigo-400">
+                Gestisci formazioni →
+              </a>
+              {matchday.opens_at && (
+                <span className="ml-3">Apertura: {fmt(matchday.opens_at)}</span>
+              )}
+              {matchday.locks_at && (
+                <span className="ml-3">Scadenza: {fmt(matchday.locks_at)}</span>
+              )}
+            </p>
           </div>
-        ) : (
+        )}
+
+        {/* ── MANAGER VIEW ── */}
+        {!isAdmin && (
           <Card>
             <CardHeader title="La tua formazione" />
             <CardContent>
@@ -274,58 +271,30 @@ export default async function MatchdayDetailPage({
                     <p className="text-sm text-[#8888aa]">
                       Ultima versione: <span className="text-white">#{mySubmission.submission_number}</span>
                       {' '}— Stato:{' '}
-                      <span
-                        className={
-                          mySubmission.status === 'submitted'
-                            ? 'text-green-400'
-                            : 'text-amber-400'
-                        }
-                      >
+                      <span className={mySubmission.status === 'submitted' ? 'text-green-400' : 'text-amber-400'}>
                         {mySubmission.status === 'submitted' ? 'Inviata' : 'Bozza'}
                       </span>
                     </p>
                     {matchday.status === 'open' && (
-                      <a
-                        href={`/matchdays/${id}/lineup`}
-                        className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
-                      >
+                      <a href={`/matchdays/${id}/lineup`} className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400">
                         Modifica formazione
                       </a>
                     )}
-                    <a
-                      href={`/matchdays/${id}/lineup/history`}
-                      className="block text-sm text-indigo-400 hover:underline"
-                    >
+                    <a href={`/matchdays/${id}/lineup/history`} className="block text-sm text-indigo-400 hover:underline">
                       Storico invii →
                     </a>
                   </div>
                 ) : matchday.status === 'open' ? (
-                  <a
-                    href={`/matchdays/${id}/lineup`}
-                    className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
-                  >
+                  <a href={`/matchdays/${id}/lineup`} className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400">
                     Inserisci formazione
                   </a>
                 ) : (
-                  <p className="text-sm text-[#55556a]">
-                    La giornata non è aperta per le formazioni.
-                  </p>
+                  <p className="text-sm text-[#55556a]">La giornata non è aperta per le formazioni.</p>
                 )}
-
                 {['published', 'archived'].includes(matchday.status) && (
                   <div className="flex flex-col gap-1">
-                    <a
-                      href={`/matchdays/${id}/my-results`}
-                      className="text-sm text-indigo-400 hover:underline"
-                    >
-                      I tuoi risultati →
-                    </a>
-                    <a
-                      href={`/matchdays/${id}/results`}
-                      className="text-sm text-[#8888aa] hover:text-indigo-400"
-                    >
-                      Tutti i risultati →
-                    </a>
+                    <a href={`/matchdays/${id}/my-results`} className="text-sm text-indigo-400 hover:underline">I tuoi risultati →</a>
+                    <a href={`/matchdays/${id}/results`} className="text-sm text-[#8888aa] hover:text-indigo-400">Tutti i risultati →</a>
                   </div>
                 )}
               </div>

@@ -47,7 +47,8 @@
       "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/page.tsx\")",
       "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/actions.ts\")",
       "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/FixturesManager.tsx\")",
-      "Bash(grep -n \"generateMatchdaysAction\\\\|toggleFreezeAction\\\\|saveFixturesBulkAction\" app/\\\\\\(admin\\\\\\)/matchdays/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/fixtures/actions.ts)"
+      "Bash(grep -n \"generateMatchdaysAction\\\\|toggleFreezeAction\\\\|saveFixturesBulkAction\" app/\\\\\\(admin\\\\\\)/matchdays/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/fixtures/actions.ts)",
+      "Bash(grep -r \"SUPABASE_URL\\\\|NEXT_PUBLIC_SUPABASE\" '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/' --include=*.env*)"
     ]
   }
 }

@@ -13,18 +13,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard',    label: 'Dashboard',    icon: '▦' },
-  { href: '/league',       label: 'Lega',         icon: '⚙', adminOnly: true },
-  { href: '/players',      label: 'Giocatori',    icon: '👤' },
-  { href: '/formations',   label: 'Formazioni',   icon: '⊞',  adminOnly: true },
-  { href: '/roster',       label: 'Rose',         icon: '📋', adminOnly: true },
-  { href: '/pool',         label: 'Pool Giocatori', icon: '⚽', adminOnly: true },
   { href: '/matchdays',    label: 'Giornate',     icon: '📅' },
-  { href: '/competitions', label: 'Competizioni', icon: '⚔', adminOnly: true },
-  { href: '/campionato',   label: 'Campionato',   icon: '🏟' },
-  { href: '/standings',    label: 'Classifica',   icon: '🏆' },
-  { href: '/methodology',  label: 'Metodologia',  icon: '📐' },
-  { href: '/audit',        label: 'Audit Log',    icon: '🔍', adminOnly: true },
+  { href: '/campionato',   label: 'Campionato',   icon: '🏆' },
+  { href: '/roster',       label: 'Rose',         icon: '📋', adminOnly: true },
+  { href: '/players',      label: 'Giocatori',    icon: '👤', adminOnly: true },
+  { href: '/league',       label: 'Impostazioni', icon: '⚙',  adminOnly: true },
 ]
 
 interface AdminSidebarProps {

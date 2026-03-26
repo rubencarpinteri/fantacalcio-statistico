@@ -142,6 +142,7 @@ export async function saveFixturesBulkAction(
   if (insertError) return { error: 'Errore durante il salvataggio delle fixture.' }
 
   revalidatePath(`/matchdays/${matchdayId}/fixtures`)
+  revalidatePath(`/matchdays/${matchdayId}`)
   return { success: true, count }
 }
 
