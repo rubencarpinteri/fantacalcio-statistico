@@ -4,15 +4,12 @@ import { useActionState, useState } from 'react'
 import { saveFixturesBulkAction, importRatingsAction } from './fixtures/actions'
 import type { SaveFixturesBulkState, ImportMatch } from './fixtures/actions'
 import type { MatchdayFixture } from '@/types/database.types'
-import type { ProcessRatingsResponse, MatchedPlayer } from '@/app/api/ratings/process/route'
-
-const FOTMOB_URL = (id: number) => `https://www.fotmob.com/api/matchDetails?matchId=${id}`
-const SOFASCORE_URL = (id: number) => `https://api.sofascore.com/api/v1/event/${id}/lineups`
+import type { FetchRatingsResponse, MatchedPlayer } from '@/app/api/ratings/fetch/route'
 
 type FetchState =
   | { phase: 'idle' }
-  | { phase: 'fetching'; progress: string }
-  | { phase: 'preview'; data: ProcessRatingsResponse }
+  | { phase: 'fetching' }
+  | { phase: 'preview'; data: FetchRatingsResponse }
   | { phase: 'importing' }
   | { phase: 'done'; imported: number }
   | { phase: 'error'; message: string }
@@ -35,67 +32,15 @@ export function FixturesInlineCard({
   const sofascoreDefault = fixtures.map((f) => f.sofascore_event_id ?? '').join('\n')
 
   async function handleFetch() {
-    setFetchState({ phase: 'fetching', progress: 'Connessione…' })
-
-    const fixturePayloads: {
-      label: string
-      fotmobData: Record<string, unknown> | null
-      sofascoreData: Record<string, unknown> | null
-    }[] = []
-
-    const errors: string[] = []
-
-    for (let i = 0; i < fixtures.length; i++) {
-      const fx = fixtures[i]!
-      const label = fx.label ?? `Partita ${i + 1}`
-      setFetchState({ phase: 'fetching', progress: `Scaricando ${label} (${i + 1}/${fixtures.length})…` })
-
-      let fotmobData: Record<string, unknown> | null = null
-      let sofascoreData: Record<string, unknown> | null = null
-
-      // Fetch FotMob from browser
-      if (fx.fotmob_match_id) {
-        try {
-          const res = await fetch(FOTMOB_URL(fx.fotmob_match_id), { mode: 'cors' })
-          if (res.ok) {
-            fotmobData = await res.json() as Record<string, unknown>
-          } else {
-            errors.push(`FotMob ${fx.fotmob_match_id} (${label}): HTTP ${res.status}`)
-          }
-        } catch (e) {
-          errors.push(`FotMob ${fx.fotmob_match_id} (${label}): ${e instanceof Error ? e.message : 'Errore di rete'}`)
-        }
-      }
-
-      // Fetch SofaScore from browser
-      if (fx.sofascore_event_id) {
-        try {
-          const res = await fetch(SOFASCORE_URL(fx.sofascore_event_id), { mode: 'cors' })
-          if (res.ok) {
-            sofascoreData = await res.json() as Record<string, unknown>
-          } else {
-            errors.push(`SofaScore ${fx.sofascore_event_id} (${label}): HTTP ${res.status}`)
-          }
-        } catch (e) {
-          errors.push(`SofaScore ${fx.sofascore_event_id} (${label}): ${e instanceof Error ? e.message : 'Errore di rete / CORS bloccato'}`)
-        }
-      }
-
-      fixturePayloads.push({ label, fotmobData, sofascoreData })
-    }
-
-    setFetchState({ phase: 'fetching', progress: 'Elaborazione dati…' })
-
+    setFetchState({ phase: 'fetching' })
     try {
-      const res = await fetch('/api/ratings/process', {
+      const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId, fixtures: fixturePayloads }),
+        body: JSON.stringify({ matchdayId }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json() as ProcessRatingsResponse
-      // Prepend any client-side fetch errors
-      data.errors = [...errors, ...data.errors]
+      const data = await res.json() as FetchRatingsResponse
       setFetchState({ phase: 'preview', data })
     } catch (e) {
       setFetchState({ phase: 'error', message: String(e) })
@@ -194,7 +139,7 @@ export function FixturesInlineCard({
         )}
 
         {fetchState.phase === 'fetching' && (
-          <p className="text-sm text-[#8888aa] animate-pulse">{fetchState.progress}</p>
+          <p className="text-sm text-[#8888aa] animate-pulse">Scaricando voti da FotMob + SofaScore…</p>
         )}
 
         {fetchState.phase === 'importing' && (
@@ -234,7 +179,7 @@ export function FixturesInlineCard({
 function PreviewSummary({
   data, onConfirm, onReset,
 }: {
-  data: ProcessRatingsResponse
+  data: FetchRatingsResponse
   onConfirm: () => void
   onReset: () => void
 }) {
