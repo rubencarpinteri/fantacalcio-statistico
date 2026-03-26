@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/pool',         label: 'Pool Giocatori', icon: '⚽', adminOnly: true },
   { href: '/matchdays',    label: 'Giornate',     icon: '📅' },
   { href: '/competitions', label: 'Competizioni', icon: '⚔', adminOnly: true },
+  { href: '/campionato',   label: 'Campionato',   icon: '🏟' },
   { href: '/standings',    label: 'Classifica',   icon: '🏆' },
   { href: '/methodology',  label: 'Metodologia',  icon: '📐' },
   { href: '/audit',        label: 'Audit Log',    icon: '🔍', adminOnly: true },

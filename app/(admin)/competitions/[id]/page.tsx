@@ -1,20 +1,14 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireLeagueAdmin } from '@/lib/league'
+import { requireLeagueContext } from '@/lib/league'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { updateCompetitionStatusAction } from '../actions'
-import type { Competition, CompetitionRound } from '@/types/database.types'
+import { Badge, MatchdayStatusBadge } from '@/components/ui/badge'
+import type { Competition, CompetitionMatchup, FantasyTeam } from '@/types/database.types'
 
 const TYPE_LABEL: Record<string, string> = {
   campionato: 'Campionato', battle_royale: 'Battle Royale', coppa: 'Coppa',
 }
 const STATUS_COLOR: Record<string, string> = {
-  setup:     'text-[#8888aa]',
-  active:    'text-emerald-400',
-  completed: 'text-indigo-300',
-  cancelled: 'text-red-400',
-}
-const STATUS_BADGE: Record<string, string> = {
   setup:     'text-[#8888aa] bg-[#1a1a24]',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
@@ -24,10 +18,17 @@ const STATUS_LABEL: Record<string, string> = {
   setup: 'Setup', active: 'Attiva', completed: 'Conclusa', cancelled: 'Annullata',
 }
 
-interface TeamStandingRow {
-  team_id: string; played: number; wins: number; draws: number; losses: number
-  goals_for: number; goals_against: number; goal_difference: number
-  points: number; total_fantavoto: number
+interface StandingRow {
+  team_id: string
+  team_name: string
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  gf: number
+  gs: number
+  diff: number
+  pts: number
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -42,7 +43,8 @@ export default async function CompetitionDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const ctx = await requireLeagueAdmin()
+  const ctx = await requireLeagueContext()
+  const isAdmin = ctx.role === 'league_admin'
   const { id } = await params
   const supabase = await createClient()
 
@@ -56,60 +58,148 @@ export default async function CompetitionDetailPage({
   if (!comp) notFound()
   const competition = comp as Competition
 
-  const { count: teamCount } = await supabase
-    .from('competition_teams')
-    .select('id', { count: 'exact', head: true })
-    .eq('competition_id', id)
+  // Fetch all fantasy teams in the league
+  const { data: teams } = await supabase
+    .from('fantasy_teams')
+    .select('id, name')
+    .eq('league_id', ctx.league.id)
 
-  const { data: recentRounds } = await supabase
-    .from('competition_rounds')
+  const allTeams = (teams ?? []) as Pick<FantasyTeam, 'id' | 'name'>[]
+  const teamNameMap = new Map(allTeams.map((t) => [t.id, t.name]))
+
+  // Fetch all matchups for this competition
+  const { data: matchupsRaw } = await supabase
+    .from('competition_matchups')
     .select('*')
     .eq('competition_id', id)
-    .eq('status', 'computed')
-    .order('round_number', { ascending: false })
-    .limit(5)
+    .order('round_number', { ascending: true })
 
-  const rounds = (recentRounds ?? []) as CompetitionRound[]
+  const matchups = (matchupsRaw ?? []) as CompetitionMatchup[]
 
-  const { data: latestSnapshot } = await supabase
-    .from('competition_standings_snapshots')
-    .select('snapshot_json')
+  // Fetch all competition_rounds to get matchday_id and name per round
+  const { data: roundsRaw } = await supabase
+    .from('competition_rounds')
+    .select('id, round_number, name, matchday_id, status')
     .eq('competition_id', id)
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .order('round_number', { ascending: true })
+
+  const rounds = roundsRaw ?? []
+
+  // Fetch matchday statuses for rounds that have a matchday_id
+  const matchdayIds = rounds
+    .map((r) => r.matchday_id)
+    .filter((mid): mid is string => mid !== null)
+
+  const matchdayStatusMap = new Map<string, string>()
+  if (matchdayIds.length > 0) {
+    const { data: matchdays } = await supabase
+      .from('matchdays')
+      .select('id, status')
+      .in('id', matchdayIds)
+    for (const md of matchdays ?? []) {
+      matchdayStatusMap.set(md.id, md.status)
+    }
+  }
+
+  // Build round info map: round_number -> { name, matchday_id, status }
+  const roundInfoMap = new Map(
+    rounds.map((r) => [
+      r.round_number,
+      { name: r.name as string, matchday_id: r.matchday_id as string | null, status: r.status as string },
+    ])
+  )
+
+  // ---- Compute standings from matchups with results ----
+  const standingMap = new Map<string, StandingRow>()
+  for (const team of allTeams) {
+    standingMap.set(team.id, {
+      team_id: team.id,
+      team_name: team.name,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      gf: 0,
+      gs: 0,
+      diff: 0,
+      pts: 0,
+    })
+  }
+
+  for (const m of matchups) {
+    if (m.result === null || m.home_fantavoto === null || m.away_fantavoto === null) continue
+
+    const home = standingMap.get(m.home_team_id)
+    const away = standingMap.get(m.away_team_id)
+
+    const homeFv = Number(m.home_fantavoto)
+    const awayFv = Number(m.away_fantavoto)
+
+    if (home) {
+      home.played++
+      home.gf += homeFv
+      home.gs += awayFv
+    }
+    if (away) {
+      away.played++
+      away.gf += awayFv
+      away.gs += homeFv
+    }
+
+    if (m.result === '1') {
+      if (home) { home.wins++; home.pts += 3 }
+      if (away) away.losses++
+    } else if (m.result === 'X') {
+      if (home) { home.draws++; home.pts += 1 }
+      if (away) { away.draws++; away.pts += 1 }
+    } else if (m.result === '2') {
+      if (home) home.losses++
+      if (away) { away.wins++; away.pts += 3 }
+    }
+  }
+
+  // Compute diff and sort
+  const standings: StandingRow[] = Array.from(standingMap.values()).map((r) => ({
+    ...r,
+    diff: Math.round((r.gf - r.gs) * 100) / 100,
+  }))
+  standings.sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts
+    return b.diff - a.diff
+  })
+
+  // Get current user's team
+  const { data: myTeamRow } = await supabase
+    .from('fantasy_teams')
+    .select('id')
+    .eq('league_id', ctx.league.id)
+    .eq('manager_id', ctx.userId)
     .maybeSingle()
+  const myTeamId = myTeamRow?.id ?? null
 
-  const standingRows: TeamStandingRow[] = []
-  if (latestSnapshot?.snapshot_json) {
-    const json = latestSnapshot.snapshot_json as { type?: string; rows?: TeamStandingRow[] }
-    if (json.type === 'table' && Array.isArray(json.rows)) standingRows.push(...json.rows.slice(0, 5))
+  // Group matchups by round_number
+  const matchupsByRound = new Map<number, CompetitionMatchup[]>()
+  for (const m of matchups) {
+    if (!matchupsByRound.has(m.round_number)) matchupsByRound.set(m.round_number, [])
+    matchupsByRound.get(m.round_number)!.push(m)
   }
 
-  const teamIds = standingRows.map((r) => r.team_id)
-  const { data: teams } = teamIds.length > 0
-    ? await supabase.from('fantasy_teams').select('id, name').in('id', teamIds)
-    : { data: [] }
-  const teamNameMap = new Map((teams ?? []).map((t) => [t.id, t.name]))
+  const roundNumbers = Array.from(
+    new Set([...rounds.map((r) => r.round_number), ...matchupsByRound.keys()])
+  ).sort((a, b) => a - b)
 
-  const sc = competition.scoring_config as { method?: string } | null
-  const hasGoals = sc?.method !== 'direct_comparison'
-
-  // Inline server actions for status transitions
-  async function activateAction() {
-    'use server'
-    await updateCompetitionStatusAction(id, 'active')
-  }
-  async function completeAction() {
-    'use server'
-    await updateCompetitionStatusAction(id, 'completed')
-  }
-  async function cancelAction() {
-    'use server'
-    await updateCompetitionStatusAction(id, 'cancelled')
-  }
+  // Determine "current" round: last round with result, or first pending
+  const lastComputedRound = Math.max(
+    0,
+    ...matchups
+      .filter((m) => m.result !== null)
+      .map((m) => m.round_number)
+  )
+  const currentRound = lastComputedRound > 0 ? lastComputedRound : (roundNumbers[0] ?? 1)
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <a href="/competitions" className="text-sm text-[#55556a] hover:text-indigo-400">
@@ -117,174 +207,261 @@ export default async function CompetitionDetailPage({
           </a>
           <div className="mt-1 flex items-center gap-3">
             <h1 className="text-xl font-bold text-white">{competition.name}</h1>
-            <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[competition.status] ?? ''}`}>
+            {competition.season && (
+              <Badge variant="muted">{competition.season}</Badge>
+            )}
+            <span
+              className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[competition.status] ?? ''}`}
+            >
               {STATUS_LABEL[competition.status] ?? competition.status}
             </span>
           </div>
           <p className="text-sm text-[#8888aa]">
             {TYPE_LABEL[competition.type] ?? competition.type}
-            {competition.season ? ` · ${competition.season}` : ''}
           </p>
         </div>
+        {isAdmin && (
+          <a
+            href={`/competitions/${id}/rounds`}
+            className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm text-[#8888aa] hover:bg-[#1a1a24] hover:text-white transition-colors"
+          >
+            Gestisci turni →
+          </a>
+        )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Quick links */}
-        <Card>
-          <CardHeader title="Gestione" />
-          <CardContent>
-            <div className="space-y-1">
-              {[
-                { href: `/competitions/${id}/teams`,    label: `Squadre (${teamCount ?? 0})`, icon: '👥' },
-                { href: `/competitions/${id}/rounds`,   label: 'Turni e incontri',            icon: '📅' },
-                { href: `/competitions/${id}/standings`,label: 'Classifica completa',          icon: '📊' },
-              ].map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#8888aa] hover:bg-[#1a1a24] hover:text-white transition-colors"
-                >
-                  <span>{link.icon}</span>
-                  {link.label} →
-                </a>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Status card */}
-        <Card>
-          <CardHeader title="Stato competizione" />
-          <CardContent>
-            <p className="mb-3 text-sm text-[#8888aa]">
-              Stato attuale:{' '}
-              <span className={`font-medium ${STATUS_COLOR[competition.status] ?? 'text-white'}`}>
-                {STATUS_LABEL[competition.status]}
-              </span>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {competition.status === 'setup' && (
-                <form action={activateAction}>
-                  <button type="submit" className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-1.5 text-sm font-medium text-indigo-300 hover:bg-indigo-500/10">
-                    Attiva competizione
-                  </button>
-                </form>
-              )}
-              {competition.status === 'active' && (
-                <>
-                  <form action={completeAction}>
-                    <button type="submit" className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-1.5 text-sm font-medium text-indigo-300 hover:bg-indigo-500/10">
-                      Segna come conclusa
-                    </button>
-                  </form>
-                  <form action={cancelAction}>
-                    <button type="submit" className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-1.5 text-sm font-medium text-red-400 hover:bg-red-500/10">
-                      Annulla
-                    </button>
-                  </form>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Type-specific info */}
-        <Card>
-          <CardHeader title={competition.type === 'battle_royale' ? 'Battle Royale' : competition.type === 'coppa' ? 'Coppa' : 'Calendario'} />
-          <CardContent>
-            <p className="mb-3 text-sm text-[#8888aa]">
-              {competition.type === 'campionato' && 'Genera il calendario round-robin. Poi collega ogni turno a una giornata e calcola i risultati.'}
-              {competition.type === 'battle_royale' && 'Ogni giornata ogni squadra sfida tutte le altre. Aggiungi i turni man mano che le giornate vengono pubblicate.'}
-              {competition.type === 'coppa' && 'Configura il formato (gironi / eliminazione diretta) e gestisci i turni.'}
-            </p>
-            <a
-              href={`/competitions/${id}/rounds`}
-              className="inline-block rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/20"
-            >
-              Vai ai turni →
-            </a>
-          </CardContent>
-        </Card>
+      {/* Anchor tabs */}
+      <div className="flex gap-4 border-b border-[#2e2e42]">
+        <a
+          href="#classifica"
+          className="pb-2 text-sm font-medium text-indigo-300 border-b-2 border-indigo-400"
+        >
+          Classifica
+        </a>
+        <a
+          href="#calendario"
+          className="pb-2 text-sm font-medium text-[#8888aa] hover:text-white border-b-2 border-transparent"
+        >
+          Calendario
+        </a>
       </div>
 
-      {/* Standings preview */}
-      {standingRows.length > 0 && (
+      {/* CLASSIFICA */}
+      <div id="classifica">
         <Card>
-          <CardHeader title="Classifica (anteprima — top 5)" />
+          <CardHeader title="Classifica" />
           <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#1e1e2e]">
-                  {['Pos','Squadra','G','V','N','P',
-                    ...(hasGoals ? ['GF','GS','DR'] : []),
-                    'Pt','FV'].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-center text-xs font-medium text-[#55556a] first:text-left">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
-                {standingRows.map((row, idx) => (
-                  <tr key={row.team_id} className="hover:bg-[#0f0f1a]">
-                    <td className="px-4 py-2.5 text-[#55556a]">{idx + 1}</td>
-                    <td className="px-4 py-2.5 font-medium text-white">
-                      {teamNameMap.get(row.team_id) ?? '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.played}</td>
-                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.wins}</td>
-                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.draws}</td>
-                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.losses}</td>
-                    {hasGoals && (
-                      <>
-                        <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.goals_for}</td>
-                        <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.goals_against}</td>
-                        <td className={`px-4 py-2.5 text-center ${row.goal_difference >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {row.goal_difference > 0 ? '+' : ''}{row.goal_difference}
-                        </td>
-                      </>
+            {standings.length === 0 ? (
+              <p className="px-6 py-8 text-center text-sm text-[#55556a]">
+                Nessuna squadra iscritta alla competizione.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#2e2e42]">
+                      {['Pos', 'Squadra', 'G', 'V', 'N', 'P', 'Gf', 'Gs', 'Diff', 'Pts'].map((h) => (
+                        <th
+                          key={h}
+                          className={[
+                            'px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#55556a]',
+                            h === 'Squadra' ? 'text-left' : 'text-center',
+                          ].join(' ')}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1e1e2e]">
+                    {standings.map((row, idx) => {
+                      const isMyTeam = row.team_id === myTeamId
+                      return (
+                        <tr
+                          key={row.team_id}
+                          className={[
+                            'transition-colors hover:bg-[#1a1a24]',
+                            isMyTeam ? 'bg-indigo-500/5' : '',
+                          ].join(' ')}
+                        >
+                          <td className="px-3 py-2.5 text-center text-[#55556a]">{idx + 1}</td>
+                          <td className="px-3 py-2.5">
+                            <span
+                              className={[
+                                'font-medium',
+                                isMyTeam ? 'text-indigo-300' : 'text-white',
+                              ].join(' ')}
+                            >
+                              {row.team_name}
+                              {isMyTeam && (
+                                <span className="ml-1.5 text-xs text-indigo-400">(tu)</span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.played}</td>
+                          <td className="px-3 py-2.5 text-center text-emerald-400">{row.wins}</td>
+                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.draws}</td>
+                          <td className="px-3 py-2.5 text-center text-red-400">{row.losses}</td>
+                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.gf.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.gs.toFixed(2)}</td>
+                          <td
+                            className={[
+                              'px-3 py-2.5 text-center',
+                              row.diff > 0 ? 'text-emerald-400' : row.diff < 0 ? 'text-red-400' : 'text-[#8888aa]',
+                            ].join(' ')}
+                          >
+                            {row.diff > 0 ? '+' : ''}{row.diff.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2.5 text-center font-bold text-white">{row.pts}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* CALENDARIO */}
+      <div id="calendario" className="space-y-4">
+        <h2 className="text-base font-semibold text-white">Calendario</h2>
+
+        {roundNumbers.length === 0 ? (
+          <Card>
+            <CardContent>
+              <p className="py-8 text-center text-sm text-[#55556a]">
+                Nessun turno generato per questa competizione.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          roundNumbers.map((roundNum) => {
+            const roundMatchups = matchupsByRound.get(roundNum) ?? []
+            const roundInfo = roundInfoMap.get(roundNum)
+            const roundName = roundInfo?.name ?? `Giornata ${roundNum}`
+            const matchdayId = roundInfo?.matchday_id ?? null
+            const matchdayStatus = matchdayId ? matchdayStatusMap.get(matchdayId) : null
+            const isCurrentRound = roundNum === currentRound
+
+            const hasAnyResult = roundMatchups.some((m) => m.result !== null)
+            const isCompleted = roundMatchups.length > 0 && roundMatchups.every((m) => m.result !== null)
+
+            return (
+              <div
+                key={roundNum}
+                className={[
+                  'rounded-xl border transition-colors',
+                  isCurrentRound
+                    ? 'border-indigo-500/40 bg-[#0f0f1a]'
+                    : isCompleted
+                    ? 'border-[#1e1e2e] bg-[#0a0a0f] opacity-70'
+                    : 'border-[#2e2e42] bg-[#0f0f1a]',
+                ].join(' ')}
+              >
+                {/* Round header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e2e]">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={[
+                        'text-sm font-semibold',
+                        isCurrentRound ? 'text-indigo-300' : 'text-white',
+                      ].join(' ')}
+                    >
+                      {roundName}
+                    </span>
+                    {isCurrentRound && !isCompleted && (
+                      <Badge variant="accent">In corso</Badge>
                     )}
-                    <td className="px-4 py-2.5 text-center font-bold text-white">{row.points}</td>
-                    <td className="px-4 py-2.5 text-center text-[#55556a]">{row.total_fantavoto.toFixed(1)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t border-[#1e1e2e] px-4 py-2">
-              <a href={`/competitions/${id}/standings`} className="text-xs text-indigo-400 hover:underline">
-                Classifica completa →
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {matchdayStatus && (
+                      <MatchdayStatusBadge status={matchdayStatus} />
+                    )}
+                    {hasAnyResult && !isCompleted && (
+                      <Badge variant="warning">Parziale</Badge>
+                    )}
+                    {isCompleted && (
+                      <Badge variant="success">Completata</Badge>
+                    )}
+                  </div>
+                </div>
 
-      {/* Recent rounds */}
-      {rounds.length > 0 && (
-        <Card>
-          <CardHeader title="Turni calcolati di recente" />
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-[#1e1e2e]">
-                {rounds.map((r) => (
-                  <tr key={r.id} className="hover:bg-[#0f0f1a]">
-                    <td className="px-4 py-2.5 text-[#55556a] w-10">#{r.round_number}</td>
-                    <td className="px-4 py-2.5 text-white">{r.name}</td>
-                    <td className="px-4 py-2.5">
-                      <span className="rounded px-2 py-0.5 text-xs font-medium text-emerald-400 bg-emerald-500/10">calcolato</span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <a href={`/competitions/${id}/rounds/${r.round_number}`} className="text-xs text-indigo-400 hover:underline">
-                        Dettaglio →
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
+                {/* Matchups */}
+                <div className="divide-y divide-[#1e1e2e]">
+                  {roundMatchups.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-[#55556a]">Nessun incontro per questo turno.</p>
+                  ) : (
+                    roundMatchups.map((m) => {
+                      const homeName = teamNameMap.get(m.home_team_id) ?? '—'
+                      const awayName = teamNameMap.get(m.away_team_id) ?? '—'
+                      const homeFv = m.home_fantavoto !== null ? Number(m.home_fantavoto).toFixed(2) : null
+                      const awayFv = m.away_fantavoto !== null ? Number(m.away_fantavoto).toFixed(2) : null
+                      const played = m.result !== null
+
+                      const isHomeMyTeam = m.home_team_id === myTeamId
+                      const isAwayMyTeam = m.away_team_id === myTeamId
+
+                      return (
+                        <div key={m.id} className="flex items-center gap-2 px-4 py-2.5 text-sm">
+                          {/* Home team */}
+                          <span
+                            className={[
+                              'flex-1 text-right truncate',
+                              isHomeMyTeam ? 'font-semibold text-indigo-300' : played ? 'text-white' : 'text-[#8888aa]',
+                            ].join(' ')}
+                          >
+                            {homeName}
+                          </span>
+
+                          {/* Score / dash */}
+                          <div className="flex items-center gap-1.5 shrink-0 min-w-[120px] justify-center">
+                            {played ? (
+                              <>
+                                <span className="font-mono font-semibold text-white tabular-nums">{homeFv}</span>
+                                <ResultBadge result={m.result} />
+                                <span className="font-mono font-semibold text-white tabular-nums">{awayFv}</span>
+                              </>
+                            ) : (
+                              <span className="text-[#55556a]">—</span>
+                            )}
+                          </div>
+
+                          {/* Away team */}
+                          <span
+                            className={[
+                              'flex-1 text-left truncate',
+                              isAwayMyTeam ? 'font-semibold text-indigo-300' : played ? 'text-white' : 'text-[#8888aa]',
+                            ].join(' ')}
+                          >
+                            {awayName}
+                          </span>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
     </div>
+  )
+}
+
+function ResultBadge({ result }: { result: '1' | 'X' | '2' | null }) {
+  if (!result) return null
+  const color =
+    result === '1'
+      ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+      : result === 'X'
+      ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+      : 'text-purple-400 bg-purple-500/10 border-purple-500/20'
+  return (
+    <span className={`rounded border px-1.5 py-0.5 text-xs font-bold ${color}`}>
+      {result}
+    </span>
   )
 }

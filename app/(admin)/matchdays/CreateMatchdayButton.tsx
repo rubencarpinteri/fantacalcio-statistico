@@ -54,13 +54,21 @@ export function CreateMatchdayButton() {
                   placeholder="es. Giornata 1"
                 />
                 <Input
-                  label="Numero (opzionale)"
+                  label="Numero giornata (opzionale)"
                   name="matchday_number"
                   type="number"
                   min={1}
                   placeholder="1"
                 />
               </div>
+              <Input
+                label="Numero giornata campionato (opzionale)"
+                name="round_number"
+                type="number"
+                min={1}
+                placeholder="es. 1"
+                hint="Collega questa giornata a un turno del Campionato per il calcolo automatico dei risultati H2H"
+              />
 
               <Input
                 label="Apertura formazioni"

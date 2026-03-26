@@ -237,12 +237,26 @@ export type Matchday = {
   league_id: string
   name: string
   matchday_number: number | null
+  round_number: number | null
   opens_at: string | null
   locks_at: string | null
   status: MatchdayStatus
   created_by: string
   created_at: string
   updated_at: string
+}
+
+export type CompetitionMatchup = {
+  id: string
+  competition_id: string
+  round_number: number
+  home_team_id: string
+  away_team_id: string
+  home_fantavoto: number | null
+  away_fantavoto: number | null
+  result: '1' | 'X' | '2' | null
+  computed_at: string | null
+  created_at: string
 }
 
 export type MatchdayStatusLog = {
@@ -689,10 +703,11 @@ export type Database = {
       }
       matchdays: {
         Row: Matchday
-        Insert: Omit<Matchday, 'id' | 'created_at' | 'updated_at'> & {
+        Insert: Omit<Matchday, 'id' | 'created_at' | 'updated_at' | 'round_number'> & {
           id?: string
           created_at?: string
           updated_at?: string
+          round_number?: number | null
         }
         Update: Partial<Omit<Matchday, 'id'>>
         Relationships: never[]
@@ -881,6 +896,19 @@ export type Database = {
           computed_at?: string | null
         }
         Update: Partial<Omit<CompetitionFixture, 'id'>>
+        Relationships: never[]
+      }
+      competition_matchups: {
+        Row: CompetitionMatchup
+        Insert: Omit<CompetitionMatchup, 'id' | 'created_at' | 'home_fantavoto' | 'away_fantavoto' | 'result' | 'computed_at'> & {
+          id?: string
+          created_at?: string
+          home_fantavoto?: number | null
+          away_fantavoto?: number | null
+          result?: '1' | 'X' | '2' | null
+          computed_at?: string | null
+        }
+        Update: Partial<Omit<CompetitionMatchup, 'id'>>
         Relationships: never[]
       }
       competition_standings_snapshots: {

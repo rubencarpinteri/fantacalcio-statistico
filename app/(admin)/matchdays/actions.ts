@@ -11,6 +11,7 @@ import type { MatchdayStatus } from '@/types/database.types'
 const matchdaySchema = z.object({
   name: z.string().min(1, 'Il nome è obbligatorio').max(80),
   matchday_number: z.coerce.number().int().min(1).optional().nullable(),
+  round_number: z.coerce.number().int().min(1).optional().nullable(),
   opens_at: z.string().datetime({ offset: true }).optional().nullable(),
   locks_at: z.string().datetime({ offset: true }).optional().nullable(),
 })
@@ -30,6 +31,7 @@ export async function createMatchdayAction(
   const raw = {
     name: formData.get('name'),
     matchday_number: formData.get('matchday_number') || null,
+    round_number: formData.get('round_number') || null,
     opens_at: formData.get('opens_at') || null,
     locks_at: formData.get('locks_at') || null,
   }
@@ -52,6 +54,7 @@ export async function createMatchdayAction(
       league_id: ctx.league.id,
       name: parsed.data.name,
       matchday_number: parsed.data.matchday_number ?? null,
+      round_number: parsed.data.round_number ?? null,
       opens_at: parsed.data.opens_at ?? null,
       locks_at: parsed.data.locks_at ?? null,
       status: 'draft',

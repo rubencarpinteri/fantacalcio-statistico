@@ -364,7 +364,7 @@ export async function publishCalculationAction(
 
   const { data: matchday } = await supabase
     .from('matchdays')
-    .select('id, status')
+    .select('id, status, round_number')
     .eq('id', matchdayId)
     .eq('league_id', ctx.league.id)
     .single()
@@ -687,6 +687,65 @@ export async function publishCalculationAction(
       round_id:         round.id,
       error:            cascadeError,
     })
+  }
+
+  // ----------------------------------------------------------------
+  // Competition matchups auto-fill (non-fatal)
+  // ----------------------------------------------------------------
+  // If the matchday has a round_number, find all competition_matchups
+  // for competitions belonging to this league whose round_number matches,
+  // and fill in the fantavoto scores + result from published_team_scores.
+  // ----------------------------------------------------------------
+  if (matchday.round_number != null) {
+    try {
+      // Find all competitions in this league
+      const { data: leagueComps } = await supabase
+        .from('competitions')
+        .select('id')
+        .eq('league_id', ctx.league.id)
+
+      const leagueCompIds = (leagueComps ?? []).map((c) => c.id)
+
+      if (leagueCompIds.length > 0) {
+        // Fetch all matchups for these competitions at this round_number
+        const { data: matchups } = await supabase
+          .from('competition_matchups')
+          .select('id, home_team_id, away_team_id, competition_id')
+          .in('competition_id', leagueCompIds)
+          .eq('round_number', matchday.round_number)
+
+        if (matchups && matchups.length > 0) {
+          // Build a map from team_id → total_fantavoto from publishedScoreRows
+          const scoreMap = new Map<string, number>(
+            publishedScoreRows.map((ps) => [ps.team_id, ps.total_fantavoto])
+          )
+
+          for (const matchup of matchups) {
+            const homeFv = scoreMap.get(matchup.home_team_id) ?? null
+            const awayFv = scoreMap.get(matchup.away_team_id) ?? null
+
+            let result: '1' | 'X' | '2' | null = null
+            if (homeFv !== null && awayFv !== null) {
+              if (homeFv > awayFv) result = '1'
+              else if (homeFv === awayFv) result = 'X'
+              else result = '2'
+            }
+
+            await supabase
+              .from('competition_matchups')
+              .update({
+                home_fantavoto: homeFv,
+                away_fantavoto: awayFv,
+                result,
+                computed_at: new Date().toISOString(),
+              })
+              .eq('id', matchup.id)
+          }
+        }
+      }
+    } catch {
+      // Non-fatal: matchup fill errors are silently swallowed
+    }
   }
 
   return { error: null, success: true, competitions_updated }
