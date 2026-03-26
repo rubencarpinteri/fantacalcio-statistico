@@ -189,14 +189,27 @@ export default async function CompetitionDetailPage({
     new Set([...rounds.map((r) => r.round_number), ...matchupsByRound.keys()])
   ).sort((a, b) => a - b)
 
-  // Determine "current" round: last round with result, or first pending
+  // Determine "current" round: last round with result → last published matchday → first round
   const lastComputedRound = Math.max(
     0,
     ...matchups
       .filter((m) => m.result !== null)
       .map((m) => m.round_number)
   )
-  const currentRound = lastComputedRound > 0 ? lastComputedRound : (roundNumbers[0] ?? 1)
+  const lastPublishedRound = Math.max(
+    0,
+    ...rounds
+      .filter((r) => {
+        const mid = r.matchday_id as string | null
+        return mid ? matchdayStatusMap.get(mid) === 'published' || matchdayStatusMap.get(mid) === 'archived' : false
+      })
+      .map((r) => r.round_number as number)
+  )
+  const currentRound = lastComputedRound > 0
+    ? lastComputedRound
+    : lastPublishedRound > 0
+    ? lastPublishedRound
+    : (roundNumbers[0] ?? 1)
 
   return (
     <div className="space-y-6">
