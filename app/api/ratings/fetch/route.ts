@@ -92,25 +92,20 @@ type FotMobData = { stats: FotMobStat[]; events: FotMobEvent[] }
 
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
-/** FotMob requires a daily-rotating x-mas token: base64(day:month:year:FotMob) */
-function xMasToken(): string {
-  const d = new Date()
-  return Buffer.from(`${d.getDate()}:${d.getMonth() + 1}:${d.getFullYear()}:FotMob`).toString('base64')
-}
-
+/**
+ * FotMob no longer exposes a public JSON API endpoint.
+ * The full match data is embedded in the HTML page as __NEXT_DATA__ JSON.
+ * We fetch the HTML page and extract the data — no auth token required.
+ */
 async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; status: number }> {
-  const url = `https://www.fotmob.com/api/matchDetails?matchId=${matchId}`
+  const url = `https://www.fotmob.com/match/${matchId}`
   let res: Response
   try {
     res = await fetch(url, {
       headers: {
         'User-Agent': BROWSER_UA,
-        'Accept': 'application/json, text/plain, */*',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Referer': 'https://www.fotmob.com/',
-        'Origin': 'https://www.fotmob.com',
-        'x-mas': xMasToken(),
-        'Cache-Control': 'no-cache',
       },
       cache: 'no-store',
     })
@@ -119,8 +114,19 @@ async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; 
   }
   if (!res.ok) return { data: null, status: res.status }
 
-  const json = await res.json() as Record<string, unknown>
-  const content = json['content'] as Record<string, unknown> | undefined
+  const html = await res.text()
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/s)
+  if (!m?.[1]) return { data: null, status: 200 }
+
+  let pageProps: Record<string, unknown>
+  try {
+    const nextData = JSON.parse(m[1]) as Record<string, unknown>
+    pageProps = (nextData['props'] as Record<string, unknown>)?.['pageProps'] as Record<string, unknown> ?? {}
+  } catch {
+    return { data: null, status: 200 }
+  }
+
+  const content = pageProps['content'] as Record<string, unknown> | undefined
   if (!content) return { data: null, status: 200 }
 
   const playerStats = (content['playerStats'] as Record<string, unknown> | undefined) ?? {}
@@ -128,7 +134,6 @@ async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; 
   const rawEvents = (matchFacts?.['events'] as Record<string, unknown> | undefined)?.['events']
   const eventsArr = Array.isArray(rawEvents) ? rawEvents as Record<string, unknown>[] : []
 
-  // Parse playerStats
   const stats: FotMobStat[] = []
   for (const [idStr, raw] of Object.entries(playerStats)) {
     const p = raw as Record<string, unknown>
@@ -155,7 +160,6 @@ async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; 
     })
   }
 
-  // Parse events (cards, own goals, penalties)
   const events: FotMobEvent[] = eventsArr.map((e) => ({
     type: String(e['type'] ?? ''),
     player_id: e['playerId'] != null ? Number(e['playerId']) : null,
@@ -327,7 +331,12 @@ function mergeFixtureStats(
 
 type RequestBody = {
   matchdayId?: string
-  /** Pre-fetched SofaScore lineups keyed by sofascore_event_id (fetched browser-side to bypass Cloudflare) */
+  /**
+   * Pre-fetched SofaScore lineups keyed by sofascore_event_id.
+   * SofaScore blocks server-side and cross-origin browser requests.
+   * Data must be provided by the client via manual paste or a direct browser fetch.
+   * If absent, SofaScore is skipped entirely (FotMob-only mode).
+   */
   sofascoreByEventId?: Record<string, Record<string, unknown>>
 }
 
@@ -365,12 +374,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       ? await fetchFotMob(fx.fotmob_match_id)
       : { data: null, status: 0 }
 
-    // SofaScore: use pre-fetched browser data if available, otherwise try server-side
+    // SofaScore: only use pre-fetched browser data; server-side is IP-blocked (403)
     let ssResult: { data: SofaScoreStat[] | null; status: number }
     if (fx.sofascore_event_id && sofascoreByEventId?.[String(fx.sofascore_event_id)]) {
       ssResult = { data: parseSofaScoreStats(sofascoreByEventId[String(fx.sofascore_event_id)]!), status: 200 }
-    } else if (fx.sofascore_event_id) {
-      ssResult = await fetchSofaScore(fx.sofascore_event_id)
     } else {
       ssResult = { data: null, status: 0 }
     }
@@ -379,9 +386,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     if (fx.fotmob_match_id && !fotmobResult.data) {
       errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
     }
-    if (fx.sofascore_event_id && !ssResult.data) {
-      errors.push(`SofaScore fetch failed for event ${fx.sofascore_event_id}${label} — HTTP ${ssResult.status || 'network error'}`)
-    }
+    // SofaScore absence is not an error — it is skipped when no data is provided
 
     const merged = mergeFixtureStats(fotmobResult.data, ssResult.data)
     allFetched.push(...merged)

@@ -34,21 +34,10 @@ export function FixturesInlineCard({
   async function handleFetch() {
     setFetchState({ phase: 'fetching' })
     try {
-      // Fetch SofaScore from browser (bypasses Cloudflare — real browser has cf-clearance)
-      const sofascoreByEventId: Record<string, Record<string, unknown>> = {}
-      for (const fx of fixtures) {
-        if (!fx.sofascore_event_id) continue
-        try {
-          const r = await fetch(`https://api.sofascore.com/api/v1/event/${fx.sofascore_event_id}/lineups`)
-          if (r.ok) sofascoreByEventId[String(fx.sofascore_event_id)] = await r.json() as Record<string, unknown>
-        } catch { /* ignore — server will note missing data */ }
-      }
-
-      // Server fetches FotMob (needs x-mas token), processes everything
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId, sofascoreByEventId }),
+        body: JSON.stringify({ matchdayId }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() as FetchRatingsResponse
@@ -145,12 +134,12 @@ export function FixturesInlineCard({
             disabled={fixtures.length === 0}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
           >
-            Scarica voti da FotMob + SofaScore
+            Scarica voti da FotMob
           </button>
         )}
 
         {fetchState.phase === 'fetching' && (
-          <p className="text-sm text-[#8888aa] animate-pulse">Scaricando voti da FotMob + SofaScore…</p>
+          <p className="text-sm text-[#8888aa] animate-pulse">Scaricando voti da FotMob…</p>
         )}
 
         {fetchState.phase === 'importing' && (
