@@ -2,6 +2,7 @@ import { requireLeagueAdmin } from '@/lib/league'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { InviteMemberForm } from './InviteMemberForm'
+import { CreateTeamForm } from './CreateTeamForm'
 import { ChangeRoleForm, RemoveMemberButton } from './MemberActions'
 
 export const metadata = { title: 'Membri lega' }
@@ -10,28 +11,46 @@ export default async function LeagueMembersPage() {
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
-  // Fetch all members with profile + team info
+  // Fetch all members with profile info
   const { data: members } = await supabase
     .from('league_users')
     .select(`
       user_id,
       role,
       joined_at,
-      profiles ( username, full_name ),
-      fantasy_teams ( name )
+      profiles ( username, full_name )
     `)
     .eq('league_id', ctx.league.id)
     .order('joined_at', { ascending: true })
+
+  // Fetch all teams in the league
+  const { data: allTeams } = await supabase
+    .from('fantasy_teams')
+    .select('id, name, manager_id')
+    .eq('league_id', ctx.league.id)
+    .order('name', { ascending: true })
 
   type Member = {
     user_id: string
     role: 'manager' | 'league_admin'
     joined_at: string
     profiles: { username: string; full_name: string } | null
-    fantasy_teams: { name: string } | null
   }
 
+  type Team = { id: string; name: string; manager_id: string }
+
   const memberList = (members ?? []) as unknown as Member[]
+  const teamList   = (allTeams ?? []) as Team[]
+
+  // Build a map: manager_id → team names (admin may own multiple)
+  const teamsByManager = new Map<string, string[]>()
+  for (const t of teamList) {
+    const existing = teamsByManager.get(t.manager_id) ?? []
+    teamsByManager.set(t.manager_id, [...existing, t.name])
+  }
+
+  // Teams whose manager is the admin — used as "placeholder" teams in the invite form
+  const adminOwnedTeams = teamList.filter((t) => t.manager_id === ctx.userId)
 
   const fmt = (dt: string) =>
     new Intl.DateTimeFormat('it-IT', { dateStyle: 'short' }).format(new Date(dt))
@@ -52,7 +71,7 @@ export default async function LeagueMembersPage() {
         </a>
         <h1 className="mt-1 text-xl font-bold text-white">Membri lega</h1>
         <p className="mt-0.5 text-sm text-[#8888aa]">
-          {memberList.length} {memberList.length === 1 ? 'membro' : 'membri'} · {ctx.league.name}
+          {memberList.length} {memberList.length === 1 ? 'membro' : 'membri'} · {teamList.length} squadre · {ctx.league.name}
         </p>
       </div>
 
@@ -69,7 +88,7 @@ export default async function LeagueMembersPage() {
               <thead>
                 <tr className="border-b border-[#2e2e42]">
                   <th className="px-6 py-2.5 text-left text-xs font-medium text-[#55556a]">Utente</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Squadra</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Squadre</th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Ruolo</th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Iscritto</th>
                   <th className="px-4 py-2.5 text-right text-xs font-medium text-[#55556a]">Azioni</th>
@@ -78,6 +97,7 @@ export default async function LeagueMembersPage() {
               <tbody className="divide-y divide-[#1e1e2e]">
                 {memberList.map((m) => {
                   const isSelf = m.user_id === ctx.userId
+                  const teams  = teamsByManager.get(m.user_id) ?? []
                   return (
                     <tr key={m.user_id} className="hover:bg-[#0f0f1a]">
                       <td className="px-6 py-3">
@@ -86,8 +106,10 @@ export default async function LeagueMembersPage() {
                         </div>
                         <div className="text-xs text-[#55556a]">@{m.profiles?.username ?? '—'}</div>
                       </td>
-                      <td className="px-4 py-3 text-[#8888aa]">
-                        {m.fantasy_teams?.name ?? <span className="text-[#3a3a52]">—</span>}
+                      <td className="px-4 py-3 text-[#8888aa] text-xs">
+                        {teams.length === 0
+                          ? <span className="text-[#3a3a52]">—</span>
+                          : teams.join(', ')}
                       </td>
                       <td className="px-4 py-3">
                         {isSelf ? (
@@ -118,6 +140,32 @@ export default async function LeagueMembersPage() {
         </CardContent>
       </Card>
 
+      {/* Create team shortcut */}
+      <Card>
+        <CardHeader
+          title="Crea squadra"
+          description="Crea una squadra placeholder. Potrai assegnarla a un manager quando lo inviti."
+        />
+        <CardContent>
+          <CreateTeamForm />
+          {adminOwnedTeams.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs text-[#55556a]">Squadre placeholder (non ancora assegnate a un manager):</p>
+              <div className="flex flex-wrap gap-1.5">
+                {adminOwnedTeams.map((t) => (
+                  <span
+                    key={t.id}
+                    className="rounded border border-[#2e2e42] bg-[#13131e] px-2 py-0.5 text-xs text-[#8888aa]"
+                  >
+                    {t.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Invite form */}
       <Card>
         <CardHeader
@@ -125,7 +173,7 @@ export default async function LeagueMembersPage() {
           description="Il manager riceverà un'email con il link per impostare la password e accedere all'app."
         />
         <CardContent>
-          <InviteMemberForm />
+          <InviteMemberForm unassignedTeams={adminOwnedTeams} />
         </CardContent>
       </Card>
 
@@ -133,6 +181,9 @@ export default async function LeagueMembersPage() {
       <div className="rounded-lg border border-[#2e2e42] bg-[#080810] px-4 py-3 text-xs text-[#55556a] space-y-1">
         <p>
           <span className="text-[#8888aa]">Invito:</span> il manager riceve un link valido 24h. Cliccando il link, imposta la password e accede direttamente al proprio pannello.
+        </p>
+        <p>
+          <span className="text-[#8888aa]">Assegnazione:</span> puoi creare le squadre in anticipo e assegnarle ai manager al momento dell&apos;invito.
         </p>
         <p>
           <span className="text-[#8888aa]">Rimozione:</span> rimuovere un membro elimina la sua squadra ma non cancella il suo account Supabase. Può essere reinvitato in futuro.

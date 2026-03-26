@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Input } from '@/components/ui/input'
@@ -7,6 +8,15 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { inviteMemberAction, type InviteMemberState } from './actions'
+
+interface UnassignedTeam {
+  id: string
+  name: string
+}
+
+interface Props {
+  unassignedTeams: UnassignedTeam[]
+}
 
 const ROLE_OPTIONS = [
   { value: 'manager',      label: 'Manager' },
@@ -24,8 +34,14 @@ function SubmitButton() {
 
 const initialState: InviteMemberState = { error: null, success: false }
 
-export function InviteMemberForm() {
+export function InviteMemberForm({ unassignedTeams }: Props) {
   const [state, formAction] = useActionState(inviteMemberAction, initialState)
+  const [useExisting, setUseExisting] = useState(unassignedTeams.length > 0)
+
+  const teamOptions = [
+    { value: '', label: '— Crea nuova squadra —' },
+    ...unassignedTeams.map((t) => ({ value: t.id, label: t.name })),
+  ]
 
   return (
     <form action={formAction} className="space-y-4">
@@ -51,12 +67,31 @@ export function InviteMemberForm() {
           placeholder="mario.rossi"
           hint="Solo lettere minuscole, numeri, . - _"
         />
-        <Input
-          label="Nome squadra"
-          name="team_name"
-          required
-          placeholder="Gli Invincibili"
-        />
+
+        {/* Team assignment */}
+        {unassignedTeams.length > 0 ? (
+          <div className="space-y-2">
+            <Select
+              label="Squadra"
+              name="existing_team_id"
+              options={teamOptions}
+              onChange={(e) => setUseExisting(e.target.value !== '')}
+            />
+            {!useExisting && (
+              <Input
+                name="team_name"
+                placeholder="Nome nuova squadra"
+              />
+            )}
+          </div>
+        ) : (
+          <Input
+            label="Nome squadra"
+            name="team_name"
+            required
+            placeholder="Gli Invincibili"
+          />
+        )}
       </div>
 
       <Select

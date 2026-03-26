@@ -7,18 +7,57 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 
+// ─── Create team (admin shortcut) ────────────────────────────────────────────
+
+const createTeamSchema = z.object({
+  team_name: z.string().min(2, 'Il nome squadra deve avere almeno 2 caratteri').max(60),
+})
+
+export interface CreateTeamState {
+  error: string | null
+  success: boolean
+}
+
+export async function createTeamAction(
+  _prev: CreateTeamState,
+  formData: FormData
+): Promise<CreateTeamState> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const parsed = createTeamSchema.safeParse({ team_name: formData.get('team_name') })
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Dati non validi', success: false }
+  }
+
+  const { team_name } = parsed.data
+
+  const { error } = await supabase
+    .from('fantasy_teams')
+    .insert({ league_id: ctx.league.id, manager_id: ctx.userId, name: team_name })
+
+  if (error) return { error: error.message, success: false }
+
+  revalidatePath('/league/members')
+  return { error: null, success: true }
+}
+
 // ─── Invite ──────────────────────────────────────────────────────────────────
 
 const inviteSchema = z.object({
-  email:     z.string().email('Email non valida'),
-  full_name: z.string().min(2, 'Il nome deve avere almeno 2 caratteri').max(60),
-  username:  z.string()
+  email:            z.string().email('Email non valida'),
+  full_name:        z.string().min(2, 'Il nome deve avere almeno 2 caratteri').max(60),
+  username:         z.string()
     .min(2, 'Lo username deve avere almeno 2 caratteri')
     .max(30)
     .regex(/^[a-z0-9._-]+$/, 'Solo lettere minuscole, numeri, punti, trattini e underscore'),
-  team_name: z.string().min(2, 'Il nome squadra deve avere almeno 2 caratteri').max(60),
-  role: z.enum(['manager', 'league_admin']),
-})
+  team_name:        z.string().max(60).optional(),
+  existing_team_id: z.string().uuid().optional(),
+  role:             z.enum(['manager', 'league_admin']),
+}).refine(
+  (d) => d.existing_team_id || (d.team_name && d.team_name.length >= 2),
+  { message: 'Seleziona una squadra esistente o inserisci un nome per la nuova squadra', path: ['team_name'] }
+)
 
 export interface InviteMemberState {
   error: string | null
@@ -45,7 +84,7 @@ export async function inviteMemberAction(
     return { error: parsed.error.errors[0]?.message ?? 'Dati non validi', success: false }
   }
 
-  const { email, full_name, username, team_name, role } = parsed.data
+  const { email, full_name, username, team_name, existing_team_id, role } = parsed.data
 
   // Check username isn't already taken
   const { data: existingUsername } = await supabase
@@ -89,13 +128,24 @@ export async function inviteMemberAction(
     return { error: `Errore creazione membro: ${luError.message}`, success: false }
   }
 
-  // Create fantasy team
-  const { error: ftError } = await supabase
-    .from('fantasy_teams')
-    .insert({ league_id: ctx.league.id, manager_id: newUserId, name: team_name })
-
-  if (ftError) {
-    return { error: `Errore creazione squadra: ${ftError.message}`, success: false }
+  // Assign or create fantasy team
+  if (existing_team_id) {
+    // Transfer existing team to new manager
+    const { error: ftError } = await supabase
+      .from('fantasy_teams')
+      .update({ manager_id: newUserId })
+      .eq('id', existing_team_id)
+      .eq('league_id', ctx.league.id)
+    if (ftError) {
+      return { error: `Errore assegnazione squadra: ${ftError.message}`, success: false }
+    }
+  } else {
+    const { error: ftError } = await supabase
+      .from('fantasy_teams')
+      .insert({ league_id: ctx.league.id, manager_id: newUserId, name: team_name! })
+    if (ftError) {
+      return { error: `Errore creazione squadra: ${ftError.message}`, success: false }
+    }
   }
 
   await writeAuditLog({
