@@ -4,12 +4,15 @@ import { useActionState, useState } from 'react'
 import { saveFixturesBulkAction, importRatingsAction } from './fixtures/actions'
 import type { SaveFixturesBulkState, ImportMatch } from './fixtures/actions'
 import type { MatchdayFixture } from '@/types/database.types'
-import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
+import type { ProcessRatingsResponse, MatchedPlayer } from '@/app/api/ratings/process/route'
+
+const FOTMOB_URL = (id: number) => `https://www.fotmob.com/api/matchDetails?matchId=${id}`
+const SOFASCORE_URL = (id: number) => `https://www.sofascore.com/api/v1/event/${id}/lineups`
 
 type FetchState =
   | { phase: 'idle' }
-  | { phase: 'fetching' }
-  | { phase: 'preview'; data: FetchRatingsResponse }
+  | { phase: 'fetching'; progress: string }
+  | { phase: 'preview'; data: ProcessRatingsResponse }
   | { phase: 'importing' }
   | { phase: 'done'; imported: number }
   | { phase: 'error'; message: string }
@@ -32,24 +35,76 @@ export function FixturesInlineCard({
   const sofascoreDefault = fixtures.map((f) => f.sofascore_event_id ?? '').join('\n')
 
   async function handleFetch() {
-    setFetchState({ phase: 'fetching' })
+    setFetchState({ phase: 'fetching', progress: 'Connessione…' })
+
+    const fixturePayloads: {
+      label: string
+      fotmobData: Record<string, unknown> | null
+      sofascoreData: Record<string, unknown> | null
+    }[] = []
+
+    const errors: string[] = []
+
+    for (let i = 0; i < fixtures.length; i++) {
+      const fx = fixtures[i]!
+      const label = fx.label ?? `Partita ${i + 1}`
+      setFetchState({ phase: 'fetching', progress: `Scaricando ${label} (${i + 1}/${fixtures.length})…` })
+
+      let fotmobData: Record<string, unknown> | null = null
+      let sofascoreData: Record<string, unknown> | null = null
+
+      // Fetch FotMob from browser
+      if (fx.fotmob_match_id) {
+        try {
+          const res = await fetch(FOTMOB_URL(fx.fotmob_match_id), { mode: 'cors' })
+          if (res.ok) {
+            fotmobData = await res.json() as Record<string, unknown>
+          } else {
+            errors.push(`FotMob ${fx.fotmob_match_id} (${label}): HTTP ${res.status}`)
+          }
+        } catch (e) {
+          errors.push(`FotMob ${fx.fotmob_match_id} (${label}): ${e instanceof Error ? e.message : 'Errore di rete'}`)
+        }
+      }
+
+      // Fetch SofaScore from browser
+      if (fx.sofascore_event_id) {
+        try {
+          const res = await fetch(SOFASCORE_URL(fx.sofascore_event_id), { mode: 'cors' })
+          if (res.ok) {
+            sofascoreData = await res.json() as Record<string, unknown>
+          } else {
+            errors.push(`SofaScore ${fx.sofascore_event_id} (${label}): HTTP ${res.status}`)
+          }
+        } catch (e) {
+          errors.push(`SofaScore ${fx.sofascore_event_id} (${label}): ${e instanceof Error ? e.message : 'Errore di rete / CORS bloccato'}`)
+        }
+      }
+
+      fixturePayloads.push({ label, fotmobData, sofascoreData })
+    }
+
+    setFetchState({ phase: 'fetching', progress: 'Elaborazione dati…' })
+
     try {
-      const res = await fetch('/api/ratings/fetch', {
+      const res = await fetch('/api/ratings/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
+        body: JSON.stringify({ matchdayId, fixtures: fixturePayloads }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as FetchRatingsResponse
+      const data = await res.json() as ProcessRatingsResponse
+      // Prepend any client-side fetch errors
+      data.errors = [...errors, ...data.errors]
       setFetchState({ phase: 'preview', data })
     } catch (e) {
       setFetchState({ phase: 'error', message: String(e) })
     }
   }
 
-  async function handleImport(data: FetchRatingsResponse) {
+  async function handleImport(matched: MatchedPlayer[]) {
     setFetchState({ phase: 'importing' })
-    const toImport: ImportMatch[] = data.matched.map((m) => ({
+    const toImport: ImportMatch[] = matched.map((m) => ({
       league_player_id: m.league_player_id,
       sofascore_rating: m.stat.sofascore_rating,
       fotmob_rating: m.stat.fotmob_rating,
@@ -86,27 +141,18 @@ export function FixturesInlineCard({
             </span>
           )}
         </div>
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="text-xs text-[#55556a] hover:text-indigo-400"
-        >
+        <button onClick={() => setOpen((v) => !v)} className="text-xs text-[#55556a] hover:text-indigo-400">
           {open ? 'Riduci ↑' : 'Modifica ↓'}
         </button>
       </div>
 
       {open && (
         <div className="p-4 space-y-4">
-          <p className="text-xs text-[#55556a]">
-            Incolla gli ID numerici (uno per riga). Sostituiranno le fixture esistenti.
-          </p>
-
           <form action={formAction} className="space-y-3">
             <input type="hidden" name="matchdayId" value={matchdayId} />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-[#8888aa] mb-1">
-                  FotMob IDs
-                </label>
+                <label className="block text-xs font-medium text-[#8888aa] mb-1">FotMob IDs</label>
                 <textarea
                   name="fotmobIds"
                   rows={10}
@@ -116,9 +162,7 @@ export function FixturesInlineCard({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#8888aa] mb-1">
-                  SofaScore IDs
-                </label>
+                <label className="block text-xs font-medium text-[#8888aa] mb-1">SofaScore IDs</label>
                 <textarea
                   name="sofascoreIds"
                   rows={10}
@@ -128,16 +172,9 @@ export function FixturesInlineCard({
                 />
               </div>
             </div>
-
             {state.error && <p className="text-xs text-red-400">{state.error}</p>}
-            {state.success && (
-              <p className="text-xs text-green-400">{state.count} fixture salvate.</p>
-            )}
-
-            <button
-              type="submit"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-            >
+            {state.success && <p className="text-xs text-green-400">{state.count} fixture salvate.</p>}
+            <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
               Salva ID
             </button>
           </form>
@@ -146,22 +183,18 @@ export function FixturesInlineCard({
 
       {/* Fetch section */}
       <div className="border-t border-[#1e1e2e] px-4 py-3 space-y-3">
-        <p className="text-xs text-[#55556a]">
-          Dopo aver salvato gli ID, usa il fetch automatico per importare voti ed eventi.
-        </p>
-
         {fetchState.phase === 'idle' && (
           <button
             onClick={handleFetch}
             disabled={fixtures.length === 0}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
           >
-            Fetch voti da FotMob + SofaScore
+            Scarica voti da FotMob + SofaScore
           </button>
         )}
 
         {fetchState.phase === 'fetching' && (
-          <p className="text-sm text-[#8888aa] animate-pulse">Caricamento in corso…</p>
+          <p className="text-sm text-[#8888aa] animate-pulse">{fetchState.progress}</p>
         )}
 
         {fetchState.phase === 'importing' && (
@@ -171,10 +204,7 @@ export function FixturesInlineCard({
         {fetchState.phase === 'error' && (
           <div className="space-y-2">
             <p className="text-sm text-red-400">{fetchState.message}</p>
-            <button
-              onClick={() => setFetchState({ phase: 'idle' })}
-              className="text-xs text-[#8888aa] hover:text-indigo-400"
-            >
+            <button onClick={() => setFetchState({ phase: 'idle' })} className="text-xs text-[#8888aa] hover:text-indigo-400">
               ← Riprova
             </button>
           </div>
@@ -182,14 +212,9 @@ export function FixturesInlineCard({
 
         {fetchState.phase === 'done' && (
           <div className="space-y-2">
-            <p className="text-sm text-green-400">
-              {fetchState.imported} giocatori importati con successo.
-            </p>
-            <button
-              onClick={() => setFetchState({ phase: 'idle' })}
-              className="text-xs text-[#8888aa] hover:text-indigo-400"
-            >
-              Fetch di nuovo
+            <p className="text-sm text-green-400">{fetchState.imported} giocatori importati.</p>
+            <button onClick={() => setFetchState({ phase: 'idle' })} className="text-xs text-[#8888aa] hover:text-indigo-400">
+              Scarica di nuovo
             </button>
           </div>
         )}
@@ -197,7 +222,7 @@ export function FixturesInlineCard({
         {fetchState.phase === 'preview' && (
           <PreviewSummary
             data={fetchState.data}
-            onConfirm={() => handleImport(fetchState.data)}
+            onConfirm={() => handleImport(fetchState.data.matched)}
             onReset={() => setFetchState({ phase: 'idle' })}
           />
         )}
@@ -207,11 +232,9 @@ export function FixturesInlineCard({
 }
 
 function PreviewSummary({
-  data,
-  onConfirm,
-  onReset,
+  data, onConfirm, onReset,
 }: {
-  data: FetchRatingsResponse
+  data: ProcessRatingsResponse
   onConfirm: () => void
   onReset: () => void
 }) {
@@ -223,15 +246,10 @@ function PreviewSummary({
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm text-[#f0f0fa]">
           <span className="font-semibold text-white">{matched.length}</span> abbinati
-          {unmatched.length > 0 && (
-            <span className="ml-2 text-amber-400">· {unmatched.length} non abbinati</span>
-          )}
+          {unmatched.length > 0 && <span className="ml-2 text-amber-400">· {unmatched.length} non abbinati</span>}
         </span>
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="text-xs text-[#55556a] hover:text-indigo-400"
-        >
-          {expanded ? 'Nascondi dettagli ↑' : 'Mostra dettagli ↓'}
+        <button onClick={() => setExpanded((v) => !v)} className="text-xs text-[#55556a] hover:text-indigo-400">
+          {expanded ? 'Nascondi ↑' : 'Mostra dettagli ↓'}
         </button>
       </div>
 
@@ -282,7 +300,6 @@ function PreviewSummary({
               {unmatched.map((u, i) => (
                 <div key={i} className="text-xs text-amber-400">
                   {u.stat.name} <span className="text-[#55556a]">({u.stat.team_label})</span>
-                  {u.closest_name && <span className="text-[#55556a]"> → {u.closest_name}</span>}
                 </div>
               ))}
             </div>
@@ -298,10 +315,7 @@ function PreviewSummary({
         >
           Importa {matched.length} giocatori
         </button>
-        <button
-          onClick={onReset}
-          className="text-xs text-[#8888aa] hover:text-indigo-400 self-center"
-        >
+        <button onClick={onReset} className="text-xs text-[#8888aa] hover:text-indigo-400 self-center">
           Annulla
         </button>
       </div>
