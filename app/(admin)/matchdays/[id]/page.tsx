@@ -248,6 +248,10 @@ export default async function MatchdayDetailPage({
               <a href={`/matchdays/${id}/lineup`} className="hover:text-indigo-400">
                 Gestisci formazioni →
               </a>
+              <span className="mx-3 text-[#2e2e42]">|</span>
+              <a href={`/matchdays/${id}/import-leghe`} className="hover:text-indigo-400">
+                Importa da Leghe CSV →
+              </a>
               {matchday.opens_at && (
                 <span className="ml-3">Apertura: {fmt(matchday.opens_at)}</span>
               )}
