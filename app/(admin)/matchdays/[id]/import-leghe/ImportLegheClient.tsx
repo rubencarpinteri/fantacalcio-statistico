@@ -73,20 +73,33 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
   // Step 2 — preview + confirm
   const { matchups } = parseResult
 
-  // Build the team scores list, applying any manual overrides
-  const teamScores: { teamId: string; total: number; playersPlayed: number; nvCount: number; name: string }[] = []
+  // Build team lineups (starters + bench names) — totals are computed server-side from FotMob
+  type TeamLineup = {
+    teamId: string; name: string
+    starters: { name: string; isNv: boolean }[]
+    bench: { name: string }[]
+    playersPlayed: number; nvCount: number
+    legheTotal: number | null
+  }
+  const teamLineups: TeamLineup[] = []
   const hasUnresolved: string[] = []
 
   for (const mu of matchups) {
     for (const side of [mu.team1, mu.team2]) {
       const teamId = overrides[side.name] ?? side.teamId ?? null
-      if (side.total === null) { hasUnresolved.push(`${side.name}: totale mancante`); continue }
       if (!teamId) { hasUnresolved.push(side.name); continue }
-      teamScores.push({ teamId, total: side.total, playersPlayed: side.playersPlayed, nvCount: side.nvCount, name: side.name })
+      teamLineups.push({
+        teamId, name: side.name,
+        starters: side.starters.map(p => ({ name: p.name, isNv: p.fantavoto === null })),
+        bench: side.bench.map(p => ({ name: p.name })),
+        playersPlayed: side.playersPlayed,
+        nvCount: side.nvCount,
+        legheTotal: side.total,
+      })
     }
   }
 
-  const canConfirm = hasUnresolved.length === 0 && teamScores.length > 0
+  const canConfirm = hasUnresolved.length === 0 && teamLineups.length > 0
 
   return (
     <div className="space-y-6">
@@ -134,8 +147,8 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
                     <td className="px-4 py-2.5 text-center">
                       <span className={side.nvCount > 0 ? 'text-amber-400' : 'text-[#55556a]'}>{side.nvCount}</span>
                     </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-white">
-                      {side.total !== null ? side.total.toFixed(2) : <span className="text-red-400">—</span>}
+                    <td className="px-4 py-2.5 text-right font-mono text-[#55556a]">
+                      {side.total !== null ? side.total.toFixed(2) : '—'}
                     </td>
                   </tr>
                 )
@@ -157,15 +170,19 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         </div>
       )}
 
+      <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 text-sm text-indigo-300">
+        ℹ I punteggi saranno calcolati usando i voti FotMob (run statistico), non i totali di Leghe.
+      </div>
+
       <form action={confirmDispatch} className="flex items-center gap-3">
         <input type="hidden" name="matchday_id" value={matchdayId} />
-        <input type="hidden" name="team_scores" value={JSON.stringify(teamScores)} />
+        <input type="hidden" name="team_lineups" value={JSON.stringify(teamLineups)} />
         <button
           type="submit"
           disabled={!canConfirm || confirmPending}
           className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-40"
         >
-          {confirmPending ? 'Pubblicazione…' : `Pubblica giornata (${teamScores.length} squadre)`}
+          {confirmPending ? 'Pubblicazione…' : `Pubblica giornata (${teamLineups.length} squadre)`}
         </button>
         <button
           type="button"

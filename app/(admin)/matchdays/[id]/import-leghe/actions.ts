@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
+import { normalizeName } from '@/lib/ratings/parse'
 import * as XLSX from 'xlsx'
 
 // ─── xlsx → rows parser ───────────────────────────────────────────────────────
@@ -207,14 +208,91 @@ export async function confirmLegheImportAction(
     const ctx = await requireLeagueAdmin()
     const matchdayId = formData.get('matchday_id') as string
 
-    // teamScores: [{teamId, total, playersPlayed, nvCount}]
-    const teamScores = JSON.parse(formData.get('team_scores') as string) as {
-      teamId: string; total: number; playersPlayed: number; nvCount: number
+    // team_lineups: [{teamId, starters: [{name, isNv}], bench: [{name}], ...}]
+    const teamLineups = JSON.parse(formData.get('team_lineups') as string) as {
+      teamId: string
+      starters: { name: string; isNv: boolean }[]
+      bench: { name: string }[]
+      playersPlayed: number
+      nvCount: number
     }[]
 
-    if (teamScores.length === 0) return { ok: false, error: 'Nessuna squadra da importare.' }
+    if (teamLineups.length === 0) return { ok: false, error: 'Nessuna squadra da importare.' }
 
     const supabase = await createClient()
+
+    // ── Find latest v1 (FotMob) run for this matchday ──────────────────────
+    const { data: v1Run } = await supabase
+      .from('calculation_runs')
+      .select('id')
+      .eq('matchday_id', matchdayId)
+      .eq('engine_version', 'v1')
+      .order('run_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!v1Run) {
+      return { ok: false, error: 'Nessun calcolo FotMob trovato per questa giornata. Esegui prima il fetch e il calcolo statistico.' }
+    }
+
+    const fotmobRunId = v1Run.id
+
+    // ── Fetch player scores for this run ────────────────────────────────────
+    // player_calculations only contains scored players (no row = NV/skipped)
+    const { data: calcs } = await supabase
+      .from('player_calculations')
+      .select('player_id, fantavoto')
+      .eq('run_id', fotmobRunId)
+      .not('fantavoto', 'is', null)
+
+    const playerIds = (calcs ?? []).map(c => c.player_id).filter(Boolean) as string[]
+    const { data: lps } = playerIds.length > 0
+      ? await supabase.from('league_players').select('id, full_name').in('id', playerIds)
+      : { data: [] }
+
+    // normalized_name → fantavoto
+    const nameToFv = new Map<string, number>()
+    for (const calc of calcs ?? []) {
+      if (calc.fantavoto == null || !calc.player_id) continue
+      const lp = (lps ?? []).find(p => p.id === calc.player_id)
+      if (!lp) continue
+      nameToFv.set(normalizeName(lp.full_name), calc.fantavoto)
+    }
+
+    // ── Compute team totals using Leghe lineups + FotMob scores ────────────
+    const teamScores = teamLineups.map(tl => {
+      let total = 0
+      let playerCount = 0
+      let nvCount = 0
+      const benchQueue = [...tl.bench]
+
+      for (const starter of tl.starters) {
+        const fv = nameToFv.get(normalizeName(starter.name)) ?? null
+        if (fv !== null) {
+          total += fv
+          playerCount++
+        } else {
+          nvCount++
+          // Bench substitution: next bench player with a FotMob score
+          let substituted = false
+          while (benchQueue.length > 0) {
+            const sub = benchQueue.shift()!
+            const subFv = nameToFv.get(normalizeName(sub.name)) ?? null
+            if (subFv !== null) {
+              total += subFv
+              playerCount++
+              substituted = true
+              break
+            }
+          }
+          if (!substituted) { /* bench exhausted, no sub */ }
+        }
+      }
+
+      return { teamId: tl.teamId, total, playersPlayed: playerCount, nvCount }
+    })
+
+    if (teamScores.length === 0) return { ok: false, error: 'Nessuna squadra da importare.' }
 
     const { data: matchday } = await supabase
       .from('matchdays')
@@ -226,48 +304,10 @@ export async function confirmLegheImportAction(
     if (!matchday) return { ok: false, error: 'Giornata non trovata.' }
     if (matchday.status === 'archived') return { ok: false, error: 'Giornata archiviata.' }
 
-    // Next run number
-    const { data: maxRun } = await supabase
-      .from('calculation_runs')
-      .select('run_number')
-      .eq('matchday_id', matchdayId)
-      .order('run_number', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    const run_number = (maxRun?.run_number ?? 0) + 1
-
-    // Create calculation run
-    const { data: run, error: runErr } = await supabase
-      .from('calculation_runs')
-      .insert({
-        matchday_id: matchdayId,
-        run_number,
-        status: 'draft',
-        engine_version: 'leghe_csv',
-        config_json: { source: 'leghe_csv' },
-        triggered_by: ctx.userId,
-      })
-      .select('id')
-      .single()
-
-    if (runErr || !run) return { ok: false, error: runErr?.message ?? 'Errore creazione run.' }
-
-    const runId = run.id
+    const runId = fotmobRunId
     const now = new Date().toISOString()
 
-    // Mark run published
-    await supabase
-      .from('calculation_runs')
-      .update({ status: 'published', published_at: now, published_by: ctx.userId })
-      .eq('id', runId)
-
-    // Update current calculation pointer
-    await supabase
-      .from('matchday_current_calculation')
-      .upsert({ matchday_id: matchdayId, run_id: runId, updated_at: now })
-
-    // Upsert published_team_scores
+    // Upsert published_team_scores pointing to the FotMob run
     const scoreRows = teamScores.map(ts => ({
       league_id:       ctx.league.id,
       matchday_id:     matchdayId,
@@ -301,7 +341,7 @@ export async function confirmLegheImportAction(
       matchday_id: matchdayId,
       snapshot_json: {
         run_id: runId,
-        engine_version: 'leghe_csv',
+        engine_version: 'v1_leghe_lineups',
         team_scores: teamScores.map(ts => ({
           team_id: ts.teamId,
           total_fantavoto: ts.total,
@@ -325,7 +365,7 @@ export async function confirmLegheImportAction(
       old_status:  oldStatus,
       new_status:  'published',
       changed_by:  ctx.userId,
-      note: `Importato da CSV Leghe Fantacalcio (run #${run_number})`,
+      note: `Formazioni da Leghe xlsx, punteggi da FotMob (run v1)`,
     })
 
     await writeAuditLog({
@@ -335,7 +375,7 @@ export async function confirmLegheImportAction(
       actionType: 'calculation_publish',
       entityType: 'calculation_run',
       entityId: runId,
-      afterJson: { source: 'leghe_csv', run_number, version_number, team_count: teamScores.length },
+      afterJson: { source: 'leghe_lineups_fotmob_scores', version_number, team_count: teamScores.length },
     })
 
     // Auto-fill competition matchups (non-fatal)
@@ -388,7 +428,7 @@ export async function confirmLegheImportAction(
     revalidatePath(`/matchdays/${matchdayId}`)
     revalidatePath(`/matchdays`)
 
-    return { ok: true, message: `Giornata pubblicata con ${teamScores.length} squadre importate da Leghe.` }
+    return { ok: true, message: `Giornata pubblicata: formazioni da Leghe xlsx, punteggi da FotMob (${teamScores.length} squadre).` }
   } catch (e) {
     return { ok: false, error: String(e) }
   }
