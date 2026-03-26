@@ -510,6 +510,17 @@ export type LiveScore = {
   refreshed_at: string
 }
 
+export type MatchdayLineup = {
+  id: string
+  league_id: string
+  matchday_id: string
+  team_id: string
+  run_id: string
+  starters: Json
+  bench: Json
+  created_at: string
+}
+
 export type LivePlayerScore = {
   matchday_id: string
   team_id: string
@@ -956,6 +967,12 @@ export type Database = {
         Row: LiveScore
         Insert: Omit<LiveScore, 'refreshed_at'> & { refreshed_at?: string }
         Update: Partial<LiveScore>
+        Relationships: never[]
+      }
+      matchday_lineups: {
+        Row: MatchdayLineup
+        Insert: Omit<MatchdayLineup, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<MatchdayLineup, 'id'>>
         Relationships: never[]
       }
       live_player_scores: {

@@ -237,11 +237,10 @@ export async function confirmLegheImportAction(
 
     const fotmobRunId = v1Run.id
 
-    // ── Fetch player scores for this run ────────────────────────────────────
-    // player_calculations only contains scored players (no row = NV/skipped)
+    // ── Fetch player scores + breakdown for this run ─────────────────────────
     const { data: calcs } = await supabase
       .from('player_calculations')
-      .select('player_id, fantavoto')
+      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
       .eq('run_id', fotmobRunId)
       .not('fantavoto', 'is', null)
 
@@ -250,76 +249,84 @@ export async function confirmLegheImportAction(
       ? await supabase.from('league_players').select('id, full_name').in('id', playerIds)
       : { data: [] }
 
-    // fullname → fantavoto (primary: full normalized name)
-    const nameToFv = new Map<string, number>()
-    // surname → fantavoto (fallback: last token only, skip ambiguous surnames)
+    type CalcData = { player_id: string; fantavoto: number; voto_base: number | null; bonus_malus_breakdown: unknown }
+    // fullname/surname → full calc data
+    const nameToCalc = new Map<string, CalcData>()
     const surnameCount = new Map<string, number>()
-    const surnameToFv = new Map<string, number>()
+    const surnameToCalc = new Map<string, CalcData>()
 
     for (const calc of calcs ?? []) {
       if (calc.fantavoto == null || !calc.player_id) continue
       const lp = (lps ?? []).find(p => p.id === calc.player_id)
       if (!lp) continue
+      const data: CalcData = { player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus_breakdown: calc.bonus_malus_breakdown }
       const fullKey = normalizeName(lp.full_name)
-      nameToFv.set(fullKey, calc.fantavoto)
-      // Track surname (last word after normalization)
+      nameToCalc.set(fullKey, data)
       const parts = fullKey.split(' ')
       const surname = parts[parts.length - 1] ?? ''
       if (surname) {
         surnameCount.set(surname, (surnameCount.get(surname) ?? 0) + 1)
-        surnameToFv.set(surname, calc.fantavoto)
+        surnameToCalc.set(surname, data)
       }
     }
-    // Remove ambiguous surnames (multiple players share the same surname)
     for (const [surname, count] of surnameCount) {
-      if (count > 1) surnameToFv.delete(surname)
+      if (count > 1) surnameToCalc.delete(surname)
     }
 
-    const lookupFv = (name: string): number | null => {
+    const lookupCalc = (name: string): CalcData | null => {
       const key = normalizeName(name)
-      if (nameToFv.has(key)) return nameToFv.get(key)!
-      // Fallback: treat Leghe name as surname and look up
+      if (nameToCalc.has(key)) return nameToCalc.get(key)!
       const parts = key.split(' ')
       const lastToken = parts[parts.length - 1] ?? ''
-      if (lastToken && surnameToFv.has(lastToken)) return surnameToFv.get(lastToken)!
-      // Also try first token (some Leghe names are "Cognome N.")
+      if (lastToken && surnameToCalc.has(lastToken)) return surnameToCalc.get(lastToken)!
       const firstToken = parts[0] ?? ''
-      if (firstToken && surnameToFv.has(firstToken)) return surnameToFv.get(firstToken)!
+      if (firstToken && surnameToCalc.has(firstToken)) return surnameToCalc.get(firstToken)!
       return null
     }
+    const lookupFv = (name: string): number | null => lookupCalc(name)?.fantavoto ?? null
 
-    // ── Compute team totals using Leghe lineups + FotMob scores ────────────
-    const teamScores = teamLineups.map(tl => {
-      let total = 0
-      let playerCount = 0
-      let nvCount = 0
+    // ── Compute team totals + build lineup data ─────────────────────────────
+    type StarterEntry = { name: string; role: string; player_id: string | null; fantavoto: number | null; voto_base: number | null; bonus_malus: unknown; is_nv: boolean; subbed_by: string | null }
+    type BenchEntry   = { name: string; role: string; player_id: string | null; fantavoto: number | null; subbed_in_for: string | null }
+
+    const teamScores: { teamId: string; total: number; playersPlayed: number; nvCount: number }[] = []
+    const lineupRows: { teamId: string; starters: StarterEntry[]; bench: BenchEntry[] }[] = []
+
+    for (const tl of teamLineups) {
+      let total = 0; let playerCount = 0; let nvCount = 0
       const benchQueue = [...tl.bench]
+      const starters: StarterEntry[] = []
+      const bench: BenchEntry[] = []
 
       for (const starter of tl.starters) {
-        const fv = lookupFv(starter.name)
-        if (fv !== null) {
-          total += fv
-          playerCount++
+        const calc = lookupCalc(starter.name)
+        if (calc !== null) {
+          total += calc.fantavoto; playerCount++
+          starters.push({ name: starter.name, role: '', player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus: calc.bonus_malus_breakdown, is_nv: false, subbed_by: null })
         } else {
           nvCount++
-          // Bench substitution: next bench player with a FotMob score
-          let substituted = false
+          let subName: string | null = null
+          let subCalc: CalcData | null = null
           while (benchQueue.length > 0) {
             const sub = benchQueue.shift()!
-            const subFv = lookupFv(sub.name)
-            if (subFv !== null) {
-              total += subFv
-              playerCount++
-              substituted = true
-              break
-            }
+            const c = lookupCalc(sub.name)
+            if (c !== null) { total += c.fantavoto; playerCount++; subName = sub.name; subCalc = c; break }
           }
-          if (!substituted) { /* bench exhausted, no sub */ }
+          starters.push({ name: starter.name, role: '', player_id: null, fantavoto: null, voto_base: null, bonus_malus: null, is_nv: true, subbed_by: subName })
+          if (subCalc && subName) {
+            bench.push({ name: subName, role: '', player_id: subCalc.player_id, fantavoto: subCalc.fantavoto, subbed_in_for: starter.name })
+          }
         }
       }
+      // Remaining bench players (not used as subs)
+      for (const b of benchQueue) {
+        const c = lookupCalc(b.name)
+        bench.push({ name: b.name, role: '', player_id: c?.player_id ?? null, fantavoto: c?.fantavoto ?? null, subbed_in_for: null })
+      }
 
-      return { teamId: tl.teamId, total, playersPlayed: playerCount, nvCount }
-    })
+      teamScores.push({ teamId: tl.teamId, total, playersPlayed: playerCount, nvCount })
+      lineupRows.push({ teamId: tl.teamId, starters, bench })
+    }
 
     if (teamScores.length === 0) return { ok: false, error: 'Nessuna squadra da importare.' }
 
@@ -353,6 +360,19 @@ export async function confirmLegheImportAction(
       .upsert(scoreRows, { onConflict: 'matchday_id,team_id' })
 
     if (scoreErr) return { ok: false, error: scoreErr.message }
+
+    // Upsert matchday_lineups for match detail view
+    await supabase.from('matchday_lineups').upsert(
+      lineupRows.map(lr => ({
+        league_id:   ctx.league.id,
+        matchday_id: matchdayId,
+        team_id:     lr.teamId,
+        run_id:      runId,
+        starters:    lr.starters as unknown as import('@/types/database.types').Json,
+        bench:       lr.bench   as unknown as import('@/types/database.types').Json,
+      })),
+      { onConflict: 'matchday_id,team_id,run_id' }
+    )
 
     // Standings snapshot
     const { data: lastSnap } = await supabase

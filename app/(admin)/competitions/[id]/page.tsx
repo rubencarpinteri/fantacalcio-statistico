@@ -427,7 +427,7 @@ export default async function CompetitionDetailPage({
                       const isAwayMyTeam = m.away_team_id === myTeamId
 
                       return (
-                        <div key={m.id} className="flex items-center gap-2 px-4 py-2.5 text-sm">
+                        <a key={m.id} href={`/competitions/${id}/match/${m.id}`} className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-[#0f0f1a] transition-colors cursor-pointer">
                           {/* Home team */}
                           <span
                             className={[
@@ -460,7 +460,8 @@ export default async function CompetitionDetailPage({
                           >
                             {awayName}
                           </span>
-                        </div>
+                          <span className="text-xs text-[#3a3a4a]">→</span>
+                        </a>
                       )
                     })
                   )}
