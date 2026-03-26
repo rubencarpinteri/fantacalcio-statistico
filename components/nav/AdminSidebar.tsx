@@ -13,10 +13,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/matchdays',    label: 'Campionato',   icon: '📅' },
-  { href: '/roster',       label: 'Rose',         icon: '📋', adminOnly: true },
-  { href: '/players',      label: 'Giocatori',    icon: '👤', adminOnly: true },
-  { href: '/league',       label: 'Impostazioni', icon: '⚙',  adminOnly: true },
+  { href: '/matchdays',     label: 'Campionato',   icon: '📅' },
+  { href: '/competitions',  label: 'Competizioni', icon: '🏆', adminOnly: true },
+  { href: '/roster',        label: 'Rose',         icon: '📋', adminOnly: true },
+  { href: '/players',       label: 'Giocatori',    icon: '👤', adminOnly: true },
+  { href: '/league',        label: 'Impostazioni', icon: '⚙',  adminOnly: true },
 ]
 
 interface AdminSidebarProps {
