@@ -250,13 +250,42 @@ export async function confirmLegheImportAction(
       ? await supabase.from('league_players').select('id, full_name').in('id', playerIds)
       : { data: [] }
 
-    // normalized_name → fantavoto
+    // fullname → fantavoto (primary: full normalized name)
     const nameToFv = new Map<string, number>()
+    // surname → fantavoto (fallback: last token only, skip ambiguous surnames)
+    const surnameCount = new Map<string, number>()
+    const surnameToFv = new Map<string, number>()
+
     for (const calc of calcs ?? []) {
       if (calc.fantavoto == null || !calc.player_id) continue
       const lp = (lps ?? []).find(p => p.id === calc.player_id)
       if (!lp) continue
-      nameToFv.set(normalizeName(lp.full_name), calc.fantavoto)
+      const fullKey = normalizeName(lp.full_name)
+      nameToFv.set(fullKey, calc.fantavoto)
+      // Track surname (last word after normalization)
+      const parts = fullKey.split(' ')
+      const surname = parts[parts.length - 1] ?? ''
+      if (surname) {
+        surnameCount.set(surname, (surnameCount.get(surname) ?? 0) + 1)
+        surnameToFv.set(surname, calc.fantavoto)
+      }
+    }
+    // Remove ambiguous surnames (multiple players share the same surname)
+    for (const [surname, count] of surnameCount) {
+      if (count > 1) surnameToFv.delete(surname)
+    }
+
+    const lookupFv = (name: string): number | null => {
+      const key = normalizeName(name)
+      if (nameToFv.has(key)) return nameToFv.get(key)!
+      // Fallback: treat Leghe name as surname and look up
+      const parts = key.split(' ')
+      const lastToken = parts[parts.length - 1] ?? ''
+      if (lastToken && surnameToFv.has(lastToken)) return surnameToFv.get(lastToken)!
+      // Also try first token (some Leghe names are "Cognome N.")
+      const firstToken = parts[0] ?? ''
+      if (firstToken && surnameToFv.has(firstToken)) return surnameToFv.get(firstToken)!
+      return null
     }
 
     // ── Compute team totals using Leghe lineups + FotMob scores ────────────
@@ -267,7 +296,7 @@ export async function confirmLegheImportAction(
       const benchQueue = [...tl.bench]
 
       for (const starter of tl.starters) {
-        const fv = nameToFv.get(normalizeName(starter.name)) ?? null
+        const fv = lookupFv(starter.name)
         if (fv !== null) {
           total += fv
           playerCount++
@@ -277,7 +306,7 @@ export async function confirmLegheImportAction(
           let substituted = false
           while (benchQueue.length > 0) {
             const sub = benchQueue.shift()!
-            const subFv = nameToFv.get(normalizeName(sub.name)) ?? null
+            const subFv = lookupFv(sub.name)
             if (subFv !== null) {
               total += subFv
               playerCount++
