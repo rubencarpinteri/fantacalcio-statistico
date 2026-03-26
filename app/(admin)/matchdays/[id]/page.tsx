@@ -115,6 +115,40 @@ export default async function MatchdayDetailPage({
     }))
   }
 
+  // ── Admin workflow step status ────────────────────────────────────────────
+  let playerStatsCount = 0
+  let v1RunId: string | null = null
+  let v1RunNumber: number | null = null
+  let publishedRunEngine: string | null = null
+
+  if (isAdmin) {
+    const [statsRes, v1Res] = await Promise.all([
+      supabase.from('player_match_stats').select('id', { count: 'exact', head: true }).eq('matchday_id', id),
+      supabase.from('calculation_runs').select('id, run_number').eq('matchday_id', id).eq('engine_version', 'v1').order('run_number', { ascending: false }).limit(1).maybeSingle(),
+    ])
+    playerStatsCount = statsRes.count ?? 0
+    v1RunId = v1Res.data?.id ?? null
+    v1RunNumber = v1Res.data?.run_number ?? null
+
+    // Check if published_team_scores points to a v1 run
+    if (matchday.status === 'published' || matchday.status === 'archived') {
+      const { data: pts } = await supabase
+        .from('published_team_scores')
+        .select('run_id')
+        .eq('matchday_id', id)
+        .limit(1)
+        .maybeSingle()
+      if (pts?.run_id) {
+        const { data: run } = await supabase
+          .from('calculation_runs')
+          .select('engine_version')
+          .eq('id', pts.run_id)
+          .single()
+        publishedRunEngine = run?.engine_version ?? null
+      }
+    }
+  }
+
   // If manager: fetch their team's current submission status
   let mySubmission: { status: string; submission_number: number } | null = null
   if (!isAdmin) {
@@ -175,92 +209,126 @@ export default async function MatchdayDetailPage({
       <div className="space-y-4">
 
         {/* ── ADMIN WORKFLOW ── */}
-        {isAdmin && (
-          <div className="space-y-4">
+        {isAdmin && (() => {
+          const step1Done = fixtures.length >= 10
+          const step2Done = playerStatsCount > 0
+          const step3Done = v1RunId !== null
+          const step4Done = (matchday.status === 'published' || matchday.status === 'archived') && publishedRunEngine === 'v1'
 
-            {/* STEP 1 — ID Partite: always visible for admin */}
-            <div>
-              {fixtures.length === 0 && (
-                <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
-                  ⚠ Inserisci gli ID delle 10 partite di Serie A per abilitare il fetch automatico dei voti.
-                </div>
-              )}
-              <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
+          const StepIcon = ({ done, active }: { done: boolean; active: boolean }) => (
+            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+              done   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+              active ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' :
+                       'bg-[#1a1a24] text-[#55556a] border border-[#2e2e42]'
+            }`}>
+              {done ? '✓' : active ? '→' : '○'}
             </div>
+          )
 
-            {/* STEP 2 — Stato e controlli */}
-            <div className="flex flex-wrap items-start gap-4">
-              <div className="min-w-[220px] flex-1">
-                <MatchdayStatusControls matchday={matchday} />
+          return (
+            <div className="space-y-3">
+
+              {/* Step 1+2 — ID Partite + Fetch FotMob (inline) */}
+              <div className="rounded-xl border border-[#2e2e42] bg-[#0f0f1a] p-4">
+                <div className="mb-3 flex items-center gap-3">
+                  <StepIcon done={step1Done} active={!step1Done} />
+                  <div>
+                    <p className={`text-sm font-semibold ${step1Done ? 'text-white' : 'text-indigo-300'}`}>
+                      1 — ID Partite
+                    </p>
+                    <p className="text-xs text-[#55556a]">
+                      {step1Done ? `${fixtures.length} partite configurate` : 'Inserisci gli ID FotMob delle 10 partite'}
+                    </p>
+                  </div>
+                  <div className="ml-auto flex items-center gap-3">
+                    <StepIcon done={step2Done} active={step1Done && !step2Done} />
+                    <div className="text-right">
+                      <p className={`text-sm font-semibold ${step2Done ? 'text-white' : step1Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
+                        2 — Voti FotMob
+                      </p>
+                      <p className="text-xs text-[#55556a]">
+                        {step2Done ? `${playerStatsCount} giocatori importati` : 'Scarica i voti dopo aver salvato gli ID'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
               </div>
-              {['locked', 'scoring'].includes(matchday.status) && (
-                <div className="flex items-center gap-2 pt-1">
-                  <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
-                  {matchday.is_frozen && (
-                    <span className="text-xs text-[#55556a]">Formazioni bloccate</span>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* STEP 3 — Statistiche e calcolo */}
-            {['scoring', 'published', 'archived'].includes(matchday.status) && (
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href={`/matchdays/${id}/stats`}
-                  className="inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
-                >
-                  Tabella statistiche →
-                </a>
-                {['scoring', 'published'].includes(matchday.status) && (
-                  <>
-                    <a
-                      href={`/matchdays/${id}/calculate`}
-                      className="inline-block rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/20"
-                    >
-                      Calcolo punteggi →
-                    </a>
-                    <a
-                      href={`/matchdays/${id}/overrides`}
-                      className="inline-block rounded-lg border border-orange-500/30 bg-orange-500/5 px-4 py-2 text-sm font-medium text-orange-400 hover:bg-orange-500/10"
-                    >
-                      Override ★
-                    </a>
-                  </>
-                )}
-                {matchday.status === 'scoring' && (
+              {/* Step 3 — Calcolo statistico */}
+              <div className={`rounded-xl border p-4 ${step3Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step2Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
+                <div className="flex items-center gap-3">
+                  <StepIcon done={step3Done} active={step2Done && !step3Done} />
+                  <div className="flex-1">
+                    <p className={`text-sm font-semibold ${step3Done ? 'text-white' : step2Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
+                      3 — Calcolo statistico
+                    </p>
+                    <p className="text-xs text-[#55556a]">
+                      {step3Done ? `Run #${v1RunNumber} completato` : 'Esegui il calcolo con il motore FotMob'}
+                    </p>
+                  </div>
                   <a
-                    href={`/matchdays/${id}/live`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
+                    href={`/matchdays/${id}/calculate`}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                      step3Done
+                        ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
+                        : step2Done
+                        ? 'bg-indigo-500 text-white hover:bg-indigo-400'
+                        : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
+                    }`}
                   >
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                    </span>
-                    Live →
+                    {step3Done ? 'Ricalcola →' : 'Calcola →'}
                   </a>
-                )}
+                </div>
               </div>
-            )}
 
-            {/* Formazioni link — always accessible */}
-            <p className="text-xs text-[#55556a]">
-              <a href={`/matchdays/${id}/lineup`} className="hover:text-indigo-400">
-                Gestisci formazioni →
-              </a>
-              <span className="mx-3 text-[#2e2e42]">|</span>
-              <a href={`/matchdays/${id}/import-leghe`} className="hover:text-indigo-400">
-                Importa da Leghe CSV →
-              </a>
-              {matchday.opens_at && (
-                <span className="ml-3">Apertura: {fmt(matchday.opens_at)}</span>
-              )}
-              {matchday.locks_at && (
-                <span className="ml-3">Scadenza: {fmt(matchday.locks_at)}</span>
-              )}
-            </p>
-          </div>
-        )}
+              {/* Step 4 — Importa Leghe + Pubblica */}
+              <div className={`rounded-xl border p-4 ${step4Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step3Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
+                <div className="flex items-center gap-3">
+                  <StepIcon done={step4Done} active={step3Done && !step4Done} />
+                  <div className="flex-1">
+                    <p className={`text-sm font-semibold ${step4Done ? 'text-white' : step3Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
+                      4 — Formazioni + Pubblica
+                    </p>
+                    <p className="text-xs text-[#55556a]">
+                      {step4Done
+                        ? 'Pubblicata con punteggi FotMob'
+                        : 'Carica xlsx Leghe → usa formazioni Leghe + voti FotMob'}
+                    </p>
+                  </div>
+                  <a
+                    href={`/matchdays/${id}/import-leghe`}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                      step4Done
+                        ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
+                        : step3Done
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                        : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
+                    }`}
+                  >
+                    {step4Done ? 'Ripubblica →' : 'Importa Leghe →'}
+                  </a>
+                </div>
+              </div>
+
+              {/* Extra links */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-[#55556a]">
+                <MatchdayStatusControls matchday={matchday} />
+                {['locked', 'scoring'].includes(matchday.status) && (
+                  <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
+                )}
+                {['scoring', 'published', 'archived'].includes(matchday.status) && (
+                  <a href={`/matchdays/${id}/stats`} className="hover:text-indigo-400">Statistiche →</a>
+                )}
+                {['scoring', 'published'].includes(matchday.status) && (
+                  <a href={`/matchdays/${id}/overrides`} className="hover:text-orange-400">Override →</a>
+                )}
+                {matchday.opens_at && <span>Apertura: {fmt(matchday.opens_at)}</span>}
+                {matchday.locks_at && <span>Scadenza: {fmt(matchday.locks_at)}</span>}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── MANAGER VIEW ── */}
         {!isAdmin && (
