@@ -98,3 +98,76 @@ export async function toggleFormationActiveAction(
   revalidatePath('/formations')
   return { error: null }
 }
+
+// ── Seed Mantra presets ────────────────────────────────────────────────────────
+
+export async function seedMantraFormationsAction(): Promise<{ error?: string; created: number; skipped: number }> {
+  const { MANTRA_FORMATION_PRESETS } = await import('@/domain/formations/mantraPresets')
+  const supabase = await createClient()
+  const ctx = await requireLeagueAdmin()
+
+  // Fetch existing formation names to avoid duplicates
+  const { data: existing } = await supabase
+    .from('formations')
+    .select('name')
+    .eq('league_id', ctx.league.id)
+
+  const existingNames = new Set((existing ?? []).map((f) => f.name))
+
+  let created = 0
+  let skipped = 0
+
+  for (const preset of MANTRA_FORMATION_PRESETS) {
+    if (existingNames.has(preset.name)) {
+      skipped++
+      continue
+    }
+
+    // Insert formation
+    const { data: formation, error: fErr } = await supabase
+      .from('formations')
+      .insert({
+        league_id: ctx.league.id,
+        name: preset.name,
+        description: preset.description,
+        is_active: true,
+      })
+      .select('id')
+      .single()
+
+    if (fErr || !formation) {
+      return { error: `Errore creando ${preset.name}: ${fErr?.message}`, created, skipped }
+    }
+
+    // Insert all slots
+    const slotsToInsert = preset.slots.map((s) => ({
+      formation_id: formation.id,
+      slot_name: s.slot_name,
+      slot_order: s.slot_order,
+      allowed_mantra_roles: s.allowed_mantra_roles,
+      extended_mantra_roles: s.extended_mantra_roles,
+      is_bench: s.is_bench,
+      bench_order: s.bench_order,
+    }))
+
+    const { error: sErr } = await supabase.from('formation_slots').insert(slotsToInsert)
+
+    if (sErr) {
+      return { error: `Errore creando slot per ${preset.name}: ${sErr.message}`, created, skipped }
+    }
+
+    await writeAuditLog({
+      supabase,
+      leagueId: ctx.league.id,
+      actorUserId: ctx.userId,
+      actionType: 'formation_settings_change',
+      entityType: 'formation',
+      entityId: formation.id,
+      afterJson: { preset: preset.name, slots: preset.slots.length },
+    })
+
+    created++
+  }
+
+  return { created, skipped }
+}

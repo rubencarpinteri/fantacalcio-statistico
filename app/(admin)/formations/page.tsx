@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { CreateFormationButton } from './CreateFormationButton'
 import { FormationRowActions } from './FormationRowActions'
+import { SeedMantraButton } from './SeedMantraButton'
 
 export const metadata = { title: 'Formazioni' }
 
@@ -27,7 +28,10 @@ export default async function FormationsPage() {
             Ogni slot dichiara i ruoli Mantra compatibili.
           </p>
         </div>
-        <CreateFormationButton />
+        <div className="flex items-center gap-3">
+          <SeedMantraButton />
+          <CreateFormationButton />
+        </div>
       </div>
 
       {/* Info callout */}
