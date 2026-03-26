@@ -194,6 +194,41 @@ export async function assignPlayerAction(
 }
 
 // ============================================================
+// renameTeamAction
+// ============================================================
+
+export interface RenameTeamResult {
+  error: string | null
+}
+
+export async function renameTeamAction(
+  teamId: string,
+  newName: string
+): Promise<RenameTeamResult> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const trimmed = newName.trim()
+  if (!trimmed || trimmed.length < 2) {
+    return { error: 'Il nome deve avere almeno 2 caratteri.' }
+  }
+  if (trimmed.length > 60) {
+    return { error: 'Il nome non può superare 60 caratteri.' }
+  }
+
+  const { error } = await supabase
+    .from('fantasy_teams')
+    .update({ name: trimmed })
+    .eq('id', teamId)
+    .eq('league_id', ctx.league.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/roster')
+  return { error: null }
+}
+
+// ============================================================
 // releasePlayerAction
 // Soft-releases a player from a team by setting released_at.
 // ============================================================

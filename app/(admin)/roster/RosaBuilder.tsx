@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useTransition, useEffect } from 'react'
-import { assignPlayerAction, releasePlayerAction } from './rosaActions'
+import { assignPlayerAction, releasePlayerAction, renameTeamAction } from './rosaActions'
 
 // ============================================================
 // Types
@@ -154,6 +154,11 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
     teams[0]?.id ?? null
   )
   const [rosters, setRosters] = useState<Record<string, RosterPlayer[]>>(initialRosters)
+  const [teamNames, setTeamNames] = useState<Record<string, string>>(
+    Object.fromEntries(teams.map((t) => [t.id, t.name]))
+  )
+  const [renamingTeamId, setRenamingTeamId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -240,6 +245,23 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
     [selectedTeamId]
   )
 
+  // ---- Rename team ----
+  const handleRenameStart = useCallback((team: Team) => {
+    setRenamingTeamId(team.id)
+    setRenameValue(teamNames[team.id] ?? team.name)
+  }, [teamNames])
+
+  const handleRenameSubmit = useCallback(
+    async (teamId: string) => {
+      const result = await renameTeamAction(teamId, renameValue)
+      if (!result.error) {
+        setTeamNames((prev) => ({ ...prev, [teamId]: renameValue.trim() }))
+      }
+      setRenamingTeamId(null)
+    },
+    [renameValue]
+  )
+
   // ---- Release player ----
   const handleRelease = useCallback(
     (teamId: string, entryId: string, playerName: string) => {
@@ -272,6 +294,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
   })
 
   const selectedTeam = teams.find((t) => t.id === selectedTeamId)
+  const selectedTeamName = selectedTeamId ? (teamNames[selectedTeamId] ?? selectedTeam?.name ?? '') : ''
 
   // ---- No teams ----
   if (teams.length === 0) {
@@ -302,50 +325,76 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
               const gkCount = roster.filter((p) => p.rating_class === 'GK').length
               const { dot, title } = statusDot(count, gkCount)
               const isActive = team.id === selectedTeamId
+              const isRenaming = renamingTeamId === team.id
+              const displayName = teamNames[team.id] ?? team.name
 
               return (
-                <button
+                <div
                   key={team.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedTeamId(team.id)
-                    setSearchQuery('')
-                    setShowDropdown(false)
-                    setErrorMessage(null)
-                  }}
                   className={[
-                    'w-full px-4 py-3 text-left transition-colors',
+                    'group/team relative transition-colors',
                     isActive
                       ? 'bg-indigo-500/10 border-l-2 border-indigo-500'
                       : 'hover:bg-[#13131e]',
                   ].join(' ')}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p
-                        className={`truncate text-sm font-medium ${isActive ? 'text-indigo-300' : 'text-white'}`}
-                      >
-                        {team.name}
-                      </p>
-                      <p className="truncate text-xs text-[#55556a]">{team.manager_name}</p>
+                  {isRenaming ? (
+                    <div className="px-4 py-3">
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handleRenameSubmit(team.id)
+                          if (e.key === 'Escape') setRenamingTeamId(null)
+                        }}
+                        onBlur={() => void handleRenameSubmit(team.id)}
+                        className="w-full rounded border border-indigo-500/60 bg-[#1a1a2e] px-2 py-1 text-sm text-white outline-none"
+                      />
+                      <p className="mt-1 text-xs text-[#55556a]">Invio per salvare · Esc per annullare</p>
                     </div>
-                    <span
-                      className={`mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full ${dot}`}
-                      title={title}
-                    />
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-xs text-[#8888aa]">{count}/{MAX_ROSTER}</span>
-                    <span
-                      className={[
-                        'text-xs',
-                        gkCount >= MIN_GK ? 'text-green-500' : 'text-red-400',
-                      ].join(' ')}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTeamId(team.id)
+                        setSearchQuery('')
+                        setShowDropdown(false)
+                        setErrorMessage(null)
+                      }}
+                      className="w-full px-4 py-3 text-left"
                     >
-                      P: {gkCount}
-                    </span>
-                  </div>
-                </button>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className={`truncate text-sm font-medium ${isActive ? 'text-indigo-300' : 'text-white'}`}>
+                            {displayName}
+                          </p>
+                          <p className="truncate text-xs text-[#55556a]">{team.manager_name}</p>
+                        </div>
+                        <span
+                          className={`mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full ${dot}`}
+                          title={title}
+                        />
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="text-xs text-[#8888aa]">{count}/{MAX_ROSTER}</span>
+                        <span className={['text-xs', gkCount >= MIN_GK ? 'text-green-500' : 'text-red-400'].join(' ')}>
+                          P: {gkCount}
+                        </span>
+                      </div>
+                    </button>
+                  )}
+                  {!isRenaming && (
+                    <button
+                      type="button"
+                      onClick={() => handleRenameStart(team)}
+                      title="Rinomina squadra"
+                      className="absolute right-2 top-2 rounded p-1 text-[#3a3a52] opacity-0 transition-opacity hover:bg-[#2e2e42] hover:text-[#8888aa] group-hover/team:opacity-100"
+                    >
+                      ✎
+                    </button>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -359,7 +408,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
             {/* Header */}
             <div className="border-b border-[#2e2e42] px-4 py-3 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-white">Rosa — {selectedTeam.name}</h3>
+                <h3 className="text-sm font-semibold text-white">Rosa — {selectedTeamName}</h3>
                 <p className="text-xs text-[#55556a]">{selectedRoster.length}/{MAX_ROSTER} giocatori</p>
               </div>
             </div>
