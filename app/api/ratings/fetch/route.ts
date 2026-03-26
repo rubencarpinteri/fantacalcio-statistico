@@ -90,20 +90,31 @@ type FotMobEvent = {
 
 type FotMobData = { stats: FotMobStat[]; events: FotMobEvent[] }
 
-async function fetchFotMob(matchId: number): Promise<FotMobData | null> {
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
+async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; status: number }> {
   const url = `https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; fantacalcio-statistico/1.0)',
-      Accept: 'application/json',
-    },
-    next: { revalidate: 0 },
-  })
-  if (!res.ok) return null
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers: {
+        'User-Agent': BROWSER_UA,
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': 'https://www.fotmob.com/',
+        'Origin': 'https://www.fotmob.com',
+        'Cache-Control': 'no-cache',
+      },
+      cache: 'no-store',
+    })
+  } catch {
+    return { data: null, status: 0 }
+  }
+  if (!res.ok) return { data: null, status: res.status }
 
   const json = await res.json() as Record<string, unknown>
   const content = json['content'] as Record<string, unknown> | undefined
-  if (!content) return null
+  if (!content) return { data: null, status: 200 }
 
   const playerStats = (content['playerStats'] as Record<string, unknown> | undefined) ?? {}
   const matchFacts = content['matchFacts'] as Record<string, unknown> | undefined
@@ -146,7 +157,7 @@ async function fetchFotMob(matchId: number): Promise<FotMobData | null> {
     goal_description: e['goalDescription'] != null ? String(e['goalDescription']) : null,
   }))
 
-  return { stats, events }
+  return { data: { stats, events }, status: 200 }
 }
 
 // ---------------------------------------------------------------------------
@@ -161,16 +172,25 @@ type SofaScoreStat = {
   minutes_played: number
 }
 
-async function fetchSofaScore(eventId: number): Promise<SofaScoreStat[] | null> {
+async function fetchSofaScore(eventId: number): Promise<{ data: SofaScoreStat[] | null; status: number }> {
   const url = `https://www.sofascore.com/api/v1/event/${eventId}/lineups`
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; fantacalcio-statistico/1.0)',
-      Accept: 'application/json',
-    },
-    next: { revalidate: 0 },
-  })
-  if (!res.ok) return null
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers: {
+        'User-Agent': BROWSER_UA,
+        'Accept': '*/*',
+        'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': 'https://www.sofascore.com/',
+        'Origin': 'https://www.sofascore.com',
+        'Cache-Control': 'no-cache',
+      },
+      cache: 'no-store',
+    })
+  } catch {
+    return { data: null, status: 0 }
+  }
+  if (!res.ok) return { data: null, status: res.status }
 
   const json = await res.json() as Record<string, unknown>
   const out: SofaScoreStat[] = []
@@ -193,7 +213,7 @@ async function fetchSofaScore(eventId: number): Promise<SofaScoreStat[] | null> 
     }
   }
 
-  return out
+  return { data: out, status: 200 }
 }
 
 // ---------------------------------------------------------------------------
@@ -322,25 +342,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const errors: string[] = []
   const allFetched: FetchedPlayerStat[] = []
 
-  // Fetch all fixtures in parallel
-  await Promise.all(
-    (fixtures ?? []).map(async (fx) => {
-      const [fotmob, ss] = await Promise.all([
-        fx.fotmob_match_id ? fetchFotMob(fx.fotmob_match_id) : Promise.resolve(null),
-        fx.sofascore_event_id ? fetchSofaScore(fx.sofascore_event_id) : Promise.resolve(null),
-      ])
+  // Fetch fixtures sequentially to avoid rate-limiting
+  for (const fx of fixtures ?? []) {
+    const [fotmobResult, ssResult] = await Promise.all([
+      fx.fotmob_match_id ? fetchFotMob(fx.fotmob_match_id) : Promise.resolve({ data: null, status: 0 }),
+      fx.sofascore_event_id ? fetchSofaScore(fx.sofascore_event_id) : Promise.resolve({ data: null, status: 0 }),
+    ])
 
-      if (fx.fotmob_match_id && !fotmob) {
-        errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${fx.label ? ` (${fx.label})` : ''}`)
-      }
-      if (fx.sofascore_event_id && !ss) {
-        errors.push(`SofaScore fetch failed for event ${fx.sofascore_event_id}${fx.label ? ` (${fx.label})` : ''}`)
-      }
+    const label = fx.label ? ` (${fx.label})` : ''
+    if (fx.fotmob_match_id && !fotmobResult.data) {
+      errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
+    }
+    if (fx.sofascore_event_id && !ssResult.data) {
+      errors.push(`SofaScore fetch failed for event ${fx.sofascore_event_id}${label} — HTTP ${ssResult.status || 'network error'}`)
+    }
 
-      const merged = mergeFixtureStats(fotmob, ss)
-      allFetched.push(...merged)
-    })
-  )
+    const merged = mergeFixtureStats(fotmobResult.data, ssResult.data)
+    allFetched.push(...merged)
+  }
 
   if (allFetched.length === 0) {
     return NextResponse.json({ matched: [], unmatched: [], errors: ['No player data fetched', ...errors] })
