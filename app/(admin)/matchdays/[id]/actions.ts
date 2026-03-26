@@ -4,9 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 
-// Re-export from parent for convenience — the detail page imports from here
-export { transitionMatchdayStatusAction } from '../actions'
-
 // ---------------------------------------------------------------------------
 // Toggle freeze state on a matchday (only allowed when status is locked or scoring)
 // ---------------------------------------------------------------------------
