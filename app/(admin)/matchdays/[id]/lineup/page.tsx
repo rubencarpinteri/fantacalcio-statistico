@@ -119,25 +119,24 @@ export default async function LineupPage({
     }
   }
 
-  // Fetch the team's roster players (active only)
+  // Fetch the team's roster players (two queries — avoids nested join issues)
   const rosterPlayers = team
     ? await (async () => {
-        const { data: roster } = await supabase
+        const { data: entries } = await supabase
           .from('team_roster_entries')
-          .select('player_id, league_players(id, full_name, club, mantra_roles, primary_mantra_role, rating_class)')
+          .select('player_id')
           .eq('team_id', team.id)
           .is('released_at', null)
 
-        return (roster ?? [])
-          .map((r) => (r as unknown as { league_players: unknown }).league_players)
-          .filter(Boolean) as Array<{
-          id: string
-          full_name: string
-          club: string
-          mantra_roles: string[]
-          primary_mantra_role: string | null
-          rating_class: string
-        }>
+        const playerIds = (entries ?? []).map(e => e.player_id)
+        if (playerIds.length === 0) return []
+
+        const { data: players } = await supabase
+          .from('league_players')
+          .select('id, full_name, club, mantra_roles, primary_mantra_role, rating_class')
+          .in('id', playerIds)
+
+        return players ?? []
       })()
     : []
 
