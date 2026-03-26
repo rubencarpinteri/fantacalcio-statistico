@@ -48,7 +48,8 @@
       "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/actions.ts\")",
       "Bash(cat -n \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/FixturesManager.tsx\")",
       "Bash(grep -n \"generateMatchdaysAction\\\\|toggleFreezeAction\\\\|saveFixturesBulkAction\" app/\\\\\\(admin\\\\\\)/matchdays/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/actions.ts app/\\\\\\(admin\\\\\\)/matchdays/[id]/fixtures/actions.ts)",
-      "Bash(grep -r \"SUPABASE_URL\\\\|NEXT_PUBLIC_SUPABASE\" '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/' --include=*.env*)"
+      "Bash(grep -r \"SUPABASE_URL\\\\|NEXT_PUBLIC_SUPABASE\" '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/' --include=*.env*)",
+      "Bash(node -e \"const XLSX = require\\(''xlsx''\\); const wb = XLSX.readFile\\(''_data/Campionato 25-26/30a 25-26.csv''\\); console.log\\(wb.SheetNames\\); const ws = wb.Sheets[wb.SheetNames[0]]; const csv = XLSX.utils.sheet_to_csv\\(ws, {FS:'';''}\\); console.log\\(csv.split\\(''\\\\n''\\).slice\\(0,10\\).join\\(''\\\\n''\\)\\)\")"
     ]
   }
 }

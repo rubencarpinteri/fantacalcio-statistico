@@ -5,24 +5,27 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
+import * as XLSX from 'xlsx'
 
-// ─── CSV parser ──────────────────────────────────────────────────────────────
+// ─── xlsx → rows parser ───────────────────────────────────────────────────────
 
 const MANTRA_ROLES = ['Por', 'Dc', 'Dd', 'Ds', 'B', 'E', 'M', 'C', 'T', 'W', 'A', 'Pc']
 
-function parseRow(line: string): string[] {
-  // Handles quoted fields like "W;A" correctly; strips \r
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
-  for (const c of line) {
-    if (c === '\r') { continue }
-    else if (c === '"') { inQuotes = !inQuotes }
-    else if (c === ';' && !inQuotes) { result.push(current.trim()); current = '' }
-    else { current += c }
-  }
-  result.push(current.trim())
-  return result
+/** Read an xlsx (or csv) file buffer and return it as an array of string-cell rows */
+function fileToRows(buffer: ArrayBuffer): string[][] {
+  const wb = XLSX.read(new Uint8Array(buffer), {
+    type: 'array',
+    raw: false,       // format cells as strings
+    cellDates: false, // don't auto-convert to Date objects
+  })
+  const ws = wb.Sheets[wb.SheetNames[0] ?? '']
+  if (!ws) return []
+  const data = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
+    header: 1,
+    defval: '',
+    raw: false,
+  })
+  return data.map(row => row.map(cell => String(cell ?? '').trim()))
 }
 
 function isRoleCell(s: string | undefined): boolean {
@@ -67,10 +70,7 @@ export type ParseResult =
   | { ok: true; matchups: ParsedMatchup[]; allTeams: { id: string; name: string }[] }
   | { ok: false; error: string }
 
-function parseLegheCSV(csv: string): ParsedMatchup[] {
-  // Normalise line endings (Windows \r\n → \n) and strip trailing \r from cells
-  const lines = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
-  const rows = lines.map(parseRow)
+function parseLegheRows(rows: string[][]): ParsedMatchup[] {
   const matchups: ParsedMatchup[] = []
 
   let i = 0
@@ -153,7 +153,7 @@ function parseLegheCSV(csv: string): ParsedMatchup[] {
   return matchups
 }
 
-// ─── Server action: parse CSV + match teams ───────────────────────────────────
+// ─── Server action: parse xlsx + match teams ─────────────────────────────────
 
 export async function parseLegheCSVAction(
   _: unknown,
@@ -161,12 +161,14 @@ export async function parseLegheCSVAction(
 ): Promise<ParseResult> {
   try {
     const ctx = await requireLeagueAdmin()
-    const csv = formData.get('csv') as string
-    if (!csv?.trim()) return { ok: false, error: 'CSV vuoto.' }
+    const file = formData.get('file') as File | null
+    if (!file || file.size === 0) return { ok: false, error: 'Nessun file selezionato.' }
 
-    const matchups = parseLegheCSV(csv)
+    const buffer = await file.arrayBuffer()
+    const rows = fileToRows(buffer)
+    const matchups = parseLegheRows(rows)
     if (matchups.length === 0) {
-      return { ok: false, error: 'Nessun matchup trovato. Verifica che il CSV sia quello di Leghe Fantacalcio.' }
+      return { ok: false, error: 'Nessun matchup trovato. Verifica che il file sia quello di Leghe Fantacalcio.' }
     }
 
     const supabase = await createClient()

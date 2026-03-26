@@ -34,7 +34,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
     )
   }
 
-  // Step 1 — paste CSV
+  // Step 1 — file upload
   if (!parseResult || !parseResult.ok) {
     return (
       <div className="space-y-4">
@@ -47,14 +47,15 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         <form action={parseDispatch} className="space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-[#8888aa]">
-              Incolla qui il CSV di Leghe Fantacalcio — <span className="text-white">{matchdayName}</span>
+              File Leghe Fantacalcio — <span className="text-white">{matchdayName}</span>
             </label>
-            <textarea
-              name="csv"
-              rows={16}
-              className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 font-mono text-xs text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
-              placeholder="Formazioni Campionato - Giornata 30;;;;;; ..."
+            <p className="mb-3 text-xs text-[#55556a]">Carica il file .xlsx scaricato da Leghe Fantacalcio (accetta anche .csv).</p>
+            <input
+              type="file"
+              name="file"
+              accept=".xlsx,.xls,.csv"
               required
+              className="block w-full text-sm text-[#8888aa] file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-500/20 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-300 hover:file:bg-indigo-500/30"
             />
           </div>
           <button
@@ -62,7 +63,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
             disabled={parsePending}
             className="rounded-lg bg-indigo-500 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-400 disabled:opacity-50"
           >
-            {parsePending ? 'Analisi in corso…' : 'Analizza CSV'}
+            {parsePending ? 'Analisi in corso…' : 'Analizza file'}
           </button>
         </form>
       </div>
