@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueContext } from '@/lib/league'
 
+type BonusMalusItem = { label: string; total: number; quantity: number; points_each: number }
+
 type StarterEntry = {
   name: string; player_id: string | null
   fantavoto: number | null; voto_base: number | null
-  bonus_malus: Record<string, number> | null
+  bonus_malus: BonusMalusItem[] | null
   is_nv: boolean; subbed_by: string | null
 }
 type BenchEntry = {
@@ -13,18 +15,18 @@ type BenchEntry = {
   fantavoto: number | null; subbed_in_for: string | null
 }
 
-function BonusMalusCell({ bm }: { bm: Record<string, number> | null }) {
-  if (!bm) return <span className="text-[#55556a]">—</span>
-  const entries = Object.entries(bm).filter(([, v]) => v !== 0)
-  if (entries.length === 0) return <span className="text-[#55556a]">—</span>
+function BonusMalusCell({ bm }: { bm: BonusMalusItem[] | null }) {
+  if (!bm || bm.length === 0) return <span className="text-[#55556a]">—</span>
+  const items = bm.filter(item => item.total !== 0)
+  if (items.length === 0) return <span className="text-[#55556a]">—</span>
   return (
     <span className="flex flex-wrap gap-1">
-      {entries.map(([k, v]) => (
+      {items.map((item, i) => (
         <span
-          key={k}
-          className={`rounded px-1 py-0.5 text-xs font-medium ${v > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}
+          key={i}
+          className={`rounded px-1 py-0.5 text-xs font-medium ${item.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}
         >
-          {k.replace(/_/g, ' ')} {v > 0 ? '+' : ''}{v}
+          {item.label} {item.total > 0 ? '+' : ''}{item.total}
         </span>
       ))}
     </span>
@@ -74,7 +76,7 @@ function TeamLineup({
                   {p.voto_base != null ? p.voto_base.toFixed(2) : '—'}
                 </td>
                 <td className="px-3 py-2">
-                  <BonusMalusCell bm={p.bonus_malus as Record<string, number> | null} />
+                  <BonusMalusCell bm={p.bonus_malus} />
                 </td>
                 <td className="px-3 py-2 text-right font-mono font-bold">
                   {p.fantavoto != null
