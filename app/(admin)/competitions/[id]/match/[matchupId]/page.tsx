@@ -41,6 +41,9 @@ function TeamLineup({
   bench: BenchEntry[]
   total: number | null
 }) {
+  // Build a quick lookup: bench player name → their entry (for subs)
+  const benchByName = new Map(bench.map(b => [b.name.toLowerCase(), b]))
+
   return (
     <div className="flex-1 min-w-0">
       <div className="mb-3 flex items-center justify-between">
@@ -61,31 +64,41 @@ function TeamLineup({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e1e2e]">
-            {starters.map((p, i) => (
-              <tr key={i} className={p.is_nv ? 'opacity-50' : 'hover:bg-[#0f0f1a]'}>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    {p.is_nv && <span className="rounded bg-red-500/20 px-1 text-xs text-red-400">NV</span>}
-                    <span className={p.is_nv ? 'text-[#55556a] line-through' : 'text-white'}>{p.name}</span>
-                    {p.subbed_by && (
-                      <span className="text-xs text-emerald-400">↑ {p.subbed_by}</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-3 py-2 text-right font-mono text-[#8888aa]">
-                  {p.voto_base != null ? p.voto_base.toFixed(2) : '—'}
-                </td>
-                <td className="px-3 py-2">
-                  <BonusMalusCell bm={p.bonus_malus} />
-                </td>
-                <td className="px-3 py-2 text-right font-mono font-bold">
-                  {p.fantavoto != null
-                    ? <span className="text-white">{p.fantavoto.toFixed(2)}</span>
-                    : <span className="text-[#55556a]">—</span>
-                  }
-                </td>
-              </tr>
-            ))}
+            {starters.map((p, i) => {
+              const sub = p.subbed_by ? benchByName.get(p.subbed_by.toLowerCase()) : null
+              return (
+                <tr key={i} className={p.is_nv ? 'opacity-50' : 'hover:bg-[#0f0f1a]'}>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {p.is_nv && <span className="rounded bg-red-500/20 px-1 text-xs text-red-400">NV</span>}
+                      <span className={p.is_nv ? 'text-[#55556a] line-through' : 'text-white'}>{p.name}</span>
+                      {p.subbed_by && (
+                        <span className="text-xs text-emerald-400">
+                          ↑ {p.subbed_by}
+                          {sub?.fantavoto != null && (
+                            <span className="ml-1 font-mono font-bold">({Number(sub.fantavoto).toFixed(2)})</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[#8888aa]">
+                    {p.voto_base != null ? Number(p.voto_base).toFixed(2) : '—'}
+                  </td>
+                  <td className="px-3 py-2">
+                    <BonusMalusCell bm={p.bonus_malus} />
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono font-bold">
+                    {p.fantavoto != null
+                      ? <span className="text-white">{Number(p.fantavoto).toFixed(2)}</span>
+                      : sub?.fantavoto != null
+                      ? <span className="text-emerald-300">{Number(sub.fantavoto).toFixed(2)}</span>
+                      : <span className="text-[#55556a]">—</span>
+                    }
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
