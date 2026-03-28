@@ -53,15 +53,8 @@ export type FetchRatingsResponse = {
 // Name normalisation
 // ---------------------------------------------------------------------------
 
-function normalizeName(name: string): string {
-  return name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // strip combining accents
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+// Import the shared normalizeName so fixes (e.g. Ø→o) apply everywhere
+import { normalizeName } from '@/lib/ratings/parse'
 
 // ---------------------------------------------------------------------------
 // FotMob fetcher
@@ -140,10 +133,15 @@ async function fetchFotMob(matchId: number): Promise<{ data: FotMobData | null; 
     const statGroups = p['stats'] as Array<Record<string, unknown>> | undefined
     if (!statGroups?.length) continue
 
-    const topGroup = statGroups[0]!['stats'] as Record<string, Record<string, unknown>> | undefined
+    // Search ALL stat groups — FotMob splits stats across groups (Attack, Defence, etc.)
+    // and a goal may not be in statGroups[0]
     const getStat = (key: string): number => {
-      const v = topGroup?.[key]?.['stat'] as Record<string, unknown> | undefined
-      return Number(v?.['value'] ?? 0)
+      for (const group of statGroups) {
+        const groupStats = group['stats'] as Record<string, Record<string, unknown>> | undefined
+        const v = groupStats?.[key]?.['stat'] as Record<string, unknown> | undefined
+        if (v?.['value'] != null) return Number(v['value'])
+      }
+      return 0
     }
 
     stats.push({
