@@ -26,6 +26,12 @@ export type FetchedPlayerStat = {
 
 export function normalizeName(name: string): string {
   return name
+    // Map characters that NFD does NOT decompose to a base letter
+    .replace(/[Øø]/g, 'o')
+    .replace(/[Ææ]/g, 'ae')
+    .replace(/[Łł]/g, 'l')
+    .replace(/[Ðð]/g, 'd')
+    .replace(/ß/g, 'ss')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
