@@ -235,6 +235,189 @@ export async function parseLegheCSVAction(
   }
 }
 
+// ─── Shared types + lookup helper ─────────────────────────────────────────────
+
+type CalcData = {
+  player_id: string
+  fantavoto: number
+  voto_base: number | null
+  bonus_malus_breakdown: unknown
+}
+
+/** The shape of team_lineups JSON sent from the client for both preview and confirm */
+type TeamLineupInput = {
+  teamId: string
+  name: string                 // Leghe team name (display only)
+  starters: { name: string; isNv: boolean; role: string; legheFantavoto: number | null }[]
+  bench: { name: string; role: string }[]
+  subAssignments: Record<string, string>   // nvStarterName → benchPlayerName ('' = none)
+  playersPlayed: number
+  nvCount: number
+  legheTotal: number | null
+}
+
+/**
+ * Load the latest v1 calculation run for a matchday and build a name→score lookup.
+ * Returns { lookupCalc, runId } on success, { error } on failure.
+ */
+async function buildCalcLookup(
+  matchdayId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<{ lookupCalc: (name: string) => CalcData | null; runId: string } | { error: string }> {
+  const { data: v1Run } = await supabase
+    .from('calculation_runs')
+    .select('id')
+    .eq('matchday_id', matchdayId)
+    .eq('engine_version', 'v1')
+    .order('run_number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!v1Run) {
+    return { error: 'Nessun calcolo FotMob trovato per questa giornata. Esegui prima il fetch e il calcolo statistico.' }
+  }
+
+  const { data: calcs } = await supabase
+    .from('player_calculations')
+    .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
+    .eq('run_id', v1Run.id)
+    .not('fantavoto', 'is', null)
+
+  const playerIds = (calcs ?? []).map(c => c.player_id).filter(Boolean) as string[]
+  const { data: lps } = playerIds.length > 0
+    ? await supabase.from('league_players').select('id, full_name').in('id', playerIds)
+    : { data: [] }
+
+  const nameToCalc = new Map<string, CalcData>()
+  const surnameCount = new Map<string, number>()
+  const surnameToCalc = new Map<string, CalcData>()
+
+  for (const calc of calcs ?? []) {
+    if (calc.fantavoto == null || !calc.player_id) continue
+    const lp = (lps ?? []).find(p => p.id === calc.player_id)
+    if (!lp) continue
+    const data: CalcData = {
+      player_id: calc.player_id,
+      fantavoto: calc.fantavoto,
+      voto_base: calc.voto_base,
+      bonus_malus_breakdown: calc.bonus_malus_breakdown,
+    }
+    const fullKey = normalizeName(lp.full_name)
+    nameToCalc.set(fullKey, data)
+    const parts = fullKey.split(' ')
+    const surname = parts[parts.length - 1] ?? ''
+    if (surname) {
+      surnameCount.set(surname, (surnameCount.get(surname) ?? 0) + 1)
+      surnameToCalc.set(surname, data)
+    }
+  }
+  for (const [surname, count] of surnameCount) {
+    if (count > 1) surnameToCalc.delete(surname)
+  }
+
+  const lookupCalc = (name: string): CalcData | null => {
+    const key = normalizeName(name)
+    if (nameToCalc.has(key)) return nameToCalc.get(key)!
+    const parts = key.split(' ')
+    const lastToken = parts[parts.length - 1] ?? ''
+    if (lastToken && surnameToCalc.has(lastToken)) return surnameToCalc.get(lastToken)!
+    const firstToken = parts[0] ?? ''
+    if (firstToken && surnameToCalc.has(firstToken)) return surnameToCalc.get(firstToken)!
+    return null
+  }
+
+  return { lookupCalc, runId: v1Run.id }
+}
+
+// ─── Preview types + action ────────────────────────────────────────────────────
+
+export type PreviewPlayerRow = {
+  name: string
+  role: string
+  isNv: boolean
+  /** Bench player that replaced a NV starter — their score is counted */
+  isActiveSub: boolean
+  subbedForNv: string | null
+  finalScore: number | null
+  source: 'fotmob' | 'leghe' | 'none'
+}
+
+export type PreviewTeamResult = {
+  teamId: string
+  legheName: string
+  total: number
+  legheTotal: number | null
+  players: PreviewPlayerRow[]
+  warnings: string[]
+}
+
+export type PreviewScoresState =
+  | { ok: false; error?: string }
+  | { ok: true; teams: PreviewTeamResult[] }
+
+export async function previewScoresAction(
+  _: PreviewScoresState,
+  formData: FormData
+): Promise<PreviewScoresState> {
+  try {
+    await requireLeagueAdmin()
+    const matchdayId = formData.get('matchday_id') as string
+    const teamLineups = JSON.parse(formData.get('team_lineups') as string) as TeamLineupInput[]
+
+    const supabase = await createClient()
+    const lookupResult = await buildCalcLookup(matchdayId, supabase)
+    if ('error' in lookupResult) return { ok: false, error: lookupResult.error }
+    const { lookupCalc } = lookupResult
+
+    const teams: PreviewTeamResult[] = []
+
+    for (const tl of teamLineups) {
+      const players: PreviewPlayerRow[] = []
+      const warnings: string[] = []
+      let total = 0
+      const usedBench = new Set<string>()
+
+      for (const starter of tl.starters) {
+        if (!starter.isNv) {
+          const calc = lookupCalc(starter.name)
+          if (calc !== null) {
+            total += calc.fantavoto
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: calc.fantavoto, source: 'fotmob' })
+          } else if (starter.legheFantavoto !== null) {
+            total += starter.legheFantavoto
+            warnings.push(`${starter.name}: voto FotMob non trovato — usato voto Leghe (${starter.legheFantavoto.toFixed(2)})`)
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: starter.legheFantavoto, source: 'leghe' })
+          } else {
+            warnings.push(`${starter.name}: nessun voto disponibile`)
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: null, source: 'none' })
+          }
+        } else {
+          players.push({ name: starter.name, role: starter.role, isNv: true, isActiveSub: false, subbedForNv: null, finalScore: null, source: 'none' })
+          const assignedSubName = tl.subAssignments[starter.name] ?? ''
+          if (assignedSubName) {
+            usedBench.add(assignedSubName)
+            const c = lookupCalc(assignedSubName)
+            const benchRole = tl.bench.find(b => b.name === assignedSubName)?.role ?? ''
+            if (c !== null) {
+              total += c.fantavoto
+              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: c.fantavoto, source: 'fotmob' })
+            } else {
+              warnings.push(`Sostituto ${assignedSubName} (per ${starter.name}): voto FotMob non trovato`)
+              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: null, source: 'none' })
+            }
+          }
+        }
+      }
+
+      teams.push({ teamId: tl.teamId, legheName: tl.name, total, legheTotal: tl.legheTotal, players, warnings })
+    }
+
+    return { ok: true, teams }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+
 // ─── Server action: confirm import ───────────────────────────────────────────
 
 export type ConfirmState = { ok: boolean; error?: string; message?: string }
@@ -247,82 +430,16 @@ export async function confirmLegheImportAction(
     const ctx = await requireLeagueAdmin()
     const matchdayId = formData.get('matchday_id') as string
 
-    // team_lineups: [{teamId, starters, bench, subAssignments: {nvName→benchName}, ...}]
-    const teamLineups = JSON.parse(formData.get('team_lineups') as string) as {
-      teamId: string
-      starters: { name: string; isNv: boolean; role: string; legheFantavoto: number | null }[]
-      bench: { name: string; role: string }[]
-      subAssignments: Record<string, string>   // nvStarterName → benchPlayerName ('' = none)
-      playersPlayed: number
-      nvCount: number
-    }[]
+    const teamLineups = JSON.parse(formData.get('team_lineups') as string) as TeamLineupInput[]
 
     if (teamLineups.length === 0) return { ok: false, error: 'Nessuna squadra da importare.' }
 
     const supabase = await createClient()
 
-    // ── Find latest v1 (FotMob) run for this matchday ──────────────────────
-    const { data: v1Run } = await supabase
-      .from('calculation_runs')
-      .select('id')
-      .eq('matchday_id', matchdayId)
-      .eq('engine_version', 'v1')
-      .order('run_number', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const lookupResult = await buildCalcLookup(matchdayId, supabase)
+    if ('error' in lookupResult) return { ok: false, error: lookupResult.error }
+    const { lookupCalc, runId } = lookupResult
 
-    if (!v1Run) {
-      return { ok: false, error: 'Nessun calcolo FotMob trovato per questa giornata. Esegui prima il fetch e il calcolo statistico.' }
-    }
-
-    const fotmobRunId = v1Run.id
-
-    // ── Fetch player scores + breakdown for this run ─────────────────────────
-    const { data: calcs } = await supabase
-      .from('player_calculations')
-      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
-      .eq('run_id', fotmobRunId)
-      .not('fantavoto', 'is', null)
-
-    const playerIds = (calcs ?? []).map(c => c.player_id).filter(Boolean) as string[]
-    const { data: lps } = playerIds.length > 0
-      ? await supabase.from('league_players').select('id, full_name').in('id', playerIds)
-      : { data: [] }
-
-    type CalcData = { player_id: string; fantavoto: number; voto_base: number | null; bonus_malus_breakdown: unknown }
-    // fullname/surname → full calc data
-    const nameToCalc = new Map<string, CalcData>()
-    const surnameCount = new Map<string, number>()
-    const surnameToCalc = new Map<string, CalcData>()
-
-    for (const calc of calcs ?? []) {
-      if (calc.fantavoto == null || !calc.player_id) continue
-      const lp = (lps ?? []).find(p => p.id === calc.player_id)
-      if (!lp) continue
-      const data: CalcData = { player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus_breakdown: calc.bonus_malus_breakdown }
-      const fullKey = normalizeName(lp.full_name)
-      nameToCalc.set(fullKey, data)
-      const parts = fullKey.split(' ')
-      const surname = parts[parts.length - 1] ?? ''
-      if (surname) {
-        surnameCount.set(surname, (surnameCount.get(surname) ?? 0) + 1)
-        surnameToCalc.set(surname, data)
-      }
-    }
-    for (const [surname, count] of surnameCount) {
-      if (count > 1) surnameToCalc.delete(surname)
-    }
-
-    const lookupCalc = (name: string): CalcData | null => {
-      const key = normalizeName(name)
-      if (nameToCalc.has(key)) return nameToCalc.get(key)!
-      const parts = key.split(' ')
-      const lastToken = parts[parts.length - 1] ?? ''
-      if (lastToken && surnameToCalc.has(lastToken)) return surnameToCalc.get(lastToken)!
-      const firstToken = parts[0] ?? ''
-      if (firstToken && surnameToCalc.has(firstToken)) return surnameToCalc.get(firstToken)!
-      return null
-    }
     // ── Compute team totals + build lineup data ─────────────────────────────
     type StarterEntry = { name: string; role: string; player_id: string | null; fantavoto: number | null; voto_base: number | null; bonus_malus: unknown; is_nv: boolean; subbed_by: string | null }
     type BenchEntry   = { name: string; role: string; player_id: string | null; fantavoto: number | null; subbed_in_for: string | null }
@@ -403,7 +520,6 @@ export async function confirmLegheImportAction(
     if (!matchday) return { ok: false, error: 'Giornata non trovata.' }
     if (matchday.status === 'archived') return { ok: false, error: 'Giornata archiviata.' }
 
-    const runId = fotmobRunId
     const now = new Date().toISOString()
 
     // Upsert published_team_scores pointing to the FotMob run

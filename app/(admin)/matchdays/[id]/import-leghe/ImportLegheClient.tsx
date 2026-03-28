@@ -1,8 +1,8 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { parseLegheCSVAction, confirmLegheImportAction } from './actions'
-import type { ParsedTeamBlock, ParseResult, ConfirmState } from './actions'
+import { parseLegheCSVAction, confirmLegheImportAction, previewScoresAction } from './actions'
+import type { ParsedTeamBlock, ParseResult, ConfirmState, PreviewScoresState, PreviewTeamResult } from './actions'
 
 interface Props {
   matchdayId: string
@@ -35,6 +35,82 @@ function computeInitialAssignments(side: ParsedTeamBlock): Record<string, string
   return out
 }
 
+// ─── Score preview table ───────────────────────────────────────────────────────
+
+function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
+  return (
+    <div className="space-y-4">
+      {teams.map(team => {
+        const diff = team.legheTotal !== null ? team.total - team.legheTotal : null
+        return (
+          <div key={team.teamId} className="rounded-lg border border-[#2e2e42] overflow-hidden">
+            {/* Team header */}
+            <div className="flex items-center justify-between border-b border-[#2e2e42] bg-[#0f0f1a] px-4 py-2.5">
+              <span className="text-sm font-semibold text-white">{team.legheName}</span>
+              <div className="flex items-center gap-3 text-sm font-mono">
+                <span className="text-[#55556a]">Leghe: {team.legheTotal !== null ? team.legheTotal.toFixed(2) : '—'}</span>
+                <span className="text-white font-semibold">FotMob: {team.total.toFixed(2)}</span>
+                {diff !== null && (
+                  <span className={Math.abs(diff) > 2 ? 'text-amber-400 font-semibold' : 'text-[#55556a]'}>
+                    ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Warnings */}
+            {team.warnings.length > 0 && (
+              <div className="border-b border-[#2e2e42] bg-amber-500/5 px-4 py-2 space-y-0.5">
+                {team.warnings.map((w, i) => (
+                  <p key={i} className="text-xs text-amber-400">⚠ {w}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Player rows */}
+            <table className="w-full text-xs">
+              <tbody className="divide-y divide-[#1a1a24]">
+                {team.players.map((p, i) => (
+                  <tr key={i} className={p.isNv ? 'opacity-40' : p.isActiveSub ? 'bg-indigo-500/5' : ''}>
+                    <td className="w-8 px-3 py-1.5 text-[#55556a]">{p.role}</td>
+                    <td className="px-3 py-1.5 text-[#8888aa]">
+                      {p.isNv && <span className="mr-1.5 rounded bg-red-500/20 px-1 py-0.5 text-xs font-medium text-red-400">NV</span>}
+                      {p.isActiveSub && <span className="mr-1.5 rounded bg-indigo-500/20 px-1 py-0.5 text-xs font-medium text-indigo-400">sub</span>}
+                      <span className={p.isNv ? 'line-through' : 'text-white'}>{p.name}</span>
+                      {p.isActiveSub && p.subbedForNv && (
+                        <span className="ml-1 text-[#55556a]">↳ per {p.subbedForNv}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {p.source === 'fotmob' && (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="font-mono text-white">{p.finalScore?.toFixed(2)}</span>
+                          <span className="rounded bg-emerald-500/15 px-1 py-0.5 text-[10px] text-emerald-400">FM</span>
+                        </span>
+                      )}
+                      {p.source === 'leghe' && (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="font-mono text-amber-300">{p.finalScore?.toFixed(2)}</span>
+                          <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[10px] text-amber-400">Leghe</span>
+                        </span>
+                      )}
+                      {p.source === 'none' && !p.isNv && (
+                        <span className="rounded bg-red-500/15 px-1 py-0.5 text-[10px] text-red-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
 export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props) {
   const [parseResult, parseDispatch, parsePending] = useActionState<ParseResult | null, FormData>(
     parseLegheCSVAction,
@@ -44,11 +120,17 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
     confirmLegheImportAction,
     { ok: false }
   )
+  const [previewActionResult, previewDispatch, previewPending] = useActionState<PreviewScoresState, FormData>(
+    previewScoresAction,
+    { ok: false }
+  )
 
   // Persisted team aliases: legheName → teamId
   const [overrides, setOverrides] = useState<Record<string, string>>({})
   // Sub assignments: legheName → { nvStarterName → benchPlayerName | '' }
   const [subAssignments, setSubAssignments] = useState<Record<string, Record<string, string>>>({})
+  // Preview data — cleared when assignments change
+  const [previewData, setPreviewData] = useState<PreviewScoresState | null>(null)
 
   useEffect(() => { setOverrides(loadAliases()) }, [])
 
@@ -62,9 +144,20 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
       }
     }
     setSubAssignments(initial)
+    setPreviewData(null)
   }, [parseResult])
 
+  // Sync preview action result → previewData state
+  useEffect(() => {
+    if (previewActionResult.ok) {
+      setPreviewData(previewActionResult)
+    } else if ('error' in previewActionResult && previewActionResult.error) {
+      setPreviewData(previewActionResult)
+    }
+  }, [previewActionResult])
+
   const handleOverride = (legheName: string, teamId: string) => {
+    setPreviewData(null)
     setOverrides(prev => {
       const next = { ...prev, [legheName]: teamId }
       saveAliases(next)
@@ -73,6 +166,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
   }
 
   const handleSubChange = (legheName: string, nvName: string, benchName: string) => {
+    setPreviewData(null)
     setSubAssignments(prev => ({
       ...prev,
       [legheName]: { ...(prev[legheName] ?? {}), [nvName]: benchName },
@@ -125,7 +219,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
     )
   }
 
-  // ── Step 2: preview + sub editor + confirm ────────────────────────────────
+  // ── Step 2: preview + sub editor + verify + confirm ────────────────────────
   const { matchups } = parseResult
 
   type TeamLineup = {
@@ -157,11 +251,15 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
   }
 
   const canConfirm = hasUnresolved.length === 0 && teamLineups.length > 0
+  const canVerify = canConfirm
+  const hasVerified = previewData?.ok === true
 
   // Collect all teams that have NV starters (need sub editor)
   const teamsWithNv = matchups
     .flatMap(mu => [mu.team1, mu.team2])
     .filter(side => side.starters.some(p => p.fantavoto === null))
+
+  const teamLineupsJson = JSON.stringify(teamLineups)
 
   return (
     <div className="space-y-6">
@@ -284,6 +382,47 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         </div>
       )}
 
+      {/* ── Score verification ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white">Verifica punteggi</h3>
+            <p className="text-xs text-[#55556a]">Controlla i voti FotMob per ogni giocatore prima di pubblicare.</p>
+          </div>
+          {hasVerified && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Verificato
+            </span>
+          )}
+        </div>
+
+        {/* Preview action error */}
+        {previewData && !previewData.ok && 'error' in previewData && previewData.error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {previewData.error}
+          </div>
+        )}
+
+        {/* Preview table */}
+        {previewData?.ok && (
+          <ScorePreview teams={(previewData as { ok: true; teams: PreviewTeamResult[] }).teams} />
+        )}
+
+        {/* Verify button */}
+        <form action={previewDispatch}>
+          <input type="hidden" name="matchday_id" value={matchdayId} />
+          <input type="hidden" name="team_lineups" value={teamLineupsJson} />
+          <button
+            type="submit"
+            disabled={!canVerify || previewPending}
+            className="rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-5 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-40"
+          >
+            {previewPending ? 'Caricamento punteggi…' : hasVerified ? 'Aggiorna verifica' : 'Verifica punteggi FotMob'}
+          </button>
+        </form>
+      </div>
+
       {/* ── Errors / warnings ── */}
       {confirmResult.error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -295,17 +434,19 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
           ⚠ Alcune squadre non sono state associate automaticamente. Selezionale manualmente sopra.
         </div>
       )}
-      <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 text-sm text-indigo-300">
-        ℹ I punteggi saranno calcolati usando i voti FotMob (run statistico), non i totali di Leghe.
-      </div>
+      {!hasVerified && canConfirm && (
+        <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 text-sm text-indigo-300">
+          ℹ Clicca «Verifica punteggi FotMob» per vedere i voti prima di pubblicare.
+        </div>
+      )}
 
       {/* ── Confirm ── */}
       <form action={confirmDispatch} className="flex items-center gap-3">
         <input type="hidden" name="matchday_id" value={matchdayId} />
-        <input type="hidden" name="team_lineups" value={JSON.stringify(teamLineups)} />
+        <input type="hidden" name="team_lineups" value={teamLineupsJson} />
         <button
           type="submit"
-          disabled={!canConfirm || confirmPending}
+          disabled={!canConfirm || confirmPending || !hasVerified}
           className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-40"
         >
           {confirmPending ? 'Pubblicazione…' : `Pubblica giornata (${teamLineups.length} squadre)`}
