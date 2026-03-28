@@ -411,13 +411,68 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const matched: MatchedPlayer[] = []
   const unmatched: UnmatchedPlayer[] = []
 
+  /**
+   * Multi-strategy player matching to handle FotMob name format differences:
+   *   "V. Milinkovic-Savic" ↔ "Milinkovic-Savic V."  → token-set match
+   *   "Yann Bisseck"        ↔ "Bisseck"               → DB-subset match
+   *   "Evan N'Dicka"        ↔ "N'Dicka"               → DB-subset match
+   *   "F.P. Esposito"       ↔ "Esposito F.P"          → token-set match
+   */
+  const findDbPlayer = (statNorm: string) => {
+    // 1. Exact match
+    const exact = dbPlayers.find(p => p.normalized === statNorm)
+    if (exact) return exact
+
+    const statTokens = statNorm.split(' ').filter(Boolean)
+    const statSig = statTokens.filter(t => t.length > 1)   // non-initial tokens
+
+    // 2. Token-set match — same tokens in any order
+    //    Handles "V. Milinkovic-Savic" ↔ "Milinkovic-Savic V."
+    if (statTokens.length > 1) {
+      const statSet = new Set(statTokens)
+      const tsMatch = dbPlayers.find(p => {
+        const pts = p.normalized.split(' ').filter(Boolean)
+        if (pts.length !== statTokens.length) return false
+        return pts.every(t => statSet.has(t))
+      })
+      if (tsMatch) return tsMatch
+    }
+
+    // 3. Strip single-char initials from both sides, match remaining significant tokens
+    //    Handles "A. Gudmundsson" ↔ "Gudmundsson A."
+    if (statSig.length > 0) {
+      const statSigSet = new Set(statSig)
+      const sigCandidates = dbPlayers.filter(p => {
+        const psig = p.normalized.split(' ').filter(t => t.length > 1)
+        if (psig.length !== statSig.length) return false
+        return psig.every(t => statSigSet.has(t))
+      })
+      if (sigCandidates.length === 1) return sigCandidates[0]
+    }
+
+    // 4. DB name tokens are a strict subset of FotMob name tokens
+    //    Handles "Bisseck" ↔ "Yann Bisseck", "N'Dicka" ↔ "Evan N'Dicka"
+    //    Only if the DB name has ≥1 significant token and only 1 candidate matches
+    if (statSig.length > 0) {
+      const statSigSet = new Set(statSig)
+      const subsetCandidates = dbPlayers.filter(p => {
+        const psig = p.normalized.split(' ').filter(t => t.length > 1)
+        if (psig.length === 0 || psig.length >= statSig.length) return false
+        return psig.every(t => statSigSet.has(t))
+      })
+      if (subsetCandidates.length === 1) return subsetCandidates[0]
+    }
+
+    return undefined
+  }
+
   for (const stat of allFetched) {
-    const exact = dbPlayers.find((p) => p.normalized === stat.normalized_name)
-    if (exact) {
+    const found = findDbPlayer(stat.normalized_name)
+    if (found) {
       matched.push({
-        league_player_id: exact.id,
-        league_player_name: exact.full_name,
-        club: exact.club,
+        league_player_id: found.id,
+        league_player_name: found.full_name,
+        club: found.club,
         stat,
       })
     } else {

@@ -32,6 +32,10 @@ export function normalizeName(name: string): string {
     .replace(/[Łł]/g, 'l')
     .replace(/[Ðð]/g, 'd')
     .replace(/ß/g, 'ss')
+    // Turkish dotless i (ı U+0131) and dotted İ (U+0130) — not decomposed by NFD
+    .replace(/[ıİ]/g, 'i')
+    // Cyrillic і (U+0456) and І (U+0406) — visually identical to Latin i, used in Ukrainian names
+    .replace(/[іІ]/g, 'i')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
