@@ -76,8 +76,8 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
   // Build team lineups (starters + bench names) — totals are computed server-side from FotMob
   type TeamLineup = {
     teamId: string; name: string
-    starters: { name: string; isNv: boolean }[]
-    bench: { name: string }[]
+    starters: { name: string; isNv: boolean; role: string }[]
+    bench: { name: string; role: string }[]
     playersPlayed: number; nvCount: number
     legheTotal: number | null
   }
@@ -90,8 +90,8 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
       if (!teamId) { hasUnresolved.push(side.name); continue }
       teamLineups.push({
         teamId, name: side.name,
-        starters: side.starters.map(p => ({ name: p.name, isNv: p.fantavoto === null })),
-        bench: side.bench.map(p => ({ name: p.name })),
+        starters: side.starters.map(p => ({ name: p.name, isNv: p.fantavoto === null, role: p.role })),
+        bench: side.bench.map(p => ({ name: p.name, role: p.role })),
         playersPlayed: side.playersPlayed,
         nvCount: side.nvCount,
         legheTotal: side.total,

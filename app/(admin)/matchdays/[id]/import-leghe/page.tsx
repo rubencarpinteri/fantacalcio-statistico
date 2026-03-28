@@ -43,7 +43,7 @@ export default async function ImportLeghePage({
         </a>
         <h1 className="mt-1 text-xl font-bold text-white">Importa da Leghe Fantacalcio</h1>
         <p className="mt-0.5 text-sm text-[#8888aa]">
-          Incolla il CSV di Leghe per pubblicare i punteggi senza usare il motore interno.
+          Carica il file .xlsx scaricato da Leghe Fantacalcio per pubblicare formazioni e punteggi FotMob.
         </p>
       </div>
 

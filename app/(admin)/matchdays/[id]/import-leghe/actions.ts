@@ -179,10 +179,49 @@ export async function parseLegheCSVAction(
       .eq('league_id', ctx.league.id)
     const allTeams = teams ?? []
 
-    // Attach team IDs (case-insensitive exact match)
-    const find = (name: string) => {
-      const norm = name.toLowerCase().trim()
-      return allTeams.find(t => t.name.toLowerCase().trim() === norm)?.id ?? null
+    // Attach team IDs — layered fuzzy matching
+    // (Leghe names are often longer/different, e.g. "Cronache di Ninuzzo -3" → "Ninuzzo")
+    // normalizeName strips accents, dashes, non-breaking spaces, non-ASCII — all common xlsx artefacts
+    const find = (lgheName: string): string | null => {
+      const norm = normalizeName(lgheName)           // e.g. "cronache di ninuzzo 3"
+      const normWords = norm.split(' ').filter(w => w.length >= 3)
+
+      // 1. Exact match on normalized form
+      const exact = allTeams.find(t => normalizeName(t.name) === norm)
+      if (exact) return exact.id
+
+      // 2. Registered name (normalized) is a contiguous substring of the Leghe name
+      const subCandidates = allTeams.filter(t => {
+        const tn = normalizeName(t.name)
+        return tn.length >= 3 && norm.includes(tn)
+      })
+      if (subCandidates.length === 1) return subCandidates[0]!.id
+      if (subCandidates.length > 1) {
+        subCandidates.sort((a, b) => normalizeName(b.name).length - normalizeName(a.name).length)
+        return subCandidates[0]!.id
+      }
+
+      // 3. Every significant word of the registered name appears somewhere in the Leghe name
+      //    e.g. registered "Off!" → normalized "off" → word "off" in "off something"
+      const wordCandidates = allTeams.filter(t => {
+        const tnWords = normalizeName(t.name).split(' ').filter(w => w.length >= 3)
+        return tnWords.length > 0 && tnWords.every(w => normWords.includes(w))
+      })
+      if (wordCandidates.length === 1) return wordCandidates[0]!.id
+      if (wordCandidates.length > 1) {
+        wordCandidates.sort((a, b) => normalizeName(b.name).length - normalizeName(a.name).length)
+        return wordCandidates[0]!.id
+      }
+
+      // 4. Any significant word of the registered name appears as a word in the Leghe name
+      //    e.g. registered "Isamu FC" has word "isamu" present in "isamu martire"
+      const partialCandidates = allTeams.filter(t => {
+        const tnWords = normalizeName(t.name).split(' ').filter(w => w.length >= 4)
+        return tnWords.some(w => normWords.includes(w))
+      })
+      if (partialCandidates.length === 1) return partialCandidates[0]!.id
+
+      return null
     }
 
     for (const mu of matchups) {
@@ -208,11 +247,11 @@ export async function confirmLegheImportAction(
     const ctx = await requireLeagueAdmin()
     const matchdayId = formData.get('matchday_id') as string
 
-    // team_lineups: [{teamId, starters: [{name, isNv}], bench: [{name}], ...}]
+    // team_lineups: [{teamId, starters: [{name, isNv, role}], bench: [{name, role}], ...}]
     const teamLineups = JSON.parse(formData.get('team_lineups') as string) as {
       teamId: string
-      starters: { name: string; isNv: boolean }[]
-      bench: { name: string }[]
+      starters: { name: string; isNv: boolean; role: string }[]
+      bench: { name: string; role: string }[]
       playersPlayed: number
       nvCount: number
     }[]
@@ -283,8 +322,6 @@ export async function confirmLegheImportAction(
       if (firstToken && surnameToCalc.has(firstToken)) return surnameToCalc.get(firstToken)!
       return null
     }
-    const lookupFv = (name: string): number | null => lookupCalc(name)?.fantavoto ?? null
-
     // ── Compute team totals + build lineup data ─────────────────────────────
     type StarterEntry = { name: string; role: string; player_id: string | null; fantavoto: number | null; voto_base: number | null; bonus_malus: unknown; is_nv: boolean; subbed_by: string | null }
     type BenchEntry   = { name: string; role: string; player_id: string | null; fantavoto: number | null; subbed_in_for: string | null }
@@ -294,34 +331,60 @@ export async function confirmLegheImportAction(
 
     for (const tl of teamLineups) {
       let total = 0; let playerCount = 0; let nvCount = 0
-      const benchQueue = [...tl.bench]
       const starters: StarterEntry[] = []
       const bench: BenchEntry[] = []
 
+      // Split bench into GK and field pools (maintain Leghe bench order within each pool).
+      // A GK can only be replaced by a bench GK; field starters by bench field players.
+      const usedBench = new Set<string>()
+      const benchGk    = tl.bench.filter(b => b.role === 'Por')
+      const benchField = tl.bench.filter(b => b.role !== 'Por')
+
       for (const starter of tl.starters) {
-        const calc = lookupCalc(starter.name)
-        if (calc !== null) {
-          total += calc.fantavoto; playerCount++
-          starters.push({ name: starter.name, role: '', player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus: calc.bonus_malus_breakdown, is_nv: false, subbed_by: null })
+        if (!starter.isNv) {
+          // Leghe says this player played — get their engine score.
+          // Name-lookup failures do NOT make a player NV; they count as 0 (data gap).
+          const calc = lookupCalc(starter.name)
+          if (calc !== null) {
+            total += calc.fantavoto; playerCount++
+            starters.push({ name: starter.name, role: starter.role, player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus: calc.bonus_malus_breakdown, is_nv: false, subbed_by: null })
+          } else {
+            // Played per Leghe but no engine score found (name mismatch) — show as played, 0 contribution
+            playerCount++
+            starters.push({ name: starter.name, role: starter.role, player_id: null, fantavoto: null, voto_base: null, bonus_malus: null, is_nv: false, subbed_by: null })
+          }
         } else {
+          // NV per Leghe — find first compatible bench player (Mantra: GK→GK, field→field)
           nvCount++
+          const isGk = starter.role === 'Por'
+          const pool = isGk ? benchGk : benchField
+
           let subName: string | null = null
           let subCalc: CalcData | null = null
-          while (benchQueue.length > 0) {
-            const sub = benchQueue.shift()!
+          for (const sub of pool) {
+            if (usedBench.has(sub.name)) continue
             const c = lookupCalc(sub.name)
-            if (c !== null) { total += c.fantavoto; playerCount++; subName = sub.name; subCalc = c; break }
+            if (c !== null) {
+              usedBench.add(sub.name)
+              total += c.fantavoto; playerCount++
+              subName = sub.name; subCalc = c
+              break
+            }
           }
-          starters.push({ name: starter.name, role: '', player_id: null, fantavoto: null, voto_base: null, bonus_malus: null, is_nv: true, subbed_by: subName })
+
+          starters.push({ name: starter.name, role: starter.role, player_id: null, fantavoto: null, voto_base: null, bonus_malus: null, is_nv: true, subbed_by: subName })
           if (subCalc && subName) {
-            bench.push({ name: subName, role: '', player_id: subCalc.player_id, fantavoto: subCalc.fantavoto, subbed_in_for: starter.name })
+            bench.push({ name: subName, role: tl.bench.find(b => b.name === subName)?.role ?? '', player_id: subCalc.player_id, fantavoto: subCalc.fantavoto, subbed_in_for: starter.name })
           }
         }
       }
+
       // Remaining bench players (not used as subs)
-      for (const b of benchQueue) {
-        const c = lookupCalc(b.name)
-        bench.push({ name: b.name, role: '', player_id: c?.player_id ?? null, fantavoto: c?.fantavoto ?? null, subbed_in_for: null })
+      for (const b of tl.bench) {
+        if (!usedBench.has(b.name)) {
+          const c = lookupCalc(b.name)
+          bench.push({ name: b.name, role: b.role, player_id: c?.player_id ?? null, fantavoto: c?.fantavoto ?? null, subbed_in_for: null })
+        }
       }
 
       teamScores.push({ teamId: tl.teamId, total, playersPlayed: playerCount, nvCount })
