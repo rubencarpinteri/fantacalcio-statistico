@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { parseLegheCSVAction, confirmLegheImportAction } from './actions'
 import type { ParsedMatchup, ParseResult, ConfirmState } from './actions'
 
@@ -8,6 +8,22 @@ interface Props {
   matchdayId: string
   matchdayName: string
   allTeams: { id: string; name: string }[]
+}
+
+const ALIASES_KEY = 'leghe_team_aliases'
+
+function loadAliases(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(ALIASES_KEY) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
+function saveAliases(aliases: Record<string, string>) {
+  try {
+    localStorage.setItem(ALIASES_KEY, JSON.stringify(aliases))
+  } catch { /* ignore */ }
 }
 
 export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props) {
@@ -20,8 +36,22 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
     { ok: false }
   )
 
-  // Team ID overrides for unmatched teams
+  // Manual overrides: legheName → teamId (merged with saved aliases on mount)
   const [overrides, setOverrides] = useState<Record<string, string>>({})
+
+  // Load persisted aliases once on mount
+  useEffect(() => {
+    setOverrides(loadAliases())
+  }, [])
+
+  // When user picks a team manually, persist the alias immediately
+  const handleOverride = (legheName: string, teamId: string) => {
+    setOverrides(prev => {
+      const next = { ...prev, [legheName]: teamId }
+      saveAliases(next)
+      return next
+    })
+  }
 
   if (confirmResult.ok && confirmResult.message) {
     return (
@@ -73,7 +103,6 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
   // Step 2 — preview + confirm
   const { matchups } = parseResult
 
-  // Build team lineups (starters + bench names) — totals are computed server-side from FotMob
   type TeamLineup = {
     teamId: string; name: string
     starters: { name: string; isNv: boolean; role: string }[]
@@ -124,16 +153,23 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
               [mu.team1, mu.team2].map(side => {
                 const resolved = overrides[side.name] ?? side.teamId ?? null
                 const matchedName = allTeams.find(t => t.id === resolved)?.name
+                // A row was resolved via a saved alias (not auto-matched this session)
+                const isSavedAlias = !side.teamId && !!overrides[side.name]
                 return (
                   <tr key={side.name} className={resolved ? '' : 'bg-red-500/5'}>
                     <td className="px-4 py-2.5 font-medium text-white">{side.name}</td>
                     <td className="px-4 py-2.5">
                       {resolved ? (
-                        <span className="text-emerald-400">{matchedName}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-emerald-400">{matchedName}</span>
+                          {isSavedAlias && (
+                            <span className="rounded bg-indigo-500/20 px-1 py-0.5 text-xs text-indigo-400">salvata</span>
+                          )}
+                        </span>
                       ) : (
                         <select
                           value={overrides[side.name] ?? ''}
-                          onChange={e => setOverrides(prev => ({ ...prev, [side.name]: e.target.value }))}
+                          onChange={e => handleOverride(side.name, e.target.value)}
                           className="rounded border border-red-500/40 bg-[#0f0f1a] px-2 py-1 text-xs text-white"
                         >
                           <option value="">— seleziona squadra —</option>
