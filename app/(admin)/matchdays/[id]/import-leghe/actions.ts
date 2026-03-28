@@ -247,11 +247,12 @@ export async function confirmLegheImportAction(
     const ctx = await requireLeagueAdmin()
     const matchdayId = formData.get('matchday_id') as string
 
-    // team_lineups: [{teamId, starters: [{name, isNv, role}], bench: [{name, role}], ...}]
+    // team_lineups: [{teamId, starters, bench, subAssignments: {nvName→benchName}, ...}]
     const teamLineups = JSON.parse(formData.get('team_lineups') as string) as {
       teamId: string
       starters: { name: string; isNv: boolean; role: string }[]
       bench: { name: string; role: string }[]
+      subAssignments: Record<string, string>   // nvStarterName → benchPlayerName ('' = none)
       playersPlayed: number
       nvCount: number
     }[]
@@ -334,11 +335,8 @@ export async function confirmLegheImportAction(
       const starters: StarterEntry[] = []
       const bench: BenchEntry[] = []
 
-      // Split bench into GK and field pools (maintain Leghe bench order within each pool).
-      // A GK can only be replaced by a bench GK; field starters by bench field players.
+      // Use the explicit sub assignments from the client (admin-verified, not auto-guessed)
       const usedBench = new Set<string>()
-      const benchGk    = tl.bench.filter(b => b.role === 'Por')
-      const benchField = tl.bench.filter(b => b.role !== 'Por')
 
       for (const starter of tl.starters) {
         if (!starter.isNv) {
@@ -349,26 +347,23 @@ export async function confirmLegheImportAction(
             total += calc.fantavoto; playerCount++
             starters.push({ name: starter.name, role: starter.role, player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus: calc.bonus_malus_breakdown, is_nv: false, subbed_by: null })
           } else {
-            // Played per Leghe but no engine score found (name mismatch) — show as played, 0 contribution
+            // Played per Leghe but no engine score found — show as played, 0 contribution
             playerCount++
             starters.push({ name: starter.name, role: starter.role, player_id: null, fantavoto: null, voto_base: null, bonus_malus: null, is_nv: false, subbed_by: null })
           }
         } else {
-          // NV per Leghe — find first compatible bench player (Mantra: GK→GK, field→field)
+          // NV per Leghe — use the sub chosen by the admin (empty string = no sub)
           nvCount++
-          const isGk = starter.role === 'Por'
-          const pool = isGk ? benchGk : benchField
-
+          const assignedSubName = tl.subAssignments[starter.name] ?? ''
           let subName: string | null = null
           let subCalc: CalcData | null = null
-          for (const sub of pool) {
-            if (usedBench.has(sub.name)) continue
-            const c = lookupCalc(sub.name)
+
+          if (assignedSubName) {
+            const c = lookupCalc(assignedSubName)
             if (c !== null) {
-              usedBench.add(sub.name)
+              usedBench.add(assignedSubName)
               total += c.fantavoto; playerCount++
-              subName = sub.name; subCalc = c
-              break
+              subName = assignedSubName; subCalc = c
             }
           }
 
