@@ -250,7 +250,7 @@ export async function confirmLegheImportAction(
     // team_lineups: [{teamId, starters, bench, subAssignments: {nvName→benchName}, ...}]
     const teamLineups = JSON.parse(formData.get('team_lineups') as string) as {
       teamId: string
-      starters: { name: string; isNv: boolean; role: string }[]
+      starters: { name: string; isNv: boolean; role: string; legheFantavoto: number | null }[]
       bench: { name: string; role: string }[]
       subAssignments: Record<string, string>   // nvStarterName → benchPlayerName ('' = none)
       playersPlayed: number
@@ -344,10 +344,15 @@ export async function confirmLegheImportAction(
           // Name-lookup failures do NOT make a player NV; they count as 0 (data gap).
           const calc = lookupCalc(starter.name)
           if (calc !== null) {
+            // FotMob score found — use it
             total += calc.fantavoto; playerCount++
             starters.push({ name: starter.name, role: starter.role, player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus: calc.bonus_malus_breakdown, is_nv: false, subbed_by: null })
+          } else if (starter.legheFantavoto !== null) {
+            // FotMob lookup failed (name mismatch or missing stats) — fall back to Leghe score
+            total += starter.legheFantavoto; playerCount++
+            starters.push({ name: starter.name, role: starter.role, player_id: null, fantavoto: starter.legheFantavoto, voto_base: null, bonus_malus: null, is_nv: false, subbed_by: null })
           } else {
-            // Played per Leghe but no engine score found — show as played, 0 contribution
+            // Played per Leghe but no score anywhere — count as played, 0 contribution
             playerCount++
             starters.push({ name: starter.name, role: starter.role, player_id: null, fantavoto: null, voto_base: null, bonus_malus: null, is_nv: false, subbed_by: null })
           }

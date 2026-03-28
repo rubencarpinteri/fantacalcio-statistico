@@ -130,7 +130,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
 
   type TeamLineup = {
     teamId: string; name: string
-    starters: { name: string; isNv: boolean; role: string }[]
+    starters: { name: string; isNv: boolean; role: string; legheFantavoto: number | null }[]
     bench: { name: string; role: string }[]
     subAssignments: Record<string, string>
     playersPlayed: number; nvCount: number
@@ -146,7 +146,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
       teamLineups.push({
         teamId,
         name: side.name,
-        starters: side.starters.map(p => ({ name: p.name, isNv: p.fantavoto === null, role: p.role })),
+        starters: side.starters.map(p => ({ name: p.name, isNv: p.fantavoto === null, role: p.role, legheFantavoto: p.fantavoto })),
         bench: side.bench.map(p => ({ name: p.name, role: p.role })),
         subAssignments: subAssignments[side.name] ?? {},
         playersPlayed: side.playersPlayed,
