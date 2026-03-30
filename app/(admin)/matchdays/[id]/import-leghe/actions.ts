@@ -5,7 +5,12 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
-import { normalizeName } from '@/lib/ratings/parse'
+import { normalizeName, mergeFixtureStats, findDbPlayer } from '@/lib/ratings/parse'
+import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
+import { computeMatchday } from '@/domain/engine/v1/engine'
+import { buildEngineConfig } from '@/domain/engine/v1/config'
+import type { EnginePlayerInput, PlayerCalculationResult } from '@/domain/engine/v1/types'
+import type { RatingClass, Json } from '@/types/database.types'
 import * as XLSX from 'xlsx'
 
 // ─── xlsx → rows parser ───────────────────────────────────────────────────────
@@ -256,14 +261,240 @@ type TeamLineupInput = {
   legheTotal: number | null
 }
 
+type LeagueCtx = {
+  userId: string
+  league: { id: string; source_weight_sofascore: number; source_weight_fotmob: number }
+}
+
+/**
+ * If no v1 calculation run exists for this matchday, automatically:
+ * 1. Fetch FotMob data for all fixtures
+ * 2. Match players to league_players by name
+ * 3. Insert player_match_stats (upsert, non-destructive)
+ * 4. Run the engine
+ * 5. Create calculation_run + player_calculations in DB
+ * Returns the new run ID, or null on failure.
+ */
+async function autoFetchAndCreateRun(
+  matchdayId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ctx: LeagueCtx
+): Promise<string | null> {
+  // 1. Get fixtures with FotMob match IDs
+  const { data: fixtures } = await supabase
+    .from('matchday_fixtures')
+    .select('fotmob_match_id, label')
+    .eq('matchday_id', matchdayId)
+
+  const fotmobFixtures = (fixtures ?? []).filter(fx => fx.fotmob_match_id != null)
+  if (fotmobFixtures.length === 0) return null
+
+  // 2. Fetch FotMob data for each fixture
+  const allFetched = []
+  for (const fx of fotmobFixtures) {
+    const { data } = await fetchFotMobMatch(fx.fotmob_match_id!)
+    if (data) allFetched.push(...mergeFixtureStats(data as Parameters<typeof mergeFixtureStats>[0], null))
+  }
+  if (allFetched.length === 0) return null
+
+  // 3. Load active league players with rating_class
+  const { data: leaguePlayers } = await supabase
+    .from('league_players')
+    .select('id, full_name, club, rating_class')
+    .eq('league_id', ctx.league.id)
+    .eq('is_active', true)
+  if (!leaguePlayers?.length) return null
+
+  const dbPlayers = leaguePlayers.map(p => ({
+    id: p.id, full_name: p.full_name, club: p.club ?? '',
+    normalized: normalizeName(p.full_name),
+    rating_class: p.rating_class as RatingClass,
+  }))
+
+  // 4. Match FotMob stats to DB players
+  const matched: { stat: typeof allFetched[0]; player: typeof dbPlayers[0] }[] = []
+  for (const stat of allFetched) {
+    const player = findDbPlayer(stat.normalized_name, dbPlayers)
+    if (player) matched.push({ stat, player })
+  }
+  if (matched.length === 0) return null
+
+  // 5. Upsert player_match_stats (skip rows that already exist — don't overwrite manual edits)
+  const statsRows = matched.map(({ stat, player }) => ({
+    matchday_id: matchdayId,
+    player_id: player.id,
+    entered_by: ctx.userId,
+    minutes_played: stat.minutes_played,
+    rating_class_override: null,
+    sofascore_rating: stat.sofascore_rating,
+    fotmob_rating: stat.fotmob_rating,
+    goals_scored: stat.goals_scored,
+    assists: stat.assists,
+    own_goals: stat.own_goals,
+    yellow_cards: stat.yellow_cards,
+    red_cards: stat.red_cards,
+    penalties_scored: stat.penalties_scored,
+    penalties_missed: stat.penalties_missed,
+    penalties_saved: stat.penalties_saved,
+    clean_sheet: stat.goals_conceded === 0 && stat.minutes_played >= 60,
+    goals_conceded: stat.goals_conceded,
+    saves: stat.saves,
+    tackles_won: 0,
+    interceptions: 0,
+    clearances: 0,
+    blocks: 0,
+    aerial_duels_won: 0,
+    dribbled_past: 0,
+    error_leading_to_goal: 0,
+    key_passes: null,
+    expected_assists: null,
+    successful_dribbles: null,
+    dribble_success_rate: null,
+    completed_passes: null,
+    pass_accuracy: null,
+    final_third_passes: null,
+    progressive_passes: null,
+    has_decisive_event: false,
+    is_provisional: false,
+  }))
+
+  const { data: insertedStats } = await supabase
+    .from('player_match_stats')
+    .upsert(statsRows, { onConflict: 'matchday_id,player_id', ignoreDuplicates: true })
+    .select('id, player_id')
+
+  // Also load any pre-existing stats for this matchday (manually entered before the import)
+  const { data: existingStats } = await supabase
+    .from('player_match_stats')
+    .select('id, player_id')
+    .eq('matchday_id', matchdayId)
+
+  const statsMap = new Map<string, string>()
+  for (const s of [...(insertedStats ?? []), ...(existingStats ?? [])]) {
+    if (!statsMap.has(s.player_id)) statsMap.set(s.player_id, s.id)
+  }
+  if (statsMap.size === 0) return null
+
+  // 6. Build engine config
+  const { data: dbConfig } = await supabase
+    .from('league_engine_config')
+    .select('*')
+    .eq('league_id', ctx.league.id)
+    .maybeSingle()
+
+  const engineConfig = buildEngineConfig(
+    { sofascore: ctx.league.source_weight_sofascore / 100, fotmob: ctx.league.source_weight_fotmob / 100 },
+    dbConfig ?? null
+  )
+
+  // 7. Build engine inputs for every player that has a stats row
+  const engineInputs: EnginePlayerInput[] = matched
+    .filter(({ player }) => statsMap.has(player.id))
+    .map(({ stat, player }) => ({
+      player_id: player.id,
+      stats_id: statsMap.get(player.id)!,
+      rating_class: player.rating_class,
+      minutes_played: stat.minutes_played,
+      is_provisional: false,
+      sofascore_rating: stat.sofascore_rating,
+      fotmob_rating: stat.fotmob_rating,
+      goals_scored: stat.goals_scored,
+      assists: stat.assists,
+      own_goals: stat.own_goals,
+      yellow_cards: stat.yellow_cards,
+      red_cards: stat.red_cards,
+      penalties_scored: stat.penalties_scored,
+      penalties_missed: stat.penalties_missed,
+      penalties_saved: stat.penalties_saved,
+      clean_sheet: stat.goals_conceded === 0 && stat.minutes_played >= 60,
+      goals_conceded: stat.goals_conceded,
+      saves: stat.saves,
+      tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
+      aerial_duels_won: 0, dribbled_past: 0, error_leading_to_goal: 0,
+      key_passes: null, expected_assists: null,
+      successful_dribbles: null, dribble_success_rate: null,
+      completed_passes: null, pass_accuracy: null,
+      final_third_passes: null, progressive_passes: null,
+    }))
+
+  if (engineInputs.length === 0) return null
+
+  // 8. Run engine
+  const engineResult = computeMatchday(engineInputs, engineConfig)
+
+  // 9. Create calculation_run
+  const { data: maxRun } = await supabase
+    .from('calculation_runs')
+    .select('run_number')
+    .eq('matchday_id', matchdayId)
+    .order('run_number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const run_number = (maxRun?.run_number ?? 0) + 1
+
+  const { data: run, error: runErr } = await supabase
+    .from('calculation_runs')
+    .insert({
+      matchday_id: matchdayId,
+      run_number,
+      status: 'draft',
+      engine_version: engineConfig.engine_version,
+      config_json: engineConfig as unknown as Json,
+      triggered_by: ctx.userId,
+    })
+    .select('id')
+    .single()
+
+  if (runErr || !run) return null
+
+  // 10. Insert player_calculations
+  const calcRows = engineResult.player_results.map(output => {
+    const base = {
+      run_id: run.id, matchday_id: matchdayId, player_id: output.player_id,
+      stats_id: output.stats_id, is_provisional: output.is_provisional, is_override: false,
+    }
+    if (output.kind === 'skipped') {
+      return {
+        ...base,
+        z_sofascore: null, z_fotmob: null, z_combined: null, weights_used: null,
+        minutes_factor: null, z_adjusted: null, b0: null, role_multiplier: null,
+        b1: null, defensive_correction: null, voto_base: null,
+        bonus_malus_breakdown: null, total_bonus_malus: null, fantavoto: null,
+      }
+    }
+    const r = output as PlayerCalculationResult
+    return {
+      ...base,
+      z_sofascore: r.z_sofascore, z_fotmob: r.z_fotmob, z_combined: r.z_combined,
+      weights_used: r.weights_used as unknown as Json,
+      minutes_factor: r.minutes_factor, z_adjusted: r.z_adjusted,
+      b0: r.b0, role_multiplier: r.role_multiplier, b1: r.b1,
+      defensive_correction: r.defensive_correction, voto_base: r.voto_base,
+      bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
+      total_bonus_malus: r.total_bonus_malus, fantavoto: r.fantavoto,
+    }
+  })
+
+  const { error: calcErr } = await supabase.from('player_calculations').insert(calcRows)
+  if (calcErr) return null
+
+  return run.id
+}
+
 /**
  * Load the latest v1 calculation run for a matchday and build a name→score lookup.
+ * If no run exists, automatically fetches FotMob data and creates one.
  * Returns { lookupCalc, runId } on success, { error } on failure.
  */
 async function buildCalcLookup(
   matchdayId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ctx: LeagueCtx
 ): Promise<{ lookupCalc: (name: string) => CalcData | null; runId: string } | { error: string }> {
+  let runId: string | null = null
+
+  // Check for existing v1 run
   const { data: v1Run } = await supabase
     .from('calculation_runs')
     .select('id')
@@ -273,14 +504,20 @@ async function buildCalcLookup(
     .limit(1)
     .maybeSingle()
 
-  if (!v1Run) {
-    return { error: 'Nessun calcolo FotMob trovato per questa giornata. Esegui prima il fetch e il calcolo statistico.' }
+  if (v1Run) {
+    runId = v1Run.id
+  } else {
+    // No run yet — auto-fetch FotMob and create one
+    runId = await autoFetchAndCreateRun(matchdayId, supabase, ctx)
+    if (!runId) {
+      return { error: 'Impossibile recuperare i dati FotMob automaticamente. Verifica che le fixture abbiano un fotmob_match_id.' }
+    }
   }
 
   const { data: calcs } = await supabase
     .from('player_calculations')
     .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
-    .eq('run_id', v1Run.id)
+    .eq('run_id', runId)
     .not('fantavoto', 'is', null)
 
   const playerIds = (calcs ?? []).map(c => c.player_id).filter(Boolean) as string[]
@@ -326,7 +563,7 @@ async function buildCalcLookup(
     return null
   }
 
-  return { lookupCalc, runId: v1Run.id }
+  return { lookupCalc, runId }
 }
 
 // ─── Preview types + action ────────────────────────────────────────────────────
@@ -360,12 +597,12 @@ export async function previewScoresAction(
   formData: FormData
 ): Promise<PreviewScoresState> {
   try {
-    await requireLeagueAdmin()
+    const ctx = await requireLeagueAdmin()
     const matchdayId = formData.get('matchday_id') as string
     const teamLineups = JSON.parse(formData.get('team_lineups') as string) as TeamLineupInput[]
 
     const supabase = await createClient()
-    const lookupResult = await buildCalcLookup(matchdayId, supabase)
+    const lookupResult = await buildCalcLookup(matchdayId, supabase, ctx)
     if ('error' in lookupResult) return { ok: false, error: lookupResult.error }
     const { lookupCalc } = lookupResult
 
@@ -436,7 +673,7 @@ export async function confirmLegheImportAction(
 
     const supabase = await createClient()
 
-    const lookupResult = await buildCalcLookup(matchdayId, supabase)
+    const lookupResult = await buildCalcLookup(matchdayId, supabase, ctx)
     if ('error' in lookupResult) return { ok: false, error: lookupResult.error }
     const { lookupCalc, runId } = lookupResult
 

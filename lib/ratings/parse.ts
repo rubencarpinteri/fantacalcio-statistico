@@ -71,10 +71,14 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
     const p = raw as Record<string, unknown>
     const statGroups = p['stats'] as Array<Record<string, unknown>> | undefined
     if (!statGroups?.length) continue
-    const topGroup = statGroups[0]!['stats'] as Record<string, Record<string, unknown>> | undefined
+    // Search ALL stat groups — FotMob splits stats across Attack/Defence/etc. groups
     const getStat = (key: string): number => {
-      const v = topGroup?.[key]?.['stat'] as Record<string, unknown> | undefined
-      return Number(v?.['value'] ?? 0)
+      for (const group of statGroups) {
+        const groupStats = group['stats'] as Record<string, Record<string, unknown>> | undefined
+        const v = groupStats?.[key]?.['stat'] as Record<string, unknown> | undefined
+        if (v?.['value'] != null) return Number(v['value'])
+      }
+      return 0
     }
     stats.push({
       fotmob_id: Number(idStr),
@@ -197,4 +201,63 @@ export function mergeFixtureStats(
   }
 
   return Array.from(map.values())
+}
+
+// ─── Player name matching ──────────────────────────────────────────────────────
+
+export type DbPlayerEntry = { id: string; full_name: string; club: string; normalized: string }
+
+/**
+ * Multi-strategy name matching — handles FotMob vs DB/Leghe naming differences.
+ *
+ * Strategy order:
+ * 1. Exact normalized match
+ * 2. Token-set match (same words, any order) — "V. Milinkovic-Savic" ↔ "Milinkovic-Savic V."
+ * 3. Strip single-char initials from both sides — "A. Gudmundsson" ↔ "Gudmundsson A."
+ * 4. DB tokens ⊆ FotMob tokens (unique match only) — "Bisseck" ↔ "Yann Bisseck"
+ */
+export function findDbPlayer<T extends DbPlayerEntry>(
+  statNorm: string,
+  dbPlayers: T[],
+): T | undefined {
+  const exact = dbPlayers.find(p => p.normalized === statNorm)
+  if (exact) return exact
+
+  const statTokens = statNorm.split(' ').filter(Boolean)
+  const statSig = statTokens.filter(t => t.length > 1)
+
+  // Token-set: same tokens, any order
+  if (statTokens.length > 1) {
+    const statSet = new Set(statTokens)
+    const ts = dbPlayers.find(p => {
+      const pts = p.normalized.split(' ').filter(Boolean)
+      if (pts.length !== statTokens.length) return false
+      return pts.every(t => statSet.has(t))
+    })
+    if (ts) return ts
+  }
+
+  // Strip initials from both sides
+  if (statSig.length > 0) {
+    const sigSet = new Set(statSig)
+    const sigCands = dbPlayers.filter(p => {
+      const psig = p.normalized.split(' ').filter(t => t.length > 1)
+      if (psig.length !== statSig.length) return false
+      return psig.every(t => sigSet.has(t))
+    })
+    if (sigCands.length === 1) return sigCands[0]
+  }
+
+  // DB tokens ⊆ FotMob tokens (unique match only)
+  if (statSig.length > 0) {
+    const sigSet = new Set(statSig)
+    const subCands = dbPlayers.filter(p => {
+      const psig = p.normalized.split(' ').filter(t => t.length > 1)
+      if (psig.length === 0 || psig.length >= statSig.length) return false
+      return psig.every(t => sigSet.has(t))
+    })
+    if (subCands.length === 1) return subCands[0]
+  }
+
+  return undefined
 }
