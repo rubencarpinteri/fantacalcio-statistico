@@ -294,32 +294,44 @@ export default async function MatchdayDetailPage({
                 </div>
               </div>
 
-              {/* Step 4 — Importa Leghe + Pubblica */}
+              {/* Step 4 — Lineups + Publish */}
               <div className={`rounded-xl border p-4 ${step4Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step3Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <StepIcon done={step4Done} active={step3Done && !step4Done} />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold ${step4Done ? 'text-white' : step3Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
                       4 — Formazioni + Pubblica
                     </p>
                     <p className="text-xs text-[#55556a]">
                       {step4Done
                         ? 'Pubblicata con punteggi FotMob'
-                        : 'Carica xlsx Leghe → usa formazioni Leghe + voti FotMob'}
+                        : 'Importa da Leghe (xlsx) oppure inserisci le formazioni manualmente'}
                     </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <a
+                        href={`/matchdays/${id}/import-leghe`}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                          step4Done
+                            ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
+                            : step3Done
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                            : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
+                        }`}
+                      >
+                        {step4Done ? 'Ripubblica (Leghe) →' : 'Importa Leghe →'}
+                      </a>
+                      <a
+                        href={`/matchdays/${id}/all-lineups`}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                          step3Done
+                            ? 'border border-[#2e2e42] text-[#8888aa] hover:border-indigo-500/40 hover:text-indigo-300'
+                            : 'pointer-events-none border border-[#1e1e2e] text-[#3a3a4a]'
+                        }`}
+                      >
+                        Formazioni manuali →
+                      </a>
+                    </div>
                   </div>
-                  <a
-                    href={`/matchdays/${id}/import-leghe`}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                      step4Done
-                        ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
-                        : step3Done
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-500'
-                        : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
-                    }`}
-                  >
-                    {step4Done ? 'Ripubblica →' : 'Importa Leghe →'}
-                  </a>
                 </div>
               </div>
 
