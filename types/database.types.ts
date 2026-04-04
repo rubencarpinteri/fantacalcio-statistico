@@ -588,6 +588,35 @@ export type Database = {
           },
         ]
       }
+      fotmob_ignored_players: {
+        Row: {
+          created_at: string
+          fotmob_name: string
+          fotmob_player_id: number
+          league_id: string
+        }
+        Insert: {
+          created_at?: string
+          fotmob_name: string
+          fotmob_player_id: number
+          league_id: string
+        }
+        Update: {
+          created_at?: string
+          fotmob_name?: string
+          fotmob_player_id?: number
+          league_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotmob_ignored_players_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formations: {
         Row: {
           created_at: string
