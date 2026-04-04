@@ -213,6 +213,13 @@ function PreviewSummary({
                 <th className="px-3 py-2 text-right">Min</th>
                 <th className="px-3 py-2 text-right">G</th>
                 <th className="px-3 py-2 text-right">A</th>
+                <th className="px-3 py-2 text-right title" title="Own Goals">OG</th>
+                <th className="px-3 py-2 text-right" title="Goals Conceded">GS</th>
+                <th className="px-3 py-2 text-right" title="Penalty Scored">Rig+</th>
+                <th className="px-3 py-2 text-right" title="Penalty Missed">RS</th>
+                <th className="px-3 py-2 text-right" title="Penalty Saved">RP</th>
+                <th className="px-3 py-2 text-right" title="Yellow Card">Y</th>
+                <th className="px-3 py-2 text-right" title="Red Card">R</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1e1e2e]">
@@ -234,6 +241,27 @@ function PreviewSummary({
                   </td>
                   <td className="px-3 py-1.5 text-right font-mono">
                     <span className={m.stat.assists > 0 ? 'text-blue-400' : 'text-[#55556a]'}>{m.stat.assists}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.own_goals > 0 ? 'text-red-400' : 'text-[#55556a]'}>{m.stat.own_goals}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.goals_conceded > 0 ? 'text-orange-400' : 'text-[#55556a]'}>{m.stat.goals_conceded}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.penalties_scored > 0 ? 'text-green-300' : 'text-[#55556a]'}>{m.stat.penalties_scored}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.penalties_missed > 0 ? 'text-red-400' : 'text-[#55556a]'}>{m.stat.penalties_missed}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.penalties_saved > 0 ? 'text-emerald-400' : 'text-[#55556a]'}>{m.stat.penalties_saved}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.yellow_cards > 0 ? 'text-yellow-400' : 'text-[#55556a]'}>{m.stat.yellow_cards}</span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    <span className={m.stat.red_cards > 0 ? 'text-red-500' : 'text-[#55556a]'}>{m.stat.red_cards}</span>
                   </td>
                 </tr>
               ))}
