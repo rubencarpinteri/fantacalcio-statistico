@@ -210,17 +210,9 @@ export async function importRatingsAction(
     saves: m.saves,
   }))
 
-  const playerIds = rows.map(r => r.player_id)
-
-  // DELETE + INSERT avoids ON CONFLICT entirely
-  const { error: deleteError } = await supabase
+  const { error } = await supabase
     .from('player_match_stats')
-    .delete()
-    .eq('matchday_id', matchdayId)
-    .in('player_id', playerIds)
-  if (deleteError) return { error: deleteError.message }
-
-  const { error } = await supabase.from('player_match_stats').insert(rows)
+    .upsert(rows, { onConflict: 'matchday_id,player_id', ignoreDuplicates: false })
   if (error) return { error: error.message }
 
   revalidatePath(`/matchdays/${matchdayId}/stats`)
