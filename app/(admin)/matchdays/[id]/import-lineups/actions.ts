@@ -44,6 +44,8 @@ export interface ParseAndMatchResult {
   ok: boolean
   error?: string
   teams: TeamLineupPreview[]
+  /** Full list of fantasy teams — used by the UI to offer a manual team picker for unmatched teams */
+  availableTeams: { id: string; name: string }[]
 }
 
 // ─── Slot shape from DB ────────────────────────────────────────────────────────
@@ -141,19 +143,20 @@ export async function parseAndMatchAction(
     .eq('league_id', ctx.league.id)
     .single()
 
-  if (!matchday) return { ok: false, error: 'Giornata non trovata.', teams: [] }
+  if (!matchday) return { ok: false, error: 'Giornata non trovata.', teams: [], availableTeams: [] }
   if (!['open', 'locked'].includes(matchday.status)) {
     return {
       ok: false,
       error: `Le formazioni possono essere importate solo quando la giornata è "aperta" o "chiusa". Stato attuale: "${matchday.status}".`,
       teams: [],
+      availableTeams: [],
     }
   }
 
   // ── Parse text ─────────────────────────────────────────────────────────────
   const parsed = parseLeghiLineupText(text.trim())
   if (parsed.length === 0) {
-    return { ok: false, error: 'Nessuna formazione trovata nel testo. Controlla il formato.', teams: [] }
+    return { ok: false, error: 'Nessuna formazione trovata nel testo. Controlla il formato.', teams: [], availableTeams: [] }
   }
 
   // ── Fetch DB data ──────────────────────────────────────────────────────────
@@ -174,6 +177,21 @@ export async function parseAndMatchAction(
   const teams = teamsRaw ?? []
   const players = playersRaw ?? []
   const formations = formationsRaw ?? []
+
+  // ── Fetch active roster entries so we can scope player search per team ────
+  const { data: rosterEntriesRaw } = await supabase
+    .from('team_roster_entries')
+    .select('team_id, player_id')
+    .in('team_id', teams.map((t) => t.id))
+    .is('released_at', null)
+
+  // Build a Set<playerId> per team
+  const rosterByTeam = new Map<string, Set<string>>()
+  for (const entry of rosterEntriesRaw ?? []) {
+    const s = rosterByTeam.get(entry.team_id) ?? new Set<string>()
+    s.add(entry.player_id)
+    rosterByTeam.set(entry.team_id, s)
+  }
 
   // Build normalized lookups
   const teamEntries = teams.map((t) => ({
@@ -240,13 +258,21 @@ export async function parseAndMatchAction(
     const slots = formationId ? (slotsByFormation.get(formationId) ?? []) : []
     const usedPlayerIds = new Set<string>()
 
+    // Scope player search to this team's roster when the team is known.
+    // Fall back to all league players when the team wasn't matched (so the
+    // admin can still see which players were found even before fixing the team).
+    const rosterIds = teamId ? rosterByTeam.get(teamId) : null
+    const scopedPlayers = rosterIds
+      ? playerEntries.filter((p) => rosterIds.has(p.id))
+      : playerEntries
+
     const buildPlayerPreviews = (
       names: string[],
       isBench: boolean,
     ): PlayerPreview[] => {
       return names.map((name, idx) => {
         const norm = normalizeName(name)
-        const match = findDbPlayer(norm, playerEntries)
+        const match = findDbPlayer(norm, scopedPlayers)
 
         if (!match) {
           errors.push(`${isBench ? 'Panchina' : 'Titolare'} non trovato: "${name}"`)
@@ -349,7 +375,8 @@ export async function parseAndMatchAction(
     })
   }
 
-  return { ok: true, teams: teamPreviews }
+  const availableTeams = teams.map((t) => ({ id: t.id, name: t.name }))
+  return { ok: true, teams: teamPreviews, availableTeams }
 }
 
 // ─── confirmLineupImportAction ────────────────────────────────────────────────

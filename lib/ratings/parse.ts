@@ -304,5 +304,66 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     }
   }
 
+  // Strategy 7: multiple abbreviations — "Esposito F. P." → "esposito f p"
+  // Long tokens (>2 chars) are surnames; short tokens (1-2 chars) are prefixes of first names.
+  // Matches DB players where all long tokens appear AND each short token is a prefix of
+  // some remaining DB token.
+  {
+    const longTks  = statTokens.filter(t => t.length > 2)
+    const shortTks = statTokens.filter(t => t.length <= 2)
+    if (longTks.length > 0 && shortTks.length > 0) {
+      const multiAbbrevCands = dbPlayers.filter(p => {
+        const pts = p.normalized.split(' ').filter(Boolean)
+        if (!longTks.every(lt => pts.includes(lt))) return false
+        const remaining = pts.filter(t => !longTks.includes(t))
+        return shortTks.every(abbr => remaining.some(t => t.startsWith(abbr)))
+      })
+      if (multiAbbrevCands.length === 1) return multiAbbrevCands[0]
+    }
+  }
+
+  // Strategy 8: apostrophe-concatenation — "N'Dicka" normalises to "n dicka" but DB
+  // may store it as "ndicka" (apostrophe removed at import time).
+  // Try concatenating any leading 1-2 char token with the token that follows it.
+  for (let i = 0; i < statTokens.length - 1; i++) {
+    const tok = statTokens[i]
+    if (tok && tok.length <= 2) {
+      const altTokens = [
+        ...statTokens.slice(0, i),
+        tok + statTokens[i + 1]!,
+        ...statTokens.slice(i + 2),
+      ]
+      const altNorm = altTokens.join(' ')
+      const altSig  = altTokens.filter(t => t.length > 1)
+
+      // Exact match on concatenated form
+      const exactAlt = dbPlayers.find(p => p.normalized === altNorm)
+      if (exactAlt) return exactAlt
+
+      // Strategy-5 equivalent on concatenated form (unique superset)
+      if (altSig.length > 0) {
+        const altSuperCands = dbPlayers.filter(p => {
+          const psig = p.normalized.split(' ').filter(t => t.length > 1)
+          if (psig.length <= altSig.length) return false
+          return altSig.every(t => psig.includes(t))
+        })
+        if (altSuperCands.length === 1) return altSuperCands[0]
+      }
+    }
+  }
+
+  // Strategy 9: token intersection — "Zambo Anguissa" ↔ "Frank Anguissa"
+  // When stat has ≥2 significant tokens and shares at least 1 with the DB player,
+  // unique match only. Catches cases where the input name uses a different part of
+  // the full name than what is stored in DB.
+  if (statSig.length >= 2) {
+    const sigSet = new Set(statSig)
+    const intersectCands = dbPlayers.filter(p => {
+      const psig = p.normalized.split(' ').filter(t => t.length > 1)
+      return psig.some(t => sigSet.has(t))
+    })
+    if (intersectCands.length === 1) return intersectCands[0]
+  }
+
   return undefined
 }

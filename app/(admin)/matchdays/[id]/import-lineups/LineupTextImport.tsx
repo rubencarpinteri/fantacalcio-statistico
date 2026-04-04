@@ -21,6 +21,9 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
   const [step, setStep] = useState<Step>('paste')
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<TeamLineupPreview[]>([])
+  const [availableTeams, setAvailableTeams] = useState<{ id: string; name: string }[]>([])
+  // teamOverrides: index in preview[] → manually-selected teamId
+  const [teamOverrides, setTeamOverrides] = useState<Record<number, string>>({})
   const [parseError, setParseError] = useState<string | null>(null)
   const [result, setResult] = useState<ConfirmLineupImportResult | null>(null)
   const [isParsing, startParse] = useTransition()
@@ -29,6 +32,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
   // ── Step 1 → 2: parse and match ───────────────────────────────────────────
   function handleAnalyze() {
     setParseError(null)
+    setTeamOverrides({})
     startParse(async () => {
       const res: ParseAndMatchResult = await parseAndMatchAction(matchdayId, text)
       if (!res.ok) {
@@ -36,28 +40,51 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
         return
       }
       setPreview(res.teams)
+      setAvailableTeams(res.availableTeams)
       setStep('preview')
     })
+  }
+
+  // A team is "ready" if either canImport is true, OR the team was only blocked
+  // because it wasn't matched AND the admin has manually selected a team override.
+  function isEffectivelyReady(team: TeamLineupPreview, idx: number): boolean {
+    if (team.canImport) return true
+    const override = teamOverrides[idx]
+    if (!override) return false
+    // Check that the only blocking errors are the team-not-found error
+    const nonTeamErrors = team.errors.filter(
+      (e) => !e.startsWith('Squadra non trovata')
+    )
+    return nonTeamErrors.length === 0 && !!team.formationId && team.players.every(
+      (p) => !p.isBench ? (p.playerId && p.slotId) : true
+    )
   }
 
   // ── Step 2 → 3: confirm import ────────────────────────────────────────────
   function handleConfirm() {
     const lineups: ConfirmedTeamLineup[] = preview
-      .filter((t) => t.canImport)
-      .map((t) => ({
-        teamId:     t.teamId!,
-        teamName:   t.teamDbName ?? t.inputName,
-        formationId: t.formationId!,
-        players: t.players
-          .filter((p) => p.playerId && p.slotId)
-          .map((p): ConfirmedPlayer => ({
-            playerId:     p.playerId!,
-            slotId:       p.slotId!,
-            assignedRole: p.assignedRole,
-            isBench:      p.isBench,
-            benchOrder:   p.benchOrder,
-          })),
-      }))
+      .flatMap((t, idx) => {
+        if (!isEffectivelyReady(t, idx)) return []
+        const overrideTeamId = teamOverrides[idx]
+        const resolvedTeamId = overrideTeamId ?? t.teamId!
+        const overrideTeam = overrideTeamId
+          ? availableTeams.find((at) => at.id === overrideTeamId)
+          : null
+        return [{
+          teamId:      resolvedTeamId,
+          teamName:    overrideTeam?.name ?? t.teamDbName ?? t.inputName,
+          formationId: t.formationId!,
+          players: t.players
+            .filter((p) => p.playerId && p.slotId)
+            .map((p): ConfirmedPlayer => ({
+              playerId:     p.playerId!,
+              slotId:       p.slotId!,
+              assignedRole: p.assignedRole,
+              isBench:      p.isBench,
+              benchOrder:   p.benchOrder,
+            })),
+        }]
+      })
 
     startConfirm(async () => {
       const res = await confirmLineupImportAction(matchdayId, lineups)
@@ -66,8 +93,8 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
     })
   }
 
-  const readyCount  = preview.filter((t) => t.canImport).length
-  const errorCount  = preview.filter((t) => !t.canImport).length
+  const readyCount = preview.filter((t, idx) => isEffectivelyReady(t, idx)).length
+  const errorCount = preview.filter((t, idx) => !isEffectivelyReady(t, idx)).length
 
   // ─── STEP 1: PASTE ────────────────────────────────────────────────────────
   if (step === 'paste') {
@@ -141,7 +168,14 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
         {/* Team cards */}
         <div className="space-y-3">
           {preview.map((team, ti) => (
-            <TeamCard key={ti} team={team} />
+            <TeamCard
+              key={ti}
+              team={team}
+              isReady={isEffectivelyReady(team, ti)}
+              availableTeams={availableTeams}
+              teamOverride={teamOverrides[ti] ?? null}
+              onTeamOverride={(id) => setTeamOverrides((prev) => ({ ...prev, [ti]: id }))}
+            />
           ))}
         </div>
 
@@ -224,22 +258,33 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
 
 // ─── TeamCard ─────────────────────────────────────────────────────────────────
 
-function TeamCard({ team }: { team: TeamLineupPreview }) {
-  const [expanded, setExpanded] = useState(false)
+interface TeamCardProps {
+  team: TeamLineupPreview
+  isReady: boolean
+  availableTeams: { id: string; name: string }[]
+  teamOverride: string | null
+  onTeamOverride: (id: string) => void
+}
+
+function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride }: TeamCardProps) {
+  const [expanded, setExpanded] = useState(!isReady)
   const starters = team.players.filter((p) => !p.isBench)
   const bench    = team.players.filter((p) => p.isBench)
 
-  const statusBorder = team.canImport
+  const statusBorder = isReady
     ? team.warnings.length > 0
       ? 'border-amber-500/30'
       : 'border-green-500/30'
     : 'border-red-500/30'
 
-  const statusBg = team.canImport
+  const statusBg = isReady
     ? team.warnings.length > 0
       ? 'bg-amber-500/5'
       : 'bg-green-500/5'
     : 'bg-red-500/5'
+
+  // Show team picker when team wasn't auto-matched
+  const needsTeamPicker = !team.teamId
 
   return (
     <div className={`rounded-xl border ${statusBorder} ${statusBg}`}>
@@ -251,16 +296,18 @@ function TeamCard({ team }: { team: TeamLineupPreview }) {
         <div className="flex items-center gap-3 min-w-0">
           {/* Status dot */}
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            team.canImport
+            isReady
               ? team.warnings.length > 0 ? 'bg-amber-400' : 'bg-green-400'
               : 'bg-red-400'
           }`} />
 
           <span className="text-sm font-semibold text-white truncate">
-            {team.teamDbName ?? team.inputName}
+            {teamOverride
+              ? availableTeams.find((t) => t.id === teamOverride)?.name ?? team.inputName
+              : team.teamDbName ?? team.inputName}
           </span>
 
-          {team.teamDbName && team.teamDbName !== team.inputName && (
+          {(team.teamDbName ?? teamOverride) && (team.teamDbName ?? teamOverride) !== team.inputName && (
             <span className="text-xs text-[#55556a] truncate">← "{team.inputName}"</span>
           )}
 
@@ -268,13 +315,13 @@ function TeamCard({ team }: { team: TeamLineupPreview }) {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          {team.canImport && team.warnings.length === 0 && (
+          {isReady && team.warnings.length === 0 && (
             <span className="text-xs text-green-400">✓ pronta</span>
           )}
-          {team.canImport && team.warnings.length > 0 && (
+          {isReady && team.warnings.length > 0 && (
             <span className="text-xs text-amber-400">{team.warnings.length} avvisi</span>
           )}
-          {!team.canImport && (
+          {!isReady && (
             <span className="text-xs text-red-400">{team.errors.length} errori</span>
           )}
           <span className="text-[#555570] text-xs">{expanded ? '▲' : '▼'}</span>
@@ -284,12 +331,34 @@ function TeamCard({ team }: { team: TeamLineupPreview }) {
       {/* Expanded detail */}
       {expanded && (
         <div className="border-t border-[#1e1e2e] px-4 py-3 space-y-3">
-          {/* Errors */}
-          {team.errors.length > 0 && (
+          {/* Manual team picker for unmatched teams */}
+          {needsTeamPicker && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+              <p className="text-xs text-amber-400 mb-1.5">
+                ⚠ Squadra "{team.inputName}" non trovata. Seleziona manualmente:
+              </p>
+              <select
+                value={teamOverride ?? ''}
+                onChange={(e) => onTeamOverride(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full rounded border border-[#2e2e42] bg-[#0d0d14] px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500/60"
+              >
+                <option value="">— scegli squadra —</option>
+                {availableTeams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Errors (excluding team-not-found when override is set) */}
+          {team.errors.filter((e) => !(needsTeamPicker && teamOverride && e.startsWith('Squadra non trovata'))).length > 0 && (
             <ul className="space-y-1">
-              {team.errors.map((e, i) => (
-                <li key={i} className="text-xs text-red-400">✗ {e}</li>
-              ))}
+              {team.errors
+                .filter((e) => !(needsTeamPicker && teamOverride && e.startsWith('Squadra non trovata')))
+                .map((e, i) => (
+                  <li key={i} className="text-xs text-red-400">✗ {e}</li>
+                ))}
             </ul>
           )}
 

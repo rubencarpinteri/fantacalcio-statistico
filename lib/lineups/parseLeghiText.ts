@@ -39,19 +39,23 @@ export function parseLeghiLineupText(text: string): ParsedTeamLineup[] {
     const startersRaw  = match[3]!
     const benchRaw     = match[4]!
 
+    // Normalize formation: strip trailing variant suffix like "D", "O", "A", "C"
+    // e.g. "4-3-3 D" → "4-3-3", "3-4-2-1 A" → "3-4-2-1"
+    const normalizedFormation = formationStr.replace(/\s+[A-Za-z]$/, '').trim()
+
     // Starters: groups separated by ; with commas within each group
     const starterNames = startersRaw
       .split(/[;,]/)
-      .map((s) => s.trim())
+      .map((s) => s.trim().replace(/\s*[-–—]+\s*$/, '').trim()) // strip trailing dash annotations
       .filter(Boolean)
 
     // Bench: always comma-separated
     const benchNames = benchRaw
       .split(',')
-      .map((s) => s.trim())
+      .map((s) => s.trim().replace(/\s*[-–—]+\s*$/, '').trim()) // strip trailing dash annotations
       .filter(Boolean)
 
-    results.push({ teamName, formationStr, starterNames, benchNames })
+    results.push({ teamName, formationStr: normalizedFormation, starterNames, benchNames })
   }
 
   return results
