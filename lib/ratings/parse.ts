@@ -263,6 +263,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   }
 
   // DB tokens ⊆ FotMob tokens (unique match only)
+  // handles: "Bisseck" (DB) ↔ "Yann Bisseck" (FotMob)
   if (statSig.length > 0) {
     const sigSet = new Set(statSig)
     const subCands = dbPlayers.filter(p => {
@@ -271,6 +272,17 @@ export function findDbPlayer<T extends DbPlayerEntry>(
       return psig.every(t => sigSet.has(t))
     })
     if (subCands.length === 1) return subCands[0]
+  }
+
+  // FotMob tokens ⊆ DB tokens (unique match only)
+  // handles: "N'Dicka" (FotMob) ↔ "Evan N'Dicka" (DB)
+  if (statSig.length > 0) {
+    const superCands = dbPlayers.filter(p => {
+      const psig = p.normalized.split(' ').filter(t => t.length > 1)
+      if (psig.length <= statSig.length) return false
+      return statSig.every(t => psig.includes(t))
+    })
+    if (superCands.length === 1) return superCands[0]
   }
 
   return undefined

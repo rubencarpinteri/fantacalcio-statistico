@@ -9,7 +9,7 @@ import { normalizeName, mergeFixtureStats, findDbPlayer } from '@/lib/ratings/pa
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 import { computeMatchday } from '@/domain/engine/v1/engine'
 import { buildEngineConfig } from '@/domain/engine/v1/config'
-import type { EnginePlayerInput, PlayerCalculationResult } from '@/domain/engine/v1/types'
+import type { EnginePlayerInput, PlayerCalculationResult, BonusMalusItem } from '@/domain/engine/v1/types'
 import type { RatingClass, Json } from '@/types/database.types'
 import * as XLSX from 'xlsx'
 
@@ -246,7 +246,7 @@ type CalcData = {
   player_id: string
   fantavoto: number
   voto_base: number | null
-  bonus_malus_breakdown: unknown
+  bonus_malus_breakdown: BonusMalusItem[]
 }
 
 /** The shape of team_lineups JSON sent from the client for both preview and confirm */
@@ -562,7 +562,7 @@ async function buildCalcLookup(
       player_id: calc.player_id,
       fantavoto: calc.fantavoto,
       voto_base: calc.voto_base,
-      bonus_malus_breakdown: calc.bonus_malus_breakdown,
+      bonus_malus_breakdown: (calc.bonus_malus_breakdown as BonusMalusItem[] | null) ?? [],
     }
     const fullKey = normalizeName(lp.full_name)
     nameToCalc.set(fullKey, data)
@@ -601,7 +601,9 @@ export type PreviewPlayerRow = {
   isActiveSub: boolean
   subbedForNv: string | null
   finalScore: number | null
+  votoBase: number | null
   source: 'fotmob' | 'leghe' | 'none'
+  bonuses: BonusMalusItem[]
 }
 
 export type PreviewTeamResult = {
@@ -644,17 +646,17 @@ export async function previewScoresAction(
           const calc = lookupCalc(starter.name)
           if (calc !== null) {
             total += calc.fantavoto
-            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: calc.fantavoto, source: 'fotmob' })
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: calc.fantavoto, votoBase: calc.voto_base, source: 'fotmob', bonuses: calc.bonus_malus_breakdown })
           } else if (starter.legheFantavoto !== null) {
             total += starter.legheFantavoto
             warnings.push(`${starter.name}: voto FotMob non trovato — usato voto Leghe (${starter.legheFantavoto.toFixed(2)})`)
-            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: starter.legheFantavoto, source: 'leghe' })
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: starter.legheFantavoto, votoBase: null, source: 'leghe', bonuses: [] })
           } else {
             warnings.push(`${starter.name}: nessun voto disponibile`)
-            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: null, source: 'none' })
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: null, votoBase: null, source: 'none', bonuses: [] })
           }
         } else {
-          players.push({ name: starter.name, role: starter.role, isNv: true, isActiveSub: false, subbedForNv: null, finalScore: null, source: 'none' })
+          players.push({ name: starter.name, role: starter.role, isNv: true, isActiveSub: false, subbedForNv: null, finalScore: null, votoBase: null, source: 'none', bonuses: [] })
           const assignedSubName = tl.subAssignments[starter.name] ?? ''
           if (assignedSubName) {
             usedBench.add(assignedSubName)
@@ -662,10 +664,10 @@ export async function previewScoresAction(
             const benchRole = tl.bench.find(b => b.name === assignedSubName)?.role ?? ''
             if (c !== null) {
               total += c.fantavoto
-              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: c.fantavoto, source: 'fotmob' })
+              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: c.fantavoto, votoBase: c.voto_base, source: 'fotmob', bonuses: c.bonus_malus_breakdown })
             } else {
               warnings.push(`Sostituto ${assignedSubName} (per ${starter.name}): voto FotMob non trovato`)
-              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: null, source: 'none' })
+              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: null, votoBase: null, source: 'none', bonuses: [] })
             }
           }
         }

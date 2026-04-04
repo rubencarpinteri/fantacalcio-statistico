@@ -69,33 +69,52 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
 
             {/* Player rows */}
             <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[#1a1a24] text-[10px] uppercase tracking-wider text-[#3a3a52]">
+                  <th className="w-8 px-3 py-1 text-left">R</th>
+                  <th className="px-3 py-1 text-left">Giocatore</th>
+                  <th className="px-3 py-1 text-left">Bonus/Malus</th>
+                  <th className="px-3 py-1 text-right">Voto</th>
+                  <th className="px-3 py-1 text-right">FV</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-[#1a1a24]">
                 {team.players.map((p, i) => (
                   <tr key={i} className={p.isNv ? 'opacity-40' : p.isActiveSub ? 'bg-indigo-500/5' : ''}>
                     <td className="w-8 px-3 py-1.5 text-[#55556a]">{p.role}</td>
-                    <td className="px-3 py-1.5 text-[#8888aa]">
-                      {p.isNv && <span className="mr-1.5 rounded bg-red-500/20 px-1 py-0.5 text-xs font-medium text-red-400">NV</span>}
-                      {p.isActiveSub && <span className="mr-1.5 rounded bg-indigo-500/20 px-1 py-0.5 text-xs font-medium text-indigo-400">sub</span>}
-                      <span className={p.isNv ? 'line-through' : 'text-white'}>{p.name}</span>
+                    <td className="px-3 py-1.5">
+                      {p.isNv && <span className="mr-1 rounded bg-red-500/20 px-1 py-0.5 font-medium text-red-400">NV</span>}
+                      {p.isActiveSub && <span className="mr-1 rounded bg-indigo-500/20 px-1 py-0.5 font-medium text-indigo-400">↑</span>}
+                      <span className={p.isNv ? 'line-through text-[#55556a]' : 'text-white'}>{p.name}</span>
                       {p.isActiveSub && p.subbedForNv && (
-                        <span className="ml-1 text-[#55556a]">↳ per {p.subbedForNv}</span>
+                        <span className="ml-1 text-[#55556a]">↳ {p.subbedForNv}</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-right">
-                      {p.source === 'fotmob' && (
-                        <span className="inline-flex items-center gap-1">
-                          <span className="font-mono text-white">{p.finalScore?.toFixed(2)}</span>
-                          <span className="rounded bg-emerald-500/15 px-1 py-0.5 text-[10px] text-emerald-400">FM</span>
+                    <td className="px-3 py-1.5">
+                      {p.bonuses.filter(b => b.total !== 0).length > 0 ? (
+                        <span className="flex flex-wrap gap-x-2 gap-y-0.5">
+                          {p.bonuses.filter(b => b.total !== 0).map((b, bi) => (
+                            <span key={bi} className={`font-mono ${b.total > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {b.label}{b.quantity > 1 ? `×${b.quantity}` : ''} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
+                            </span>
+                          ))}
                         </span>
+                      ) : (
+                        <span className="text-[#3a3a52]">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">
+                      {p.votoBase != null ? p.votoBase.toFixed(2) : '—'}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-mono font-semibold">
+                      {p.source === 'fotmob' && (
+                        <span className="text-white">{p.finalScore?.toFixed(2)}</span>
                       )}
                       {p.source === 'leghe' && (
-                        <span className="inline-flex items-center gap-1">
-                          <span className="font-mono text-amber-300">{p.finalScore?.toFixed(2)}</span>
-                          <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[10px] text-amber-400">Leghe</span>
-                        </span>
+                        <span className="text-amber-300">{p.finalScore?.toFixed(2)}</span>
                       )}
                       {p.source === 'none' && !p.isNv && (
-                        <span className="rounded bg-red-500/15 px-1 py-0.5 text-[10px] text-red-400">—</span>
+                        <span className="text-red-400">—</span>
                       )}
                     </td>
                   </tr>
