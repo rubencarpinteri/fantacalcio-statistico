@@ -202,8 +202,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       full_name: p.full_name,
       club: p.club,
       normalized: normalizeName(p.full_name),
-      // Manual link takes precedence; pool ID is fallback
-      fotmob_player_id: p.fotmob_player_id ?? sap?.fotmob_id ?? null,
+      // Manual link takes precedence; pool ID is fallback.
+      // Supabase returns bigint as string — coerce to number so === comparison works.
+      fotmob_player_id: p.fotmob_player_id != null
+        ? Number(p.fotmob_player_id)
+        : sap?.fotmob_id != null ? Number(sap.fotmob_id) : null,
     }
   })
 
@@ -225,15 +228,20 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   }
 
   // Persist unmatched FotMob players so the admin can link them via
-  // /pool/link-fotmob. Only players with a fotmob_id are linkable; skip
-  // SofaScore-only entries (fotmob_id === null). Upsert so re-fetching the
-  // same matchday is idempotent — already-dismissed entries are not overwritten.
-  const unmatchedWithId = unmatched.filter(u => u.stat.fotmob_id != null)
-  if (unmatchedWithId.length > 0) {
+  // /pool/link-fotmob. Deduplicate by fotmob_id first — the same player can
+  // appear multiple times in allFetched (different fixture sources); sending
+  // duplicate PKs to upsert causes "cannot affect row a second time".
+  const unmatchedByFotmobId = new Map<number, UnmatchedPlayer>()
+  for (const u of unmatched) {
+    if (u.stat.fotmob_id != null) {
+      unmatchedByFotmobId.set(u.stat.fotmob_id, u)
+    }
+  }
+  if (unmatchedByFotmobId.size > 0) {
     await supabase
       .from('fotmob_unmatched_players')
       .upsert(
-        unmatchedWithId.map(u => ({
+        [...unmatchedByFotmobId.values()].map(u => ({
           matchday_id: matchdayId,
           fotmob_player_id: u.stat.fotmob_id!,
           fotmob_name: u.stat.name,
