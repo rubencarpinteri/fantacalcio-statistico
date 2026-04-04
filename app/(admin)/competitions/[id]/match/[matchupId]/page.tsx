@@ -33,26 +33,20 @@ function BonusMalusCell({ bm }: { bm: BonusMalusItem[] | null }) {
   )
 }
 
+// ---- Team formation table ---------------------------------------------------
+
 function TeamLineup({
-  teamName, starters, bench, total,
+  starters,
+  bench,
 }: {
-  teamName: string
   starters: StarterEntry[]
   bench: BenchEntry[]
-  total: number | null
 }) {
-  // Build a quick lookup: bench player name → their entry (for subs)
   const benchByName = new Map(bench.map(b => [b.name.toLowerCase(), b]))
 
   return (
-    <div className="flex-1 min-w-0">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-bold text-white">{teamName}</h2>
-        {total !== null && (
-          <span className="font-mono text-lg font-bold text-indigo-300">{Number(total).toFixed(2)}</span>
-        )}
-      </div>
-
+    <div className="space-y-3">
+      {/* Starters table */}
       <div className="overflow-hidden rounded-lg border border-[#2e2e42]">
         <table className="w-full text-sm">
           <thead>
@@ -90,7 +84,9 @@ function TeamLineup({
                   </td>
                   <td className="px-3 py-2 text-right font-mono font-bold">
                     {p.fantavoto != null
-                      ? <span className="text-white">{Number(p.fantavoto).toFixed(2)}</span>
+                      ? <span className={p.fantavoto >= 7 ? 'text-green-400' : p.fantavoto >= 6 ? 'text-white' : 'text-amber-400'}>
+                          {Number(p.fantavoto).toFixed(2)}
+                        </span>
                       : sub?.fantavoto != null
                       ? <span className="text-emerald-300">{Number(sub.fantavoto).toFixed(2)}</span>
                       : <span className="text-[#55556a]">—</span>
@@ -103,8 +99,9 @@ function TeamLineup({
         </table>
       </div>
 
+      {/* Bench (non-subbed) */}
       {bench.filter(b => !b.subbed_in_for).length > 0 && (
-        <div className="mt-2">
+        <div>
           <p className="mb-1 px-1 text-xs font-medium uppercase tracking-wider text-[#55556a]">Panchina</p>
           <div className="overflow-hidden rounded-lg border border-[#1e1e2e]">
             <table className="w-full text-sm">
@@ -126,6 +123,8 @@ function TeamLineup({
   )
 }
 
+// ---- Page ------------------------------------------------------------------
+
 export default async function MatchDetailPage({
   params,
 }: {
@@ -144,6 +143,13 @@ export default async function MatchDetailPage({
 
   if (!matchup) notFound()
 
+  // Competition name for breadcrumb
+  const { data: comp } = await supabase
+    .from('competitions')
+    .select('name')
+    .eq('id', competitionId)
+    .single()
+
   // Get matchday_id from competition_rounds via round_number
   const { data: round } = await supabase
     .from('competition_rounds')
@@ -161,11 +167,12 @@ export default async function MatchDetailPage({
   const homeTeam = teams?.find(t => t.id === matchup.home_team_id)
   const awayTeam = teams?.find(t => t.id === matchup.away_team_id)
 
-  // Get lineups: try matchday_lineups (import-leghe) first, fall back to lineup_submissions
+  // Build lineup data ─────────────────────────────────────────────────────────
   let homeLineup: { starters: StarterEntry[]; bench: BenchEntry[] } | null = null
   let awayLineup: { starters: StarterEntry[]; bench: BenchEntry[] } | null = null
 
   if (round?.matchday_id) {
+    // Try matchday_lineups (leghe xlsx import) first
     const { data: legheLineups } = await supabase
       .from('matchday_lineups')
       .select('team_id, starters, bench')
@@ -181,12 +188,12 @@ export default async function MatchDetailPage({
       else awayLineup = lineup
     }
 
-    // Fall back to lineup_submissions when matchday_lineups is absent
+    // Fall back to lineup_submissions for missing teams
     const missingTeams = [matchup.home_team_id, matchup.away_team_id].filter(
       (tid) => !(tid === matchup.home_team_id ? homeLineup : awayLineup)
     )
+
     if (missingTeams.length > 0) {
-      // Get current submission pointers
       const { data: pointers } = await supabase
         .from('lineup_current_pointers')
         .select('team_id, submission_id')
@@ -197,35 +204,43 @@ export default async function MatchDetailPage({
       const ptrTeamMap = new Map((pointers ?? []).map((p) => [p.submission_id, p.team_id]))
 
       if (subIds.length > 0) {
-        // Fetch submission players
         const { data: subPlayers } = await supabase
           .from('lineup_submission_players')
           .select('submission_id, player_id, is_bench, bench_order, assigned_mantra_role, slot_id')
           .in('submission_id', subIds)
 
-        // Fetch player names
         const allPlayerIds = [...new Set((subPlayers ?? []).map((p) => p.player_id))]
         const { data: playerNames } = allPlayerIds.length > 0
-          ? await supabase
-              .from('league_players')
-              .select('id, full_name')
-              .in('id', allPlayerIds)
+          ? await supabase.from('league_players').select('id, full_name').in('id', allPlayerIds)
           : { data: [] }
         const nameMap = new Map((playerNames ?? []).map((p) => [p.id, p.full_name]))
 
-        // Fetch scores from current calculation run
+        // ── Score lookup: official pointer → latest draft run ─────────────
+        let runId: string | null = null
         const { data: calcPtr } = await supabase
           .from('matchday_current_calculation')
           .select('run_id')
           .eq('matchday_id', round.matchday_id)
           .maybeSingle()
+        runId = calcPtr?.run_id ?? null
+
+        if (!runId) {
+          const { data: latestRun } = await supabase
+            .from('calculation_runs')
+            .select('id')
+            .eq('matchday_id', round.matchday_id)
+            .order('run_number', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          runId = latestRun?.id ?? null
+        }
 
         const scoreMap = new Map<string, { fantavoto: number | null; voto_base: number | null; bm: BonusMalusItem[] | null }>()
-        if (calcPtr?.run_id) {
+        if (runId) {
           const { data: calcs } = await supabase
             .from('player_calculations')
             .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
-            .eq('run_id', calcPtr.run_id)
+            .eq('run_id', runId)
           for (const c of calcs ?? []) {
             scoreMap.set(c.player_id, {
               fantavoto: c.fantavoto,
@@ -235,7 +250,6 @@ export default async function MatchDetailPage({
           }
         }
 
-        // Group by team
         type SubPlayer = NonNullable<typeof subPlayers>[number]
         const byTeam = new Map<string, SubPlayer[]>()
         for (const sp of subPlayers ?? []) {
@@ -249,7 +263,6 @@ export default async function MatchDetailPage({
         for (const [teamId, players] of byTeam) {
           const starters: StarterEntry[] = players
             .filter((p) => !p.is_bench)
-            .sort((a, b) => 0) // preserve insertion order (slot_order not needed here)
             .map((p) => {
               const sc = scoreMap.get(p.player_id)
               return {
@@ -284,53 +297,144 @@ export default async function MatchDetailPage({
     }
   }
 
-  const resultLabel = matchup.result === '1' ? `${homeTeam?.name ?? '?'} vince`
+  // ── Score and result display helpers ─────────────────────────────────────
+  const homeFvStr = matchup.home_fantavoto != null ? Number(matchup.home_fantavoto).toFixed(2) : null
+  const awayFvStr = matchup.away_fantavoto != null ? Number(matchup.away_fantavoto).toFixed(2) : null
+  const hasScore  = homeFvStr !== null || awayFvStr !== null
+
+  // Colour coding: winner green, loser dim
+  const homeScoreColor =
+    matchup.result === '1' ? 'text-green-400'
+    : matchup.result === '2' ? 'text-red-400'
+    : 'text-white'
+  const awayScoreColor =
+    matchup.result === '2' ? 'text-green-400'
+    : matchup.result === '1' ? 'text-red-400'
+    : 'text-white'
+  const homeNameColor =
+    matchup.result === '1' ? 'text-green-400'
+    : matchup.result === '2' ? 'text-[#8888aa]'
+    : 'text-white'
+  const awayNameColor =
+    matchup.result === '2' ? 'text-green-400'
+    : matchup.result === '1' ? 'text-[#8888aa]'
+    : 'text-white'
+
+  const resultLabel =
+    matchup.result === '1' ? `${homeTeam?.name ?? '?'} vince`
     : matchup.result === '2' ? `${awayTeam?.name ?? '?'} vince`
     : matchup.result === 'X' ? 'Pareggio'
-    : 'Non calcolato'
+    : null
+
+  // Compute sum of individual player fantavotos for a "live" preview score
+  // (used when matchup.home_fantavoto is not yet computed)
+  function liveSum(lineup: { starters: StarterEntry[] } | null): number | null {
+    if (!lineup) return null
+    const vals = lineup.starters.map(s => s.fantavoto).filter((v): v is number => v !== null)
+    if (vals.length === 0) return null
+    return vals.reduce((a, b) => a + b, 0)
+  }
+
+  const homeLiveFv = hasScore ? null : liveSum(homeLineup)
+  const awayLiveFv = hasScore ? null : liveSum(awayLineup)
+  const showLive   = !hasScore && (homeLiveFv !== null || awayLiveFv !== null)
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
       <div>
         <a href={`/competitions/${competitionId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
-          ← {round?.name ?? `Giornata ${matchup.round_number}`}
+          ← {comp?.name ?? 'Competizione'}
         </a>
-        <h1 className="mt-1 text-xl font-bold text-white">
-          {homeTeam?.name ?? '?'} — {awayTeam?.name ?? '?'}
-        </h1>
-        <div className="mt-1 flex items-center gap-4">
-          <span className="font-mono text-2xl font-bold text-white">
-            {matchup.home_fantavoto != null ? Number(matchup.home_fantavoto).toFixed(2) : '—'}
-            <span className="mx-2 text-[#55556a]">vs</span>
-            {matchup.away_fantavoto != null ? Number(matchup.away_fantavoto).toFixed(2) : '—'}
-          </span>
-          {matchup.result && (
-            <span className={`rounded-lg px-3 py-1 text-sm font-semibold ${
-              matchup.result === '1' ? 'bg-emerald-500/15 text-emerald-400' :
-              matchup.result === '2' ? 'bg-red-500/15 text-red-400' :
-              'bg-amber-500/15 text-amber-400'
-            }`}>{resultLabel}</span>
-          )}
-        </div>
+        <p className="mt-0.5 text-xs text-[#55556a]">{round?.name ?? `Giornata ${matchup.round_number}`}</p>
       </div>
 
-      {!homeLineup && !awayLineup ? (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
-          ⚠ Nessuna formazione inserita per questa giornata. Importa le formazioni dalla pagina della giornata.
+      {/* ── Matchup card ─────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
+
+        {/* Header: home | score | away */}
+        <div className="grid grid-cols-[1fr,auto,1fr] items-center px-6 py-5 bg-[#0f0f1a] border-b border-[#2e2e42]">
+          {/* Home */}
+          <div className="min-w-0">
+            <p className={`text-base font-bold truncate ${homeNameColor}`}>
+              {homeTeam?.name ?? '?'}
+            </p>
+          </div>
+
+          {/* Score / VS */}
+          <div className="mx-8 flex flex-col items-center gap-1 shrink-0">
+            {hasScore ? (
+              <>
+                <div className="flex items-center gap-4 font-mono text-2xl font-black">
+                  <span className={homeScoreColor}>{homeFvStr ?? '—'}</span>
+                  <span className="text-[#3e3e52] text-lg">–</span>
+                  <span className={awayScoreColor}>{awayFvStr ?? '—'}</span>
+                </div>
+                {resultLabel && (
+                  <p className="text-xs text-[#8888aa]">{resultLabel}</p>
+                )}
+              </>
+            ) : showLive ? (
+              <>
+                <div className="flex items-center gap-4 font-mono text-2xl font-black text-[#8888aa]">
+                  <span>{homeLiveFv?.toFixed(2) ?? '—'}</span>
+                  <span className="text-[#3e3e52] text-lg">–</span>
+                  <span>{awayLiveFv?.toFixed(2) ?? '—'}</span>
+                </div>
+                <p className="text-[10px] uppercase tracking-widest text-[#55556a]">anteprima</p>
+              </>
+            ) : (
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#55556a] px-4 py-1 rounded-full border border-[#2e2e42]">
+                vs
+              </span>
+            )}
+          </div>
+
+          {/* Away */}
+          <div className="min-w-0 text-right">
+            <p className={`text-base font-bold truncate ${awayNameColor}`}>
+              {awayTeam?.name ?? '?'}
+            </p>
+          </div>
         </div>
-      ) : (
-        <div className="flex flex-col gap-6 lg:flex-row">
-          {homeLineup
-            ? <TeamLineup teamName={homeTeam?.name ?? '?'} starters={homeLineup.starters} bench={homeLineup.bench} total={matchup.home_fantavoto != null ? Number(matchup.home_fantavoto) : null} />
-            : <div className="flex-1 text-sm text-[#55556a]">Formazione non disponibile</div>
-          }
-          <div className="hidden lg:block w-px bg-[#2e2e42]" />
-          {awayLineup
-            ? <TeamLineup teamName={awayTeam?.name ?? '?'} starters={awayLineup.starters} bench={awayLineup.bench} total={matchup.away_fantavoto != null ? Number(matchup.away_fantavoto) : null} />
-            : <div className="flex-1 text-sm text-[#55556a]">Formazione non disponibile</div>
-          }
-        </div>
-      )}
+
+        {/* Formations */}
+        {!homeLineup && !awayLineup ? (
+          <div className="px-5 py-4 text-sm text-amber-300">
+            ⚠ Nessuna formazione inserita per questa giornata. Importa le formazioni dalla pagina della giornata.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#1e1e2e]">
+            {/* Home */}
+            <div className="p-5 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#55556a]">
+                {homeTeam?.name ?? '?'}
+                {homeLiveFv !== null && !hasScore && (
+                  <span className="ml-2 font-mono text-[#8888aa]">Σ {homeLiveFv.toFixed(2)}</span>
+                )}
+              </p>
+              {homeLineup
+                ? <TeamLineup starters={homeLineup.starters} bench={homeLineup.bench} />
+                : <p className="py-10 text-center text-sm text-[#55556a]">Formazione non disponibile</p>
+              }
+            </div>
+
+            {/* Away */}
+            <div className="p-5 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#55556a]">
+                {awayTeam?.name ?? '?'}
+                {awayLiveFv !== null && !hasScore && (
+                  <span className="ml-2 font-mono text-[#8888aa]">Σ {awayLiveFv.toFixed(2)}</span>
+                )}
+              </p>
+              {awayLineup
+                ? <TeamLineup starters={awayLineup.starters} bench={awayLineup.bench} />
+                : <p className="py-10 text-center text-sm text-[#55556a]">Formazione non disponibile</p>
+              }
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
