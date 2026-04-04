@@ -121,10 +121,14 @@ export async function ignoreAllUnmatchedAction(
 
   if (entries.length === 0) return { ok: true }
 
+  // Deduplicate by fotmob_player_id — duplicate PKs in the upsert array cause
+  // "ON CONFLICT DO UPDATE command cannot affect row a second time"
+  const uniqueByFotmobId = [...new Map(entries.map(e => [e.fotmob_player_id, e])).values()]
+
   const { error: ignoreErr } = await supabase
     .from('fotmob_ignored_players')
     .upsert(
-      entries.map(e => ({
+      uniqueByFotmobId.map(e => ({
         league_id: ctx.league.id,
         fotmob_player_id: e.fotmob_player_id,
         fotmob_name: e.fotmob_name,
@@ -140,7 +144,7 @@ export async function ignoreAllUnmatchedAction(
 
   const matchdayIds = (matchdays ?? []).map(m => m.id)
   if (matchdayIds.length > 0) {
-    const fotmobIds = entries.map(e => e.fotmob_player_id)
+    const fotmobIds = uniqueByFotmobId.map(e => e.fotmob_player_id)
     await supabase
       .from('fotmob_unmatched_players')
       .delete()
