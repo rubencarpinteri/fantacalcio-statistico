@@ -233,24 +233,38 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   // /pool/link-fotmob. Deduplicate by fotmob_id first — the same player can
   // appear multiple times in allFetched (different fixture sources); sending
   // duplicate PKs to upsert causes "cannot affect row a second time".
+  // Skip players the admin has permanently ignored for this league.
   const unmatchedByFotmobId = new Map<number, UnmatchedPlayer>()
   for (const u of unmatched) {
     if (u.stat.fotmob_id != null) {
       unmatchedByFotmobId.set(u.stat.fotmob_id, u)
     }
   }
+
   if (unmatchedByFotmobId.size > 0) {
-    await supabase
-      .from('fotmob_unmatched_players')
-      .upsert(
-        [...unmatchedByFotmobId.values()].map(u => ({
-          matchday_id: matchdayId,
-          fotmob_player_id: u.stat.fotmob_id!,
-          fotmob_name: u.stat.name,
-          fotmob_team: u.stat.team_label || null,
-        })),
-        { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true }
-      )
+    const { data: ignoredRows } = await supabase
+      .from('fotmob_ignored_players')
+      .select('fotmob_player_id')
+      .eq('league_id', matchday.league_id)
+
+    const ignoredIds = new Set((ignoredRows ?? []).map(r => Number(r.fotmob_player_id)))
+
+    const toUpsert = [...unmatchedByFotmobId.values()]
+      .filter(u => !ignoredIds.has(u.stat.fotmob_id!))
+
+    if (toUpsert.length > 0) {
+      await supabase
+        .from('fotmob_unmatched_players')
+        .upsert(
+          toUpsert.map(u => ({
+            matchday_id: matchdayId,
+            fotmob_player_id: u.stat.fotmob_id!,
+            fotmob_name: u.stat.name,
+            fotmob_team: u.stat.team_label || null,
+          })),
+          { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true }
+        )
+    }
   }
 
   return NextResponse.json({ matched, unmatched, errors })

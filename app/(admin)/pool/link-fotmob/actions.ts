@@ -68,30 +68,85 @@ export async function linkFotmobPlayerAction(
   return { ok: true }
 }
 
-export async function dismissUnmatchedAction(
-  matchdayId: string,
-  fotmobPlayerId: number
+/**
+ * Permanently ignore a FotMob player — inserts into fotmob_ignored_players so
+ * the fetch route never queues them again, and clears all existing unmatched
+ * entries for this player across every matchday of this league.
+ * The player stays in serie_a_players and can still be linked if later added
+ * to a fantasy team via the roster UI.
+ */
+export async function ignoreForeverAction(
+  fotmobPlayerId: number,
+  fotmobName: string,
 ): Promise<LinkResult> {
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
-  // Verify matchday belongs to this league
-  const { data: md } = await supabase
+  // Add to permanent ignore list
+  const { error: ignoreErr } = await supabase
+    .from('fotmob_ignored_players')
+    .upsert(
+      { league_id: ctx.league.id, fotmob_player_id: fotmobPlayerId, fotmob_name: fotmobName },
+      { onConflict: 'league_id,fotmob_player_id', ignoreDuplicates: true }
+    )
+  if (ignoreErr) return { ok: false, error: ignoreErr.message }
+
+  // Clear all existing unmatched entries for this player across all matchdays
+  const { data: matchdays } = await supabase
     .from('matchdays')
     .select('id')
-    .eq('id', matchdayId)
     .eq('league_id', ctx.league.id)
-    .single()
 
-  if (!md) return { ok: false, error: 'Giornata non trovata.' }
+  const matchdayIds = (matchdays ?? []).map(m => m.id)
+  if (matchdayIds.length > 0) {
+    await supabase
+      .from('fotmob_unmatched_players')
+      .delete()
+      .in('matchday_id', matchdayIds)
+      .eq('fotmob_player_id', fotmobPlayerId)
+  }
 
-  const { error } = await supabase
-    .from('fotmob_unmatched_players')
-    .delete()
-    .eq('matchday_id', matchdayId)
-    .eq('fotmob_player_id', fotmobPlayerId)
+  revalidatePath('/pool/link-fotmob')
+  return { ok: true }
+}
 
-  if (error) return { ok: false, error: error.message }
+/**
+ * Bulk-ignore all currently visible unmatched players at once.
+ */
+export async function ignoreAllUnmatchedAction(
+  entries: Array<{ fotmob_player_id: number; fotmob_name: string }>
+): Promise<LinkResult> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  if (entries.length === 0) return { ok: true }
+
+  const { error: ignoreErr } = await supabase
+    .from('fotmob_ignored_players')
+    .upsert(
+      entries.map(e => ({
+        league_id: ctx.league.id,
+        fotmob_player_id: e.fotmob_player_id,
+        fotmob_name: e.fotmob_name,
+      })),
+      { onConflict: 'league_id,fotmob_player_id', ignoreDuplicates: true }
+    )
+  if (ignoreErr) return { ok: false, error: ignoreErr.message }
+
+  const { data: matchdays } = await supabase
+    .from('matchdays')
+    .select('id')
+    .eq('league_id', ctx.league.id)
+
+  const matchdayIds = (matchdays ?? []).map(m => m.id)
+  if (matchdayIds.length > 0) {
+    const fotmobIds = entries.map(e => e.fotmob_player_id)
+    await supabase
+      .from('fotmob_unmatched_players')
+      .delete()
+      .in('matchday_id', matchdayIds)
+      .in('fotmob_player_id', fotmobIds)
+  }
 
   revalidatePath('/pool/link-fotmob')
   return { ok: true }

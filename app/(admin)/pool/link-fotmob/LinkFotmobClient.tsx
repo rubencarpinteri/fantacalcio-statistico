@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { linkFotmobPlayerAction, dismissUnmatchedAction } from './actions'
+import { linkFotmobPlayerAction, ignoreForeverAction, ignoreAllUnmatchedAction } from './actions'
 
 export type UnmatchedEntry = {
   matchday_id: string
@@ -120,9 +120,9 @@ function UnmatchedRow({
     })
   }
 
-  const handleDismiss = () => {
+  const handleIgnoreForever = () => {
     startTransition(async () => {
-      const res = await dismissUnmatchedAction(entry.matchday_id, entry.fotmob_player_id)
+      const res = await ignoreForeverAction(entry.fotmob_player_id, entry.fotmob_name)
       if (res.ok) setDismissed(true)
       else setMsg({ ok: false, text: res.error })
     })
@@ -163,11 +163,11 @@ function UnmatchedRow({
               <button
                 type="button"
                 disabled={isPending}
-                onClick={handleDismiss}
+                onClick={handleIgnoreForever}
                 className="rounded border border-[#3a3a52] px-3 py-1 text-xs text-[#55556a] hover:text-white disabled:opacity-40"
-                title="Non è un tuo giocatore — rimuovi dalla lista"
+                title="Non è un tuo giocatore — ignora per sempre in tutte le giornate future"
               >
-                Ignora
+                Ignora sempre
               </button>
             </div>
           </>
@@ -184,7 +184,11 @@ export function LinkFotmobClient({
   unmatched: UnmatchedEntry[]
   leaguePlayers: LeaguePlayerOption[]
 }) {
-  if (unmatched.length === 0) {
+  const [isPending, startTransition] = useTransition()
+  const [ignored, setIgnored] = useState(false)
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null)
+
+  if (unmatched.length === 0 || ignored) {
     return (
       <p className="text-sm text-[#55556a]">
         Nessun giocatore FotMob da collegare. Ottimo!
@@ -192,15 +196,38 @@ export function LinkFotmobClient({
     )
   }
 
+  const handleIgnoreAll = () => {
+    startTransition(async () => {
+      const res = await ignoreAllUnmatchedAction(
+        unmatched.map(e => ({ fotmob_player_id: e.fotmob_player_id, fotmob_name: e.fotmob_name }))
+      )
+      if (res.ok) setIgnored(true)
+      else setBulkMsg(res.error)
+    })
+  }
+
   return (
-    <div className="space-y-2">
-      {unmatched.map(entry => (
-        <UnmatchedRow
-          key={`${entry.matchday_id}-${entry.fotmob_player_id}`}
-          entry={entry}
-          options={leaguePlayers}
-        />
-      ))}
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handleIgnoreAll}
+          className="rounded border border-[#3a3a52] px-3 py-1.5 text-xs text-[#55556a] hover:text-white disabled:opacity-40"
+        >
+          {isPending ? '…' : `Ignora sempre tutti (${unmatched.length})`}
+        </button>
+        {bulkMsg && <span className="text-xs text-red-400">{bulkMsg}</span>}
+      </div>
+      <div className="space-y-2">
+        {unmatched.map(entry => (
+          <UnmatchedRow
+            key={`${entry.matchday_id}-${entry.fotmob_player_id}`}
+            entry={entry}
+            options={leaguePlayers}
+          />
+        ))}
+      </div>
     </div>
   )
 }
