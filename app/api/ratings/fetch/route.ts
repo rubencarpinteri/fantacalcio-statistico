@@ -196,7 +196,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     .eq('is_active', true)
 
   const dbPlayers = (leaguePlayers ?? []).map((p) => {
-    const sap = p.serie_a_players as { fotmob_id: number | null } | null
+    // serie_a_players is returned as an array by PostgREST (isOneToOne: false)
+    const sapArr = p.serie_a_players as Array<{ fotmob_id: number | null }> | null
+    const poolFotmobId = Array.isArray(sapArr) ? (sapArr[0]?.fotmob_id ?? null) : null
     return {
       id: p.id,
       full_name: p.full_name,
@@ -206,7 +208,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       // Supabase returns bigint as string — coerce to number so === comparison works.
       fotmob_player_id: p.fotmob_player_id != null
         ? Number(p.fotmob_player_id)
-        : sap?.fotmob_id != null ? Number(sap.fotmob_id) : null,
+        : poolFotmobId != null ? Number(poolFotmobId) : null,
     }
   })
 
