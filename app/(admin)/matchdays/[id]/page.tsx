@@ -309,16 +309,26 @@ export default async function MatchdayDetailPage({
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <a
+                        href={`/matchdays/${id}/import-lineups`}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                          step3Done
+                            ? 'bg-indigo-500 text-white hover:bg-indigo-400'
+                            : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
+                        }`}
+                      >
+                        Importa formazioni (testo) →
+                      </a>
+                      <a
                         href={`/matchdays/${id}/import-leghe`}
                         className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                           step4Done
                             ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
                             : step3Done
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                            ? 'border border-[#2e2e42] text-[#8888aa] hover:border-indigo-500/40 hover:text-indigo-300'
                             : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
                         }`}
                       >
-                        {step4Done ? 'Ripubblica (Leghe) →' : 'Importa Leghe →'}
+                        {step4Done ? 'Ripubblica (Leghe) →' : 'Importa Leghe (xlsx) →'}
                       </a>
                       <a
                         href={`/matchdays/${id}/all-lineups`}
@@ -328,7 +338,7 @@ export default async function MatchdayDetailPage({
                             : 'pointer-events-none border border-[#1e1e2e] text-[#3a3a4a]'
                         }`}
                       >
-                        Formazioni manuali →
+                        Vedi formazioni →
                       </a>
                     </div>
                   </div>

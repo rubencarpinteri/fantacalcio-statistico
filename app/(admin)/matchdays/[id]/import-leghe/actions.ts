@@ -889,10 +889,9 @@ export async function confirmLegheImportAction(
             for (const mu of matchups) {
               const homeFv = scoreMap.get(mu.home_team_id) ?? null
               const awayFv = scoreMap.get(mu.away_team_id) ?? null
-              let result: '1' | 'X' | '2' | null = null
-              if (homeFv !== null && awayFv !== null) {
-                result = homeFv > awayFv ? '1' : homeFv === awayFv ? 'X' : '2'
-              }
+              // Skip if either score is missing — never overwrite existing data with nulls
+              if (homeFv === null || awayFv === null) continue
+              const result: '1' | 'X' | '2' = homeFv > awayFv ? '1' : homeFv === awayFv ? 'X' : '2'
               await supabase
                 .from('competition_matchups')
                 .update({ home_fantavoto: homeFv, away_fantavoto: awayFv, result, computed_at: now })

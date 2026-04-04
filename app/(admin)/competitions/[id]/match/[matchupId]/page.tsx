@@ -161,24 +161,126 @@ export default async function MatchDetailPage({
   const homeTeam = teams?.find(t => t.id === matchup.home_team_id)
   const awayTeam = teams?.find(t => t.id === matchup.away_team_id)
 
-  // Get lineups from matchday_lineups (if available)
+  // Get lineups: try matchday_lineups (import-leghe) first, fall back to lineup_submissions
   let homeLineup: { starters: StarterEntry[]; bench: BenchEntry[] } | null = null
   let awayLineup: { starters: StarterEntry[]; bench: BenchEntry[] } | null = null
 
   if (round?.matchday_id) {
-    const { data: lineups } = await supabase
+    const { data: legheLineups } = await supabase
       .from('matchday_lineups')
       .select('team_id, starters, bench')
       .eq('matchday_id', round.matchday_id)
       .in('team_id', [matchup.home_team_id, matchup.away_team_id])
 
-    for (const l of lineups ?? []) {
+    for (const l of legheLineups ?? []) {
       const lineup = {
         starters: l.starters as unknown as StarterEntry[],
         bench: l.bench as unknown as BenchEntry[],
       }
       if (l.team_id === matchup.home_team_id) homeLineup = lineup
       else awayLineup = lineup
+    }
+
+    // Fall back to lineup_submissions when matchday_lineups is absent
+    const missingTeams = [matchup.home_team_id, matchup.away_team_id].filter(
+      (tid) => !(tid === matchup.home_team_id ? homeLineup : awayLineup)
+    )
+    if (missingTeams.length > 0) {
+      // Get current submission pointers
+      const { data: pointers } = await supabase
+        .from('lineup_current_pointers')
+        .select('team_id, submission_id')
+        .eq('matchday_id', round.matchday_id)
+        .in('team_id', missingTeams)
+
+      const subIds = (pointers ?? []).map((p) => p.submission_id)
+      const ptrTeamMap = new Map((pointers ?? []).map((p) => [p.submission_id, p.team_id]))
+
+      if (subIds.length > 0) {
+        // Fetch submission players
+        const { data: subPlayers } = await supabase
+          .from('lineup_submission_players')
+          .select('submission_id, player_id, is_bench, bench_order, assigned_mantra_role, slot_id')
+          .in('submission_id', subIds)
+
+        // Fetch player names
+        const allPlayerIds = [...new Set((subPlayers ?? []).map((p) => p.player_id))]
+        const { data: playerNames } = allPlayerIds.length > 0
+          ? await supabase
+              .from('league_players')
+              .select('id, full_name')
+              .in('id', allPlayerIds)
+          : { data: [] }
+        const nameMap = new Map((playerNames ?? []).map((p) => [p.id, p.full_name]))
+
+        // Fetch scores from current calculation run
+        const { data: calcPtr } = await supabase
+          .from('matchday_current_calculation')
+          .select('run_id')
+          .eq('matchday_id', round.matchday_id)
+          .maybeSingle()
+
+        const scoreMap = new Map<string, { fantavoto: number | null; voto_base: number | null; bm: BonusMalusItem[] | null }>()
+        if (calcPtr?.run_id) {
+          const { data: calcs } = await supabase
+            .from('player_calculations')
+            .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
+            .eq('run_id', calcPtr.run_id)
+          for (const c of calcs ?? []) {
+            scoreMap.set(c.player_id, {
+              fantavoto: c.fantavoto,
+              voto_base: c.voto_base,
+              bm: c.bonus_malus_breakdown as BonusMalusItem[] | null,
+            })
+          }
+        }
+
+        // Group by team
+        type SubPlayer = NonNullable<typeof subPlayers>[number]
+        const byTeam = new Map<string, SubPlayer[]>()
+        for (const sp of subPlayers ?? []) {
+          const teamId = ptrTeamMap.get(sp.submission_id)
+          if (!teamId) continue
+          const list = byTeam.get(teamId) ?? []
+          list.push(sp)
+          byTeam.set(teamId, list)
+        }
+
+        for (const [teamId, players] of byTeam) {
+          const starters: StarterEntry[] = players
+            .filter((p) => !p.is_bench)
+            .sort((a, b) => 0) // preserve insertion order (slot_order not needed here)
+            .map((p) => {
+              const sc = scoreMap.get(p.player_id)
+              return {
+                name: nameMap.get(p.player_id) ?? p.player_id,
+                player_id: p.player_id,
+                fantavoto: sc?.fantavoto ?? null,
+                voto_base: sc?.voto_base ?? null,
+                bonus_malus: sc?.bm ?? null,
+                is_nv: sc ? sc.fantavoto === null : false,
+                subbed_by: null,
+              }
+            })
+
+          const bench: BenchEntry[] = players
+            .filter((p) => p.is_bench)
+            .sort((a, b) => (a.bench_order ?? 99) - (b.bench_order ?? 99))
+            .map((p) => {
+              const sc = scoreMap.get(p.player_id)
+              return {
+                name: nameMap.get(p.player_id) ?? p.player_id,
+                player_id: p.player_id,
+                fantavoto: sc?.fantavoto ?? null,
+                subbed_in_for: null,
+              }
+            })
+
+          const lineup = { starters, bench }
+          if (teamId === matchup.home_team_id) homeLineup = lineup
+          else awayLineup = lineup
+        }
+      }
     }
   }
 
@@ -214,7 +316,7 @@ export default async function MatchDetailPage({
 
       {!homeLineup && !awayLineup ? (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
-          ⚠ Dati formazione non disponibili. Reimporta l&apos;xlsx Leghe per questa giornata per vedere le formazioni.
+          ⚠ Nessuna formazione inserita per questa giornata. Importa le formazioni dalla pagina della giornata.
         </div>
       ) : (
         <div className="flex flex-col gap-6 lg:flex-row">

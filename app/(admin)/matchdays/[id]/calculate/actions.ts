@@ -51,10 +51,8 @@ export async function triggerCalculationAction(
     .single()
 
   if (!matchday) return fail('Giornata non trovata.')
-  if (!['scoring', 'published'].includes(matchday.status)) {
-    return fail(
-      `Non è possibile calcolare in stato "${matchday.status}". Porta la giornata in "scoring" prima.`
-    )
+  if (matchday.status === 'archived') {
+    return fail('Non è possibile calcolare una giornata archiviata.')
   }
 
   // Fetch per-league engine config (bonus values, minutes factor)
@@ -724,12 +722,13 @@ export async function publishCalculationAction(
             const homeFv = scoreMap.get(matchup.home_team_id) ?? null
             const awayFv = scoreMap.get(matchup.away_team_id) ?? null
 
-            let result: '1' | 'X' | '2' | null = null
-            if (homeFv !== null && awayFv !== null) {
-              if (homeFv > awayFv) result = '1'
-              else if (homeFv === awayFv) result = 'X'
-              else result = '2'
-            }
+            // Skip if either score is missing — never overwrite existing data with nulls
+            if (homeFv === null || awayFv === null) continue
+
+            let result: '1' | 'X' | '2'
+            if (homeFv > awayFv) result = '1'
+            else if (homeFv === awayFv) result = 'X'
+            else result = '2'
 
             await supabase
               .from('competition_matchups')
