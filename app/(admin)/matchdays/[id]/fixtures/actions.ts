@@ -185,10 +185,13 @@ export async function importRatingsAction(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non autorizzato.' }
 
-  // Upsert each player's stats (on conflict matchday+player, update ratings & events)
-  // Build insert rows — only the fields we have; DB defaults handle the rest.
+  // Deduplicate by player_id — same player can appear twice if they show up
+  // in multiple fixtures (e.g. duplicate match IDs). Last entry wins.
+  const byPlayerId = new Map<string, ImportMatch>()
+  for (const m of matches) byPlayerId.set(m.league_player_id, m)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows: any[] = matches.map((m) => ({
+  const rows: any[] = [...byPlayerId.values()].map((m) => ({
     matchday_id: matchdayId,
     player_id: m.league_player_id,
     entered_by: user.id,
@@ -207,13 +210,17 @@ export async function importRatingsAction(
     saves: m.saves,
   }))
 
-  const { error } = await supabase
-    .from('player_match_stats')
-    .upsert(rows, {
-      onConflict: 'matchday_id,player_id',
-      ignoreDuplicates: false,
-    })
+  const playerIds = rows.map(r => r.player_id)
 
+  // DELETE + INSERT avoids ON CONFLICT entirely
+  const { error: deleteError } = await supabase
+    .from('player_match_stats')
+    .delete()
+    .eq('matchday_id', matchdayId)
+    .in('player_id', playerIds)
+  if (deleteError) return { error: deleteError.message }
+
+  const { error } = await supabase.from('player_match_stats').insert(rows)
   if (error) return { error: error.message }
 
   revalidatePath(`/matchdays/${matchdayId}/stats`)
