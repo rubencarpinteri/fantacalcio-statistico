@@ -1080,6 +1080,8 @@ export type Database = {
           matchday_id: string
           minutes_played: number
           own_goals: number
+          penalties_missed: number
+          penalties_saved: number
           penalties_scored: number
           player_id: string
           red_cards: number
@@ -1104,6 +1106,8 @@ export type Database = {
           matchday_id: string
           minutes_played?: number
           own_goals?: number
+          penalties_missed?: number
+          penalties_saved?: number
           penalties_scored?: number
           player_id: string
           red_cards?: number
@@ -1128,6 +1132,8 @@ export type Database = {
           matchday_id?: string
           minutes_played?: number
           own_goals?: number
+          penalties_missed?: number
+          penalties_saved?: number
           penalties_scored?: number
           player_id?: string
           red_cards?: number

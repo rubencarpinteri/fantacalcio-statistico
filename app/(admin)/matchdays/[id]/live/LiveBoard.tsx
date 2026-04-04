@@ -28,14 +28,16 @@ function timeAgo(isoString: string): string {
 
 function EventBadges({ p }: { p: LivePlayerRow }) {
   const parts: React.ReactNode[] = []
-  if (p.goals_scored > 0) parts.push(<span key="g" className="text-green-400">⚽{p.goals_scored > 1 ? `×${p.goals_scored}` : ''}</span>)
-  if (p.assists > 0) parts.push(<span key="a" className="text-blue-400">🅰{p.assists > 1 ? `×${p.assists}` : ''}</span>)
-  if (p.own_goals > 0) parts.push(<span key="og" className="text-red-500">OG</span>)
-  if (p.yellow_cards > 0) parts.push(<span key="y" className="inline-block w-2.5 h-3.5 bg-yellow-400 rounded-sm" />)
-  if (p.red_cards > 0) parts.push(<span key="r" className="inline-block w-2.5 h-3.5 bg-red-500 rounded-sm" />)
-  if (p.penalties_scored > 0) parts.push(<span key="ps" className="text-green-400 text-xs">R+</span>)
-  if (p.saves >= 5) parts.push(<span key="sv" className="text-indigo-400 text-xs">Sv{p.saves}</span>)
-  return parts.length > 0 ? <span className="flex items-center gap-1">{parts}</span> : null
+  if (p.goals_scored > 0)    parts.push(<span key="g"  className="text-green-400 text-xs font-medium">G{p.goals_scored > 1 ? `×${p.goals_scored}` : ''}</span>)
+  if (p.assists > 0)         parts.push(<span key="a"  className="text-blue-400 text-xs font-medium">A{p.assists > 1 ? `×${p.assists}` : ''}</span>)
+  if (p.penalties_scored > 0) parts.push(<span key="rg" className="text-green-400 text-xs font-medium">Rig+{p.penalties_scored > 1 ? `×${p.penalties_scored}` : ''}</span>)
+  if (p.penalties_saved > 0)  parts.push(<span key="rp" className="text-indigo-400 text-xs font-medium">RP{p.penalties_saved > 1 ? `×${p.penalties_saved}` : ''}</span>)
+  if (p.own_goals > 0)       parts.push(<span key="ag" className="text-red-400 text-xs font-medium">AG{p.own_goals > 1 ? `×${p.own_goals}` : ''}</span>)
+  if (p.goals_conceded > 0)  parts.push(<span key="gs" className="text-red-400 text-xs font-medium">GS×{p.goals_conceded}</span>)
+  if (p.penalties_missed > 0) parts.push(<span key="rs" className="text-red-400 text-xs font-medium">RS{p.penalties_missed > 1 ? `×${p.penalties_missed}` : ''}</span>)
+  if (p.yellow_cards > 0)   parts.push(<span key="y"  className="inline-block w-2 h-3 bg-yellow-400 rounded-sm" title="Ammonizione" />)
+  if (p.red_cards > 0)      parts.push(<span key="r"  className="inline-block w-2 h-3 bg-red-500 rounded-sm" title="Espulsione" />)
+  return parts.length > 0 ? <span className="flex items-center gap-1.5 flex-wrap">{parts}</span> : null
 }
 
 // ── Team card (board view) ─────────────────────────────────────

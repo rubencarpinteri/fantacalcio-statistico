@@ -57,7 +57,7 @@ export default async function LivePage({
        sub_status, extended_penalty, voto_base, fantavoto,
        sofascore_rating, fotmob_rating, minutes_played,
        goals_scored, assists, yellow_cards, red_cards, own_goals,
-       penalties_scored, saves, goals_conceded, team_id,
+       penalties_scored, penalties_saved, penalties_missed, saves, goals_conceded, team_id,
        league_players ( full_name )`
     )
     .eq('matchday_id', matchdayId)
@@ -89,6 +89,8 @@ export default async function LivePage({
       red_cards: p.red_cards,
       own_goals: p.own_goals,
       penalties_scored: p.penalties_scored,
+      penalties_saved: p.penalties_saved,
+      penalties_missed: p.penalties_missed,
       saves: p.saves,
       goals_conceded: p.goals_conceded,
     }

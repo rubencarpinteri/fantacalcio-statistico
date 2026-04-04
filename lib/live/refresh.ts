@@ -402,6 +402,8 @@ export async function refreshMatchdayLive(
       yellow_cards: number
       red_cards: number
       penalties_scored: number
+      penalties_saved: number
+      penalties_missed: number
       saves: number
       goals_conceded: number
     }
@@ -429,6 +431,8 @@ export async function refreshMatchdayLive(
       yellow_cards: apiData?.yellow_cards ?? db.yellow_cards,
       red_cards: apiData?.red_cards ?? db.red_cards,
       penalties_scored: apiData?.penalties_scored ?? db.penalties_scored,
+      penalties_saved: apiData?.penalties_saved ?? db.penalties_saved,
+      penalties_missed: apiData?.penalties_missed ?? db.penalties_missed,
       saves: apiData?.saves ?? db.saves,
       goals_conceded: apiData?.goals_conceded ?? db.goals_conceded,
     }
@@ -507,6 +511,8 @@ export async function refreshMatchdayLive(
       yellow_cards: apiData.yellow_cards,
       red_cards: apiData.red_cards,
       penalties_scored: apiData.penalties_scored,
+      penalties_saved: apiData.penalties_saved,
+      penalties_missed: apiData.penalties_missed,
       saves: apiData.saves,
       goals_conceded: apiData.goals_conceded,
     }
@@ -693,6 +699,8 @@ export async function refreshMatchdayLive(
       red_cards: stats?.red_cards ?? 0,
       own_goals: stats?.own_goals ?? 0,
       penalties_scored: stats?.penalties_scored ?? 0,
+      penalties_saved: stats?.penalties_saved ?? 0,
+      penalties_missed: stats?.penalties_missed ?? 0,
       saves: stats?.saves ?? 0,
       goals_conceded: stats?.goals_conceded ?? 0,
       refreshed_at: now,
