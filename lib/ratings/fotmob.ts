@@ -93,7 +93,9 @@ export async function fetchFotMobMatch(
       minutes_played: getStat('Minutes played'),
       goals_scored:  getStat('Goals'),
       assists:       getStat('Assists'),
-      goals_conceded: getStat('Goals conceded'),
+      // FotMob reports team goals conceded for every player on the team.
+      // Only the GK entry is meaningful — zero it out for all others.
+      goals_conceded: Boolean(p['isGoalkeeper']) ? getStat('Goals conceded') : 0,
       saves:         getStat('Saves'),
     })
   }
