@@ -28,6 +28,7 @@ type Supabase = SupabaseClient<Database>
 // ── External API types (mirrors app/api/ratings/fetch/route.ts) ──
 
 type FetchedStat = {
+  fotmob_id: number | null
   name: string
   normalized_name: string
   team_label: string
@@ -48,6 +49,13 @@ type FetchedStat = {
 
 function normalizeName(name: string): string {
   return name
+    .replace(/[Øø]/g, 'o')
+    .replace(/[Ææ]/g, 'ae')
+    .replace(/[Łł]/g, 'l')
+    .replace(/[Ðð]/g, 'd')
+    .replace(/ß/g, 'ss')
+    .replace(/[ıİ]/g, 'i')
+    .replace(/[іІ]/g, 'i')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -229,6 +237,7 @@ async function fetchAllFixtures(
       for (const s of fotmob?.stats ?? []) {
         const key = normalizeName(s.name)
         map.set(key, {
+          fotmob_id: s.fotmob_id,
           name: s.name,
           normalized_name: key,
           team_label: s.team_name,
@@ -259,6 +268,7 @@ async function fetchAllFixtures(
           }
         } else {
           map.set(key, {
+            fotmob_id: null,
             name: ss_player.name,
             normalized_name: key,
             team_label: '',
@@ -332,10 +342,10 @@ export async function refreshMatchdayLive(
     engineConfigRow ?? null
   )
 
-  // 4. Active league players (for rating_class + name matching)
+  // 4. Active league players (for rating_class + ID/name matching)
   const { data: leaguePlayers } = await supabase
     .from('league_players')
-    .select('id, full_name, rating_class')
+    .select('id, full_name, rating_class, fotmob_player_id')
     .eq('league_id', leagueId)
     .eq('is_active', true)
 
@@ -346,6 +356,17 @@ export async function refreshMatchdayLive(
   const playerNormMap = new Map(
     leaguePlayers.map((p) => [normalizeName(p.full_name), p])
   )
+  // Secondary map: fotmob_player_id → player (for ID-first matching)
+  const fotmobIdToPlayer = new Map(
+    leaguePlayers
+      .filter(p => p.fotmob_player_id != null)
+      .map(p => [p.fotmob_player_id!, p])
+  )
+  // Secondary map: fotmob_id → FetchedStat (for players-with-DB-stats loop)
+  const fotmobIdToStat = new Map<number, FetchedStat>()
+  for (const stat of apiStatsMap.values()) {
+    if (stat.fotmob_id != null) fotmobIdToStat.set(stat.fotmob_id, stat)
+  }
 
   // 5. Existing player_match_stats (defensive stats + manual edits)
   const { data: dbStats } = await supabase
@@ -391,7 +412,10 @@ export async function refreshMatchdayLive(
     const player = leaguePlayers.find((p) => p.id === db.player_id)
     if (!player) continue
 
-    const apiData = apiStatsMap.get(normalizeName(player.full_name))
+    // Step 0: ID match; fall back to normalized name
+    const apiData =
+      (player.fotmob_player_id != null ? fotmobIdToStat.get(player.fotmob_player_id) : null)
+      ?? apiStatsMap.get(normalizeName(player.full_name))
     const rc = (db.rating_class_override as RatingClass | null) ??
       (player.rating_class as RatingClass)
 
@@ -447,11 +471,31 @@ export async function refreshMatchdayLive(
     })
   }
 
+  // Track which FotMob IDs were matched (for unmatched persistence)
+  const matchedFotmobIds = new Set<number>()
+
+  // Track which API entries were matched (by normalized name key) to avoid double-processing
+  const matchedNormNames = new Set(
+    (dbStats ?? [])
+      .map(db => {
+        const p = leaguePlayers.find(lp => lp.id === db.player_id)
+        if (!p) return null
+        // Track ID match
+        if (p.fotmob_player_id != null) matchedFotmobIds.add(p.fotmob_player_id)
+        return normalizeName(p.full_name)
+      })
+      .filter(Boolean) as string[]
+  )
+
   // Players only in API (no manual stats yet) — synthesize engine input
   for (const [normalizedName, apiData] of apiStatsMap) {
-    const player = playerNormMap.get(normalizedName)
+    // ID-first: if fotmob_id maps to a player, use that (handles name mismatches)
+    const playerById = apiData.fotmob_id != null ? fotmobIdToPlayer.get(apiData.fotmob_id) : null
+    const player = playerById ?? playerNormMap.get(normalizedName)
     if (!player) continue
     if (dbStatsMap.has(player.id)) continue // already processed above
+    // Track matched fotmob_id
+    if (apiData.fotmob_id != null) matchedFotmobIds.add(apiData.fotmob_id)
 
     const merged = {
       sofascore_rating: apiData.sofascore_rating,
@@ -503,6 +547,22 @@ export async function refreshMatchdayLive(
       final_third_passes: null,
       progressive_passes: null,
     })
+  }
+
+  // Persist unmatched FotMob players so admin can link them once
+  const unmatchedRows = [...apiStatsMap.values()]
+    .filter(s => s.fotmob_id != null && !matchedFotmobIds.has(s.fotmob_id!))
+    .map(s => ({
+      matchday_id: matchdayId,
+      fotmob_player_id: s.fotmob_id!,
+      fotmob_name: s.name,
+      fotmob_team: s.team_label || null,
+    }))
+
+  if (unmatchedRows.length > 0) {
+    await supabase
+      .from('fotmob_unmatched_players')
+      .upsert(unmatchedRows, { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true })
   }
 
   if (engineInputs.length === 0) {

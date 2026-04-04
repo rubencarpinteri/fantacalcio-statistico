@@ -217,7 +217,7 @@ export async function submitLineupAction(
     p_formation_id: formation_id,
     p_is_draft: is_draft,
     p_actor_user_id: ctx.userId,
-    p_source_ip: sourceIp,
+    p_source_ip: sourceIp ?? '',
     p_assignments: enrichedAssignments,
   })
 

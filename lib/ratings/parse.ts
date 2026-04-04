@@ -205,13 +205,20 @@ export function mergeFixtureStats(
 
 // ─── Player name matching ──────────────────────────────────────────────────────
 
-export type DbPlayerEntry = { id: string; full_name: string; club: string; normalized: string }
+export type DbPlayerEntry = {
+  id: string
+  full_name: string
+  club: string
+  normalized: string
+  fotmob_player_id?: number | null
+}
 
 /**
- * Multi-strategy name matching — handles FotMob vs DB/Leghe naming differences.
+ * Multi-strategy player matching — FotMob vs DB/Leghe naming differences.
  *
  * Strategy order:
- * 1. Exact normalized match
+ * 0. fotmob_player_id exact match (if provided) — definitive, no false positives
+ * 1. Exact normalized name match
  * 2. Token-set match (same words, any order) — "V. Milinkovic-Savic" ↔ "Milinkovic-Savic V."
  * 3. Strip single-char initials from both sides — "A. Gudmundsson" ↔ "Gudmundsson A."
  * 4. DB tokens ⊆ FotMob tokens (unique match only) — "Bisseck" ↔ "Yann Bisseck"
@@ -219,7 +226,14 @@ export type DbPlayerEntry = { id: string; full_name: string; club: string; norma
 export function findDbPlayer<T extends DbPlayerEntry>(
   statNorm: string,
   dbPlayers: T[],
+  fotmobId?: number | null,
 ): T | undefined {
+  // Step 0: ID match — fastest and most reliable
+  if (fotmobId != null) {
+    const idMatch = dbPlayers.find(p => p.fotmob_player_id != null && p.fotmob_player_id === fotmobId)
+    if (idMatch) return idMatch
+  }
+
   const exact = dbPlayers.find(p => p.normalized === statNorm)
   if (exact) return exact
 

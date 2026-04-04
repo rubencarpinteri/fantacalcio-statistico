@@ -1,10 +1,3 @@
-// ============================================================
-// Fantacalcio Statistico — Database Types
-// Auto-generated shape: run `npm run db:types` to regenerate
-// from a live Supabase project. This file is the manual
-// reference version that matches the migration schema.
-// ============================================================
-
 export type Json =
   | string
   | number
@@ -13,989 +6,2435 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-// ---- Enums -------------------------------------------------
-
-export type LeagueRole = 'league_admin' | 'manager'
-export type RatingClass = 'GK' | 'DEF' | 'MID' | 'ATT'
-export type ScoringMode = 'head_to_head' | 'points_only' | 'both'
-export type DisplayRounding = 'one_decimal' | 'nearest_half'
-export type LockBehavior = 'auto' | 'manual'
-export type MatchdayStatus = 'draft' | 'open' | 'locked' | 'scoring' | 'published' | 'archived'
-export type LineupStatus = 'draft' | 'submitted'
-export type CalculationStatus = 'draft' | 'provisional' | 'published'
-export type CompetitionType   = 'campionato' | 'battle_royale' | 'coppa'
-export type CompetitionStatus = 'setup' | 'active' | 'completed' | 'cancelled'
-export type RoundStatus       = 'pending' | 'computed' | 'locked'
-export type FixtureResult     = 'home_win' | 'away_win' | 'draw'
-
-export type AuditAction =
-  | 'roster_import'
-  | 'roster_edit'
-  | 'player_create'
-  | 'player_role_change'
-  | 'player_rating_class_change'
-  | 'player_transfer'
-  | 'matchday_create'
-  | 'matchday_status_change'
-  | 'matchday_reopen'
-  | 'lineup_save'
-  | 'lineup_submit'
-  | 'lineup_lock'
-  | 'stats_edit'
-  | 'ratings_edit'
-  | 'calculation_draft'
-  | 'calculation_publish'
-  | 'override_create'
-  | 'override_remove'
-  | 'league_settings_change'
-  | 'formation_settings_change'
-  | 'ambiguous_role_change'
-  | 'user_role_change'
-  | 'competition_create'
-  | 'competition_status_change'
-  | 'competition_round_compute'
-  | 'competition_calendario_generate'
-  | 'rosa_assign'
-  | 'rosa_release'
-  | 'pool_import'
-
-// ---- Row types ---------------------------------------------
-
-export type Profile = {
-  id: string
-  username: string
-  full_name: string
-  is_super_admin: boolean
-  created_at: string
-  updated_at: string
-}
-
-export type League = {
-  id: string
-  name: string
-  season_name: string
-  timezone: string
-  scoring_mode: ScoringMode
-  display_rounding: DisplayRounding
-  lock_behavior: LockBehavior
-  advanced_bonuses_enabled: boolean
-  bench_size: number
-  source_weight_sofascore: number
-  source_weight_fotmob: number
-  created_at: string
-  updated_at: string
-}
-
-export type LeagueEngineConfig = {
-  id: string
-  league_id: string
-  minutes_factor_threshold: number
-  minutes_factor_partial: number
-  minutes_factor_full: number
-  goal_bonus_gk: number
-  goal_bonus_def: number
-  goal_bonus_mid: number
-  goal_bonus_att: number
-  penalty_scored_discount: number
-  brace_bonus: number
-  hat_trick_bonus: number
-  assist: number
-  own_goal: number
-  yellow_card: number
-  red_card: number
-  penalty_missed: number
-  penalty_saved: number
-  clean_sheet_gk: number
-  clean_sheet_def: number
-  clean_sheet_min_minutes: number
-  goals_conceded_gk: number
-  goals_conceded_def: number
-  goals_conceded_def_min_minutes: number
-  created_at: string
-  updated_at: string
-}
-
-export type LeagueUser = {
-  id: string
-  league_id: string
-  user_id: string
-  role: LeagueRole
-  joined_at: string
-}
-
-export type FantasyTeam = {
-  id: string
-  league_id: string
-  manager_id: string
-  name: string
-  created_at: string
-}
-
-export type RosterImportBatch = {
-  id: string
-  league_id: string
-  imported_by: string
-  filename: string
-  storage_path: string | null
-  row_count: number
-  success_count: number
-  error_count: number
-  import_summary: Json | null
-  created_at: string
-}
-
-export type SerieAPlayer = {
-  id: string
-  full_name: string
-  club: string
-  mantra_roles: string[]
-  rating_class: RatingClass
-  sofascore_id: number | null
-  fotmob_id: number | null
-  season: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-export type LeaguePlayer = {
-  id: string
-  league_id: string
-  full_name: string
-  club: string
-  mantra_roles: string[]
-  primary_mantra_role: string | null
-  rating_class: RatingClass
-  is_active: boolean
-  notes: string | null
-  serie_a_player_id: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type PlayerRoleHistory = {
-  id: string
-  player_id: string
-  changed_at: string
-  changed_by: string
-  old_mantra_roles: string[] | null
-  new_mantra_roles: string[] | null
-  old_rating_class: RatingClass | null
-  new_rating_class: RatingClass | null
-  reason: string | null
-}
-
-export type RoleClassificationRule = {
-  id: string
-  league_id: string
-  mantra_role: string
-  default_rating_class: RatingClass
-  updated_by: string | null
-  updated_at: string
-}
-
-export type TeamRosterEntry = {
-  id: string
-  team_id: string
-  player_id: string
-  acquired_at: string
-  released_at: string | null
-  import_batch_id: string | null
-}
-
-export type Formation = {
-  id: string
-  league_id: string
-  name: string
-  description: string | null
-  is_active: boolean
-  created_at: string
-}
-
-export type FormationSlot = {
-  id: string
-  formation_id: string
-  slot_name: string
-  slot_order: number
-  allowed_mantra_roles: string[]
-  extended_mantra_roles: string[]
-  is_bench: boolean
-  bench_order: number | null
-}
-
-export type MatchdayFixture = {
-  id: string
-  matchday_id: string
-  fotmob_match_id: number | null
-  sofascore_event_id: number | null
-  label: string
-  created_at: string
-}
-
-export type Matchday = {
-  id: string
-  league_id: string
-  name: string
-  matchday_number: number | null
-  round_number: number | null
-  opens_at: string | null
-  locks_at: string | null
-  status: MatchdayStatus
-  is_frozen: boolean
-  created_by: string
-  created_at: string
-  updated_at: string
-}
-
-export type CompetitionMatchup = {
-  id: string
-  competition_id: string
-  round_number: number
-  home_team_id: string
-  away_team_id: string
-  home_fantavoto: number | null
-  away_fantavoto: number | null
-  result: '1' | 'X' | '2' | null
-  computed_at: string | null
-  created_at: string
-}
-
-export type MatchdayStatusLog = {
-  id: string
-  matchday_id: string
-  old_status: MatchdayStatus | null
-  new_status: MatchdayStatus
-  changed_by: string
-  changed_at: string
-  note: string | null
-}
-
-export type LineupSubmission = {
-  id: string
-  team_id: string
-  matchday_id: string
-  formation_id: string
-  status: LineupStatus
-  submission_number: number
-  created_at: string
-  submitted_at: string | null
-  // locked_at and locked_snapshot_json removed (migration 006):
-  // lock semantics are represented by matchday.status + lineup_lock audit entries.
-  actor_user_id: string
-  source_ip: string | null
-}
-
-export type LineupCurrentPointer = {
-  id: string
-  team_id: string
-  matchday_id: string
-  submission_id: string
-  updated_at: string
-}
-
-export type LineupSubmissionPlayer = {
-  id: string
-  submission_id: string
-  player_id: string
-  slot_id: string
-  is_bench: boolean
-  bench_order: number | null
-  assigned_mantra_role: string | null
-}
-
-export type PlayerMatchStats = {
-  id: string
-  matchday_id: string
-  player_id: string
-  entered_by: string
-  minutes_played: number
-  rating_class_override: RatingClass | null
-
-  sofascore_rating: number | null
-  fotmob_rating: number | null
-
-  tackles_won: number
-  interceptions: number
-  clearances: number
-  blocks: number
-  aerial_duels_won: number
-  dribbled_past: number
-  saves: number
-  goals_conceded: number
-  error_leading_to_goal: number
-
-  goals_scored: number
-  assists: number
-  own_goals: number
-  yellow_cards: number
-  red_cards: number
-  penalties_scored: number
-  penalties_missed: number
-  penalties_saved: number
-  clean_sheet: boolean
-
-  key_passes: number | null
-  expected_assists: number | null
-  successful_dribbles: number | null
-  dribble_success_rate: number | null
-  completed_passes: number | null
-  pass_accuracy: number | null
-  final_third_passes: number | null
-  progressive_passes: number | null
-
-  is_provisional: boolean
-  has_decisive_event: boolean
-
-  created_at: string
-  updated_at: string
-}
-
-export type CalculationRun = {
-  id: string
-  matchday_id: string
-  run_number: number
-  status: CalculationStatus
-  engine_version: string
-  /** Full engine config snapshot at run creation time — DB-level reproducibility */
-  config_json: Json
-  triggered_by: string
-  triggered_at: string
-  published_at: string | null
-  published_by: string | null
-  note: string | null
-}
-
-export type PlayerCalculation = {
-  id: string
-  run_id: string
-  matchday_id: string
-  player_id: string
-  stats_id: string
-
-  z_sofascore: number | null
-  z_fotmob: number | null
-  z_combined: number | null
-  weights_used: Json | null
-  minutes_factor: number | null
-  z_adjusted: number | null
-  b0: number | null
-  role_multiplier: number | null
-  b1: number | null
-  defensive_correction: number | null
-  voto_base: number | null
-  bonus_malus_breakdown: Json | null
-  total_bonus_malus: number | null
-  fantavoto: number | null
-
-  is_provisional: boolean
-  is_override: boolean
-  override_id: string | null
-
-  calculated_at: string
-}
-
-export type MatchdayCurrentCalculation = {
-  matchday_id: string
-  run_id: string
-  updated_at: string
-}
-
-export type ScoreOverride = {
-  id: string
-  matchday_id: string
-  player_id: string
-  original_fantavoto: number | null
-  override_fantavoto: number
-  reason: string
-  created_by: string
-  created_at: string
-  removed_at: string | null
-  removed_by: string | null
-}
-
-export type StandingsSnapshot = {
-  id: string
-  league_id: string
-  matchday_id: string
-  snapshot_json: Json
-  calculated_at: string
-  published_at: string | null
-  version_number: number
-}
-
-export type PublishedTeamScore = {
-  id: string
-  league_id: string
-  matchday_id: string
-  team_id: string
-  run_id: string
-  total_fantavoto: number
-  player_count: number
-  nv_count: number
-  published_at: string
-}
-
-export type Competition = {
-  id: string
-  league_id: string
-  name: string
-  type: CompetitionType
-  status: CompetitionStatus
-  season: string | null
-  /** scoring_config jsonb: { method, thresholds?, points } */
-  scoring_config: Json
-  /** tiebreaker_config jsonb: ordered string[] of field names */
-  tiebreaker_config: Json
-  /** coppa_config jsonb: null for non-coppa types */
-  coppa_config: Json | null
-  created_by: string | null
-  created_at: string
-}
-
-export type CompetitionTeam = {
-  id: string
-  competition_id: string
-  team_id: string
-  /** group_label: 'A', 'B', ... for Coppa group stage */
-  group_label: string | null
-  seed: number | null
-}
-
-export type CompetitionRound = {
-  id: string
-  competition_id: string
-  round_number: number
-  name: string
-  matchday_id: string | null
-  /** phase: 'regular' | 'group' | 'round_of_16' | 'quarter_final' | 'semi_final' | 'third_place' | 'final' */
-  phase: string
-  status: RoundStatus
-  computed_at: string | null
-}
-
-export type CompetitionFixture = {
-  id: string
-  competition_id: string
-  round_id: string
-  home_team_id: string
-  away_team_id: string
-  home_fantavoto: number | null
-  away_fantavoto: number | null
-  /** Fantasy goals — null when scoring method is direct_comparison */
-  home_score: number | null
-  away_score: number | null
-  result: FixtureResult | null
-  home_points: number | null
-  away_points: number | null
-  computed_at: string | null
-}
-
-export type CompetitionStandingsSnapshot = {
-  id: string
-  competition_id: string
-  league_id: string
-  after_round_id: string
-  version_number: number
-  snapshot_json: Json
-  created_at: string
-}
-
-export type LiveScore = {
-  matchday_id: string
-  team_id: string
-  league_id: string
-  total_fantavoto: number
-  player_count: number
-  nv_count: number
-  refreshed_at: string
-}
-
-export type MatchdayLineup = {
-  id: string
-  league_id: string
-  matchday_id: string
-  team_id: string
-  run_id: string
-  starters: Json
-  bench: Json
-  created_at: string
-}
-
-export type LivePlayerScore = {
-  matchday_id: string
-  team_id: string
-  player_id: string
-  assigned_mantra_role: string | null
-  is_bench: boolean
-  bench_order: number | null
-  sub_status: string
-  extended_penalty: number
-  voto_base: number | null
-  fantavoto: number | null
-  sofascore_rating: number | null
-  fotmob_rating: number | null
-  minutes_played: number
-  goals_scored: number
-  assists: number
-  yellow_cards: number
-  red_cards: number
-  own_goals: number
-  penalties_scored: number
-  saves: number
-  goals_conceded: number
-  refreshed_at: string
-}
-
-export type AuditLog = {
-  id: string
-  league_id: string | null
-  actor_user_id: string | null
-  action_type: AuditAction
-  entity_type: string
-  entity_id: string | null
-  before_json: Json | null
-  after_json: Json | null
-  metadata_json: Json | null
-  created_at: string
-}
-
-export type AppSetting = {
-  id: string
-  league_id: string
-  key: string
-  value: Json
-  updated_by: string | null
-  updated_at: string
-}
-
-// ---- Database shape (for typed Supabase client) ------------
-// @supabase/postgrest-js v2 GenericSchema requires each table entry to satisfy
-// GenericTable: { Row, Insert, Update: Record<string,unknown>, Relationships: GenericRelationship[] }
-// Append-only tables originally had Update: never, which violates the constraint.
-// Those are changed to Update: Record<string, unknown> here so the schema resolves correctly.
-// Relationships is always empty (never[]) since we don't use PostgREST relationship joins
-// for type inference — we use explicit select string parsing.
-
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.4"
+  }
   public: {
-    Views: Record<never, never>
+    Tables: {
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          league_id: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          league_id: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          league_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action_type: Database["public"]["Enums"]["audit_action"]
+          actor_user_id: string | null
+          after_json: Json | null
+          before_json: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          league_id: string | null
+          metadata_json: Json | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["audit_action"]
+          actor_user_id?: string | null
+          after_json?: Json | null
+          before_json?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          league_id?: string | null
+          metadata_json?: Json | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["audit_action"]
+          actor_user_id?: string | null
+          after_json?: Json | null
+          before_json?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          league_id?: string | null
+          metadata_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calculation_runs: {
+        Row: {
+          config_json: Json
+          engine_version: string
+          id: string
+          matchday_id: string
+          note: string | null
+          published_at: string | null
+          published_by: string | null
+          run_number: number
+          status: Database["public"]["Enums"]["calculation_status"]
+          triggered_at: string
+          triggered_by: string
+        }
+        Insert: {
+          config_json?: Json
+          engine_version?: string
+          id?: string
+          matchday_id: string
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          run_number: number
+          status?: Database["public"]["Enums"]["calculation_status"]
+          triggered_at?: string
+          triggered_by: string
+        }
+        Update: {
+          config_json?: Json
+          engine_version?: string
+          id?: string
+          matchday_id?: string
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          run_number?: number
+          status?: Database["public"]["Enums"]["calculation_status"]
+          triggered_at?: string
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculation_runs_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculation_runs_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculation_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_fixtures: {
+        Row: {
+          away_fantavoto: number | null
+          away_points: number | null
+          away_score: number | null
+          away_team_id: string
+          competition_id: string
+          computed_at: string | null
+          home_fantavoto: number | null
+          home_points: number | null
+          home_score: number | null
+          home_team_id: string
+          id: string
+          result: Database["public"]["Enums"]["fixture_result"] | null
+          round_id: string
+        }
+        Insert: {
+          away_fantavoto?: number | null
+          away_points?: number | null
+          away_score?: number | null
+          away_team_id: string
+          competition_id: string
+          computed_at?: string | null
+          home_fantavoto?: number | null
+          home_points?: number | null
+          home_score?: number | null
+          home_team_id: string
+          id?: string
+          result?: Database["public"]["Enums"]["fixture_result"] | null
+          round_id: string
+        }
+        Update: {
+          away_fantavoto?: number | null
+          away_points?: number | null
+          away_score?: number | null
+          away_team_id?: string
+          competition_id?: string
+          computed_at?: string | null
+          home_fantavoto?: number | null
+          home_points?: number | null
+          home_score?: number | null
+          home_team_id?: string
+          id?: string
+          result?: Database["public"]["Enums"]["fixture_result"] | null
+          round_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_fixtures_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_fixtures_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_fixtures_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_fixtures_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "competition_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_matchups: {
+        Row: {
+          away_fantavoto: number | null
+          away_team_id: string
+          competition_id: string
+          computed_at: string | null
+          created_at: string
+          home_fantavoto: number | null
+          home_team_id: string
+          id: string
+          result: string | null
+          round_number: number
+        }
+        Insert: {
+          away_fantavoto?: number | null
+          away_team_id: string
+          competition_id: string
+          computed_at?: string | null
+          created_at?: string
+          home_fantavoto?: number | null
+          home_team_id: string
+          id?: string
+          result?: string | null
+          round_number: number
+        }
+        Update: {
+          away_fantavoto?: number | null
+          away_team_id?: string
+          competition_id?: string
+          computed_at?: string | null
+          created_at?: string
+          home_fantavoto?: number | null
+          home_team_id?: string
+          id?: string
+          result?: string | null
+          round_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_matchups_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_matchups_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_matchups_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_rounds: {
+        Row: {
+          competition_id: string
+          computed_at: string | null
+          id: string
+          matchday_id: string | null
+          name: string
+          phase: string
+          round_number: number
+          status: Database["public"]["Enums"]["round_status"]
+        }
+        Insert: {
+          competition_id: string
+          computed_at?: string | null
+          id?: string
+          matchday_id?: string | null
+          name: string
+          phase?: string
+          round_number: number
+          status?: Database["public"]["Enums"]["round_status"]
+        }
+        Update: {
+          competition_id?: string
+          computed_at?: string | null
+          id?: string
+          matchday_id?: string | null
+          name?: string
+          phase?: string
+          round_number?: number
+          status?: Database["public"]["Enums"]["round_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_rounds_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_rounds_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_standings_snapshots: {
+        Row: {
+          after_round_id: string
+          competition_id: string
+          created_at: string
+          id: string
+          league_id: string
+          snapshot_json: Json
+          version_number: number
+        }
+        Insert: {
+          after_round_id: string
+          competition_id: string
+          created_at?: string
+          id?: string
+          league_id: string
+          snapshot_json: Json
+          version_number: number
+        }
+        Update: {
+          after_round_id?: string
+          competition_id?: string
+          created_at?: string
+          id?: string
+          league_id?: string
+          snapshot_json?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_standings_snapshots_after_round_id_fkey"
+            columns: ["after_round_id"]
+            isOneToOne: false
+            referencedRelation: "competition_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_standings_snapshots_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_standings_snapshots_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_teams: {
+        Row: {
+          competition_id: string
+          group_label: string | null
+          id: string
+          seed: number | null
+          team_id: string
+        }
+        Insert: {
+          competition_id: string
+          group_label?: string | null
+          id?: string
+          seed?: number | null
+          team_id: string
+        }
+        Update: {
+          competition_id?: string
+          group_label?: string | null
+          id?: string
+          seed?: number | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_teams_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          coppa_config: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          league_id: string
+          name: string
+          scoring_config: Json
+          season: string | null
+          status: Database["public"]["Enums"]["competition_status"]
+          tiebreaker_config: Json
+          type: Database["public"]["Enums"]["competition_type"]
+        }
+        Insert: {
+          coppa_config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          league_id: string
+          name: string
+          scoring_config?: Json
+          season?: string | null
+          status?: Database["public"]["Enums"]["competition_status"]
+          tiebreaker_config?: Json
+          type: Database["public"]["Enums"]["competition_type"]
+        }
+        Update: {
+          coppa_config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          league_id?: string
+          name?: string
+          scoring_config?: Json
+          season?: string | null
+          status?: Database["public"]["Enums"]["competition_status"]
+          tiebreaker_config?: Json
+          type?: Database["public"]["Enums"]["competition_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_teams: {
+        Row: {
+          created_at: string
+          id: string
+          league_id: string
+          manager_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          league_id: string
+          manager_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          league_id?: string
+          manager_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_teams_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_teams_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_slots: {
+        Row: {
+          allowed_mantra_roles: string[]
+          bench_order: number | null
+          extended_mantra_roles: string[]
+          formation_id: string
+          id: string
+          is_bench: boolean
+          slot_name: string
+          slot_order: number
+        }
+        Insert: {
+          allowed_mantra_roles: string[]
+          bench_order?: number | null
+          extended_mantra_roles?: string[]
+          formation_id: string
+          id?: string
+          is_bench?: boolean
+          slot_name: string
+          slot_order: number
+        }
+        Update: {
+          allowed_mantra_roles?: string[]
+          bench_order?: number | null
+          extended_mantra_roles?: string[]
+          formation_id?: string
+          id?: string
+          is_bench?: boolean
+          slot_name?: string
+          slot_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_slots_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          league_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          league_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          league_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formations_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fotmob_unmatched_players: {
+        Row: {
+          created_at: string
+          fotmob_name: string
+          fotmob_player_id: number
+          fotmob_team: string | null
+          matchday_id: string
+        }
+        Insert: {
+          created_at?: string
+          fotmob_name: string
+          fotmob_player_id: number
+          fotmob_team?: string | null
+          matchday_id: string
+        }
+        Update: {
+          created_at?: string
+          fotmob_name?: string
+          fotmob_player_id?: number
+          fotmob_team?: string | null
+          matchday_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotmob_unmatched_players_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_engine_config: {
+        Row: {
+          assist: number
+          brace_bonus: number
+          clean_sheet_def: number
+          clean_sheet_gk: number
+          clean_sheet_min_minutes: number
+          created_at: string
+          goal_bonus_att: number
+          goal_bonus_def: number
+          goal_bonus_gk: number
+          goal_bonus_mid: number
+          goals_conceded_def: number
+          goals_conceded_def_min_minutes: number
+          goals_conceded_gk: number
+          hat_trick_bonus: number
+          id: string
+          league_id: string
+          minutes_factor_full: number
+          minutes_factor_partial: number
+          minutes_factor_threshold: number
+          own_goal: number
+          penalty_missed: number
+          penalty_saved: number
+          penalty_scored_discount: number
+          red_card: number
+          updated_at: string
+          yellow_card: number
+        }
+        Insert: {
+          assist?: number
+          brace_bonus?: number
+          clean_sheet_def?: number
+          clean_sheet_gk?: number
+          clean_sheet_min_minutes?: number
+          created_at?: string
+          goal_bonus_att?: number
+          goal_bonus_def?: number
+          goal_bonus_gk?: number
+          goal_bonus_mid?: number
+          goals_conceded_def?: number
+          goals_conceded_def_min_minutes?: number
+          goals_conceded_gk?: number
+          hat_trick_bonus?: number
+          id?: string
+          league_id: string
+          minutes_factor_full?: number
+          minutes_factor_partial?: number
+          minutes_factor_threshold?: number
+          own_goal?: number
+          penalty_missed?: number
+          penalty_saved?: number
+          penalty_scored_discount?: number
+          red_card?: number
+          updated_at?: string
+          yellow_card?: number
+        }
+        Update: {
+          assist?: number
+          brace_bonus?: number
+          clean_sheet_def?: number
+          clean_sheet_gk?: number
+          clean_sheet_min_minutes?: number
+          created_at?: string
+          goal_bonus_att?: number
+          goal_bonus_def?: number
+          goal_bonus_gk?: number
+          goal_bonus_mid?: number
+          goals_conceded_def?: number
+          goals_conceded_def_min_minutes?: number
+          goals_conceded_gk?: number
+          hat_trick_bonus?: number
+          id?: string
+          league_id?: string
+          minutes_factor_full?: number
+          minutes_factor_partial?: number
+          minutes_factor_threshold?: number
+          own_goal?: number
+          penalty_missed?: number
+          penalty_saved?: number
+          penalty_scored_discount?: number
+          red_card?: number
+          updated_at?: string
+          yellow_card?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_engine_config_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: true
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_players: {
+        Row: {
+          club: string
+          created_at: string
+          fotmob_player_id: number | null
+          full_name: string
+          id: string
+          is_active: boolean
+          league_id: string
+          mantra_roles: string[]
+          notes: string | null
+          primary_mantra_role: string | null
+          rating_class: Database["public"]["Enums"]["rating_class"]
+          serie_a_player_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          club: string
+          created_at?: string
+          fotmob_player_id?: number | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          league_id: string
+          mantra_roles: string[]
+          notes?: string | null
+          primary_mantra_role?: string | null
+          rating_class: Database["public"]["Enums"]["rating_class"]
+          serie_a_player_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club?: string
+          created_at?: string
+          fotmob_player_id?: number | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          league_id?: string
+          mantra_roles?: string[]
+          notes?: string | null
+          primary_mantra_role?: string | null
+          rating_class?: Database["public"]["Enums"]["rating_class"]
+          serie_a_player_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_players_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_players_serie_a_player_id_fkey"
+            columns: ["serie_a_player_id"]
+            isOneToOne: false
+            referencedRelation: "serie_a_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_users: {
+        Row: {
+          id: string
+          joined_at: string
+          league_id: string
+          role: Database["public"]["Enums"]["league_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          league_id: string
+          role: Database["public"]["Enums"]["league_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          league_id?: string
+          role?: Database["public"]["Enums"]["league_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_users_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leagues: {
+        Row: {
+          advanced_bonuses_enabled: boolean
+          bench_size: number
+          created_at: string
+          display_rounding: Database["public"]["Enums"]["display_rounding"]
+          id: string
+          lock_behavior: Database["public"]["Enums"]["lock_behavior"]
+          name: string
+          scoring_mode: Database["public"]["Enums"]["scoring_mode"]
+          season_name: string
+          source_weight_fotmob: number
+          source_weight_sofascore: number
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          advanced_bonuses_enabled?: boolean
+          bench_size?: number
+          created_at?: string
+          display_rounding?: Database["public"]["Enums"]["display_rounding"]
+          id?: string
+          lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
+          name: string
+          scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
+          season_name: string
+          source_weight_fotmob?: number
+          source_weight_sofascore?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          advanced_bonuses_enabled?: boolean
+          bench_size?: number
+          created_at?: string
+          display_rounding?: Database["public"]["Enums"]["display_rounding"]
+          id?: string
+          lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
+          name?: string
+          scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
+          season_name?: string
+          source_weight_fotmob?: number
+          source_weight_sofascore?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lineup_current_pointers: {
+        Row: {
+          id: string
+          matchday_id: string
+          submission_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          matchday_id: string
+          submission_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          matchday_id?: string
+          submission_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lineup_current_pointers_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_current_pointers_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "lineup_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_current_pointers_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lineup_submission_players: {
+        Row: {
+          assigned_mantra_role: string | null
+          bench_order: number | null
+          id: string
+          is_bench: boolean
+          player_id: string
+          slot_id: string
+          submission_id: string
+        }
+        Insert: {
+          assigned_mantra_role?: string | null
+          bench_order?: number | null
+          id?: string
+          is_bench?: boolean
+          player_id: string
+          slot_id: string
+          submission_id: string
+        }
+        Update: {
+          assigned_mantra_role?: string | null
+          bench_order?: number | null
+          id?: string
+          is_bench?: boolean
+          player_id?: string
+          slot_id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lineup_submission_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_submission_players_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "formation_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_submission_players_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "lineup_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lineup_submissions: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          formation_id: string
+          id: string
+          matchday_id: string
+          source_ip: string | null
+          status: Database["public"]["Enums"]["lineup_status"]
+          submission_number: number
+          submitted_at: string | null
+          team_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          formation_id: string
+          id?: string
+          matchday_id: string
+          source_ip?: string | null
+          status?: Database["public"]["Enums"]["lineup_status"]
+          submission_number?: number
+          submitted_at?: string | null
+          team_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          formation_id?: string
+          id?: string
+          matchday_id?: string
+          source_ip?: string | null
+          status?: Database["public"]["Enums"]["lineup_status"]
+          submission_number?: number
+          submitted_at?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lineup_submissions_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_submissions_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_submissions_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_submissions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_player_scores: {
+        Row: {
+          assigned_mantra_role: string | null
+          assists: number
+          bench_order: number | null
+          extended_penalty: number
+          fantavoto: number | null
+          fotmob_rating: number | null
+          goals_conceded: number
+          goals_scored: number
+          is_bench: boolean
+          matchday_id: string
+          minutes_played: number
+          own_goals: number
+          penalties_scored: number
+          player_id: string
+          red_cards: number
+          refreshed_at: string
+          saves: number
+          sofascore_rating: number | null
+          sub_status: string
+          team_id: string
+          voto_base: number | null
+          yellow_cards: number
+        }
+        Insert: {
+          assigned_mantra_role?: string | null
+          assists?: number
+          bench_order?: number | null
+          extended_penalty?: number
+          fantavoto?: number | null
+          fotmob_rating?: number | null
+          goals_conceded?: number
+          goals_scored?: number
+          is_bench?: boolean
+          matchday_id: string
+          minutes_played?: number
+          own_goals?: number
+          penalties_scored?: number
+          player_id: string
+          red_cards?: number
+          refreshed_at?: string
+          saves?: number
+          sofascore_rating?: number | null
+          sub_status?: string
+          team_id: string
+          voto_base?: number | null
+          yellow_cards?: number
+        }
+        Update: {
+          assigned_mantra_role?: string | null
+          assists?: number
+          bench_order?: number | null
+          extended_penalty?: number
+          fantavoto?: number | null
+          fotmob_rating?: number | null
+          goals_conceded?: number
+          goals_scored?: number
+          is_bench?: boolean
+          matchday_id?: string
+          minutes_played?: number
+          own_goals?: number
+          penalties_scored?: number
+          player_id?: string
+          red_cards?: number
+          refreshed_at?: string
+          saves?: number
+          sofascore_rating?: number | null
+          sub_status?: string
+          team_id?: string
+          voto_base?: number | null
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_player_scores_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_player_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_player_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_scores: {
+        Row: {
+          league_id: string
+          matchday_id: string
+          nv_count: number
+          player_count: number
+          refreshed_at: string
+          team_id: string
+          total_fantavoto: number
+        }
+        Insert: {
+          league_id: string
+          matchday_id: string
+          nv_count?: number
+          player_count?: number
+          refreshed_at?: string
+          team_id: string
+          total_fantavoto?: number
+        }
+        Update: {
+          league_id?: string
+          matchday_id?: string
+          nv_count?: number
+          player_count?: number
+          refreshed_at?: string
+          team_id?: string
+          total_fantavoto?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_scores_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_scores_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchday_current_calculation: {
+        Row: {
+          matchday_id: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          matchday_id: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          matchday_id?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_current_calculation_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: true
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_current_calculation_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchday_fixtures: {
+        Row: {
+          created_at: string
+          fotmob_match_id: number | null
+          id: string
+          label: string
+          matchday_id: string
+          sofascore_event_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          fotmob_match_id?: number | null
+          id?: string
+          label?: string
+          matchday_id: string
+          sofascore_event_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          fotmob_match_id?: number | null
+          id?: string
+          label?: string
+          matchday_id?: string
+          sofascore_event_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_fixtures_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchday_lineups: {
+        Row: {
+          bench: Json
+          created_at: string
+          id: string
+          league_id: string
+          matchday_id: string
+          run_id: string
+          starters: Json
+          team_id: string
+        }
+        Insert: {
+          bench?: Json
+          created_at?: string
+          id?: string
+          league_id: string
+          matchday_id: string
+          run_id: string
+          starters?: Json
+          team_id: string
+        }
+        Update: {
+          bench?: Json
+          created_at?: string
+          id?: string
+          league_id?: string
+          matchday_id?: string
+          run_id?: string
+          starters?: Json
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_lineups_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_lineups_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_lineups_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_lineups_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchday_status_log: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          matchday_id: string
+          new_status: Database["public"]["Enums"]["matchday_status"]
+          note: string | null
+          old_status: Database["public"]["Enums"]["matchday_status"] | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          matchday_id: string
+          new_status: Database["public"]["Enums"]["matchday_status"]
+          note?: string | null
+          old_status?: Database["public"]["Enums"]["matchday_status"] | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          matchday_id?: string
+          new_status?: Database["public"]["Enums"]["matchday_status"]
+          note?: string | null
+          old_status?: Database["public"]["Enums"]["matchday_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_status_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_status_log_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchdays: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_frozen: boolean
+          league_id: string
+          locks_at: string | null
+          matchday_number: number | null
+          name: string
+          opens_at: string | null
+          round_number: number | null
+          status: Database["public"]["Enums"]["matchday_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_frozen?: boolean
+          league_id: string
+          locks_at?: string | null
+          matchday_number?: number | null
+          name: string
+          opens_at?: string | null
+          round_number?: number | null
+          status?: Database["public"]["Enums"]["matchday_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_frozen?: boolean
+          league_id?: string
+          locks_at?: string | null
+          matchday_number?: number | null
+          name?: string
+          opens_at?: string | null
+          round_number?: number | null
+          status?: Database["public"]["Enums"]["matchday_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchdays_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchdays_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_calculations: {
+        Row: {
+          b0: number | null
+          b1: number | null
+          bonus_malus_breakdown: Json | null
+          calculated_at: string
+          defensive_correction: number | null
+          fantavoto: number | null
+          id: string
+          is_override: boolean
+          is_provisional: boolean
+          matchday_id: string
+          minutes_factor: number | null
+          override_id: string | null
+          player_id: string
+          role_multiplier: number | null
+          run_id: string
+          stats_id: string
+          total_bonus_malus: number | null
+          voto_base: number | null
+          weights_used: Json | null
+          z_adjusted: number | null
+          z_combined: number | null
+          z_fotmob: number | null
+          z_sofascore: number | null
+        }
+        Insert: {
+          b0?: number | null
+          b1?: number | null
+          bonus_malus_breakdown?: Json | null
+          calculated_at?: string
+          defensive_correction?: number | null
+          fantavoto?: number | null
+          id?: string
+          is_override?: boolean
+          is_provisional?: boolean
+          matchday_id: string
+          minutes_factor?: number | null
+          override_id?: string | null
+          player_id: string
+          role_multiplier?: number | null
+          run_id: string
+          stats_id: string
+          total_bonus_malus?: number | null
+          voto_base?: number | null
+          weights_used?: Json | null
+          z_adjusted?: number | null
+          z_combined?: number | null
+          z_fotmob?: number | null
+          z_sofascore?: number | null
+        }
+        Update: {
+          b0?: number | null
+          b1?: number | null
+          bonus_malus_breakdown?: Json | null
+          calculated_at?: string
+          defensive_correction?: number | null
+          fantavoto?: number | null
+          id?: string
+          is_override?: boolean
+          is_provisional?: boolean
+          matchday_id?: string
+          minutes_factor?: number | null
+          override_id?: string | null
+          player_id?: string
+          role_multiplier?: number | null
+          run_id?: string
+          stats_id?: string
+          total_bonus_malus?: number | null
+          voto_base?: number | null
+          weights_used?: Json | null
+          z_adjusted?: number | null
+          z_combined?: number | null
+          z_fotmob?: number | null
+          z_sofascore?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_calculations_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_calculations_override_id_fkey"
+            columns: ["override_id"]
+            isOneToOne: false
+            referencedRelation: "score_overrides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_calculations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_calculations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_calculations_stats_id_fkey"
+            columns: ["stats_id"]
+            isOneToOne: false
+            referencedRelation: "player_match_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_match_stats: {
+        Row: {
+          aerial_duels_won: number
+          assists: number
+          blocks: number
+          clean_sheet: boolean
+          clearances: number
+          completed_passes: number | null
+          created_at: string
+          dribble_success_rate: number | null
+          dribbled_past: number
+          entered_by: string
+          error_leading_to_goal: number
+          expected_assists: number | null
+          final_third_passes: number | null
+          fotmob_rating: number | null
+          goals_conceded: number
+          goals_scored: number
+          has_decisive_event: boolean
+          id: string
+          interceptions: number
+          is_provisional: boolean
+          key_passes: number | null
+          matchday_id: string
+          minutes_played: number
+          own_goals: number
+          pass_accuracy: number | null
+          penalties_missed: number
+          penalties_saved: number
+          penalties_scored: number
+          player_id: string
+          progressive_passes: number | null
+          rating_class_override:
+            | Database["public"]["Enums"]["rating_class"]
+            | null
+          red_cards: number
+          saves: number
+          sofascore_rating: number | null
+          successful_dribbles: number | null
+          tackles_won: number
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          aerial_duels_won?: number
+          assists?: number
+          blocks?: number
+          clean_sheet?: boolean
+          clearances?: number
+          completed_passes?: number | null
+          created_at?: string
+          dribble_success_rate?: number | null
+          dribbled_past?: number
+          entered_by: string
+          error_leading_to_goal?: number
+          expected_assists?: number | null
+          final_third_passes?: number | null
+          fotmob_rating?: number | null
+          goals_conceded?: number
+          goals_scored?: number
+          has_decisive_event?: boolean
+          id?: string
+          interceptions?: number
+          is_provisional?: boolean
+          key_passes?: number | null
+          matchday_id: string
+          minutes_played?: number
+          own_goals?: number
+          pass_accuracy?: number | null
+          penalties_missed?: number
+          penalties_saved?: number
+          penalties_scored?: number
+          player_id: string
+          progressive_passes?: number | null
+          rating_class_override?:
+            | Database["public"]["Enums"]["rating_class"]
+            | null
+          red_cards?: number
+          saves?: number
+          sofascore_rating?: number | null
+          successful_dribbles?: number | null
+          tackles_won?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          aerial_duels_won?: number
+          assists?: number
+          blocks?: number
+          clean_sheet?: boolean
+          clearances?: number
+          completed_passes?: number | null
+          created_at?: string
+          dribble_success_rate?: number | null
+          dribbled_past?: number
+          entered_by?: string
+          error_leading_to_goal?: number
+          expected_assists?: number | null
+          final_third_passes?: number | null
+          fotmob_rating?: number | null
+          goals_conceded?: number
+          goals_scored?: number
+          has_decisive_event?: boolean
+          id?: string
+          interceptions?: number
+          is_provisional?: boolean
+          key_passes?: number | null
+          matchday_id?: string
+          minutes_played?: number
+          own_goals?: number
+          pass_accuracy?: number | null
+          penalties_missed?: number
+          penalties_saved?: number
+          penalties_scored?: number
+          player_id?: string
+          progressive_passes?: number | null
+          rating_class_override?:
+            | Database["public"]["Enums"]["rating_class"]
+            | null
+          red_cards?: number
+          saves?: number
+          sofascore_rating?: number | null
+          successful_dribbles?: number | null
+          tackles_won?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_match_stats_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_match_stats_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_match_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_role_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          new_mantra_roles: string[] | null
+          new_rating_class: Database["public"]["Enums"]["rating_class"] | null
+          old_mantra_roles: string[] | null
+          old_rating_class: Database["public"]["Enums"]["rating_class"] | null
+          player_id: string
+          reason: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          new_mantra_roles?: string[] | null
+          new_rating_class?: Database["public"]["Enums"]["rating_class"] | null
+          old_mantra_roles?: string[] | null
+          old_rating_class?: Database["public"]["Enums"]["rating_class"] | null
+          player_id: string
+          reason?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_mantra_roles?: string[] | null
+          new_rating_class?: Database["public"]["Enums"]["rating_class"] | null
+          old_mantra_roles?: string[] | null
+          old_rating_class?: Database["public"]["Enums"]["rating_class"] | null
+          player_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_role_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_role_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          is_super_admin: boolean
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id: string
+          is_super_admin?: boolean
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      published_team_scores: {
+        Row: {
+          id: string
+          league_id: string
+          matchday_id: string
+          nv_count: number
+          player_count: number
+          published_at: string
+          run_id: string
+          team_id: string
+          total_fantavoto: number
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          matchday_id: string
+          nv_count?: number
+          player_count?: number
+          published_at?: string
+          run_id: string
+          team_id: string
+          total_fantavoto: number
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          matchday_id?: string
+          nv_count?: number
+          player_count?: number
+          published_at?: string
+          run_id?: string
+          team_id?: string
+          total_fantavoto?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_team_scores_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_team_scores_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_team_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_team_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_classification_rules: {
+        Row: {
+          default_rating_class: Database["public"]["Enums"]["rating_class"]
+          id: string
+          league_id: string
+          mantra_role: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          default_rating_class: Database["public"]["Enums"]["rating_class"]
+          id?: string
+          league_id: string
+          mantra_role: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          default_rating_class?: Database["public"]["Enums"]["rating_class"]
+          id?: string
+          league_id?: string
+          mantra_role?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_classification_rules_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_classification_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roster_import_batches: {
+        Row: {
+          created_at: string
+          error_count: number
+          filename: string
+          id: string
+          import_summary: Json | null
+          imported_by: string
+          league_id: string
+          row_count: number
+          storage_path: string | null
+          success_count: number
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number
+          filename: string
+          id?: string
+          import_summary?: Json | null
+          imported_by: string
+          league_id: string
+          row_count?: number
+          storage_path?: string | null
+          success_count?: number
+        }
+        Update: {
+          created_at?: string
+          error_count?: number
+          filename?: string
+          id?: string
+          import_summary?: Json | null
+          imported_by?: string
+          league_id?: string
+          row_count?: number
+          storage_path?: string | null
+          success_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_import_batches_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_import_batches_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      score_overrides: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          matchday_id: string
+          original_fantavoto: number | null
+          override_fantavoto: number
+          player_id: string
+          reason: string
+          removed_at: string | null
+          removed_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          matchday_id: string
+          original_fantavoto?: number | null
+          override_fantavoto: number
+          player_id: string
+          reason: string
+          removed_at?: string | null
+          removed_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          matchday_id?: string
+          original_fantavoto?: number | null
+          override_fantavoto?: number
+          player_id?: string
+          reason?: string
+          removed_at?: string | null
+          removed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "score_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "score_overrides_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "score_overrides_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "score_overrides_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serie_a_players: {
+        Row: {
+          club: string
+          created_at: string
+          fotmob_id: number | null
+          full_name: string
+          id: string
+          is_active: boolean
+          mantra_roles: string[]
+          rating_class: string
+          search_name: string | null
+          season: string
+          sofascore_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          club: string
+          created_at?: string
+          fotmob_id?: number | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          mantra_roles?: string[]
+          rating_class: string
+          search_name?: string | null
+          season?: string
+          sofascore_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          club?: string
+          created_at?: string
+          fotmob_id?: number | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          mantra_roles?: string[]
+          rating_class?: string
+          search_name?: string | null
+          season?: string
+          sofascore_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      standings_snapshots: {
+        Row: {
+          calculated_at: string
+          id: string
+          league_id: string
+          matchday_id: string
+          published_at: string | null
+          snapshot_json: Json
+          version_number: number
+        }
+        Insert: {
+          calculated_at?: string
+          id?: string
+          league_id: string
+          matchday_id: string
+          published_at?: string | null
+          snapshot_json: Json
+          version_number?: number
+        }
+        Update: {
+          calculated_at?: string
+          id?: string
+          league_id?: string
+          matchday_id?: string
+          published_at?: string | null
+          snapshot_json?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standings_snapshots_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standings_snapshots_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_roster_entries: {
+        Row: {
+          acquired_at: string
+          id: string
+          import_batch_id: string | null
+          player_id: string
+          released_at: string | null
+          team_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          id?: string
+          import_batch_id?: string | null
+          player_id: string
+          released_at?: string | null
+          team_id: string
+        }
+        Update: {
+          acquired_at?: string
+          id?: string
+          import_batch_id?: string | null
+          player_id?: string
+          released_at?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_roster_entries_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "roster_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_roster_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_roster_entries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
+      get_user_team_id: { Args: { p_league_id: string }; Returns: string }
+      immutable_unaccent: { Args: { "": string }; Returns: string }
+      is_league_admin: { Args: { p_league_id: string }; Returns: boolean }
+      is_league_member: { Args: { p_league_id: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       submit_lineup: {
         Args: {
-          p_team_id: string
-          p_matchday_id: string
+          p_actor_user_id: string
+          p_assignments: Json
           p_formation_id: string
           p_is_draft: boolean
-          p_actor_user_id: string
-          p_source_ip: string | null
-          p_assignments: Json
+          p_matchday_id: string
+          p_source_ip: string
+          p_team_id: string
         }
         Returns: Json
       }
-    }
-    Tables: {
-      profiles: {
-        Row: Profile
-        Insert: Omit<Profile, 'created_at' | 'updated_at'> & {
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<Profile, 'id'>>
-        Relationships: never[]
-      }
-      leagues: {
-        Row: League
-        Insert: Omit<League, 'id' | 'created_at' | 'updated_at'> & {
-          id?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<League, 'id'>>
-        Relationships: never[]
-      }
-      league_users: {
-        Row: LeagueUser
-        Insert: Omit<LeagueUser, 'id' | 'joined_at'> & {
-          id?: string
-          joined_at?: string
-        }
-        Update: Partial<Omit<LeagueUser, 'id'>>
-        Relationships: never[]
-      }
-      fantasy_teams: {
-        Row: FantasyTeam
-        Insert: Omit<FantasyTeam, 'id' | 'created_at'> & {
-          id?: string
-          created_at?: string
-        }
-        Update: Partial<Omit<FantasyTeam, 'id'>>
-        Relationships: never[]
-      }
-      roster_import_batches: {
-        Row: RosterImportBatch
-        Insert: Omit<RosterImportBatch, 'id' | 'created_at' | 'storage_path' | 'import_summary'> & {
-          id?: string
-          created_at?: string
-          storage_path?: string | null
-          import_summary?: Json | null
-        }
-        Update: Partial<Omit<RosterImportBatch, 'id'>>
-        Relationships: never[]
-      }
-      league_players: {
-        Row: LeaguePlayer
-        Insert: Omit<LeaguePlayer, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'notes' | 'primary_mantra_role' | 'serie_a_player_id'> & {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          is_active?: boolean
-          notes?: string | null
-          primary_mantra_role?: string | null
-          serie_a_player_id?: string | null
-        }
-        Update: Partial<Omit<LeaguePlayer, 'id'>>
-        Relationships: never[]
-      }
-      serie_a_players: {
-        Row: SerieAPlayer
-        Insert: Omit<SerieAPlayer, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'sofascore_id' | 'fotmob_id'> & {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          is_active?: boolean
-          sofascore_id?: number | null
-          fotmob_id?: number | null
-        }
-        Update: Partial<Omit<SerieAPlayer, 'id'>>
-        Relationships: never[]
-      }
-      player_role_history: {
-        Row: PlayerRoleHistory
-        Insert: Omit<PlayerRoleHistory, 'id' | 'changed_at'> & {
-          id?: string
-          changed_at?: string
-        }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      role_classification_rules: {
-        Row: RoleClassificationRule
-        Insert: Omit<RoleClassificationRule, 'id' | 'updated_at'> & {
-          id?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<RoleClassificationRule, 'id'>>
-        Relationships: never[]
-      }
-      team_roster_entries: {
-        Row: TeamRosterEntry
-        Insert: Omit<TeamRosterEntry, 'id' | 'acquired_at' | 'released_at'> & {
-          id?: string
-          acquired_at?: string
-          released_at?: string | null
-        }
-        Update: Partial<Omit<TeamRosterEntry, 'id'>>
-        Relationships: never[]
-      }
-      formations: {
-        Row: Formation
-        Insert: Omit<Formation, 'id' | 'created_at'> & {
-          id?: string
-          created_at?: string
-        }
-        Update: Partial<Omit<Formation, 'id'>>
-        Relationships: never[]
-      }
-      formation_slots: {
-        Row: FormationSlot
-        Insert: Omit<FormationSlot, 'id'> & { id?: string }
-        Update: Partial<Omit<FormationSlot, 'id'>>
-        Relationships: never[]
-      }
-      matchdays: {
-        Row: Matchday
-        Insert: Omit<Matchday, 'id' | 'created_at' | 'updated_at' | 'round_number' | 'is_frozen'> & {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          round_number?: number | null
-          is_frozen?: boolean
-        }
-        Update: Partial<Omit<Matchday, 'id'>>
-        Relationships: never[]
-      }
-      matchday_status_log: {
-        Row: MatchdayStatusLog
-        Insert: Omit<MatchdayStatusLog, 'id' | 'changed_at'> & {
-          id?: string
-          changed_at?: string
-        }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      matchday_fixtures: {
-        Row: MatchdayFixture
-        Insert: Omit<MatchdayFixture, 'id' | 'created_at'> & {
-          id?: string
-          created_at?: string
-          fotmob_match_id?: number | null
-          sofascore_event_id?: number | null
-        }
-        Update: Partial<Omit<MatchdayFixture, 'id'>>
-        Relationships: never[]
-      }
-      lineup_submissions: {
-        Row: LineupSubmission
-        Insert: Omit<LineupSubmission, 'id' | 'created_at'> & {
-          id?: string
-          created_at?: string
-        }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      lineup_current_pointers: {
-        Row: LineupCurrentPointer
-        Insert: Omit<LineupCurrentPointer, 'id' | 'updated_at'> & {
-          id?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<LineupCurrentPointer, 'id'>>
-        Relationships: never[]
-      }
-      lineup_submission_players: {
-        Row: LineupSubmissionPlayer
-        Insert: Omit<LineupSubmissionPlayer, 'id'> & { id?: string }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      player_match_stats: {
-        Row: PlayerMatchStats
-        Insert: Omit<PlayerMatchStats, 'id' | 'created_at' | 'updated_at'> & {
-          id?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<PlayerMatchStats, 'id'>>
-        Relationships: never[]
-      }
-      calculation_runs: {
-        Row: CalculationRun
-        Insert: Omit<CalculationRun, 'id' | 'triggered_at' | 'published_at' | 'published_by' | 'note'> & {
-          id?: string
-          triggered_at?: string
-          published_at?: string | null
-          published_by?: string | null
-          note?: string | null
-        }
-        Update: Partial<Omit<CalculationRun, 'id'>>
-        Relationships: never[]
-      }
-      player_calculations: {
-        Row: PlayerCalculation
-        Insert: Omit<PlayerCalculation, 'id' | 'calculated_at' | 'override_id' |
-          'z_sofascore' | 'z_fotmob' | 'z_combined' | 'weights_used' |
-          'minutes_factor' | 'z_adjusted' | 'b0' | 'role_multiplier' | 'b1' |
-          'defensive_correction' | 'voto_base' | 'bonus_malus_breakdown' |
-          'total_bonus_malus' | 'fantavoto'
-        > & {
-          id?: string
-          calculated_at?: string
-          override_id?: string | null
-          z_sofascore?: number | null
-          z_whoscored?: number | null
-          z_fotmob?: number | null
-          z_combined?: number | null
-          weights_used?: PlayerCalculation['weights_used']
-          minutes_factor?: number | null
-          z_adjusted?: number | null
-          b0?: number | null
-          role_multiplier?: number | null
-          b1?: number | null
-          defensive_correction?: number | null
-          voto_base?: number | null
-          bonus_malus_breakdown?: PlayerCalculation['bonus_malus_breakdown']
-          total_bonus_malus?: number | null
-          fantavoto?: number | null
-        }
-        // append-only per run: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      matchday_current_calculation: {
-        Row: MatchdayCurrentCalculation
-        Insert: MatchdayCurrentCalculation
-        Update: Partial<Omit<MatchdayCurrentCalculation, 'matchday_id'>>
-        Relationships: never[]
-      }
-      score_overrides: {
-        Row: ScoreOverride
-        Insert: Omit<ScoreOverride, 'id' | 'created_at' | 'removed_at' | 'removed_by' | 'original_fantavoto'> & {
-          id?: string
-          created_at?: string
-          removed_at?: string | null
-          removed_by?: string | null
-          original_fantavoto?: number | null
-        }
-        Update: Partial<Omit<ScoreOverride, 'id'>>
-        Relationships: never[]
-      }
-      standings_snapshots: {
-        Row: StandingsSnapshot
-        Insert: Omit<StandingsSnapshot, 'id' | 'calculated_at'> & {
-          id?: string
-          calculated_at?: string
-        }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      published_team_scores: {
-        Row: PublishedTeamScore
-        Insert: Omit<PublishedTeamScore, 'id'> & { id?: string }
-        Update: Partial<Omit<PublishedTeamScore, 'id'>>
-        Relationships: never[]
-      }
-      competitions: {
-        Row: Competition
-        Insert: Omit<Competition, 'id' | 'created_at' | 'status' | 'tiebreaker_config' | 'coppa_config'> & {
-          id?: string
-          created_at?: string
-          status?: CompetitionStatus
-          tiebreaker_config?: Json
-          coppa_config?: Json | null
-        }
-        Update: Partial<Omit<Competition, 'id'>>
-        Relationships: never[]
-      }
-      competition_teams: {
-        Row: CompetitionTeam
-        Insert: Omit<CompetitionTeam, 'id' | 'group_label' | 'seed'> & {
-          id?: string
-          group_label?: string | null
-          seed?: number | null
-        }
-        Update: Partial<Omit<CompetitionTeam, 'id'>>
-        Relationships: never[]
-      }
-      competition_rounds: {
-        Row: CompetitionRound
-        Insert: Omit<CompetitionRound, 'id' | 'matchday_id' | 'computed_at'> & {
-          id?: string
-          matchday_id?: string | null
-          computed_at?: string | null
-        }
-        Update: Partial<Omit<CompetitionRound, 'id'>>
-        Relationships: never[]
-      }
-      competition_fixtures: {
-        Row: CompetitionFixture
-        Insert: Omit<
-          CompetitionFixture,
-          'id' | 'home_fantavoto' | 'away_fantavoto' | 'home_score' | 'away_score' |
-          'result' | 'home_points' | 'away_points' | 'computed_at'
-        > & {
-          id?: string
-          home_fantavoto?: number | null
-          away_fantavoto?: number | null
-          home_score?: number | null
-          away_score?: number | null
-          result?: FixtureResult | null
-          home_points?: number | null
-          away_points?: number | null
-          computed_at?: string | null
-        }
-        Update: Partial<Omit<CompetitionFixture, 'id'>>
-        Relationships: never[]
-      }
-      competition_matchups: {
-        Row: CompetitionMatchup
-        Insert: Omit<CompetitionMatchup, 'id' | 'created_at' | 'home_fantavoto' | 'away_fantavoto' | 'result' | 'computed_at'> & {
-          id?: string
-          created_at?: string
-          home_fantavoto?: number | null
-          away_fantavoto?: number | null
-          result?: '1' | 'X' | '2' | null
-          computed_at?: string | null
-        }
-        Update: Partial<Omit<CompetitionMatchup, 'id'>>
-        Relationships: never[]
-      }
-      competition_standings_snapshots: {
-        Row: CompetitionStandingsSnapshot
-        Insert: Omit<CompetitionStandingsSnapshot, 'id' | 'created_at'> & {
-          id?: string
-          created_at?: string
-        }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      audit_logs: {
-        Row: AuditLog
-        Insert: Omit<AuditLog, 'id' | 'created_at'> & {
-          id?: string
-          created_at?: string
-        }
-        // append-only: no update operations permitted
-        Update: Record<string, unknown>
-        Relationships: never[]
-      }
-      app_settings: {
-        Row: AppSetting
-        Insert: Omit<AppSetting, 'id' | 'updated_at'> & {
-          id?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<AppSetting, 'id'>>
-        Relationships: never[]
-      }
-      league_engine_config: {
-        Row: LeagueEngineConfig
-        Insert: Omit<LeagueEngineConfig, 'id' | 'created_at' | 'updated_at'> & {
-          id?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Omit<LeagueEngineConfig, 'id' | 'league_id'>>
-        Relationships: never[]
-      }
-      live_scores: {
-        Row: LiveScore
-        Insert: Omit<LiveScore, 'refreshed_at'> & { refreshed_at?: string }
-        Update: Partial<LiveScore>
-        Relationships: never[]
-      }
-      matchday_lineups: {
-        Row: MatchdayLineup
-        Insert: Omit<MatchdayLineup, 'id' | 'created_at'> & { id?: string; created_at?: string }
-        Update: Partial<Omit<MatchdayLineup, 'id'>>
-        Relationships: never[]
-      }
-      live_player_scores: {
-        Row: LivePlayerScore
-        Insert: Omit<LivePlayerScore, 'refreshed_at'> & { refreshed_at?: string }
-        Update: Partial<LivePlayerScore>
-        Relationships: never[]
-      }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
-      league_role: LeagueRole
-      rating_class: RatingClass
-      scoring_mode: ScoringMode
-      display_rounding: DisplayRounding
-      lock_behavior: LockBehavior
-      matchday_status: MatchdayStatus
-      lineup_status: LineupStatus
-      calculation_status: CalculationStatus
-      audit_action: AuditAction
-      competition_type: CompetitionType
-      competition_status: CompetitionStatus
-      round_status: RoundStatus
-      fixture_result: FixtureResult
+      audit_action:
+        | "roster_import"
+        | "roster_edit"
+        | "player_create"
+        | "player_role_change"
+        | "player_rating_class_change"
+        | "player_transfer"
+        | "matchday_create"
+        | "matchday_status_change"
+        | "matchday_reopen"
+        | "lineup_save"
+        | "lineup_submit"
+        | "lineup_lock"
+        | "stats_edit"
+        | "ratings_edit"
+        | "calculation_draft"
+        | "calculation_publish"
+        | "override_create"
+        | "override_remove"
+        | "league_settings_change"
+        | "formation_settings_change"
+        | "ambiguous_role_change"
+        | "user_role_change"
+        | "rosa_assign"
+        | "rosa_release"
+        | "pool_import"
+        | "competition_create"
+        | "competition_status_change"
+        | "competition_round_compute"
+        | "competition_calendario_generate"
+      calculation_status: "draft" | "provisional" | "published"
+      competition_status: "setup" | "active" | "completed" | "cancelled"
+      competition_type: "campionato" | "battle_royale" | "coppa"
+      display_rounding: "one_decimal" | "nearest_half"
+      fixture_result: "home_win" | "away_win" | "draw"
+      league_role: "league_admin" | "manager"
+      lineup_status: "draft" | "submitted"
+      lock_behavior: "auto" | "manual"
+      matchday_status:
+        | "draft"
+        | "open"
+        | "locked"
+        | "scoring"
+        | "published"
+        | "archived"
+      rating_class: "GK" | "DEF" | "MID" | "ATT"
+      round_status: "pending" | "computed" | "locked"
+      scoring_mode: "head_to_head" | "points_only" | "both"
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      audit_action: [
+        "roster_import",
+        "roster_edit",
+        "player_create",
+        "player_role_change",
+        "player_rating_class_change",
+        "player_transfer",
+        "matchday_create",
+        "matchday_status_change",
+        "matchday_reopen",
+        "lineup_save",
+        "lineup_submit",
+        "lineup_lock",
+        "stats_edit",
+        "ratings_edit",
+        "calculation_draft",
+        "calculation_publish",
+        "override_create",
+        "override_remove",
+        "league_settings_change",
+        "formation_settings_change",
+        "ambiguous_role_change",
+        "user_role_change",
+        "rosa_assign",
+        "rosa_release",
+        "pool_import",
+        "competition_create",
+        "competition_status_change",
+        "competition_round_compute",
+        "competition_calendario_generate",
+      ],
+      calculation_status: ["draft", "provisional", "published"],
+      competition_status: ["setup", "active", "completed", "cancelled"],
+      competition_type: ["campionato", "battle_royale", "coppa"],
+      display_rounding: ["one_decimal", "nearest_half"],
+      fixture_result: ["home_win", "away_win", "draw"],
+      league_role: ["league_admin", "manager"],
+      lineup_status: ["draft", "submitted"],
+      lock_behavior: ["auto", "manual"],
+      matchday_status: [
+        "draft",
+        "open",
+        "locked",
+        "scoring",
+        "published",
+        "archived",
+      ],
+      rating_class: ["GK", "DEF", "MID", "ATT"],
+      round_status: ["pending", "computed", "locked"],
+      scoring_mode: ["head_to_head", "points_only", "both"],
+    },
+  },
+} as const
+
+// ── Named type aliases (hand-maintained; regenerate the block above, keep these) ──
+
+export type AuditAction = Database["public"]["Enums"]["audit_action"]
+export type RatingClass = Database["public"]["Enums"]["rating_class"]
+export type MatchdayStatus = Database["public"]["Enums"]["matchday_status"]
+export type LeagueRole = Database["public"]["Enums"]["league_role"]
+export type CompetitionType = Database["public"]["Enums"]["competition_type"]
+
+export type League = Database["public"]["Tables"]["leagues"]["Row"]
+export type LeaguePlayer = Database["public"]["Tables"]["league_players"]["Row"]
+export type Matchday = Database["public"]["Tables"]["matchdays"]["Row"]
+export type MatchdayFixture = Database["public"]["Tables"]["matchday_fixtures"]["Row"]
+export type Formation = Database["public"]["Tables"]["formations"]["Row"]
+export type FormationSlot = Database["public"]["Tables"]["formation_slots"]["Row"]
+export type FantasyTeam = Database["public"]["Tables"]["fantasy_teams"]["Row"]
+export type Competition = Database["public"]["Tables"]["competitions"]["Row"]
+export type CompetitionRound = Database["public"]["Tables"]["competition_rounds"]["Row"]
+export type CompetitionFixture = Database["public"]["Tables"]["competition_fixtures"]["Row"]
+export type CompetitionMatchup = Database["public"]["Tables"]["competition_matchups"]["Row"]
+export type LeagueEngineConfig = Database["public"]["Tables"]["league_engine_config"]["Row"]
+export type SerieAPlayer = Database["public"]["Tables"]["serie_a_players"]["Row"]

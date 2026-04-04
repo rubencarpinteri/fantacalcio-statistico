@@ -297,10 +297,10 @@ async function autoFetchAndCreateRun(
   }
   if (allFetched.length === 0) return null
 
-  // 3. Load active league players with rating_class
+  // 3. Load active league players with rating_class + fotmob_player_id
   const { data: leaguePlayers } = await supabase
     .from('league_players')
-    .select('id, full_name, club, rating_class')
+    .select('id, full_name, club, rating_class, fotmob_player_id')
     .eq('league_id', ctx.league.id)
     .eq('is_active', true)
   if (!leaguePlayers?.length) return null
@@ -309,13 +309,38 @@ async function autoFetchAndCreateRun(
     id: p.id, full_name: p.full_name, club: p.club ?? '',
     normalized: normalizeName(p.full_name),
     rating_class: p.rating_class as RatingClass,
+    fotmob_player_id: p.fotmob_player_id ?? null,
   }))
 
-  // 4. Match FotMob stats to DB players
+  // 4. Match FotMob stats to DB players (step 0: ID, then name strategies)
   const matched: { stat: typeof allFetched[0]; player: typeof dbPlayers[0] }[] = []
+  const unmatched: { fotmob_player_id: number; fotmob_name: string; fotmob_team: string }[] = []
   for (const stat of allFetched) {
-    const player = findDbPlayer(stat.normalized_name, dbPlayers)
-    if (player) matched.push({ stat, player })
+    const player = findDbPlayer(stat.normalized_name, dbPlayers, stat.fotmob_id ?? undefined)
+    if (player) {
+      matched.push({ stat, player })
+    } else if (stat.fotmob_id != null) {
+      unmatched.push({
+        fotmob_player_id: stat.fotmob_id,
+        fotmob_name: stat.name,
+        fotmob_team: stat.team_label,
+      })
+    }
+  }
+
+  // Persist unmatched FotMob players so admin can link them via /pool/link-fotmob
+  if (unmatched.length > 0) {
+    await supabase
+      .from('fotmob_unmatched_players')
+      .upsert(
+        unmatched.map(u => ({
+          matchday_id: matchdayId,
+          fotmob_player_id: u.fotmob_player_id,
+          fotmob_name: u.fotmob_name,
+          fotmob_team: u.fotmob_team,
+        })),
+        { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true }
+      )
   }
   if (matched.length === 0) return null
 

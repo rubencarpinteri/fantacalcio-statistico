@@ -49,11 +49,19 @@ export default async function PoolPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white">Pool Giocatori Serie A</h1>
-        <p className="text-sm text-[#8888aa]">
-          Stagione {CURRENT_SEASON} — database globale dei giocatori di Serie A per l&apos;assegnazione alle rose.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-white">Pool Giocatori Serie A</h1>
+          <p className="text-sm text-[#8888aa]">
+            Stagione {CURRENT_SEASON} — database globale dei giocatori di Serie A per l&apos;assegnazione alle rose.
+          </p>
+        </div>
+        <a
+          href="/pool/link-fotmob"
+          className="shrink-0 rounded border border-[#3a3a52] px-3 py-1.5 text-sm text-[#8888aa] hover:border-indigo-500 hover:text-white"
+        >
+          Collega FotMob →
+        </a>
       </div>
 
       {/* Stats row */}

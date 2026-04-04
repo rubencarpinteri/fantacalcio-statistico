@@ -443,7 +443,7 @@ export default async function CompetitionDetailPage({
                             {played ? (
                               <>
                                 <span className="font-mono font-semibold text-white tabular-nums">{homeFv}</span>
-                                <ResultBadge result={m.result} />
+                                <ResultBadge result={m.result as '1' | 'X' | '2' | null} />
                                 <span className="font-mono font-semibold text-white tabular-nums">{awayFv}</span>
                               </>
                             ) : (
