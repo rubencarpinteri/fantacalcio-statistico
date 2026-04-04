@@ -285,5 +285,24 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     if (superCands.length === 1) return superCands[0]
   }
 
+  // Surname + name-prefix abbreviation (Leghe format)
+  // handles: "Thuram K." → "Khéphren Thuram", "Esposito Se." → "Sebastiano Esposito"
+  // Input has exactly 2 tokens, one is short (≤ 3 chars = abbreviated first name),
+  // the other is the surname. Matches DB players whose surname equals the long token
+  // AND whose first name starts with the short token.
+  if (statTokens.length === 2) {
+    const shortIdx = statTokens[0]!.length <= 3 ? 0 : statTokens[1]!.length <= 3 ? 1 : -1
+    if (shortIdx !== -1) {
+      const abbrev    = statTokens[shortIdx]!          // e.g. "k" or "se"
+      const surnameT  = statTokens[1 - shortIdx]!      // e.g. "thuram" or "esposito"
+      const prefixCands = dbPlayers.filter(p => {
+        const pts = p.normalized.split(' ').filter(Boolean)
+        if (!pts.includes(surnameT)) return false
+        return pts.some(t => t !== surnameT && t.startsWith(abbrev))
+      })
+      if (prefixCands.length === 1) return prefixCands[0]
+    }
+  }
+
   return undefined
 }
