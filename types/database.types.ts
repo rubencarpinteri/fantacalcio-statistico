@@ -513,7 +513,7 @@ export type Database = {
           created_at: string
           id: string
           league_id: string
-          leghe_name: string | null
+          leghe_names: string[]
           manager_id: string
           name: string
         }
@@ -521,7 +521,7 @@ export type Database = {
           created_at?: string
           id?: string
           league_id: string
-          leghe_name?: string | null
+          leghe_names?: string[]
           manager_id: string
           name: string
         }
@@ -529,7 +529,7 @@ export type Database = {
           created_at?: string
           id?: string
           league_id?: string
-          leghe_name?: string | null
+          leghe_names?: string[]
           manager_id?: string
           name?: string
         }

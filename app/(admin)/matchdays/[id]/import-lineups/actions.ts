@@ -165,7 +165,7 @@ export async function parseAndMatchAction(
     { data: playersRaw },
     { data: formationsRaw },
   ] = await Promise.all([
-    supabase.from('fantasy_teams').select('id, name, leghe_name').eq('league_id', ctx.league.id),
+    supabase.from('fantasy_teams').select('id, name, leghe_names').eq('league_id', ctx.league.id),
     supabase
       .from('league_players')
       .select('id, full_name, club, mantra_roles, is_active')
@@ -194,12 +194,11 @@ export async function parseAndMatchAction(
   }
 
   // Build normalized lookups — each team appears once per name it can be matched by
-  // (canonical name + optional leghe_name alias)
+  // (canonical name + all leghe_names aliases)
   const teamEntries: DbPlayerEntry[] = []
   for (const t of teams) {
     teamEntries.push({ id: t.id, full_name: t.name, club: '', normalized: normalizeName(t.name) })
-    const alias = t.leghe_name
-    if (alias) {
+    for (const alias of t.leghe_names ?? []) {
       teamEntries.push({ id: t.id, full_name: alias, club: '', normalized: normalizeName(alias) })
     }
   }
@@ -551,8 +550,9 @@ export async function confirmLineupImportAction(
 
 // ─── saveTeamLegheAliasAction ─────────────────────────────────────────────────
 //
-// Persists a Leghe.it team name alias on a fantasy_teams row so future imports
-// auto-match without requiring a manual override.
+// Appends a new Leghe.it team name alias to fantasy_teams.leghe_names so future
+// imports auto-match without requiring a manual override.
+// Duplicate aliases are silently ignored.
 //
 export async function saveTeamLegheAliasAction(
   teamId: string,
@@ -561,9 +561,25 @@ export async function saveTeamLegheAliasAction(
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
+  const newAlias = legheName.trim()
+  if (!newAlias) return { ok: true }
+
+  // Fetch current aliases to avoid duplicates
+  const { data: team, error: fetchErr } = await supabase
+    .from('fantasy_teams')
+    .select('leghe_names')
+    .eq('id', teamId)
+    .eq('league_id', ctx.league.id)
+    .single()
+
+  if (fetchErr || !team) return { ok: false, error: fetchErr?.message ?? 'Team not found' }
+
+  const current: string[] = team.leghe_names ?? []
+  if (current.includes(newAlias)) return { ok: true } // already saved
+
   const { error } = await supabase
     .from('fantasy_teams')
-    .update({ leghe_name: legheName.trim() || null })
+    .update({ leghe_names: [...current, newAlias] })
     .eq('id', teamId)
     .eq('league_id', ctx.league.id)
 
