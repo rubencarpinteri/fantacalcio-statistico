@@ -12,8 +12,6 @@ import type { StatRowInput, StatRow } from './schema'
 
 // Re-export types so existing importers (StatsGrid) keep working
 export type { StatRowInput, StatRow }
-// Re-export schema so any direct importers keep working
-export { statRowSchema }
 
 // ============================================================
 // upsertStatsAction
