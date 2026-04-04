@@ -82,13 +82,16 @@ export async function ignoreForeverAction(
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
-  // Add to permanent ignore list
+  // Add to permanent ignore list — DELETE + INSERT avoids ON CONFLICT entirely
+  await supabase
+    .from('fotmob_ignored_players')
+    .delete()
+    .eq('league_id', ctx.league.id)
+    .eq('fotmob_player_id', fotmobPlayerId)
+
   const { error: ignoreErr } = await supabase
     .from('fotmob_ignored_players')
-    .upsert(
-      { league_id: ctx.league.id, fotmob_player_id: fotmobPlayerId, fotmob_name: fotmobName },
-      { onConflict: 'league_id,fotmob_player_id', ignoreDuplicates: true }
-    )
+    .insert({ league_id: ctx.league.id, fotmob_player_id: fotmobPlayerId, fotmob_name: fotmobName })
   if (ignoreErr) return { ok: false, error: ignoreErr.message }
 
   // Clear all existing unmatched entries for this player across all matchdays
@@ -121,19 +124,27 @@ export async function ignoreAllUnmatchedAction(
 
   if (entries.length === 0) return { ok: true }
 
-  // Deduplicate by fotmob_player_id — duplicate PKs in the upsert array cause
-  // "ON CONFLICT DO UPDATE command cannot affect row a second time"
-  const uniqueByFotmobId = [...new Map(entries.map(e => [e.fotmob_player_id, e])).values()]
+  // Deduplicate by fotmob_player_id (stringify key to handle bigint-as-string runtime values)
+  const uniqueByFotmobId = [...new Map(entries.map(e => [String(e.fotmob_player_id), e])).values()]
+  const fotmobIds = uniqueByFotmobId.map(e => e.fotmob_player_id)
+
+  // DELETE + INSERT avoids ON CONFLICT entirely — upsert with ignoreDuplicates
+  // still generates DO UPDATE SQL which Postgres rejects when the input batch
+  // contains duplicate PKs.
+  await supabase
+    .from('fotmob_ignored_players')
+    .delete()
+    .eq('league_id', ctx.league.id)
+    .in('fotmob_player_id', fotmobIds)
 
   const { error: ignoreErr } = await supabase
     .from('fotmob_ignored_players')
-    .upsert(
+    .insert(
       uniqueByFotmobId.map(e => ({
         league_id: ctx.league.id,
         fotmob_player_id: e.fotmob_player_id,
         fotmob_name: e.fotmob_name,
-      })),
-      { onConflict: 'league_id,fotmob_player_id', ignoreDuplicates: true }
+      }))
     )
   if (ignoreErr) return { ok: false, error: ignoreErr.message }
 
@@ -144,7 +155,6 @@ export async function ignoreAllUnmatchedAction(
 
   const matchdayIds = (matchdays ?? []).map(m => m.id)
   if (matchdayIds.length > 0) {
-    const fotmobIds = uniqueByFotmobId.map(e => e.fotmob_player_id)
     await supabase
       .from('fotmob_unmatched_players')
       .delete()

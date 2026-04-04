@@ -253,17 +253,21 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       .filter(u => !ignoredIds.has(u.stat.fotmob_id!))
 
     if (toUpsert.length > 0) {
+      const rows = toUpsert.map(u => ({
+        matchday_id: matchdayId,
+        fotmob_player_id: u.stat.fotmob_id!,
+        fotmob_name: u.stat.name,
+        fotmob_team: u.stat.team_label || null,
+      }))
+      // DELETE + INSERT avoids ON CONFLICT entirely
       await supabase
         .from('fotmob_unmatched_players')
-        .upsert(
-          toUpsert.map(u => ({
-            matchday_id: matchdayId,
-            fotmob_player_id: u.stat.fotmob_id!,
-            fotmob_name: u.stat.name,
-            fotmob_team: u.stat.team_label || null,
-          })),
-          { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true }
-        )
+        .delete()
+        .eq('matchday_id', matchdayId)
+        .in('fotmob_player_id', rows.map(r => r.fotmob_player_id))
+      await supabase
+        .from('fotmob_unmatched_players')
+        .insert(rows)
     }
   }
 
