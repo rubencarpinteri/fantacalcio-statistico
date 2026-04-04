@@ -184,25 +184,31 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     return NextResponse.json({ matched: [], unmatched: [], errors: ['No player data fetched', ...errors] })
   }
 
-  // Load all active league players for matching
+  // Load all active league players for matching.
+  // Join serie_a_players to get fotmob_id so strategy-0 (exact ID match) fires
+  // for every player already in the global pool — no manual linking needed.
   const { data: leaguePlayers } = await supabase
     .from('league_players')
-    .select('id, full_name, club')
+    .select('id, full_name, club, serie_a_players(fotmob_id)')
     .eq('league_id', matchday.league_id)
     .eq('is_active', true)
 
-  const dbPlayers = (leaguePlayers ?? []).map((p) => ({
-    id: p.id,
-    full_name: p.full_name,
-    club: p.club,
-    normalized: normalizeName(p.full_name),
-  }))
+  const dbPlayers = (leaguePlayers ?? []).map((p) => {
+    const sap = p.serie_a_players as { fotmob_id: number | null } | null
+    return {
+      id: p.id,
+      full_name: p.full_name,
+      club: p.club,
+      normalized: normalizeName(p.full_name),
+      fotmob_player_id: sap?.fotmob_id ?? null,
+    }
+  })
 
   const matched: MatchedPlayer[] = []
   const unmatched: UnmatchedPlayer[] = []
 
   for (const stat of allFetched) {
-    const found = findDbPlayer(stat.normalized_name, dbPlayers)
+    const found = findDbPlayer(stat.normalized_name, dbPlayers, stat.fotmob_id)
     if (found) {
       matched.push({
         league_player_id: found.id,
