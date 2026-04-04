@@ -61,6 +61,20 @@ const STATUS_ACTIONS: Partial<Record<MatchdayStatus, StatusAction[]>> = {
   ],
   published: [
     {
+      label: 'Torna a calcolo',
+      newStatus: 'scoring',
+      variant: 'secondary',
+      requireNote: true,
+      confirmMessage: 'Tornare alla fase di calcolo? I punteggi pubblicati saranno nascosti fino alla nuova pubblicazione.',
+    },
+    {
+      label: 'Riapri formazioni',
+      newStatus: 'open',
+      variant: 'danger',
+      requireNote: true,
+      confirmMessage: '⚠ RIAPRI: I manager potranno modificare le formazioni e i punteggi saranno nascosti. Continua?',
+    },
+    {
       label: 'Archivia',
       newStatus: 'archived',
       variant: 'ghost' as never,

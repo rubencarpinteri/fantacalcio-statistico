@@ -93,7 +93,7 @@ const ALLOWED_TRANSITIONS: Record<MatchdayStatus, MatchdayStatus[]> = {
   open:      ['locked'],
   locked:    ['scoring', 'open'],    // 'open' = reopen
   scoring:   ['published', 'locked'],
-  published: ['archived', 'scoring'],
+  published: ['archived', 'scoring', 'open'],
   archived:  [],
 }
 

@@ -228,7 +228,7 @@ export default async function MatchdayDetailPage({
           return (
             <div className="space-y-3">
 
-              {/* Step 1+2 — ID Partite + Fetch FotMob (inline) */}
+              {/* Step 1 — ID Partite */}
               <div className="rounded-xl border border-[#2e2e42] bg-[#0f0f1a] p-4">
                 <div className="mb-3 flex items-center gap-3">
                   <StepIcon done={step1Done} active={!step1Done} />
@@ -240,19 +240,31 @@ export default async function MatchdayDetailPage({
                       {step1Done ? `${fixtures.length} partite configurate` : 'Inserisci gli ID FotMob delle 10 partite'}
                     </p>
                   </div>
-                  <div className="ml-auto flex items-center gap-3">
-                    <StepIcon done={step2Done} active={step1Done && !step2Done} />
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${step2Done ? 'text-white' : step1Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
-                        2 — Voti FotMob
-                      </p>
-                      <p className="text-xs text-[#55556a]">
-                        {step2Done ? `${playerStatsCount} giocatori importati` : 'Scarica i voti dopo aver salvato gli ID'}
-                      </p>
-                    </div>
-                  </div>
                 </div>
                 <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
+              </div>
+
+              {/* Step 2 — Voti FotMob */}
+              <div className={`rounded-xl border p-4 ${step2Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step1Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
+                <div className="flex items-center gap-3">
+                  <StepIcon done={step2Done} active={step1Done && !step2Done} />
+                  <div className="flex-1">
+                    <p className={`text-sm font-semibold ${step2Done ? 'text-white' : step1Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
+                      2 — Voti FotMob
+                    </p>
+                    <p className="text-xs text-[#55556a]">
+                      {step2Done ? `${playerStatsCount} giocatori importati` : 'I voti vengono scaricati automaticamente al salvataggio degli ID'}
+                    </p>
+                  </div>
+                  {step2Done && (
+                    <a
+                      href={`/matchdays/${id}/stats`}
+                      className="rounded-lg border border-[#2e2e42] px-4 py-2 text-sm font-medium text-[#55556a] transition-colors hover:border-indigo-500/40 hover:text-indigo-300"
+                    >
+                      Statistiche →
+                    </a>
+                  )}
+                </div>
               </div>
 
               {/* Step 3 — Calcolo statistico */}
@@ -317,6 +329,7 @@ export default async function MatchdayDetailPage({
                 {['locked', 'scoring'].includes(matchday.status) && (
                   <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
                 )}
+                <a href={`/matchdays/${id}/all-lineups`} className="hover:text-indigo-400">Tutte le formazioni →</a>
                 {['scoring', 'published', 'archived'].includes(matchday.status) && (
                   <a href={`/matchdays/${id}/stats`} className="hover:text-indigo-400">Statistiche →</a>
                 )}

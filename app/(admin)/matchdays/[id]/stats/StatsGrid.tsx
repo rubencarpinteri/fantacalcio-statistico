@@ -321,7 +321,7 @@ function TabHeaders({ tab }: { tab: TabKey }) {
   )
   if (tab === 'voti') return (
     <>
-      <Th>SofaS</Th><Th>WhoSc</Th><Th>FotM</Th>
+      <Th>SofaS</Th><Th>FotM</Th>
     </>
   )
   if (tab === 'difensivo') return (

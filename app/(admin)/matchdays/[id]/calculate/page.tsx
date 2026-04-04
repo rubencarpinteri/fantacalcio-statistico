@@ -4,7 +4,7 @@ import { requireLeagueAdmin } from '@/lib/league'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { CalculationPreview } from './CalculationPreview'
-import type { CalcPlayerRow } from './CalculationPreview'
+import type { CalcPlayerRow, PlayerStatSnapshot } from './CalculationPreview'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -84,6 +84,30 @@ export default async function CalculatePage({
       .order('fantavoto', { ascending: false, nullsFirst: false })
 
     previewCalcs = (calcs ?? []) as unknown as CalcPlayerRow[]
+  }
+
+  // Fetch existing player stats for the inline edit modal
+  const { data: rawStats } = await supabase
+    .from('player_match_stats')
+    .select('player_id, minutes_played, goals_scored, assists, own_goals, yellow_cards, red_cards, goals_conceded, penalties_scored, penalties_missed, penalties_saved, clean_sheet, is_provisional')
+    .eq('matchday_id', matchdayId)
+
+  const playerStats: Record<string, PlayerStatSnapshot> = {}
+  for (const s of rawStats ?? []) {
+    playerStats[s.player_id] = {
+      minutes_played: s.minutes_played ?? 0,
+      goals_scored: s.goals_scored ?? 0,
+      assists: s.assists ?? 0,
+      own_goals: s.own_goals ?? 0,
+      yellow_cards: s.yellow_cards ?? 0,
+      red_cards: s.red_cards ?? 0,
+      goals_conceded: s.goals_conceded ?? 0,
+      penalties_scored: s.penalties_scored ?? 0,
+      penalties_missed: s.penalties_missed ?? 0,
+      penalties_saved: s.penalties_saved ?? 0,
+      clean_sheet: s.clean_sheet ?? false,
+      is_provisional: s.is_provisional ?? false,
+    }
   }
 
   // Stats readiness indicators
@@ -262,6 +286,7 @@ export default async function CalculatePage({
         calcs={previewCalcs}
         canTrigger={canTrigger}
         canPublish={canPublish}
+        playerStats={playerStats}
       />
     </div>
   )

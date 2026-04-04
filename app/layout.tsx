@@ -1,5 +1,12 @@
 import type { Metadata } from 'next'
+import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: {
@@ -16,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     // dark class ensures dark mode is always active
-    <html lang="it" className="dark">
+    <html lang="it" className={`dark ${jetbrainsMono.variable}`}>
       <body>{children}</body>
     </html>
   )

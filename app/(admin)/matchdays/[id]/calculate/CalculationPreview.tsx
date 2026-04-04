@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { triggerCalculationAction, publishCalculationAction } from './actions'
 import type { CompetitionCascadeResult } from './actions'
 import type { BonusMalusItem } from '@/domain/engine/v1/types'
+import { upsertStatsAction } from '../stats/actions'
 
 // ---- Types -------------------------------------------------
 
@@ -30,6 +31,21 @@ export interface CalcPlayerRow {
   league_players: { full_name: string; club: string; rating_class: string } | null
 }
 
+export interface PlayerStatSnapshot {
+  minutes_played: number
+  goals_scored: number
+  assists: number
+  own_goals: number
+  yellow_cards: number
+  red_cards: number
+  goals_conceded: number
+  penalties_scored: number
+  penalties_missed: number
+  penalties_saved: number
+  clean_sheet: boolean
+  is_provisional: boolean
+}
+
 interface Props {
   matchdayId: string
   matchdayStatus: string
@@ -38,6 +54,7 @@ interface Props {
   calcs: CalcPlayerRow[]
   canTrigger: boolean
   canPublish: boolean
+  playerStats: Record<string, PlayerStatSnapshot>
 }
 
 // ---- Helpers -----------------------------------------------
@@ -76,15 +93,165 @@ function BMBreakdown({ breakdown }: { breakdown: BonusMalusItem[] }) {
   )
 }
 
+// ---- Inline stat edit modal --------------------------------
+
+function EditStatsModal({
+  playerName,
+  playerId,
+  matchdayId,
+  initial,
+  onClose,
+  onSaved,
+}: {
+  playerName: string
+  playerId: string
+  matchdayId: string
+  initial: PlayerStatSnapshot
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState({ ...initial })
+  const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  const n = (field: keyof typeof form, label: string) => (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs text-[#8888aa]">{label}</label>
+      <input
+        type="number"
+        min={0}
+        value={form[field] as number}
+        onChange={(e) => setForm((prev) => ({ ...prev, [field]: Number(e.target.value) || 0 }))}
+        className="w-full rounded border border-[#2e2e42] bg-[#1a1a24] px-2 py-1.5 text-center text-sm text-white focus:border-indigo-500 focus:outline-none"
+      />
+    </div>
+  )
+
+  const handleSave = () => {
+    setError(null)
+    startTransition(async () => {
+      const result = await upsertStatsAction({
+        matchday_id: matchdayId,
+        rows: [{
+          player_id: playerId,
+          minutes_played: form.minutes_played,
+          goals_scored: form.goals_scored,
+          assists: form.assists,
+          own_goals: form.own_goals,
+          yellow_cards: form.yellow_cards,
+          red_cards: form.red_cards,
+          goals_conceded: form.goals_conceded,
+          penalties_scored: form.penalties_scored,
+          penalties_missed: form.penalties_missed,
+          penalties_saved: form.penalties_saved,
+          clean_sheet: form.clean_sheet,
+          is_provisional: form.is_provisional,
+          has_decisive_event: form.goals_scored > 0 || form.assists > 0 || form.yellow_cards > 0 || form.red_cards > 0 || form.penalties_scored > 0 || form.penalties_missed > 0 || form.penalties_saved > 0,
+          rating_class_override: null,
+          sofascore_rating: null,
+          fotmob_rating: null,
+          tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
+          aerial_duels_won: 0, dribbled_past: 0, saves: 0,
+          error_leading_to_goal: 0,
+          key_passes: null, expected_assists: null, successful_dribbles: null,
+          dribble_success_rate: null, completed_passes: null, pass_accuracy: null,
+          final_third_passes: null, progressive_passes: null,
+        }],
+      })
+      if (result.error) {
+        setError(result.error)
+      } else {
+        onSaved()
+        onClose()
+      }
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-sm rounded-xl border border-[#2e2e42] bg-[#111118] p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white">{playerName}</h3>
+            <p className="text-xs text-[#55556a]">Modifica bonus/malus</p>
+          </div>
+          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none">×</button>
+        </div>
+
+        <div className="mb-4 grid grid-cols-3 gap-3">
+          {n('minutes_played', 'Minuti')}
+          {n('goals_scored', 'Gol')}
+          {n('assists', 'Assist')}
+          {n('own_goals', 'Autogol')}
+          {n('yellow_cards', 'Gialli')}
+          {n('red_cards', 'Rossi')}
+          {n('goals_conceded', 'Gol Sub.')}
+          {n('penalties_scored', 'Rig. Segn.')}
+          {n('penalties_missed', 'Rig. Err.')}
+          {n('penalties_saved', 'Rig. Par.')}
+        </div>
+
+        <div className="mb-4 flex items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#8888aa]">
+            <input
+              type="checkbox"
+              checked={form.clean_sheet}
+              onChange={(e) => setForm((prev) => ({ ...prev, clean_sheet: e.target.checked }))}
+              className="rounded border-[#2e2e42] bg-[#1a1a24] accent-indigo-500"
+            />
+            Clean sheet
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#8888aa]">
+            <input
+              type="checkbox"
+              checked={form.is_provisional}
+              onChange={(e) => setForm((prev) => ({ ...prev, is_provisional: e.target.checked }))}
+              className="rounded border-[#2e2e42] bg-[#1a1a24] accent-indigo-500"
+            />
+            Provvisorio
+          </label>
+        </div>
+
+        {error && <p className="mb-3 text-xs text-red-400">{error}</p>}
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="flex-1 rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-400 disabled:opacity-50"
+          >
+            {isPending ? 'Salvo…' : 'Salva'}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-[#2e2e42] px-3 py-2 text-sm text-[#8888aa] hover:text-white"
+          >
+            Annulla
+          </button>
+        </div>
+
+        <p className="mt-3 text-xs text-amber-400/70">
+          Ricalcola i punteggi dopo aver salvato per aggiornare il fantavoto.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ---- Main component ----------------------------------------
 
 export function CalculationPreview({
   matchdayId,
+  matchdayStatus,
   currentRunId,
   currentRunStatus,
   calcs,
   canTrigger,
   canPublish,
+  playerStats,
 }: Props) {
   const [isPending, startTransition] = useTransition()
   const [triggerResult, setTriggerResult] = useState<string | null>(null)
@@ -92,6 +259,10 @@ export function CalculationPreview({
   const [compResults, setCompResults] = useState<CompetitionCascadeResult[]>([])
   const [filterNV, setFilterNV] = useState(false)
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [editingPlayer, setEditingPlayer] = useState<{ id: string; name: string } | null>(null)
+  const [savedPlayers, setSavedPlayers] = useState<Set<string>>(new Set())
+
+  const isEditable = matchdayStatus === 'scoring'
 
   const handleTrigger = () => {
     setTriggerResult(null)
@@ -124,6 +295,13 @@ export function CalculationPreview({
         setCompResults(result.competitions_updated)
       }
     })
+  }
+
+  const defaultStat = (playerId: string): PlayerStatSnapshot => playerStats[playerId] ?? {
+    minutes_played: 0, goals_scored: 0, assists: 0, own_goals: 0,
+    yellow_cards: 0, red_cards: 0, goals_conceded: 0,
+    penalties_scored: 0, penalties_missed: 0, penalties_saved: 0,
+    clean_sheet: false, is_provisional: false,
   }
 
   const displayed = filterNV ? calcs.filter((c) => c.fantavoto !== null) : calcs
@@ -218,6 +396,11 @@ export function CalculationPreview({
                 />
                 Nascondi NV
               </label>
+              {savedPlayers.size > 0 && (
+                <span className="text-xs text-amber-400">
+                  {savedPlayers.size} stat{savedPlayers.size > 1 ? 'istiche' : 'istica'} modificat{savedPlayers.size > 1 ? 'e' : 'a'} — ricalcola per aggiornare
+                </span>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -231,7 +414,7 @@ export function CalculationPreview({
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
                     <th className="px-4 py-2.5 text-right font-bold text-white">Fantavoto</th>
-                    <th className="px-4 py-2.5"></th>
+                    <th className="px-4 py-2.5 w-16"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1e1e2e]">
@@ -240,11 +423,12 @@ export function CalculationPreview({
                     const isNV = c.fantavoto === null
                     const breakdown = c.bonus_malus_breakdown as BonusMalusItem[] | null
                     const isExpanded = expandedRow === c.id
+                    const wasEdited = savedPlayers.has(c.player_id)
 
                     return (
                       <Fragment key={c.id}>
                         <tr
-                          className={`${isNV ? 'opacity-50' : ''} hover:bg-[#1a1a2a] cursor-pointer`}
+                          className={`${isNV ? 'opacity-50' : ''} ${wasEdited ? 'bg-amber-500/5' : ''} hover:bg-[#1a1a2a] cursor-pointer`}
                           onClick={() => setExpandedRow(isExpanded ? null : c.id)}
                         >
                           <td className="px-6 py-2.5 sticky left-0 bg-[#111118]">
@@ -277,8 +461,19 @@ export function CalculationPreview({
                               <span className="ml-1.5 text-xs text-orange-400">★</span>
                             )}
                           </td>
-                          <td className="px-4 py-2.5 text-right text-xs text-[#55556a]">
-                            {isExpanded ? '▲' : '▼'}
+                          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-2">
+                              {isEditable && (
+                                <button
+                                  title="Modifica statistiche"
+                                  onClick={() => setEditingPlayer({ id: c.player_id, name: player?.full_name ?? '—' })}
+                                  className="rounded px-1.5 py-0.5 text-xs text-[#55556a] hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors"
+                                >
+                                  ✎
+                                </button>
+                              )}
+                              <span className="text-xs text-[#55556a]">{isExpanded ? '▲' : '▼'}</span>
+                            </div>
                           </td>
                         </tr>
 
@@ -340,6 +535,18 @@ export function CalculationPreview({
         <p className="text-sm text-[#55556a]">
           Nessun calcolo disponibile. Porta la giornata in &quot;scoring&quot; per iniziare.
         </p>
+      )}
+
+      {/* Edit stats modal */}
+      {editingPlayer && (
+        <EditStatsModal
+          playerName={editingPlayer.name}
+          playerId={editingPlayer.id}
+          matchdayId={matchdayId}
+          initial={defaultStat(editingPlayer.id)}
+          onClose={() => setEditingPlayer(null)}
+          onSaved={() => setSavedPlayers((prev) => new Set([...prev, editingPlayer.id]))}
+        />
       )}
     </div>
   )
