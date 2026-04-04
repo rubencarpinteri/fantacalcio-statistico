@@ -135,15 +135,18 @@ export default async function AllLineupsPage({
     runId = latestRun?.id ?? null
   }
 
-  const calcMap = new Map<string, { fantavoto: number | null; voto_base: number | null }>()
+  type BonusMalusItem = { label: string; total: number }
+  const calcMap = new Map<string, { fantavoto: number | null; voto_base: number | null; bonusMalus: BonusMalusItem[] | null }>()
   if (runId) {
     const { data: calcs } = await supabase
       .from('player_calculations')
-      .select('player_id, fantavoto, voto_base')
+      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
       .eq('run_id', runId)
 
     for (const c of calcs ?? []) {
-      calcMap.set(c.player_id, { fantavoto: c.fantavoto, voto_base: c.voto_base })
+      const raw = c.bonus_malus_breakdown as Array<{ label: string; total: number; quantity: number; points_each: number }> | null
+      const bonusMalus = raw ? raw.filter(b => b.total !== 0) : null
+      calcMap.set(c.player_id, { fantavoto: c.fantavoto, voto_base: c.voto_base, bonusMalus: bonusMalus?.length ? bonusMalus : null })
     }
   }
 
@@ -208,6 +211,7 @@ export default async function AllLineupsPage({
         playerRatingClass: player?.rating_class ?? null,
         fantavoto: calc?.fantavoto ?? null,
         votoBase: calc?.voto_base ?? null,
+        bonusMalus: calc?.bonusMalus ?? null,
         assignedMantraRole: assignment?.assigned_mantra_role ?? null,
         isBenchAssignment: assignment?.is_bench ?? false,
         benchOrderAssignment: assignment?.bench_order ?? null,

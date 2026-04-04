@@ -427,7 +427,7 @@ export default async function CompetitionDetailPage({
                       const isAwayMyTeam = m.away_team_id === myTeamId
 
                       return (
-                        <a key={m.id} href={`/competitions/${id}/match/${m.id}`} className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-[#0f0f1a] transition-colors cursor-pointer">
+                        <a key={m.id} href={matchdayId ? `/matchdays/${matchdayId}/all-lineups` : `/competitions/${id}/match/${m.id}`} className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-[#0f0f1a] transition-colors cursor-pointer">
                           {/* Home team */}
                           <span
                             className={[

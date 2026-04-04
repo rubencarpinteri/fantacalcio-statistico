@@ -19,6 +19,7 @@ export interface SlotData {
   playerRatingClass: string | null
   fantavoto: number | null
   votoBase: number | null
+  bonusMalus: Array<{ label: string; total: number }> | null
   assignedMantraRole: string | null
   isBenchAssignment: boolean
   benchOrderAssignment: number | null
@@ -88,6 +89,7 @@ function PlayerChip({
   const [isDragOver, setIsDragOver] = useState(false)
   const color = roleColor(slot.playerRoles)
   const fv = slot.fantavoto
+  const bm = slot.bonusMalus
 
   return (
     <div
@@ -97,33 +99,47 @@ function PlayerChip({
       onDragLeave={() => setIsDragOver(false)}
       onDrop={(e) => { e.preventDefault(); setIsDragOver(false); onDrop() }}
       className={[
-        'flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs transition-colors',
+        'flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-colors',
         isDragOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-[#2e2e42] bg-[#0a0a0f]',
         isEditable && slot.playerId ? 'cursor-grab active:cursor-grabbing hover:border-[#3e3e52]' : '',
         slot.isBench ? 'opacity-75' : '',
       ].join(' ')}
     >
-      <div className="flex items-center gap-2 min-w-0">
-        {/* Position label */}
-        <span className="shrink-0 w-14 text-[#55556a] font-mono text-[10px]">
-          {slot.isBench ? `PAN ${slot.benchOrder ?? ''}` : slot.positionName}
-        </span>
+      {/* Position label */}
+      <span className="shrink-0 w-14 text-[#55556a] font-mono text-[10px]">
+        {slot.isBench ? `PAN ${slot.benchOrder ?? ''}` : slot.positionName}
+      </span>
 
-        {slot.playerId ? (
-          <>
-            <span className={`shrink-0 font-bold text-[10px] ${color.split(' ')[1]}`}>
-              {slot.playerRoles[0] ?? '?'}
+      {slot.playerId ? (
+        <>
+          <span className={`shrink-0 font-bold text-[10px] ${color.split(' ')[1]}`}>
+            {slot.playerRoles[0] ?? '?'}
+          </span>
+          <span className="truncate text-white min-w-0">{slot.playerName}</span>
+          <span className="shrink-0 text-[#55556a]">{slot.playerClub}</span>
+        </>
+      ) : (
+        <span className="text-[#3e3e52] italic flex-1">vuoto</span>
+      )}
+
+      {/* Bonus / Malus badges */}
+      {bm && bm.length > 0 && (
+        <span className="ml-auto flex items-center gap-0.5 shrink-0">
+          {bm.map((b, i) => (
+            <span
+              key={i}
+              className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
+                b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+              }`}
+            >
+              {b.label} {b.total > 0 ? '+' : ''}{b.total}
             </span>
-            <span className="truncate text-white">{slot.playerName}</span>
-            <span className="shrink-0 text-[#55556a]">{slot.playerClub}</span>
-          </>
-        ) : (
-          <span className="text-[#3e3e52] italic">vuoto</span>
-        )}
-      </div>
+          ))}
+        </span>
+      )}
 
       {/* Fantavoto */}
-      <span className={`shrink-0 font-mono font-bold ml-2 ${
+      <span className={`shrink-0 font-mono font-bold ${bm && bm.length > 0 ? '' : 'ml-auto'} ${
         fv === null ? 'text-[#55556a]' : fv >= 7 ? 'text-green-400' : fv >= 6 ? 'text-white' : 'text-amber-400'
       }`}>
         {fmtFv(fv)}
@@ -180,7 +196,7 @@ function TeamCard({
 
       const swapFields = [
         'playerId', 'playerName', 'playerClub', 'playerRoles', 'playerRatingClass',
-        'fantavoto', 'votoBase', 'assignedMantraRole',
+        'fantavoto', 'votoBase', 'bonusMalus', 'assignedMantraRole',
       ] as const
 
       for (const field of swapFields) {
