@@ -58,7 +58,10 @@ export default async function AdminLayout({
         leagueName={leagueData?.name ?? 'Fantacalcio'}
       />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-6 py-6">{children}</div>
+        {/* pb-20 on mobile reserves space above the fixed bottom nav bar */}
+        <div className="mx-auto max-w-6xl px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-6">
+          {children}
+        </div>
       </main>
     </div>
   )

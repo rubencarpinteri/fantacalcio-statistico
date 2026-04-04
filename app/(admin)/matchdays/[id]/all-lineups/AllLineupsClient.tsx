@@ -445,8 +445,8 @@ function MatchupRow({
         </div>
       </div>
 
-      {/* Side-by-side formations */}
-      <div className="grid grid-cols-2 divide-x divide-[#1e1e2e]">
+      {/* Side-by-side formations (stacks on mobile) */}
+      <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-y-0 md:divide-x divide-[#1e1e2e]">
         <div className="p-4">
           {home
             ? <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare />
