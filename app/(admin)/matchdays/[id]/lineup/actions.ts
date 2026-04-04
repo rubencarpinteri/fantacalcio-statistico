@@ -22,6 +22,7 @@ const assignmentSchema = z.object({
 const submitLineupSchema = z.object({
   matchday_id: z.string().uuid(),
   formation_id: z.string().uuid(),
+  team_id: z.string().uuid(),
   is_draft: z.boolean(),
   assignments: z.array(assignmentSchema),
 })
@@ -69,7 +70,7 @@ export async function submitLineupAction(
     return fail('Dati formazione non validi.', parsed.error.errors.map((e) => e.message))
   }
 
-  const { matchday_id, formation_id, is_draft, assignments } = parsed.data
+  const { matchday_id, formation_id, team_id, is_draft, assignments } = parsed.data
 
   // ---- 2. Matchday: open + belongs to league ----------------------------
   const { data: matchday } = await supabase
@@ -96,10 +97,11 @@ export async function submitLineupAction(
     return fail('Formazione non trovata o non appartenente a questa lega.')
   }
 
-  // ---- Resolve user's team ----------------------------------------------
+  // ---- Resolve user's team — look up by explicit team_id + verify ownership
   const { data: team } = await supabase
     .from('fantasy_teams')
     .select('id')
+    .eq('id', team_id)
     .eq('league_id', ctx.league.id)
     .eq('manager_id', ctx.userId)
     .single()

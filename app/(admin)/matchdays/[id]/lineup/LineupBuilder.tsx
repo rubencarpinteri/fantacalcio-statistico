@@ -37,6 +37,7 @@ interface CurrentSubmission {
 
 interface LineupBuilderProps {
   matchdayId: string
+  teamId: string
   formations: SlimFormation[]
   rosterPlayers: RosterPlayer[]
   currentSubmission: CurrentSubmission | null
@@ -72,6 +73,7 @@ const ALL_ROLES = ['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'T', 'W', 'A', '
 
 export function LineupBuilder({
   matchdayId,
+  teamId,
   formations,
   rosterPlayers,
   currentSubmission,
@@ -171,6 +173,7 @@ export function LineupBuilder({
     startTransition(async () => {
       const res = await submitLineupAction({
         matchday_id: matchdayId,
+        team_id: teamId,
         formation_id: selectedFormationId,
         is_draft: isDraft,
         assignments: assignmentList,

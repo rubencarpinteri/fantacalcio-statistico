@@ -180,6 +180,7 @@ export default async function LineupPage({
 
       <LineupBuilder
         matchdayId={matchdayId}
+        teamId={team?.id ?? ''}
         formations={formations}
         rosterPlayers={rosterPlayers}
         currentSubmission={currentSubmission}
