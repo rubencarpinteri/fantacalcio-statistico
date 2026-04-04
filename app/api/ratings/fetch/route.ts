@@ -185,11 +185,13 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   }
 
   // Load all active league players for matching.
-  // Join serie_a_players to get fotmob_id so strategy-0 (exact ID match) fires
-  // for every player already in the global pool — no manual linking needed.
+  // Coalesce two sources for fotmob_player_id:
+  //   1. league_players.fotmob_player_id — set by the manual /pool/link-fotmob UI
+  //   2. serie_a_players.fotmob_id — auto-populated from the pool import
+  // Either source makes strategy-0 (exact ID match) fire instantly.
   const { data: leaguePlayers } = await supabase
     .from('league_players')
-    .select('id, full_name, club, serie_a_players(fotmob_id)')
+    .select('id, full_name, club, fotmob_player_id, serie_a_players(fotmob_id)')
     .eq('league_id', matchday.league_id)
     .eq('is_active', true)
 
@@ -200,7 +202,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       full_name: p.full_name,
       club: p.club,
       normalized: normalizeName(p.full_name),
-      fotmob_player_id: sap?.fotmob_id ?? null,
+      // Manual link takes precedence; pool ID is fallback
+      fotmob_player_id: p.fotmob_player_id ?? sap?.fotmob_id ?? null,
     }
   })
 
@@ -219,6 +222,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     } else {
       unmatched.push({ stat, closest_name: null })
     }
+  }
+
+  // Persist unmatched FotMob players so the admin can link them via
+  // /pool/link-fotmob. Only players with a fotmob_id are linkable; skip
+  // SofaScore-only entries (fotmob_id === null). Upsert so re-fetching the
+  // same matchday is idempotent — already-dismissed entries are not overwritten.
+  const unmatchedWithId = unmatched.filter(u => u.stat.fotmob_id != null)
+  if (unmatchedWithId.length > 0) {
+    await supabase
+      .from('fotmob_unmatched_players')
+      .upsert(
+        unmatchedWithId.map(u => ({
+          matchday_id: matchdayId,
+          fotmob_player_id: u.stat.fotmob_id!,
+          fotmob_name: u.stat.name,
+          fotmob_team: u.stat.team_label || null,
+        })),
+        { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true }
+      )
   }
 
   return NextResponse.json({ matched, unmatched, errors })
