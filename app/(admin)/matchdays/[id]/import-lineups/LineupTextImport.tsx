@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { parseAndMatchAction, confirmLineupImportAction } from './actions'
+import { parseAndMatchAction, confirmLineupImportAction, saveTeamLegheAliasAction } from './actions'
 import type {
   TeamLineupPreview,
   ParseAndMatchResult,
@@ -268,6 +268,7 @@ interface TeamCardProps {
 
 function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride }: TeamCardProps) {
   const [expanded, setExpanded] = useState(!isReady)
+  const [aliasSaved, setAliasSaved] = useState(false)
   const starters = team.players.filter((p) => !p.isBench)
   const bench    = team.players.filter((p) => p.isBench)
 
@@ -333,13 +334,22 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
         <div className="border-t border-[#1e1e2e] px-4 py-3 space-y-3">
           {/* Manual team picker for unmatched teams */}
           {needsTeamPicker && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-              <p className="text-xs text-amber-400 mb-1.5">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 space-y-2">
+              <p className="text-xs text-amber-400">
                 ⚠ Squadra "{team.inputName}" non trovata. Seleziona manualmente:
               </p>
               <select
                 value={teamOverride ?? ''}
-                onChange={(e) => onTeamOverride(e.target.value)}
+                onChange={async (e) => {
+                  const id = e.target.value
+                  onTeamOverride(id)
+                  setAliasSaved(false)
+                  // Auto-save the alias so next imports map this name automatically
+                  if (id) {
+                    await saveTeamLegheAliasAction(id, team.inputName)
+                    setAliasSaved(true)
+                  }
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full rounded border border-[#2e2e42] bg-[#0d0d14] px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500/60"
               >
@@ -348,6 +358,11 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
+              {aliasSaved && (
+                <p className="text-xs text-green-400">
+                  ✓ Alias salvato — le prossime importazioni mapperanno automaticamente "{team.inputName}"
+                </p>
+              )}
             </div>
           )}
 

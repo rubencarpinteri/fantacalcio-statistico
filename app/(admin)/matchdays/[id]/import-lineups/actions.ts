@@ -165,7 +165,7 @@ export async function parseAndMatchAction(
     { data: playersRaw },
     { data: formationsRaw },
   ] = await Promise.all([
-    supabase.from('fantasy_teams').select('id, name').eq('league_id', ctx.league.id),
+    supabase.from('fantasy_teams').select('id, name, leghe_name').eq('league_id', ctx.league.id),
     supabase
       .from('league_players')
       .select('id, full_name, club, mantra_roles, is_active')
@@ -193,13 +193,16 @@ export async function parseAndMatchAction(
     rosterByTeam.set(entry.team_id, s)
   }
 
-  // Build normalized lookups
-  const teamEntries = teams.map((t) => ({
-    id: t.id,
-    full_name: t.name,
-    club: '',
-    normalized: normalizeName(t.name),
-  }))
+  // Build normalized lookups — each team appears once per name it can be matched by
+  // (canonical name + optional leghe_name alias)
+  const teamEntries: DbPlayerEntry[] = []
+  for (const t of teams) {
+    teamEntries.push({ id: t.id, full_name: t.name, club: '', normalized: normalizeName(t.name) })
+    const alias = t.leghe_name
+    if (alias) {
+      teamEntries.push({ id: t.id, full_name: alias, club: '', normalized: normalizeName(alias) })
+    }
+  }
 
   const playerEntries: (DbPlayerEntry & { mantraRoles: string[]; dbName: string })[] =
     players.map((p) => ({
@@ -272,7 +275,12 @@ export async function parseAndMatchAction(
     ): PlayerPreview[] => {
       return names.map((name, idx) => {
         const norm = normalizeName(name)
-        const match = findDbPlayer(norm, scopedPlayers)
+        // Try team-scoped roster first (avoids ambiguity between players with same surname on
+        // different teams). Fall back to all league players for players not in roster entries
+        // (e.g. recently imported but not yet assigned via RosaBuilder).
+        const match =
+          findDbPlayer(norm, scopedPlayers) ??
+          (scopedPlayers !== playerEntries ? findDbPlayer(norm, playerEntries) : undefined)
 
         if (!match) {
           errors.push(`${isBench ? 'Panchina' : 'Titolare'} non trovato: "${name}"`)
@@ -539,4 +547,26 @@ export async function confirmLineupImportAction(
   revalidatePath(`/matchdays/${matchdayId}`)
 
   return { ok: true, imported, skipped, details }
+}
+
+// ─── saveTeamLegheAliasAction ─────────────────────────────────────────────────
+//
+// Persists a Leghe.it team name alias on a fantasy_teams row so future imports
+// auto-match without requiring a manual override.
+//
+export async function saveTeamLegheAliasAction(
+  teamId: string,
+  legheName: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('fantasy_teams')
+    .update({ leghe_name: legheName.trim() || null })
+    .eq('id', teamId)
+    .eq('league_id', ctx.league.id)
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
 }
