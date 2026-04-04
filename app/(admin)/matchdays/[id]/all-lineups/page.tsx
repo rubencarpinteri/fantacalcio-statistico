@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { AllLineupsClient } from './AllLineupsClient'
-import type { TeamLineupData } from './AllLineupsClient'
+import type { TeamLineupData, MatchupPair } from './AllLineupsClient'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -22,7 +22,7 @@ export default async function AllLineupsPage({
 
   const { data: matchday } = await supabase
     .from('matchdays')
-    .select('id, name, status')
+    .select('id, name, status, round_number')
     .eq('id', matchdayId)
     .eq('league_id', ctx.league.id)
     .single()
@@ -147,6 +147,36 @@ export default async function AllLineupsPage({
     }
   }
 
+  // ── Fetch competition matchups for this round ──────────────────────────────
+  // Used to pair teams in head-to-head layout instead of a plain grid.
+  let matchupPairs: Array<{ homeTeamId: string; awayTeamId: string }> = []
+  if (matchday.round_number !== null) {
+    const { data: comps } = await supabase
+      .from('competitions')
+      .select('id')
+      .eq('league_id', ctx.league.id)
+
+    const compIds = (comps ?? []).map((c) => c.id)
+
+    if (compIds.length > 0) {
+      const { data: rawMatchups } = await supabase
+        .from('competition_matchups')
+        .select('home_team_id, away_team_id')
+        .in('competition_id', compIds)
+        .eq('round_number', matchday.round_number)
+
+      // Deduplicate: same pair may appear in multiple competitions
+      const seen = new Set<string>()
+      for (const m of rawMatchups ?? []) {
+        const key = [m.home_team_id, m.away_team_id].sort().join('|')
+        if (!seen.has(key)) {
+          seen.add(key)
+          matchupPairs.push({ homeTeamId: m.home_team_id, awayTeamId: m.away_team_id })
+        }
+      }
+    }
+  }
+
   // Build TeamLineupData for each team
   const teamLineups: TeamLineupData[] = teams.map((team) => {
     const submissionId = pointerMap.get(team.id) ?? null
@@ -213,6 +243,7 @@ export default async function AllLineupsPage({
         matchdayId={matchdayId}
         matchdayStatus={matchday.status}
         teamLineups={teamLineups}
+        matchups={matchupPairs}
       />
     </div>
   )

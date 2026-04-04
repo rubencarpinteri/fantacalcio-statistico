@@ -115,6 +115,12 @@ export default async function MatchdayDetailPage({
     }))
   }
 
+  // ── Count existing lineup submissions (to show all-lineups hero card) ────
+  const { count: lineupCount } = await supabase
+    .from('lineup_current_pointers')
+    .select('id', { count: 'exact', head: true })
+    .eq('matchday_id', id)
+
   // ── Admin workflow step status ────────────────────────────────────────────
   let playerStatsCount = 0
   let v1RunId: string | null = null
@@ -207,6 +213,22 @@ export default async function MatchdayDetailPage({
       </div>
 
       <div className="space-y-4">
+
+        {/* ── TUTTE LE FORMAZIONI HERO (shown as soon as any lineup exists) ── */}
+        {isAdmin && (lineupCount ?? 0) > 0 && (
+          <a
+            href={`/matchdays/${id}/all-lineups`}
+            className="group flex items-center justify-between rounded-2xl border border-indigo-500/30 bg-indigo-500/5 px-5 py-4 transition-colors hover:border-indigo-500/60 hover:bg-indigo-500/10"
+          >
+            <div>
+              <p className="text-sm font-bold text-white">Tutte le formazioni</p>
+              <p className="text-xs text-indigo-300/70">
+                {lineupCount} squadr{(lineupCount ?? 0) === 1 ? 'a' : 'e'} · Visualizza gli incontri
+              </p>
+            </div>
+            <span className="text-indigo-400 text-sm group-hover:text-indigo-300 transition-colors">→</span>
+          </a>
+        )}
 
         {/* ── ADMIN WORKFLOW ── */}
         {isAdmin && (() => {
@@ -311,7 +333,7 @@ export default async function MatchdayDetailPage({
                       <a
                         href={`/matchdays/${id}/import-lineups`}
                         className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                          step3Done
+                          ['open', 'locked', 'scoring', 'published'].includes(matchday.status)
                             ? 'bg-indigo-500 text-white hover:bg-indigo-400'
                             : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
                         }`}
@@ -332,11 +354,7 @@ export default async function MatchdayDetailPage({
                       </a>
                       <a
                         href={`/matchdays/${id}/all-lineups`}
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                          step3Done
-                            ? 'border border-[#2e2e42] text-[#8888aa] hover:border-indigo-500/40 hover:text-indigo-300'
-                            : 'pointer-events-none border border-[#1e1e2e] text-[#3a3a4a]'
-                        }`}
+                        className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm font-medium text-[#8888aa] transition-colors hover:border-indigo-500/40 hover:text-indigo-300"
                       >
                         Vedi formazioni →
                       </a>

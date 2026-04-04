@@ -153,9 +153,11 @@ export default async function CalculatePage({
     }
   }
 
-  const canTrigger = ['scoring', 'published'].includes(matchday.status)
-  // Can publish when there is a preview run that is not yet published
-  const canPublish = previewRunId !== null && previewRunStatus !== 'published' && canTrigger
+  // Trigger is allowed in any status except draft (no data yet) and archived (terminal).
+  // This lets admins run preview calculations while the matchday is still open/locked.
+  const canTrigger = !['draft', 'archived'].includes(matchday.status)
+  // Publishing officially records scores and transitions the matchday — restricted to scoring/published.
+  const canPublish = previewRunId !== null && previewRunStatus !== 'published' && ['scoring', 'published'].includes(matchday.status)
 
   return (
     <div className="space-y-6">
@@ -212,8 +214,9 @@ export default async function CalculatePage({
 
       {!canTrigger && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-400">
-          Il calcolo è disponibile solo in stato <strong>scoring</strong> o{' '}
-          <strong>published</strong>. Stato attuale: <strong>{matchday.status}</strong>.
+          {matchday.status === 'draft'
+            ? 'La giornata è in bozza — passa ad "aperta" prima di calcolare i punteggi.'
+            : 'Non è possibile calcolare una giornata archiviata.'}
         </div>
       )}
 

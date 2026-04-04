@@ -34,10 +34,16 @@ export interface TeamLineupData {
   slots: SlotData[]
 }
 
+export interface MatchupPair {
+  homeTeamId: string
+  awayTeamId: string
+}
+
 interface Props {
   matchdayId: string
   matchdayStatus: string
   teamLineups: TeamLineupData[]
+  matchups: MatchupPair[]
 }
 
 // ---- Role colours ----------------------------------------------------------
@@ -64,191 +70,6 @@ function roleColor(roles: string[]): string {
 function fmtFv(n: number | null): string {
   if (n === null) return 'NV'
   return n.toFixed(2)
-}
-
-// ---- Single team card ------------------------------------------------------
-
-function TeamCard({
-  team,
-  matchdayId,
-  isEditable,
-}: {
-  team: TeamLineupData
-  matchdayId: string
-  isEditable: boolean
-}) {
-  // Local slot state (copy of server data — mutated by drag)
-  const [slots, setSlots] = useState<SlotData[]>(() =>
-    [...team.slots].sort((a, b) => a.slotOrder - b.slotOrder)
-  )
-  const [isDirty, setIsDirty] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null)
-
-  const dragSlotId = useRef<string | null>(null)
-
-  const titolari = slots.filter((s) => !s.isBench)
-  const panchina = slots.filter((s) => s.isBench).sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
-
-  function handleDragStart(slotId: string) {
-    dragSlotId.current = slotId
-  }
-
-  function handleDrop(targetSlotId: string) {
-    const fromId = dragSlotId.current
-    dragSlotId.current = null
-    if (!fromId || fromId === targetSlotId) return
-
-    setSlots((prev) => {
-      const next = [...prev]
-      const fromIdx = next.findIndex((s) => s.slotId === fromId)
-      const toIdx = next.findIndex((s) => s.slotId === targetSlotId)
-      if (fromIdx === -1 || toIdx === -1) return prev
-
-      // Swap players between the two slots
-      const fromSlot = { ...next[fromIdx]! }
-      const toSlot = { ...next[toIdx]! }
-
-      const swapFields = [
-        'playerId', 'playerName', 'playerClub', 'playerRoles', 'playerRatingClass',
-        'fantavoto', 'votoBase', 'assignedMantraRole',
-      ] as const
-
-      for (const field of swapFields) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tmp = (fromSlot as any)[field]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(fromSlot as any)[field] = (toSlot as any)[field]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(toSlot as any)[field] = tmp
-      }
-
-      next[fromIdx] = fromSlot
-      next[toIdx] = toSlot
-      return next
-    })
-    setIsDirty(true)
-    setSaveMsg(null)
-  }
-
-  function handleSave() {
-    if (!team.formationId) return
-    setSaveMsg(null)
-    startTransition(async () => {
-      const assignments = slots
-        .filter((s) => s.playerId !== null)
-        .map((s) => ({
-          player_id: s.playerId!,
-          slot_id: s.slotId,
-          is_bench: s.isBench,
-          bench_order: s.isBench ? (s.benchOrder ?? null) : null,
-        }))
-
-      const result = await adminOverrideLineupAction(
-        matchdayId,
-        team.teamId,
-        team.formationId,
-        assignments
-      )
-
-      if (result.error) {
-        setSaveMsg({ text: result.error, ok: false })
-      } else {
-        setSaveMsg({ text: `Salvato — v#${result.submissionNumber}`, ok: true })
-        setIsDirty(false)
-      }
-    })
-  }
-
-  function handleReset() {
-    setSlots([...team.slots].sort((a, b) => a.slotOrder - b.slotOrder))
-    setIsDirty(false)
-    setSaveMsg(null)
-  }
-
-  return (
-    <div className={`rounded-xl border bg-[#0f0f1a] p-4 ${isDirty ? 'border-indigo-500/40' : 'border-[#2e2e42]'}`}>
-      {/* Team header */}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-white">{team.teamName}</p>
-          <p className="text-xs text-[#55556a]">
-            {team.formationName}
-            {team.submissionNumber !== null && ` · v#${team.submissionNumber}`}
-            {isDirty && <span className="ml-2 text-indigo-400">modificato</span>}
-          </p>
-        </div>
-        {isEditable && isDirty && (
-          <div className="flex gap-2">
-            <button
-              onClick={handleReset}
-              disabled={isPending}
-              className="rounded-lg border border-[#2e2e42] px-2.5 py-1 text-xs text-[#8888aa] hover:text-white transition-colors"
-            >
-              Ripristina
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isPending}
-              className="rounded-lg bg-indigo-500 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
-            >
-              {isPending ? 'Salvo…' : 'Salva'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {saveMsg && (
-        <p className={`mb-3 text-xs ${saveMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
-          {saveMsg.text}
-        </p>
-      )}
-
-      {team.slots.length === 0 ? (
-        <p className="py-4 text-center text-xs text-[#55556a]">Nessuna formazione inserita</p>
-      ) : (
-        <div className="space-y-3">
-          {/* Titolari */}
-          <div>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]">
-              Titolari ({titolari.length})
-            </p>
-            <div className="grid grid-cols-1 gap-1">
-              {titolari.map((slot) => (
-                <PlayerChip
-                  key={slot.slotId}
-                  slot={slot}
-                  isEditable={isEditable}
-                  onDragStart={() => handleDragStart(slot.slotId)}
-                  onDrop={() => handleDrop(slot.slotId)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Panchina */}
-          {panchina.length > 0 && (
-            <div>
-              <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]">
-                Panchina ({panchina.length})
-              </p>
-              <div className="grid grid-cols-1 gap-1">
-                {panchina.map((slot) => (
-                  <PlayerChip
-                    key={slot.slotId}
-                    slot={slot}
-                    isEditable={isEditable}
-                    onDragStart={() => handleDragStart(slot.slotId)}
-                    onDrop={() => handleDrop(slot.slotId)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
 }
 
 // ---- Player chip -----------------------------------------------------------
@@ -311,11 +132,359 @@ function PlayerChip({
   )
 }
 
+// ---- Single team card ------------------------------------------------------
+//
+// Pass bare=true when rendering inside a MatchupRow — the row provides the
+// outer container so we skip the standalone border/background wrapper.
+
+function TeamCard({
+  team,
+  matchdayId,
+  isEditable,
+  bare = false,
+}: {
+  team: TeamLineupData
+  matchdayId: string
+  isEditable: boolean
+  bare?: boolean
+}) {
+  const [slots, setSlots] = useState<SlotData[]>(() =>
+    [...team.slots].sort((a, b) => a.slotOrder - b.slotOrder)
+  )
+  const [isDirty, setIsDirty] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
+  const dragSlotId = useRef<string | null>(null)
+
+  const titolari = slots.filter((s) => !s.isBench)
+  const panchina = slots.filter((s) => s.isBench).sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
+
+  function handleDragStart(slotId: string) {
+    dragSlotId.current = slotId
+  }
+
+  function handleDrop(targetSlotId: string) {
+    const fromId = dragSlotId.current
+    dragSlotId.current = null
+    if (!fromId || fromId === targetSlotId) return
+
+    setSlots((prev) => {
+      const next = [...prev]
+      const fromIdx = next.findIndex((s) => s.slotId === fromId)
+      const toIdx = next.findIndex((s) => s.slotId === targetSlotId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+
+      const fromSlot = { ...next[fromIdx]! }
+      const toSlot = { ...next[toIdx]! }
+
+      const swapFields = [
+        'playerId', 'playerName', 'playerClub', 'playerRoles', 'playerRatingClass',
+        'fantavoto', 'votoBase', 'assignedMantraRole',
+      ] as const
+
+      for (const field of swapFields) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const tmp = (fromSlot as any)[field]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(fromSlot as any)[field] = (toSlot as any)[field]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(toSlot as any)[field] = tmp
+      }
+
+      next[fromIdx] = fromSlot
+      next[toIdx] = toSlot
+      return next
+    })
+    setIsDirty(true)
+    setSaveMsg(null)
+  }
+
+  function handleSave() {
+    if (!team.formationId) return
+    setSaveMsg(null)
+    startTransition(async () => {
+      const assignments = slots
+        .filter((s) => s.playerId !== null)
+        .map((s) => ({
+          player_id: s.playerId!,
+          slot_id: s.slotId,
+          is_bench: s.isBench,
+          bench_order: s.isBench ? (s.benchOrder ?? null) : null,
+        }))
+
+      const result = await adminOverrideLineupAction(
+        matchdayId,
+        team.teamId,
+        team.formationId,
+        assignments
+      )
+
+      if (result.error) {
+        setSaveMsg({ text: result.error, ok: false })
+      } else {
+        setSaveMsg({ text: `Salvato — v#${result.submissionNumber}`, ok: true })
+        setIsDirty(false)
+      }
+    })
+  }
+
+  function handleReset() {
+    setSlots([...team.slots].sort((a, b) => a.slotOrder - b.slotOrder))
+    setIsDirty(false)
+    setSaveMsg(null)
+  }
+
+  const inner = (
+    <>
+      {/* Team header (only shown in bare/standalone mode when name isn't in matchup header) */}
+      {!bare && (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white">{team.teamName}</p>
+            <p className="text-xs text-[#55556a]">
+              {team.formationName}
+              {team.submissionNumber !== null && ` · v#${team.submissionNumber}`}
+              {isDirty && <span className="ml-2 text-indigo-400">modificato</span>}
+            </p>
+          </div>
+          {isEditable && isDirty && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleReset}
+                disabled={isPending}
+                className="rounded-lg border border-[#2e2e42] px-2.5 py-1 text-xs text-[#8888aa] hover:text-white transition-colors"
+              >
+                Ripristina
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isPending}
+                className="rounded-lg bg-indigo-500 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
+              >
+                {isPending ? 'Salvo…' : 'Salva'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* In bare mode: dirty indicator + save button in compact row */}
+      {bare && isDirty && isEditable && (
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs text-indigo-400">modificato</span>
+          <div className="flex gap-1.5">
+            <button
+              onClick={handleReset}
+              disabled={isPending}
+              className="rounded border border-[#2e2e42] px-2 py-0.5 text-[10px] text-[#8888aa] hover:text-white transition-colors"
+            >
+              Ripristina
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isPending}
+              className="rounded bg-indigo-500 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
+            >
+              {isPending ? 'Salvo…' : 'Salva'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {saveMsg && (
+        <p className={`mb-2 text-xs ${saveMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
+          {saveMsg.text}
+        </p>
+      )}
+
+      {team.slots.length === 0 ? (
+        <p className="py-4 text-center text-xs text-[#55556a]">Nessuna formazione inserita</p>
+      ) : (
+        <div className="space-y-3">
+          {/* Titolari */}
+          <div>
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]">
+              Titolari ({titolari.length})
+            </p>
+            <div className="grid grid-cols-1 gap-1">
+              {titolari.map((slot) => (
+                <PlayerChip
+                  key={slot.slotId}
+                  slot={slot}
+                  isEditable={isEditable}
+                  onDragStart={() => handleDragStart(slot.slotId)}
+                  onDrop={() => handleDrop(slot.slotId)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Panchina */}
+          {panchina.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]">
+                Panchina ({panchina.length})
+              </p>
+              <div className="grid grid-cols-1 gap-1">
+                {panchina.map((slot) => (
+                  <PlayerChip
+                    key={slot.slotId}
+                    slot={slot}
+                    isEditable={isEditable}
+                    onDragStart={() => handleDragStart(slot.slotId)}
+                    onDrop={() => handleDrop(slot.slotId)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+
+  if (bare) return <div>{inner}</div>
+
+  return (
+    <div className={`rounded-xl border bg-[#0f0f1a] p-4 ${isDirty ? 'border-indigo-500/40' : 'border-[#2e2e42]'}`}>
+      {inner}
+    </div>
+  )
+}
+
+// ---- Matchup row -----------------------------------------------------------
+//
+// Renders two teams side by side inside a single container card.
+// The header shows both team names, formation strings, and — when a
+// calculation run exists — a live score readout.
+
+function MatchupRow({
+  home,
+  away,
+  matchdayId,
+  isEditable,
+}: {
+  home: TeamLineupData | undefined
+  away: TeamLineupData | undefined
+  matchdayId: string
+  isEditable: boolean
+}) {
+  function teamFv(team: TeamLineupData | undefined): number | null {
+    if (!team) return null
+    const starters = team.slots.filter((s) => !s.isBench && s.fantavoto !== null)
+    if (starters.length === 0) return null
+    return starters.reduce((acc, s) => acc + (s.fantavoto ?? 0), 0)
+  }
+
+  const homeFv = teamFv(home)
+  const awayFv = teamFv(away)
+  const hasScores = homeFv !== null || awayFv !== null
+
+  return (
+    <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
+      {/* Match header */}
+      <div className="grid grid-cols-[1fr,auto,1fr] items-center px-5 py-3 bg-[#0f0f1a] border-b border-[#2e2e42]">
+        {/* Home */}
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-white truncate">{home?.teamName ?? '?'}</p>
+          <p className="text-xs text-[#55556a] truncate">{home?.formationName ?? '—'}</p>
+        </div>
+
+        {/* Score / VS badge */}
+        <div className="mx-6 flex flex-col items-center shrink-0">
+          {hasScores ? (
+            <div className="flex items-center gap-3 font-mono text-base font-black">
+              <span className={
+                homeFv !== null && awayFv !== null
+                  ? homeFv > awayFv ? 'text-green-400'
+                  : homeFv < awayFv ? 'text-red-400'
+                  : 'text-white'
+                  : 'text-[#8888aa]'
+              }>
+                {homeFv?.toFixed(2) ?? '—'}
+              </span>
+              <span className="text-[#3e3e52] text-sm">–</span>
+              <span className={
+                homeFv !== null && awayFv !== null
+                  ? awayFv > homeFv ? 'text-green-400'
+                  : awayFv < homeFv ? 'text-red-400'
+                  : 'text-white'
+                  : 'text-[#8888aa]'
+              }>
+                {awayFv?.toFixed(2) ?? '—'}
+              </span>
+            </div>
+          ) : (
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#55556a] px-3 py-1 rounded-full border border-[#2e2e42]">
+              vs
+            </span>
+          )}
+        </div>
+
+        {/* Away */}
+        <div className="min-w-0 text-right">
+          <p className="text-sm font-bold text-white truncate">{away?.teamName ?? '?'}</p>
+          <p className="text-xs text-[#55556a] truncate">{away?.formationName ?? '—'}</p>
+        </div>
+      </div>
+
+      {/* Side-by-side formations */}
+      <div className="grid grid-cols-2 divide-x divide-[#1e1e2e]">
+        <div className="p-4">
+          {home
+            ? <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare />
+            : <p className="py-10 text-center text-xs text-[#55556a]">Nessuna formazione</p>
+          }
+        </div>
+        <div className="p-4">
+          {away
+            ? <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare />
+            : <p className="py-10 text-center text-xs text-[#55556a]">Nessuna formazione</p>
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---- Main component --------------------------------------------------------
 
-export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups }: Props) {
+export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matchups }: Props) {
   const isEditable = matchdayStatus !== 'archived'
 
+  // ── Matchup layout (when competition matchups are available) ──────────────
+  if (matchups.length > 0) {
+    const teamMap = new Map(teamLineups.map((t) => [t.teamId, t]))
+    const pairedIds = new Set(matchups.flatMap((m) => [m.homeTeamId, m.awayTeamId]))
+    const unpaired = teamLineups.filter((t) => !pairedIds.has(t.teamId))
+
+    return (
+      <div className="space-y-4">
+        {matchups.map((m, i) => (
+          <MatchupRow
+            key={i}
+            home={teamMap.get(m.homeTeamId)}
+            away={teamMap.get(m.awayTeamId)}
+            matchdayId={matchdayId}
+            isEditable={isEditable}
+          />
+        ))}
+        {unpaired.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <p className="text-xs uppercase tracking-widest text-[#55556a]">Senza incontro</p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {unpaired.map((t) => (
+                <TeamCard key={t.teamId} team={t} matchdayId={matchdayId} isEditable={isEditable} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Fallback: plain grid (no matchup data configured) ────────────────────
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {teamLineups.map((team) => (
