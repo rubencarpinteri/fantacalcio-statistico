@@ -546,7 +546,7 @@ export function CalculationPreview({
 
       {calcs.length === 0 && !canTrigger && (
         <p className="text-sm text-[#55556a]">
-          Nessun calcolo disponibile. Porta la giornata in &quot;scoring&quot; per iniziare.
+          Nessun calcolo disponibile. Porta la giornata in &quot;aperta&quot; per iniziare.
         </p>
       )}
 

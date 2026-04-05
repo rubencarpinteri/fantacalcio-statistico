@@ -295,11 +295,10 @@ export async function computeRoundAction(
     .single()
 
   if (!matchday) return fail('Giornata collegata non trovata.')
-  if (!['published', 'archived'].includes(matchday.status)) {
-    return fail(`La giornata deve essere in stato "pubblicata" o "archiviata" per calcolare. Stato attuale: "${matchday.status}".`)
-  }
+  if (matchday.status === 'draft') return fail('La giornata è ancora in bozza: aggiungi statistiche e calcola prima.')
 
   // 3. Fetch published_team_scores for the matchday
+  // Scores are written by publishCalculationAction regardless of matchday status (open/scoring/published/archived).
   const { data: scores } = await supabase
     .from('published_team_scores')
     .select('team_id, total_fantavoto')
@@ -307,7 +306,7 @@ export async function computeRoundAction(
     .eq('league_id', ctx.league.id)
 
   if (!scores || scores.length === 0) {
-    return fail('Nessun punteggio pubblicato per questa giornata. Pubblica il calcolo della giornata prima.')
+    return fail('Nessun punteggio calcolato per questa giornata. Vai su Calcolo punteggi e pubblica un run prima.')
   }
 
   const fantaVotoMap = new Map<string, number>(

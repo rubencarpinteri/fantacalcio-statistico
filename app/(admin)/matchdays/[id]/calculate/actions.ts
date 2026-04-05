@@ -571,8 +571,11 @@ export async function publishCalculationAction(
       .upsert(publishedScoreRows, { onConflict: 'matchday_id,team_id' })
   }
 
-  // Transition matchday to 'published' if not already
-  if (matchday.status !== 'published') {
+  // Transition matchday to 'published' only when coming from 'scoring'.
+  // When matchday is 'open' (live match in progress), we write scores but leave the status alone
+  // so the admin can keep recalculating as FotMob ratings update. The transition happens
+  // explicitly when the admin moves the matchday to 'scoring' and then publishes from there.
+  if (matchday.status === 'scoring') {
     await supabase
       .from('matchdays')
       .update({ status: 'published' })
@@ -580,7 +583,7 @@ export async function publishCalculationAction(
 
     await supabase.from('matchday_status_log').insert({
       matchday_id: matchdayId,
-      old_status: matchday.status,
+      old_status: 'scoring',
       new_status: 'published',
       changed_by: ctx.userId,
       note: `Pubblicazione run #${run.run_number}`,

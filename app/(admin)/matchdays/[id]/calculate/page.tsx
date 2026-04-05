@@ -150,10 +150,11 @@ export default async function CalculatePage({
   }
 
   // Trigger is allowed in any status except draft (no data yet) and archived (terminal).
-  // This lets admins run preview calculations while the matchday is still open/locked.
   const canTrigger = !['draft', 'archived'].includes(matchday.status)
-  // Publishing officially records scores and transitions the matchday — restricted to scoring/published.
-  const canPublish = previewRunId !== null && previewRunStatus !== 'published' && ['scoring', 'published'].includes(matchday.status)
+  // Publishing writes scores to DB — allowed whenever trigger is allowed and there is a draft run.
+  // When matchday is 'open', scores are written but the matchday status is NOT transitioned
+  // (it stays 'open'). Transition to 'published' only happens from 'scoring'.
+  const canPublish = previewRunId !== null && previewRunStatus !== 'published' && !['draft', 'archived'].includes(matchday.status)
 
   return (
     <div className="space-y-6">

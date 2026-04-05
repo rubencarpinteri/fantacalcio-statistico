@@ -81,10 +81,9 @@ export function RoundManager({ round, competitionId, matchday, hasGoals }: Round
             ⚠ Collega una giornata a questo turno dalla pagina dei turni prima di calcolare.
           </p>
         )}
-        {round.status !== 'locked' && matchday && !['published', 'archived'].includes(matchday.status) && (
+        {round.status !== 'locked' && matchday && matchday.status === 'draft' && (
           <p className="mb-4 text-sm text-amber-400">
-            ⚠ La giornata &quot;{matchday.name}&quot; deve essere in stato pubblicata o archiviata per calcolare.
-            Stato attuale: <span className="font-medium">{matchday.status}</span>.
+            ⚠ La giornata &quot;{matchday.name}&quot; è ancora in bozza. Aggiungi statistiche e pubblica un calcolo prima.
           </p>
         )}
 
