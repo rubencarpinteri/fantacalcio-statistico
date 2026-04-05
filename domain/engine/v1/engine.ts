@@ -254,6 +254,7 @@ export function calculatePlayerScore(
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: true,
+      no_ratings_exception: false,
       z_sofascore: null, z_fotmob: null,
       z_combined: null,
       weights_used: {},
@@ -294,8 +295,43 @@ export function calculatePlayerScore(
   const available = sourceMap.filter((s) => s.z !== null)
 
   if (available.length === 0) {
-    const skipped: PlayerSkipped = { kind: 'skipped', player_id, stats_id, is_provisional, reason: 'NO_RATINGS' }
-    return skipped
+    // No source ratings available — e.g. fetched during a live match before FotMob
+    // publishes ratings. Use neutral base (6.0) + defensive correction + B/M.
+    // The player is NOT skipped: they have minutes and possibly decisive events
+    // that must be reflected in the score.
+    const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
+    const defCfgNR = config.defensive[input.rating_class]
+    const defensive_correction_nr = computeDefensiveCorrection(input, defCfgNR)
+    const voto_base_nr = round(clamp(
+      config.base_score + defensive_correction_nr,
+      config.voto_base_cap_min,
+      config.voto_base_cap_max,
+    ))
+    const { breakdown: bmBreakdownNR, total: bmTotalNR } = computeBonusMalus(input, config)
+    const { breakdown: advBreakdownNR, total: advTotalNR } = computeAdvancedBonus(input, config.advanced_bonus)
+    const bonus_malus_breakdown_nr = [...bmBreakdownNR, ...advBreakdownNR]
+    const total_bonus_malus_nr = round(bmTotalNR + advTotalNR)
+    const fantavoto_nr = round(voto_base_nr + total_bonus_malus_nr)
+
+    return {
+      kind: 'scored',
+      player_id, stats_id, is_provisional,
+      decisive_event_exception: false,
+      no_ratings_exception: true,
+      z_sofascore: null, z_fotmob: null,
+      z_combined: null,
+      weights_used: {},
+      minutes_factor,
+      z_adjusted: null,
+      b0: null,
+      role_multiplier: null,
+      b1: null,
+      defensive_correction: defensive_correction_nr,
+      voto_base: voto_base_nr,
+      bonus_malus_breakdown: bonus_malus_breakdown_nr,
+      total_bonus_malus: total_bonus_malus_nr,
+      fantavoto: fantavoto_nr,
+    }
   }
 
   // ----------------------------------------------------------------
@@ -374,6 +410,7 @@ export function calculatePlayerScore(
     kind: 'scored',
     player_id, stats_id, is_provisional,
     decisive_event_exception: false,
+    no_ratings_exception: false,
     z_sofascore, z_fotmob,
     z_combined,
     weights_used,

@@ -181,6 +181,13 @@ export interface PlayerCalculationResult {
    * and voto_base is set directly to base_score (6.0).
    */
   decisive_event_exception: boolean
+  /**
+   * True when the player had ≥10 minutes but no source ratings were available
+   * (e.g. fetched during a live match before FotMob publishes ratings).
+   * z-scores, b0, b1 are null; voto_base is set to base_score (6.0) +
+   * defensive_correction; full B/M is applied.
+   */
+  no_ratings_exception: boolean
 
   // Per-source z-scores (null if source missing OR decisive_event_exception)
   z_sofascore: number | null

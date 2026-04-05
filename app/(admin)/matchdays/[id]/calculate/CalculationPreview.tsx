@@ -425,6 +425,9 @@ export function CalculationPreview({
                     const isExpanded = expandedRow === c.id
                     const wasEdited = savedPlayers.has(c.player_id)
 
+                    // no_ratings_exception: played ≥10 min, no FotMob/SS rating (e.g. live match)
+                    const isNoRatings = c.fantavoto !== null && c.z_combined === null && c.minutes_factor !== null
+
                     return (
                       <Fragment key={c.id}>
                         <tr
@@ -456,6 +459,11 @@ export function CalculationPreview({
                             </span>
                             {c.is_provisional && (
                               <span className="ml-1.5 text-xs text-amber-400">~</span>
+                            )}
+                            {isNoRatings && (
+                              <span className="ml-1 text-[10px] text-sky-400/70" title="Nessun voto disponibile (partita in corso) — base 6.0">
+                                ⚡
+                              </span>
                             )}
                             {c.is_override && (
                               <span className="ml-1.5 text-xs text-orange-400">★</span>
