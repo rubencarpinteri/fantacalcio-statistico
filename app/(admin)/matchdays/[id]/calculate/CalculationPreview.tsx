@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { triggerCalculationAction, publishCalculationAction } from './actions'
 import type { CompetitionCascadeResult } from './actions'
@@ -260,6 +261,7 @@ export function CalculationPreview({
   canPublish,
   playerStats,
 }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [triggerResult, setTriggerResult] = useState<string | null>(null)
   const [publishResult, setPublishResult] = useState<string | null>(null)
@@ -285,6 +287,8 @@ export function CalculationPreview({
         ]
         if (result.override_count > 0) parts.push(`${result.override_count} override applicati ★`)
         setTriggerResult(parts.join(' — ') + '.')
+        // Force server component re-render so the new run's calcs are displayed immediately.
+        router.refresh()
       }
     })
   }
@@ -298,8 +302,9 @@ export function CalculationPreview({
       if (result.error) {
         setPublishResult(`Errore: ${result.error}`)
       } else {
-        setPublishResult('Punteggi pubblicati. La giornata è ora in stato "published".')
+        setPublishResult('Punteggi pubblicati.')
         setCompResults(result.competitions_updated)
+        router.refresh()
       }
     })
   }
