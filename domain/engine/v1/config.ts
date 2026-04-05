@@ -148,16 +148,16 @@ export function buildEngineConfig(
     ...base,
 
     minutes_factor: {
-      threshold: dbConfig.minutes_factor_threshold,
-      partial:   dbConfig.minutes_factor_partial,
-      full:      dbConfig.minutes_factor_full,
+      threshold: dbConfig.minutes_factor_threshold ?? base.minutes_factor.threshold,
+      partial:   dbConfig.minutes_factor_partial   ?? base.minutes_factor.partial,
+      full:      dbConfig.minutes_factor_full       ?? base.minutes_factor.full,
     },
 
     role_multiplier: {
-      GK:  dbConfig.role_multiplier_gk,
-      DEF: dbConfig.role_multiplier_def,
-      MID: dbConfig.role_multiplier_mid,
-      ATT: dbConfig.role_multiplier_att,
+      GK:  dbConfig.role_multiplier_gk  ?? base.role_multiplier.GK,
+      DEF: dbConfig.role_multiplier_def ?? base.role_multiplier.DEF,
+      MID: dbConfig.role_multiplier_mid ?? base.role_multiplier.MID,
+      ATT: dbConfig.role_multiplier_att ?? base.role_multiplier.ATT,
     },
 
     bonus_malus: {
