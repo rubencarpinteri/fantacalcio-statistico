@@ -1,24 +1,20 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1 — Core Logic
+// Fantacalcio Statistico — Rating Engine v1.1 — Core Logic
 // ============================================================
 // Pure TypeScript — no Supabase, no Next.js, no side effects.
 // All functions are deterministic given the same inputs.
 //
 // Per-player pipeline (normal 10+ minute flow):
-//   1.  NV / decisive-event gate  (minutes < 10)
-//   2.  Per-source z-scores       z = (rating - mean) / std
-//   3.  NO_RATINGS guard          (all z null)
-//   4.  Weighted average          z_combined
-//   5.  One-source shrink         ×0.75 when only 1 source available
-//   6.  Minutes factor            configurable 2-band (default: < 45 → 0.50, >= 45 → 1.00)
-//   7.  z_adjusted                z_combined × minutes_factor
-//   8.  b0 (Italian scale)        6.0 + 1.15 × z_adjusted
-//   9.  b1 (role distance)        6.0 + multiplier × (b0 - 6.0)
-//  10.  defensive_correction      role-specific weights + cap
-//  11.  voto_base                 clamp(b1 + def_corr, 3.0, 9.5)
-//  12.  bonus/malus               goals, assists, events, CS, GC, multi-goal
-//  13.  advanced bonus            creative / dribbling / passing rules, +1.0 cap
-//  14.  fantavoto                 voto_base + total_bonus_malus
+//   1.  NV / decisive-event gate    (minutes < 10)
+//   2.  z_fotmob = (rating - 6.6) / 0.79  (null if rating missing)
+//   3.  NO_RATINGS guard            (z null → base 6.0 + B/M)
+//   4.  Minutes factor              configurable 2-band (default: <45 → ×0.50, ≥45 → ×1.00)
+//   5.  z_adjusted = z_fotmob × minutes_factor
+//   6.  b0 = 6.0 + 1.15 × z_adjusted
+//   7.  b1 = 6.0 + role_multiplier × (b0 − 6.0)
+//   8.  voto_base = clamp(b1, 3.0, 9.5)
+//   9.  bonus/malus                 goals, assists, events, CS, GC, multi-goal
+//  10.  fantavoto = voto_base + total_bonus_malus
 // ============================================================
 
 import { DEFAULT_ENGINE_CONFIG } from './config'
@@ -30,10 +26,7 @@ import type {
   PlayerCalculationResult,
   PlayerSkipped,
   BonusMalusItem,
-  DefensiveStatKey,
   MatchdayEngineResult,
-  DefensiveRoleConfig,
-  AdvancedBonusConfig,
 } from './types'
 
 // ---- Numeric helpers ----------------------------------------
@@ -57,11 +50,11 @@ function clamp(value: number, min: number, max: number): number {
  */
 function hasDecisiveEvent(input: EnginePlayerInput): boolean {
   return (
-    input.goals_scored    > 0 ||
-    input.assists         > 0 ||
-    input.own_goals       > 0 ||
-    input.yellow_cards    > 0 ||
-    input.red_cards       > 0 ||
+    input.goals_scored     > 0 ||
+    input.assists          > 0 ||
+    input.own_goals        > 0 ||
+    input.yellow_cards     > 0 ||
+    input.red_cards        > 0 ||
     input.penalties_scored > 0 ||
     input.penalties_missed > 0 ||
     input.penalties_saved  > 0
@@ -70,27 +63,8 @@ function hasDecisiveEvent(input: EnginePlayerInput): boolean {
 
 // ---- Minutes factor -----------------------------------------
 
-/**
- * Returns the minutes factor for players with 10+ minutes.
- * Uses a configurable 2-band system: below threshold → partial, >= threshold → full.
- * The 0-minute NV gate and decisive-event exception are handled separately.
- */
 function getMinutesFactor(minutes: number, cfg: MinutesFactorConfig): number {
   return minutes >= cfg.threshold ? cfg.full : cfg.partial
-}
-
-// ---- Defensive correction -----------------------------------
-
-function computeDefensiveCorrection(
-  input: EnginePlayerInput,
-  cfg: DefensiveRoleConfig
-): number {
-  let corr = 0
-  for (const [stat, coeff] of Object.entries(cfg.weights) as [DefensiveStatKey, number][]) {
-    const val = input[stat] as number
-    corr += coeff * val
-  }
-  return round(clamp(round(corr), cfg.cap_min, cfg.cap_max))
 }
 
 // ---- Bonus / malus ------------------------------------------
@@ -135,7 +109,7 @@ function computeBonusMalus(
     add('Rigore parato', input.penalties_saved, bm.penalty_saved)
   }
 
-  // ---- Clean sheet (role + min >= 60) ----
+  // ---- Clean sheet (role + min >= threshold) ----
   const csBonus = bm.clean_sheet_by_role[rc]
   if (
     csBonus !== undefined &&
@@ -148,7 +122,7 @@ function computeBonusMalus(
   // ---- Goals conceded ----
   // GK: always (no min restriction)
   // DEF: only if minutes_played >= goals_conceded_def_min_minutes
-  // MID/ATT: nothing
+  // MID/ATT: no malus
   if (input.goals_conceded > 0) {
     const gcMalus = bm.goals_conceded_by_role[rc]
     if (gcMalus !== undefined) {
@@ -165,67 +139,6 @@ function computeBonusMalus(
   return { breakdown, total }
 }
 
-// ---- Advanced bonus -----------------------------------------
-
-function computeAdvancedBonus(
-  input: EnginePlayerInput,
-  cfg: AdvancedBonusConfig
-): { breakdown: BonusMalusItem[]; total: number } {
-  if (!cfg.enabled) return { breakdown: [], total: 0 }
-
-  const items: BonusMalusItem[] = []
-  let raw = 0
-
-  // Rule 1 — Creative vision (either sub-condition)
-  const meetsCreative =
-    (input.key_passes !== null && input.key_passes >= cfg.creative_key_passes_threshold) ||
-    (input.expected_assists !== null && input.expected_assists >= cfg.creative_expected_assists_threshold)
-
-  if (meetsCreative) {
-    items.push({ label: 'Visione (passaggi chiave / xA)', quantity: 1, points_each: cfg.creative_bonus, total: cfg.creative_bonus })
-    raw += cfg.creative_bonus
-  }
-
-  // Rule 2 — Dribbling (both sub-conditions required)
-  const meetsDribbling =
-    input.successful_dribbles !== null &&
-    input.successful_dribbles >= cfg.dribbling_successful_threshold &&
-    input.dribble_success_rate !== null &&
-    input.dribble_success_rate >= cfg.dribbling_success_rate_threshold
-
-  if (meetsDribbling) {
-    items.push({ label: 'Dribbling', quantity: 1, points_each: cfg.dribbling_bonus, total: cfg.dribbling_bonus })
-    raw += cfg.dribbling_bonus
-  }
-
-  // Rule 3 — Passing control (pass conditions + either final-third OR progressive)
-  const meetsPassing =
-    input.completed_passes !== null &&
-    input.completed_passes >= cfg.passing_completed_threshold &&
-    input.pass_accuracy !== null &&
-    input.pass_accuracy >= cfg.passing_accuracy_threshold &&
-    (
-      (input.final_third_passes !== null && input.final_third_passes >= cfg.passing_final_third_threshold) ||
-      (input.progressive_passes !== null && input.progressive_passes >= cfg.passing_progressive_threshold)
-    )
-
-  if (meetsPassing) {
-    items.push({ label: 'Controllo del palleggio', quantity: 1, points_each: cfg.passing_bonus, total: cfg.passing_bonus })
-    raw += cfg.passing_bonus
-  }
-
-  if (raw === 0) return { breakdown: [], total: 0 }
-
-  // Apply total cap
-  const cappedTotal = Math.min(raw, cfg.total_cap)
-  if (raw > cfg.total_cap) {
-    const excess = round(raw - cfg.total_cap)
-    items.push({ label: 'Cap bonus avanzati', quantity: 1, points_each: -excess, total: -excess })
-  }
-
-  return { breakdown: items, total: round(cappedTotal) }
-}
-
 // ---- Per-player entry point ---------------------------------
 
 export function calculatePlayerScore(
@@ -239,143 +152,90 @@ export function calculatePlayerScore(
   // ----------------------------------------------------------------
   if (input.minutes_played < 10) {
     if (!hasDecisiveEvent(input)) {
-      const skipped: PlayerSkipped = { kind: 'skipped', player_id, stats_id, is_provisional, reason: 'NV' }
+      const skipped: PlayerSkipped = {
+        kind: 'skipped', player_id, stats_id, is_provisional, reason: 'NV',
+      }
       return skipped
     }
 
-    // Decisive-event exception: voto_base = 6.0, apply BM + advanced only
-    const { breakdown: bmBreakdown, total: bmTotal } = computeBonusMalus(input, config)
-    const { breakdown: advBreakdown, total: advTotal } = computeAdvancedBonus(input, config.advanced_bonus)
-    const allBreakdown = [...bmBreakdown, ...advBreakdown]
-    const total_bonus_malus = round(bmTotal + advTotal)
-    const fantavoto = round(config.base_score + total_bonus_malus)
+    // Decisive-event exception: voto_base = 6.0, B/M only
+    const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
+    const fantavoto = round(config.base_score + bmTotal)
 
     const result: PlayerCalculationResult = {
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: true,
       no_ratings_exception: false,
-      z_sofascore: null, z_fotmob: null,
-      z_combined: null,
-      weights_used: {},
+      z_fotmob: null,
       minutes_factor: null,
       z_adjusted: null,
       b0: null,
       role_multiplier: null,
       b1: null,
-      defensive_correction: null,
       voto_base: config.base_score,
-      bonus_malus_breakdown: allBreakdown,
-      total_bonus_malus,
+      bonus_malus_breakdown: breakdown,
+      total_bonus_malus: bmTotal,
       fantavoto,
     }
     return result
   }
 
   // ----------------------------------------------------------------
-  // Step 2 — Per-source z-scores: z = (rating - mean) / std
+  // Step 2 — FotMob z-score: z = (rating - mean) / std
   // ----------------------------------------------------------------
   const norm = config.source_normalization
-
-  const z_sofascore = input.sofascore_rating !== null
-    ? round((input.sofascore_rating - norm.sofascore.mean) / norm.sofascore.std)
-    : null
   const z_fotmob = input.fotmob_rating !== null
-    ? round((input.fotmob_rating - norm.fotmob.mean) / norm.fotmob.std)
+    ? round((input.fotmob_rating - norm.mean) / norm.std)
     : null
 
   // ----------------------------------------------------------------
-  // Gate 2 — No source ratings at all
+  // Gate 2 — No FotMob rating (live match, not yet published)
+  // voto_base = 6.0; minutes_factor is still computed so the UI
+  // can distinguish this case from decisive_event_exception.
   // ----------------------------------------------------------------
-  const rawWeights = config.source_weights
-  const sourceMap = [
-    { z: z_sofascore, weight: rawWeights.sofascore, key: 'sofascore' },
-    { z: z_fotmob,    weight: rawWeights.fotmob,    key: 'fotmob'    },
-  ]
-  const available = sourceMap.filter((s) => s.z !== null)
-
-  if (available.length === 0) {
-    // No source ratings available — e.g. fetched during a live match before FotMob
-    // publishes ratings. Use neutral base (6.0) + defensive correction + B/M.
-    // The player is NOT skipped: they have minutes and possibly decisive events
-    // that must be reflected in the score.
+  if (z_fotmob === null) {
     const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
-    const defCfgNR = config.defensive[input.rating_class]
-    const defensive_correction_nr = computeDefensiveCorrection(input, defCfgNR)
-    const voto_base_nr = round(clamp(
-      config.base_score + defensive_correction_nr,
-      config.voto_base_cap_min,
-      config.voto_base_cap_max,
-    ))
-    const { breakdown: bmBreakdownNR, total: bmTotalNR } = computeBonusMalus(input, config)
-    const { breakdown: advBreakdownNR, total: advTotalNR } = computeAdvancedBonus(input, config.advanced_bonus)
-    const bonus_malus_breakdown_nr = [...bmBreakdownNR, ...advBreakdownNR]
-    const total_bonus_malus_nr = round(bmTotalNR + advTotalNR)
-    const fantavoto_nr = round(voto_base_nr + total_bonus_malus_nr)
+    const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
+    const voto_base = config.base_score
+    const fantavoto = round(voto_base + bmTotal)
 
     return {
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: false,
       no_ratings_exception: true,
-      z_sofascore: null, z_fotmob: null,
-      z_combined: null,
-      weights_used: {},
+      z_fotmob: null,
       minutes_factor,
       z_adjusted: null,
       b0: null,
       role_multiplier: null,
       b1: null,
-      defensive_correction: defensive_correction_nr,
-      voto_base: voto_base_nr,
-      bonus_malus_breakdown: bonus_malus_breakdown_nr,
-      total_bonus_malus: total_bonus_malus_nr,
-      fantavoto: fantavoto_nr,
+      voto_base,
+      bonus_malus_breakdown: breakdown,
+      total_bonus_malus: bmTotal,
+      fantavoto,
     }
   }
 
   // ----------------------------------------------------------------
-  // Step 3 — Normalised weighted average
-  // ----------------------------------------------------------------
-  const totalWeight = available.reduce((acc, s) => acc + s.weight, 0)
-  const weights_used: Record<string, number> = {}
-  let z_combined = 0
-
-  for (const s of available) {
-    const normWeight = round(s.weight / totalWeight, 6)
-    weights_used[s.key] = normWeight
-    z_combined += (s.z as number) * normWeight
-  }
-  for (const s of sourceMap) {
-    if (s.z === null) weights_used[s.key] = 0
-  }
-
-  // ----------------------------------------------------------------
-  // Step 4 — One-source shrink (25% toward zero when only 1 available)
-  // ----------------------------------------------------------------
-  if (available.length === 1) {
-    z_combined = z_combined * config.one_source_shrink
-  }
-  z_combined = round(z_combined)
-
-  // ----------------------------------------------------------------
-  // Step 5 — Minutes factor (10+ min only; 0–9 handled above)
+  // Step 3 — Minutes factor
   // ----------------------------------------------------------------
   const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
 
   // ----------------------------------------------------------------
-  // Step 6 — z_adjusted
+  // Step 4 — z_adjusted
   // ----------------------------------------------------------------
-  const z_adjusted = round(z_combined * minutes_factor)
+  const z_adjusted = round(z_fotmob * minutes_factor)
 
   // ----------------------------------------------------------------
-  // Step 7 — b0: Italian base-scale conversion
+  // Step 5 — b0: Italian base-scale conversion
   //   b0 = 6.0 + 1.15 × z_adjusted
   // ----------------------------------------------------------------
   const b0 = round(config.base_score + config.scale_factor * z_adjusted)
 
   // ----------------------------------------------------------------
-  // Step 8 — b1: role-distance multiplier
+  // Step 6 — b1: role-distance multiplier
   //   b1 = 6.0 + multiplier[rc] × (b0 - 6.0)
   //   (not b0 × multiplier — expands/compresses distance from sufficiency)
   // ----------------------------------------------------------------
@@ -383,26 +243,18 @@ export function calculatePlayerScore(
   const b1 = round(config.base_score + roleMultiplier * (b0 - config.base_score))
 
   // ----------------------------------------------------------------
-  // Step 9 — Defensive correction (role-specific weights + per-role cap)
+  // Step 7 — voto_base = clamp(b1, 3.0, 9.5)
   // ----------------------------------------------------------------
-  const defCfg = config.defensive[input.rating_class]
-  const defensive_correction = computeDefensiveCorrection(input, defCfg)
+  const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
 
   // ----------------------------------------------------------------
-  // Step 10 — voto_base = clamp(b1 + def_correction, 3.0, 9.5)
+  // Step 8 — Bonus / malus
   // ----------------------------------------------------------------
-  const voto_base = round(clamp(b1 + defensive_correction, config.voto_base_cap_min, config.voto_base_cap_max))
+  const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
+  const total_bonus_malus = bmTotal
 
   // ----------------------------------------------------------------
-  // Steps 11–12 — Bonus / malus and advanced bonus
-  // ----------------------------------------------------------------
-  const { breakdown: bmBreakdown, total: bmTotal } = computeBonusMalus(input, config)
-  const { breakdown: advBreakdown, total: advTotal } = computeAdvancedBonus(input, config.advanced_bonus)
-  const bonus_malus_breakdown = [...bmBreakdown, ...advBreakdown]
-  const total_bonus_malus = round(bmTotal + advTotal)
-
-  // ----------------------------------------------------------------
-  // Step 13 — fantavoto
+  // Step 9 — fantavoto
   // ----------------------------------------------------------------
   const fantavoto = round(voto_base + total_bonus_malus)
 
@@ -411,17 +263,14 @@ export function calculatePlayerScore(
     player_id, stats_id, is_provisional,
     decisive_event_exception: false,
     no_ratings_exception: false,
-    z_sofascore, z_fotmob,
-    z_combined,
-    weights_used,
+    z_fotmob,
     minutes_factor,
     z_adjusted,
     b0,
     role_multiplier: roleMultiplier,
     b1,
-    defensive_correction,
     voto_base,
-    bonus_malus_breakdown,
+    bonus_malus_breakdown: breakdown,
     total_bonus_malus,
     fantavoto,
   }

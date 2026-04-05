@@ -1,25 +1,10 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1 — Types
+// Fantacalcio Statistico — Rating Engine v1.1 — Types
 // ============================================================
 
 import type { RatingClass } from '@/types/database.types'
 
 // ---- Input -------------------------------------------------
-
-/**
- * Keys of EnginePlayerInput that map directly to DB stat columns
- * used in defensive correction weight formulas.
- */
-export type DefensiveStatKey =
-  | 'tackles_won'
-  | 'interceptions'
-  | 'clearances'
-  | 'blocks'
-  | 'aerial_duels_won'
-  | 'dribbled_past'
-  | 'error_leading_to_goal'
-  | 'saves'
-  | 'goals_conceded'
 
 /** All data the engine needs for a single player. */
 export interface EnginePlayerInput {
@@ -30,8 +15,7 @@ export interface EnginePlayerInput {
   minutes_played: number
   is_provisional: boolean
 
-  // Source ratings — null if not provided for this matchday
-  sofascore_rating: number | null
+  // Single source rating — null if FotMob has not yet published (e.g. live match)
   fotmob_rating: number | null
 
   // Event counts
@@ -40,50 +24,14 @@ export interface EnginePlayerInput {
   own_goals: number
   yellow_cards: number
   red_cards: number
-  penalties_scored: number    // subset of goals_scored; used for BM discount + decisive event
+  penalties_scored: number    // subset of goals_scored
   penalties_missed: number
   penalties_saved: number     // GK only in practice
   clean_sheet: boolean
   goals_conceded: number
-
-  // Defensive stats — used in defensive correction formula
-  tackles_won: number
-  interceptions: number
-  clearances: number
-  blocks: number
-  aerial_duels_won: number
-  dribbled_past: number
-  saves: number
-  error_leading_to_goal: number
-
-  // Advanced stats — nullable; null means not entered, not zero
-  key_passes: number | null
-  expected_assists: number | null
-  successful_dribbles: number | null
-  dribble_success_rate: number | null
-  completed_passes: number | null
-  pass_accuracy: number | null
-  final_third_passes: number | null
-  progressive_passes: number | null
 }
 
 // ---- Config types ------------------------------------------
-
-export interface SourceNormalization {
-  mean: number
-  std: number
-}
-
-/**
- * Defensive correction weights for a single role.
- * weights keys must be a subset of DefensiveStatKey.
- * ATT uses empty weights (no defensive correction).
- */
-export interface DefensiveRoleConfig {
-  weights: Partial<Record<DefensiveStatKey, number>>
-  cap_min: number
-  cap_max: number
-}
 
 export interface BonusMalusConfig {
   /** Per-role goal bonus (regular goal). GK > DEF > MID > ATT. */
@@ -110,27 +58,6 @@ export interface BonusMalusConfig {
   hat_trick_bonus: number
 }
 
-export interface AdvancedBonusConfig {
-  /** Set to false when league.advanced_bonuses_enabled = false */
-  enabled: boolean
-  /** Maximum combined advanced bonus that can be earned */
-  total_cap: number
-  // Rule 1 — Creative vision (either condition triggers)
-  creative_key_passes_threshold: number
-  creative_expected_assists_threshold: number
-  creative_bonus: number
-  // Rule 2 — Dribbling (both conditions required)
-  dribbling_successful_threshold: number
-  dribbling_success_rate_threshold: number
-  dribbling_bonus: number
-  // Rule 3 — Passing control (all pass conditions required, plus either final_third OR progressive)
-  passing_completed_threshold: number
-  passing_accuracy_threshold: number
-  passing_final_third_threshold: number
-  passing_progressive_threshold: number
-  passing_bonus: number
-}
-
 export interface MinutesFactorConfig {
   /** Players with minutes < threshold get factor_partial; >= threshold get factor_full */
   threshold: number
@@ -142,19 +69,25 @@ export interface EngineConfig {
   engine_version: string
   /** Baseline score that z-deviations are applied around (6.0) */
   base_score: number
-  /** Italian base-scale factor applied before role multiplier (1.15) */
+  /** Italian base-scale factor: b0 = base_score + scale_factor × z_adjusted (1.15) */
   scale_factor: number
-  /** Shrink factor for z_combined when only one source is available (0.75 = 25% shrink toward 0) */
-  one_source_shrink: number
-  source_normalization: Record<'sofascore' | 'fotmob', SourceNormalization>
-  source_weights: Record<'sofascore' | 'fotmob', number>
+  /**
+   * FotMob rating normalization: z = (rating - mean) / std
+   * mean = 6.6 (FotMob "average" as confirmed by their color bands)
+   * std  = 0.79 (typical spread of ratings across a Serie A season)
+   */
+  source_normalization: { mean: number; std: number }
   /** Configurable 2-band minutes factor */
   minutes_factor: MinutesFactorConfig
-  /** Role multiplier used in b1 = base_score + multiplier * (b0 - base_score) */
+  /**
+   * Role multipliers — expand/compress distance from the 6.0 sufficiency threshold:
+   *   b1 = base_score + multiplier × (b0 - base_score)
+   * GK/DEF: amplified (rating is the primary scoring signal)
+   * MID: neutral
+   * ATT: slightly compressed (goals/assists already captured in B/M)
+   */
   role_multiplier: Record<RatingClass, number>
-  defensive: Record<RatingClass, DefensiveRoleConfig>
   bonus_malus: BonusMalusConfig
-  advanced_bonus: AdvancedBonusConfig
   voto_base_cap_min: number
   voto_base_cap_max: number
 }
@@ -177,33 +110,28 @@ export interface PlayerCalculationResult {
   is_provisional: boolean
   /**
    * True when player played 0–9 minutes but had a decisive event.
-   * In this case z-scores, b0, b1, defensive_correction are null
-   * and voto_base is set directly to base_score (6.0).
+   * z_fotmob, b0, b1, minutes_factor are null; voto_base = base_score (6.0).
    */
   decisive_event_exception: boolean
   /**
-   * True when the player had ≥10 minutes but no source ratings were available
-   * (e.g. fetched during a live match before FotMob publishes ratings).
-   * z-scores, b0, b1 are null; voto_base is set to base_score (6.0) +
-   * defensive_correction; full B/M is applied.
+   * True when the player had ≥10 minutes but FotMob rating was not yet available
+   * (e.g. fetched during a live match before ratings are published).
+   * z_fotmob, z_adjusted, b0, b1 are null; voto_base = base_score (6.0);
+   * minutes_factor is set; full B/M is applied.
    */
   no_ratings_exception: boolean
 
-  // Per-source z-scores (null if source missing OR decisive_event_exception)
-  z_sofascore: number | null
+  // null for decisive_event_exception, or when FotMob rating missing
   z_fotmob: number | null
-  z_combined: number | null
-  weights_used: Record<string, number>
-
-  // null for decisive_event_exception, computed otherwise
+  // null for decisive_event_exception; set for no_ratings_exception (useful for indicator)
   minutes_factor: number | null
+  // null when z_fotmob is null
   z_adjusted: number | null
   b0: number | null
   role_multiplier: number | null
   b1: number | null
-  defensive_correction: number | null
 
-  // Always set: 6.0 for decisive_event_exception, clamped value otherwise
+  // Always set: base_score (6.0) for exceptions, clamped b1 otherwise
   voto_base: number
 
   bonus_malus_breakdown: BonusMalusItem[]
@@ -216,7 +144,7 @@ export interface PlayerSkipped {
   player_id: string
   stats_id: string
   is_provisional: boolean
-  reason: 'NV' | 'NO_RATINGS'
+  reason: 'NV'
 }
 
 export type PlayerEngineOutput = PlayerCalculationResult | PlayerSkipped

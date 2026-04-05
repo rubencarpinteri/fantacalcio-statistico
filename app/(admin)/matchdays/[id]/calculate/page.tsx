@@ -63,21 +63,17 @@ export default async function CalculatePage({
         id,
         player_id,
         is_provisional,
-        minutes_factor,
-        z_combined,
-        z_sofascore,
         z_fotmob,
+        minutes_factor,
         z_adjusted,
         b0,
         role_multiplier,
         b1,
-        defensive_correction,
         voto_base,
         bonus_malus_breakdown,
         total_bonus_malus,
         fantavoto,
         is_override,
-        weights_used,
         league_players ( full_name, club, rating_class )
       `)
       .eq('run_id', previewRunId)

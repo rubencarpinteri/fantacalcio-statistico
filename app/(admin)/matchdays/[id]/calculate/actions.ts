@@ -55,7 +55,7 @@ export async function triggerCalculationAction(
     return fail('Non è possibile calcolare una giornata archiviata.')
   }
 
-  // Fetch per-league engine config (bonus values, minutes factor)
+  // Fetch per-league engine config (bonus values, minutes factor, role multipliers)
   // If no row exists yet, buildEngineConfig falls back to DEFAULT_ENGINE_CONFIG values.
   const { data: dbEngineConfig } = await supabase
     .from('league_engine_config')
@@ -64,15 +64,9 @@ export async function triggerCalculationAction(
     .maybeSingle()
 
   // Build per-league engine config
-  const engineConfig = buildEngineConfig(
-    {
-      sofascore: ctx.league.source_weight_sofascore / 100,
-      fotmob:    ctx.league.source_weight_fotmob    / 100,
-    },
-    dbEngineConfig ?? null
-  )
+  const engineConfig = buildEngineConfig(dbEngineConfig ?? null)
 
-  // Fetch all stat rows for this matchday — all fields needed by engine
+  // Fetch all stat rows for this matchday — only fields needed by engine
   const { data: statsRows } = await supabase
     .from('player_match_stats')
     .select(`
@@ -80,7 +74,6 @@ export async function triggerCalculationAction(
       player_id,
       minutes_played,
       rating_class_override,
-      sofascore_rating,
       fotmob_rating,
       is_provisional,
       goals_scored,
@@ -93,22 +86,6 @@ export async function triggerCalculationAction(
       penalties_saved,
       clean_sheet,
       goals_conceded,
-      tackles_won,
-      interceptions,
-      clearances,
-      blocks,
-      aerial_duels_won,
-      dribbled_past,
-      saves,
-      error_leading_to_goal,
-      key_passes,
-      expected_assists,
-      successful_dribbles,
-      dribble_success_rate,
-      completed_passes,
-      pass_accuracy,
-      final_third_passes,
-      progressive_passes,
       league_players ( rating_class )
     `)
     .eq('matchday_id', matchdayId)
@@ -125,43 +102,22 @@ export async function triggerCalculationAction(
     )?.rating_class ?? 'MID'
 
     return {
-      player_id:       s.player_id,
-      stats_id:        s.id,
-      rating_class:    (s.rating_class_override as RatingClass | null) ?? storedClass,
-      minutes_played:  s.minutes_played,
-      is_provisional:  s.is_provisional,
-
-      sofascore_rating: s.sofascore_rating,
-      fotmob_rating:    s.fotmob_rating,
-
-      goals_scored:       s.goals_scored,
-      assists:            s.assists,
-      own_goals:          s.own_goals,
-      yellow_cards:       s.yellow_cards,
-      red_cards:          s.red_cards,
-      penalties_scored:   s.penalties_scored,
-      penalties_missed:   s.penalties_missed,
-      penalties_saved:    s.penalties_saved,
-      clean_sheet:        s.clean_sheet,
-      goals_conceded:     s.goals_conceded,
-
-      tackles_won:            s.tackles_won,
-      interceptions:          s.interceptions,
-      clearances:             s.clearances,
-      blocks:                 s.blocks,
-      aerial_duels_won:       s.aerial_duels_won,
-      dribbled_past:          s.dribbled_past,
-      saves:                  s.saves,
-      error_leading_to_goal:  s.error_leading_to_goal,
-
-      key_passes:           s.key_passes,
-      expected_assists:     s.expected_assists,
-      successful_dribbles:  s.successful_dribbles,
-      dribble_success_rate: s.dribble_success_rate,
-      completed_passes:     s.completed_passes,
-      pass_accuracy:        s.pass_accuracy,
-      final_third_passes:   s.final_third_passes,
-      progressive_passes:   s.progressive_passes,
+      player_id:      s.player_id,
+      stats_id:       s.id,
+      rating_class:   (s.rating_class_override as RatingClass | null) ?? storedClass,
+      minutes_played: s.minutes_played,
+      is_provisional: s.is_provisional,
+      fotmob_rating:  s.fotmob_rating,
+      goals_scored:   s.goals_scored,
+      assists:        s.assists,
+      own_goals:      s.own_goals,
+      yellow_cards:   s.yellow_cards,
+      red_cards:      s.red_cards,
+      penalties_scored: s.penalties_scored,
+      penalties_missed: s.penalties_missed,
+      penalties_saved:  s.penalties_saved,
+      clean_sheet:    s.clean_sheet,
+      goals_conceded: s.goals_conceded,
     }
   })
 
@@ -209,10 +165,11 @@ export async function triggerCalculationAction(
         stats_id:  output.stats_id,
         is_provisional: output.is_provisional,
         is_override: false,
-        z_sofascore: null, z_fotmob: null,
-        z_combined: null, weights_used: null, minutes_factor: null,
+        // Legacy columns (v1) — always null in v1.1
+        z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+        z_fotmob: null, minutes_factor: null,
         z_adjusted: null, b0: null, role_multiplier: null, b1: null,
-        defensive_correction: null, voto_base: null,
+        voto_base: null,
         bonus_malus_breakdown: null, total_bonus_malus: null,
         fantavoto: null,
       }
@@ -226,20 +183,18 @@ export async function triggerCalculationAction(
       stats_id:   r.stats_id,
       is_provisional: r.is_provisional,
       is_override: false,
-      z_sofascore:          r.z_sofascore,
-      z_fotmob:             r.z_fotmob,
-      z_combined:           r.z_combined,
-      weights_used:         r.weights_used as unknown as Json,
-      minutes_factor:       r.minutes_factor,
-      z_adjusted:           r.z_adjusted,
-      b0:                   r.b0,
-      role_multiplier:      r.role_multiplier,
-      b1:                   r.b1,
-      defensive_correction: r.defensive_correction,
-      voto_base:            r.voto_base,
+      // Legacy columns (v1) — always null in v1.1
+      z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+      z_fotmob:          r.z_fotmob,
+      minutes_factor:    r.minutes_factor,
+      z_adjusted:        r.z_adjusted,
+      b0:                r.b0,
+      role_multiplier:   r.role_multiplier,
+      b1:                r.b1,
+      voto_base:         r.voto_base,
       bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
-      total_bonus_malus:    r.total_bonus_malus,
-      fantavoto:            r.fantavoto,
+      total_bonus_malus: r.total_bonus_malus,
+      fantavoto:         r.fantavoto,
     }
   })
 
@@ -300,7 +255,6 @@ export async function triggerCalculationAction(
       scored_count: engineResult.scored_count,
       skipped_count: engineResult.skipped_count,
       override_count: overrideCount,
-      advanced_bonus_enabled: engineConfig.advanced_bonus.enabled,
     },
   })
 

@@ -13,21 +13,17 @@ export interface CalcPlayerRow {
   id: string
   player_id: string
   is_provisional: boolean
-  minutes_factor: number | null
-  z_combined: number | null
-  z_sofascore: number | null
   z_fotmob: number | null
+  minutes_factor: number | null
   z_adjusted: number | null
   b0: number | null
   role_multiplier: number | null
   b1: number | null
-  defensive_correction: number | null
   voto_base: number | null
   bonus_malus_breakdown: unknown
   total_bonus_malus: number | null
   fantavoto: number | null
   is_override: boolean
-  weights_used: unknown
   league_players: { full_name: string; club: string; rating_class: string } | null
 }
 
@@ -150,12 +146,23 @@ function EditStatsModal({
           rating_class_override: null,
           sofascore_rating: null,
           fotmob_rating: null,
-          tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
-          aerial_duels_won: 0, dribbled_past: 0, saves: 0,
+          // Defensive/advanced fields not editable in this modal — preserve via 0/null defaults
+          tackles_won: 0,
+          interceptions: 0,
+          clearances: 0,
+          blocks: 0,
+          aerial_duels_won: 0,
+          dribbled_past: 0,
+          saves: 0,
           error_leading_to_goal: 0,
-          key_passes: null, expected_assists: null, successful_dribbles: null,
-          dribble_success_rate: null, completed_passes: null, pass_accuracy: null,
-          final_third_passes: null, progressive_passes: null,
+          key_passes: null,
+          expected_assists: null,
+          successful_dribbles: null,
+          dribble_success_rate: null,
+          completed_passes: null,
+          pass_accuracy: null,
+          final_third_passes: null,
+          progressive_passes: null,
         }],
       })
       if (result.error) {
@@ -410,7 +417,7 @@ export function CalculationPreview({
                     <th className="px-6 py-2.5 sticky left-0 bg-[#111118]">Giocatore</th>
                     <th className="px-4 py-2.5">Classe</th>
                     <th className="px-4 py-2.5 text-right">Min·F</th>
-                    <th className="px-4 py-2.5 text-right">Ẑ</th>
+                    <th className="px-4 py-2.5 text-right">z FM</th>
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
                     <th className="px-4 py-2.5 text-right font-bold text-white">Fantavoto</th>
@@ -425,8 +432,8 @@ export function CalculationPreview({
                     const isExpanded = expandedRow === c.id
                     const wasEdited = savedPlayers.has(c.player_id)
 
-                    // no_ratings_exception: played ≥10 min, no FotMob/SS rating (e.g. live match)
-                    const isNoRatings = c.fantavoto !== null && c.z_combined === null && c.minutes_factor !== null
+                    // no_ratings_exception: played ≥10 min, FotMob rating not yet available (e.g. live match)
+                    const isNoRatings = c.fantavoto !== null && c.z_fotmob === null && c.minutes_factor !== null
 
                     return (
                       <Fragment key={c.id}>
@@ -445,7 +452,7 @@ export function CalculationPreview({
                             {c.minutes_factor !== null ? `×${c.minutes_factor.toFixed(1)}` : '—'}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
-                            {fmt(c.z_combined)}
+                            {fmt(c.z_fotmob)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
                             {fmt(c.voto_base)}
@@ -491,14 +498,12 @@ export function CalculationPreview({
                             <td colSpan={8} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
-                                  ['SofaScore z', fmt(c.z_sofascore)],
                                   ['FotMob z', fmt(c.z_fotmob)],
-                                  ['z_combined', fmt(c.z_combined)],
+                                  ['min·factor', fmt(c.minutes_factor, 2)],
                                   ['z_adjusted', fmt(c.z_adjusted)],
                                   ['b0 (6 + z_adj)', fmt(c.b0)],
                                   ['role_mult', fmt(c.role_multiplier, 2)],
                                   ['b1', fmt(c.b1)],
-                                  ['def_correction', fmt(c.defensive_correction)],
                                   ['voto_base', fmt(c.voto_base)],
                                   ['tot B/M', fmt(c.total_bonus_malus)],
                                   ['fantavoto', fmtFv(c.fantavoto)],

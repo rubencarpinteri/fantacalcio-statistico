@@ -85,6 +85,7 @@ export function EngineConfigForm({ current }: Props) {
   // Use DB values if available, otherwise fall back to DEFAULT_ENGINE_CONFIG
   const bm = DEFAULT_ENGINE_CONFIG.bonus_malus
   const mf = DEFAULT_ENGINE_CONFIG.minutes_factor
+  const rm = DEFAULT_ENGINE_CONFIG.role_multiplier
 
   // When resetKey changes, form remounts with default values
   const src = useDefaults ? null : current
@@ -93,6 +94,11 @@ export function EngineConfigForm({ current }: Props) {
     minutes_factor_threshold: src?.minutes_factor_threshold ?? mf.threshold,
     minutes_factor_partial:   src?.minutes_factor_partial   ?? mf.partial,
     minutes_factor_full:      src?.minutes_factor_full      ?? mf.full,
+
+    role_multiplier_gk:  src?.role_multiplier_gk  ?? rm.GK,
+    role_multiplier_def: src?.role_multiplier_def ?? rm.DEF,
+    role_multiplier_mid: src?.role_multiplier_mid ?? rm.MID,
+    role_multiplier_att: src?.role_multiplier_att ?? rm.ATT,
 
     goal_bonus_gk:  src?.goal_bonus_gk  ?? bm.goal_by_role.GK,
     goal_bonus_def: src?.goal_bonus_def ?? bm.goal_by_role.DEF,
@@ -148,6 +154,46 @@ export function EngineConfigForm({ current }: Props) {
           min="0"
           max="1"
           hint="Tipicamente 1.00"
+        />
+      </FieldGroup>
+
+      {/* ── Moltiplicatori di ruolo ─────────────────────────────────── */}
+      <FieldGroup title="Moltiplicatori di ruolo">
+        <Field
+          label="Moltiplicatore — Portiere (GK)"
+          name="role_multiplier_gk"
+          defaultValue={v.role_multiplier_gk}
+          step="0.01"
+          min="0.5"
+          max="2"
+          hint="Default 1.15 — amplifica lo scostamento dal voto 6 per i portieri"
+        />
+        <Field
+          label="Moltiplicatore — Difensore (DEF)"
+          name="role_multiplier_def"
+          defaultValue={v.role_multiplier_def}
+          step="0.01"
+          min="0.5"
+          max="2"
+          hint="Default 1.10"
+        />
+        <Field
+          label="Moltiplicatore — Centrocampista (MID)"
+          name="role_multiplier_mid"
+          defaultValue={v.role_multiplier_mid}
+          step="0.01"
+          min="0.5"
+          max="2"
+          hint="Default 1.00 — neutro"
+        />
+        <Field
+          label="Moltiplicatore — Attaccante (ATT)"
+          name="role_multiplier_att"
+          defaultValue={v.role_multiplier_att}
+          step="0.01"
+          min="0.5"
+          max="2"
+          hint="Default 0.97 — gol/assist già nel B/M, segnale voto leggermente compresso"
         />
       </FieldGroup>
 

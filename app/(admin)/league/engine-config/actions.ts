@@ -14,6 +14,12 @@ const EngineConfigSchema = z.object({
   minutes_factor_partial:   z.coerce.number().min(0).max(1),
   minutes_factor_full:      z.coerce.number().min(0).max(1),
 
+  // Moltiplicatori di ruolo
+  role_multiplier_gk:  z.coerce.number().min(0.5).max(2),
+  role_multiplier_def: z.coerce.number().min(0.5).max(2),
+  role_multiplier_mid: z.coerce.number().min(0.5).max(2),
+  role_multiplier_att: z.coerce.number().min(0.5).max(2),
+
   // Goal bonuses
   goal_bonus_gk:  z.coerce.number().min(0).max(10),
   goal_bonus_def: z.coerce.number().min(0).max(10),

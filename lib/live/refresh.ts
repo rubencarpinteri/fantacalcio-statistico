@@ -6,10 +6,9 @@
 //   - the manual "Aggiorna ora" server action (user session)
 //
 // Strategy:
-//   1. Fetch ratings from FotMob + SofaScore for every fixture
-//   2. Read existing player_match_stats (defensive stats, manual edits)
-//   3. Merge: API values override ratings/events; manual defensive
-//      stats are preserved.
+//   1. Fetch ratings from FotMob for every fixture
+//   2. Read existing player_match_stats (manual edits)
+//   3. Merge: API values override ratings/events; manual edits preserved
 //   4. Run the engine in-memory (no DB writes for stats)
 //   5. Apply MASTER bench substitution
 //   6. Upsert live_scores + live_player_scores
@@ -25,14 +24,13 @@ import type { EnginePlayerInput } from '@/domain/engine/v1/types'
 
 type Supabase = SupabaseClient<Database>
 
-// ── External API types (mirrors app/api/ratings/fetch/route.ts) ──
+// ── External API types ───────────────────────────────────────
 
 type FetchedStat = {
   fotmob_id: number | null
   name: string
   normalized_name: string
   team_label: string
-  sofascore_rating: number | null
   fotmob_rating: number | null
   minutes_played: number
   goals_scored: number
@@ -155,70 +153,27 @@ async function fetchFotMob(
   }
 }
 
-// ── SofaScore fetch ──────────────────────────────────────────
-
-async function fetchSofaScore(
-  eventId: number
-): Promise<Array<{ name: string; rating: number | null; minutes_played: number }> | null> {
-  try {
-    const res = await fetch(
-      `https://www.sofascore.com/api/v1/event/${eventId}/lineups`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; fantacalcio-statistico/1.0)',
-          Accept: 'application/json',
-        },
-        next: { revalidate: 0 },
-      }
-    )
-    if (!res.ok) return null
-    const json = (await res.json()) as Record<string, unknown>
-    const out: Array<{ name: string; rating: number | null; minutes_played: number }> = []
-    for (const side of ['home', 'away'] as const) {
-      const team = json[side] as Record<string, unknown> | undefined
-      const players = team?.['players'] as Array<Record<string, unknown>> | undefined
-      for (const p of players ?? []) {
-        const player = p['player'] as Record<string, unknown> | undefined
-        const stats = p['statistics'] as Record<string, unknown> | undefined
-        if (!player) continue
-        out.push({
-          name: String(player['name'] ?? ''),
-          rating: stats?.['rating'] != null ? Number(stats['rating']) : null,
-          minutes_played: Number(stats?.['minutesPlayed'] ?? 0),
-        })
-      }
-    }
-    return out
-  } catch {
-    return null
-  }
-}
-
-// ── Merge fixtures into FetchedStat map ──────────────────────
+// ── Fetch all fixtures into a FetchedStat map ────────────────
 
 async function fetchAllFixtures(
-  fixtures: Array<{
-    fotmob_match_id: number | null
-    sofascore_event_id: number | null
-  }>
+  fixtures: Array<{ fotmob_match_id: number | null }>
 ): Promise<Map<string, FetchedStat>> {
   const map = new Map<string, FetchedStat>()
 
   await Promise.all(
     fixtures.map(async (fx) => {
-      const [fotmob, ss] = await Promise.all([
-        fx.fotmob_match_id ? fetchFotMob(fx.fotmob_match_id) : null,
-        fx.sofascore_event_id ? fetchSofaScore(fx.sofascore_event_id) : null,
-      ])
+      if (!fx.fotmob_match_id) return
+      const fotmob = await fetchFotMob(fx.fotmob_match_id)
+      if (!fotmob) return
 
       // Build event counters from FotMob
-      const yellows = new Map<number, number>()
-      const reds = new Map<number, number>()
-      const ownGoals = new Map<number, number>()
-      const penScored = new Map<number, number>()
-      const penMissed = new Map<number, number>()
+      const yellows    = new Map<number, number>()
+      const reds       = new Map<number, number>()
+      const ownGoals   = new Map<number, number>()
+      const penScored  = new Map<number, number>()
+      const penMissed  = new Map<number, number>()
 
-      for (const e of fotmob?.events ?? []) {
+      for (const e of fotmob.events) {
         if (!e.player_id) continue
         const pid = e.player_id
         if (e.type === 'Card') {
@@ -233,15 +188,13 @@ async function fetchAllFixtures(
         }
       }
 
-      // Seed from FotMob
-      for (const s of fotmob?.stats ?? []) {
+      for (const s of fotmob.stats) {
         const key = normalizeName(s.name)
         map.set(key, {
           fotmob_id: s.fotmob_id,
           name: s.name,
           normalized_name: key,
           team_label: s.team_name,
-          sofascore_rating: null,
           fotmob_rating: s.rating,
           minutes_played: s.minutes_played,
           goals_scored: s.goals_scored,
@@ -255,38 +208,6 @@ async function fetchAllFixtures(
           goals_conceded: s.goals_conceded,
           saves: s.saves,
         })
-      }
-
-      // Merge SofaScore rating by normalized name
-      for (const ss_player of ss ?? []) {
-        const key = normalizeName(ss_player.name)
-        const existing = map.get(key)
-        if (existing) {
-          existing.sofascore_rating = ss_player.rating
-          if (existing.minutes_played === 0 && ss_player.minutes_played > 0) {
-            existing.minutes_played = ss_player.minutes_played
-          }
-        } else {
-          map.set(key, {
-            fotmob_id: null,
-            name: ss_player.name,
-            normalized_name: key,
-            team_label: '',
-            sofascore_rating: ss_player.rating,
-            fotmob_rating: null,
-            minutes_played: ss_player.minutes_played,
-            goals_scored: 0,
-            assists: 0,
-            own_goals: 0,
-            yellow_cards: 0,
-            red_cards: 0,
-            penalties_scored: 0,
-            penalties_missed: 0,
-            penalties_saved: 0,
-            goals_conceded: 0,
-            saves: 0,
-          })
-        }
       }
     })
   )
@@ -317,30 +238,17 @@ export async function refreshMatchdayLive(
     return { ok: false, error: 'Nessuna fixture configurata per questa giornata.' }
   }
 
-  // 2. Fetch from APIs
+  // 2. Fetch from FotMob
   const apiStatsMap = await fetchAllFixtures(fixtures)
 
-  // 3. League config
-  const [{ data: league }, { data: engineConfigRow }] = await Promise.all([
-    supabase
-      .from('leagues')
-      .select('source_weight_sofascore, source_weight_fotmob')
-      .eq('id', leagueId)
-      .single(),
-    supabase
-      .from('league_engine_config')
-      .select('*')
-      .eq('league_id', leagueId)
-      .maybeSingle(),
-  ])
+  // 3. League engine config
+  const { data: engineConfigRow } = await supabase
+    .from('league_engine_config')
+    .select('*')
+    .eq('league_id', leagueId)
+    .maybeSingle()
 
-  const engineConfig = buildEngineConfig(
-    {
-      sofascore: (league?.source_weight_sofascore ?? 55) / 100,
-      fotmob: (league?.source_weight_fotmob ?? 45) / 100,
-    },
-    engineConfigRow ?? null
-  )
+  const engineConfig = buildEngineConfig(engineConfigRow ?? null)
 
   // 4. Active league players (for rating_class + ID/name matching)
   const { data: leaguePlayers } = await supabase
@@ -356,32 +264,25 @@ export async function refreshMatchdayLive(
   const playerNormMap = new Map(
     leaguePlayers.map((p) => [normalizeName(p.full_name), p])
   )
-  // Secondary map: fotmob_player_id → player (for ID-first matching)
   const fotmobIdToPlayer = new Map(
     leaguePlayers
       .filter(p => p.fotmob_player_id != null)
       .map(p => [p.fotmob_player_id!, p])
   )
-  // Secondary map: fotmob_id → FetchedStat (for players-with-DB-stats loop)
   const fotmobIdToStat = new Map<number, FetchedStat>()
   for (const stat of apiStatsMap.values()) {
     if (stat.fotmob_id != null) fotmobIdToStat.set(stat.fotmob_id, stat)
   }
 
-  // 5. Existing player_match_stats (defensive stats + manual edits)
+  // 5. Existing player_match_stats (manual edits)
   const { data: dbStats } = await supabase
     .from('player_match_stats')
     .select(
       `player_id, rating_class_override,
-       sofascore_rating, fotmob_rating, minutes_played,
+       fotmob_rating, minutes_played,
        goals_scored, assists, own_goals, yellow_cards, red_cards,
        penalties_scored, penalties_missed, penalties_saved,
-       clean_sheet, goals_conceded, saves,
-       tackles_won, interceptions, clearances, blocks,
-       aerial_duels_won, dribbled_past, error_leading_to_goal,
-       key_passes, expected_assists, successful_dribbles,
-       dribble_success_rate, completed_passes, pass_accuracy,
-       final_third_passes, progressive_passes, is_provisional`
+       clean_sheet, goals_conceded, saves, is_provisional`
     )
     .eq('matchday_id', matchdayId)
 
@@ -389,102 +290,75 @@ export async function refreshMatchdayLive(
 
   // 6. Build engine inputs — merge DB stats + fresh API data
   const engineInputs: EnginePlayerInput[] = []
-  // Track merged stats for live_player_scores (per player_id)
-  const mergedStatsMap = new Map<
-    string,
-    {
-      sofascore_rating: number | null
-      fotmob_rating: number | null
-      minutes_played: number
-      goals_scored: number
-      assists: number
-      own_goals: number
-      yellow_cards: number
-      red_cards: number
-      penalties_scored: number
-      penalties_saved: number
-      penalties_missed: number
-      saves: number
-      goals_conceded: number
-    }
-  >()
+  type MergedStat = {
+    fotmob_rating: number | null
+    minutes_played: number
+    goals_scored: number
+    assists: number
+    own_goals: number
+    yellow_cards: number
+    red_cards: number
+    penalties_scored: number
+    penalties_saved: number
+    penalties_missed: number
+    saves: number
+    goals_conceded: number
+  }
+  const mergedStatsMap = new Map<string, MergedStat>()
 
   // Process players that have DB stats entries
   for (const db of dbStats ?? []) {
     const player = leaguePlayers.find((p) => p.id === db.player_id)
     if (!player) continue
 
-    // Step 0: ID match; fall back to normalized name
     const apiData =
       (player.fotmob_player_id != null ? fotmobIdToStat.get(player.fotmob_player_id) : null)
       ?? apiStatsMap.get(normalizeName(player.full_name))
     const rc = (db.rating_class_override as RatingClass | null) ??
       (player.rating_class as RatingClass)
 
-    const merged = {
-      sofascore_rating: apiData?.sofascore_rating ?? db.sofascore_rating,
-      fotmob_rating: apiData?.fotmob_rating ?? db.fotmob_rating,
-      minutes_played: apiData?.minutes_played ?? db.minutes_played,
-      goals_scored: apiData?.goals_scored ?? db.goals_scored,
-      assists: apiData?.assists ?? db.assists,
-      own_goals: apiData?.own_goals ?? db.own_goals,
-      yellow_cards: apiData?.yellow_cards ?? db.yellow_cards,
-      red_cards: apiData?.red_cards ?? db.red_cards,
+    const merged: MergedStat = {
+      fotmob_rating:    apiData?.fotmob_rating   ?? db.fotmob_rating,
+      minutes_played:   apiData?.minutes_played  ?? db.minutes_played,
+      goals_scored:     apiData?.goals_scored    ?? db.goals_scored,
+      assists:          apiData?.assists         ?? db.assists,
+      own_goals:        apiData?.own_goals       ?? db.own_goals,
+      yellow_cards:     apiData?.yellow_cards    ?? db.yellow_cards,
+      red_cards:        apiData?.red_cards       ?? db.red_cards,
       penalties_scored: apiData?.penalties_scored ?? db.penalties_scored,
-      penalties_saved: apiData?.penalties_saved ?? db.penalties_saved,
+      penalties_saved:  apiData?.penalties_saved ?? db.penalties_saved,
       penalties_missed: apiData?.penalties_missed ?? db.penalties_missed,
-      saves: apiData?.saves ?? db.saves,
-      goals_conceded: apiData?.goals_conceded ?? db.goals_conceded,
+      saves:            apiData?.saves           ?? db.saves,
+      goals_conceded:   apiData?.goals_conceded  ?? db.goals_conceded,
     }
     mergedStatsMap.set(db.player_id, merged)
 
     engineInputs.push({
-      player_id: db.player_id,
-      stats_id: db.player_id, // dummy — not stored
-      rating_class: rc,
-      minutes_played: merged.minutes_played,
-      is_provisional: db.is_provisional,
-      sofascore_rating: merged.sofascore_rating,
-      fotmob_rating: merged.fotmob_rating,
-      goals_scored: merged.goals_scored,
-      assists: merged.assists,
-      own_goals: merged.own_goals,
-      yellow_cards: merged.yellow_cards,
-      red_cards: merged.red_cards,
+      player_id:        db.player_id,
+      stats_id:         db.player_id, // dummy — not stored
+      rating_class:     rc,
+      minutes_played:   merged.minutes_played,
+      is_provisional:   db.is_provisional,
+      fotmob_rating:    merged.fotmob_rating,
+      goals_scored:     merged.goals_scored,
+      assists:          merged.assists,
+      own_goals:        merged.own_goals,
+      yellow_cards:     merged.yellow_cards,
+      red_cards:        merged.red_cards,
       penalties_scored: merged.penalties_scored,
-      penalties_missed: apiData?.penalties_missed ?? db.penalties_missed,
-      penalties_saved: apiData?.penalties_saved ?? db.penalties_saved,
-      clean_sheet: db.clean_sheet,
-      goals_conceded: merged.goals_conceded,
-      tackles_won: db.tackles_won,
-      interceptions: db.interceptions,
-      clearances: db.clearances,
-      blocks: db.blocks,
-      aerial_duels_won: db.aerial_duels_won,
-      dribbled_past: db.dribbled_past,
-      saves: merged.saves,
-      error_leading_to_goal: db.error_leading_to_goal,
-      key_passes: db.key_passes,
-      expected_assists: db.expected_assists,
-      successful_dribbles: db.successful_dribbles,
-      dribble_success_rate: db.dribble_success_rate,
-      completed_passes: db.completed_passes,
-      pass_accuracy: db.pass_accuracy,
-      final_third_passes: db.final_third_passes,
-      progressive_passes: db.progressive_passes,
+      penalties_missed: merged.penalties_missed,
+      penalties_saved:  merged.penalties_saved,
+      clean_sheet:      db.clean_sheet,
+      goals_conceded:   merged.goals_conceded,
     })
   }
 
-  // Track which FotMob IDs were matched (for unmatched persistence)
   const matchedFotmobIds = new Set<number>()
-
-  // Track which API entries were matched (by normalized name key) to avoid double-processing
   const matchedNormNames = new Set(
     (dbStats ?? [])
       .map(db => {
         const p = leaguePlayers.find(lp => lp.id === db.player_id)
         if (!p) return null
-        // Track ID match
         if (p.fotmob_player_id != null) matchedFotmobIds.add(p.fotmob_player_id)
         return normalizeName(p.full_name)
       })
@@ -493,65 +367,45 @@ export async function refreshMatchdayLive(
 
   // Players only in API (no manual stats yet) — synthesize engine input
   for (const [normalizedName, apiData] of apiStatsMap) {
-    // ID-first: if fotmob_id maps to a player, use that (handles name mismatches)
     const playerById = apiData.fotmob_id != null ? fotmobIdToPlayer.get(apiData.fotmob_id) : null
     const player = playerById ?? playerNormMap.get(normalizedName)
     if (!player) continue
-    if (dbStatsMap.has(player.id)) continue // already processed above
-    // Track matched fotmob_id
+    if (dbStatsMap.has(player.id)) continue
     if (apiData.fotmob_id != null) matchedFotmobIds.add(apiData.fotmob_id)
 
-    const merged = {
-      sofascore_rating: apiData.sofascore_rating,
-      fotmob_rating: apiData.fotmob_rating,
-      minutes_played: apiData.minutes_played,
-      goals_scored: apiData.goals_scored,
-      assists: apiData.assists,
-      own_goals: apiData.own_goals,
-      yellow_cards: apiData.yellow_cards,
-      red_cards: apiData.red_cards,
+    const merged: MergedStat = {
+      fotmob_rating:    apiData.fotmob_rating,
+      minutes_played:   apiData.minutes_played,
+      goals_scored:     apiData.goals_scored,
+      assists:          apiData.assists,
+      own_goals:        apiData.own_goals,
+      yellow_cards:     apiData.yellow_cards,
+      red_cards:        apiData.red_cards,
       penalties_scored: apiData.penalties_scored,
-      penalties_saved: apiData.penalties_saved,
+      penalties_saved:  apiData.penalties_saved,
       penalties_missed: apiData.penalties_missed,
-      saves: apiData.saves,
-      goals_conceded: apiData.goals_conceded,
+      saves:            apiData.saves,
+      goals_conceded:   apiData.goals_conceded,
     }
     mergedStatsMap.set(player.id, merged)
 
     engineInputs.push({
-      player_id: player.id,
-      stats_id: player.id,
-      rating_class: player.rating_class as RatingClass,
-      minutes_played: apiData.minutes_played,
-      is_provisional: true,
-      sofascore_rating: apiData.sofascore_rating,
-      fotmob_rating: apiData.fotmob_rating,
-      goals_scored: apiData.goals_scored,
-      assists: apiData.assists,
-      own_goals: apiData.own_goals,
-      yellow_cards: apiData.yellow_cards,
-      red_cards: apiData.red_cards,
+      player_id:        player.id,
+      stats_id:         player.id,
+      rating_class:     player.rating_class as RatingClass,
+      minutes_played:   apiData.minutes_played,
+      is_provisional:   true,
+      fotmob_rating:    apiData.fotmob_rating,
+      goals_scored:     apiData.goals_scored,
+      assists:          apiData.assists,
+      own_goals:        apiData.own_goals,
+      yellow_cards:     apiData.yellow_cards,
+      red_cards:        apiData.red_cards,
       penalties_scored: apiData.penalties_scored,
       penalties_missed: apiData.penalties_missed,
-      penalties_saved: apiData.penalties_saved,
-      clean_sheet: false,
-      goals_conceded: apiData.goals_conceded,
-      tackles_won: 0,
-      interceptions: 0,
-      clearances: 0,
-      blocks: 0,
-      aerial_duels_won: 0,
-      dribbled_past: 0,
-      saves: apiData.saves,
-      error_leading_to_goal: 0,
-      key_passes: null,
-      expected_assists: null,
-      successful_dribbles: null,
-      dribble_success_rate: null,
-      completed_passes: null,
-      pass_accuracy: null,
-      final_third_passes: null,
-      progressive_passes: null,
+      penalties_saved:  apiData.penalties_saved,
+      clean_sheet:      false,
+      goals_conceded:   apiData.goals_conceded,
     })
   }
 
@@ -570,6 +424,9 @@ export async function refreshMatchdayLive(
       .from('fotmob_unmatched_players')
       .upsert(unmatchedRows, { onConflict: 'matchday_id,fotmob_player_id', ignoreDuplicates: true })
   }
+
+  // Suppress unused variable warning — matchedNormNames is used implicitly
+  void matchedNormNames
 
   if (engineInputs.length === 0) {
     return { ok: false, error: 'Nessun dato disponibile per il calcolo live.' }
@@ -690,7 +547,7 @@ export async function refreshMatchdayLive(
       extended_penalty: ps.extended_penalty,
       voto_base: votoBaseMap.get(ps.player_id) ?? null,
       fantavoto: ps.fantavoto,
-      sofascore_rating: stats?.sofascore_rating ?? null,
+      sofascore_rating: null, // SofaScore removed in v1.1
       fotmob_rating: stats?.fotmob_rating ?? null,
       minutes_played: stats?.minutes_played ?? 0,
       goals_scored: stats?.goals_scored ?? 0,

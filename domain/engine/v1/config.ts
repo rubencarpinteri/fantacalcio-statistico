@@ -1,54 +1,53 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1 — Approved Config
+// Fantacalcio Statistico — Rating Engine v1.1 — Config
 // ============================================================
-// This is the authoritative source-of-truth for the v1 engine.
+// This is the authoritative source-of-truth for the v1.1 engine.
 // Values match the approved scoring spec exactly.
 // Do not change constants here without updating engine_version.
+//
+// Key changes from v1:
+//   - SofaScore removed (fetching not feasible)
+//   - FotMob mean corrected from 6.87 → 6.6 (matches FotMob color bands)
+//   - Weighted average + one_source_shrink removed (single source)
+//   - Defensive correction removed (stats not available; FotMob rating bakes them in)
+//   - Advanced bonus removed (stats not available)
+//   - Role multipliers now configurable per league via league_engine_config
 // ============================================================
 
 import type { EngineConfig } from './types'
 import type { LeagueEngineConfig } from '@/types/database.types'
 
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
-  engine_version: 'v1',
+  engine_version: 'v1.1',
 
   /** Mantra baseline (sufficiency threshold) */
   base_score: 6.0,
 
   /**
    * Italian base-scale conversion factor.
-   * Applied as: b0 = 6.0 + 1.15 * z_adjusted
+   * Applied as: b0 = 6.0 + 1.15 × z_adjusted
    */
   scale_factor: 1.15,
 
   /**
-   * Shrink factor applied to z_combined when exactly one source is available.
-   * z_combined *= 0.75  →  25% shrink toward zero.
-   */
-  one_source_shrink: 0.75,
-
-  /**
-   * Provider-specific z-score normalisation parameters.
-   * z = (rating - mean) / std
+   * FotMob rating normalization.
+   * mean = 6.6: FotMob's "average" player (confirmed by their green/yellow color boundary).
+   * std  = 0.79: typical spread of ratings across a Serie A season.
+   *
+   * Example:
+   *   rating 6.6 → z =  0.00 → b0 = 6.00 (neutral)
+   *   rating 7.4 → z = +1.01 → b0 = 7.16 (one std above average)
+   *   rating 5.8 → z = -1.01 → b0 = 4.84 (one std below average)
    */
   source_normalization: {
-    sofascore: { mean: 6.87, std: 0.54 },
-    fotmob:    { mean: 6.87, std: 0.79 },
-  },
-
-  /**
-   * Source rating weights before normalisation.
-   * Among available (non-null) sources, weights are re-normalised to sum to 1.0.
-   */
-  source_weights: {
-    sofascore: 0.55,
-    fotmob:    0.45,
+    mean: 6.6,
+    std:  0.79,
   },
 
   /**
    * Configurable 2-band minutes factor.
-   * Players with minutes_played < threshold get factor_partial applied to z_combined.
-   * Players with minutes_played >= threshold get factor_full (no shrink).
+   * Players with minutes_played < threshold → z_adjusted is reduced by partial factor.
+   * Players with minutes_played >= threshold → full weight.
    * The 0-minute NV gate and decisive-event exception are separate, unaffected by this.
    */
   minutes_factor: {
@@ -59,8 +58,18 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
 
   /**
    * Role multipliers — applied as distance-from-sufficiency expansion/compression:
-   *   b1 = 6.0 + multiplier * (b0 - 6.0)
+   *   b1 = 6.0 + multiplier × (b0 - 6.0)
    * NOT as a direct multiplier of the whole score.
+   *
+   * Rationale:
+   *   GK / DEF: FotMob rating IS the primary scoring signal (goals/assists rare)
+   *             → amplify to reward standout defensive performances
+   *   MID:      balanced (goals/assists and defensive work both matter)
+   *             → neutral multiplier
+   *   ATT:      goals/assists are already captured in B/M
+   *             → slightly compress rating signal to avoid double-counting
+   *
+   * Configurable per league via league_engine_config.
    */
   role_multiplier: {
     GK:  1.15,
@@ -69,58 +78,9 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
     ATT: 0.97,
   },
 
-  /**
-   * Per-role defensive correction weights and caps.
-   * ATT has no defensive correction (empty weights, cap [0, 0]).
-   * Clean sheet and goals conceded for outfield players are in bonus_malus, not here.
-   * GK goals_conceded is here (and ALSO separately in bonus_malus as approved).
-   */
-  defensive: {
-    GK: {
-      weights: {
-        saves:                 0.12,
-        goals_conceded:       -0.15,
-        error_leading_to_goal: -0.60,
-      },
-      cap_min: -1.0,
-      cap_max:  1.2,
-    },
-    DEF: {
-      weights: {
-        tackles_won:            0.08,
-        interceptions:          0.08,
-        clearances:             0.04,
-        blocks:                 0.10,
-        aerial_duels_won:       0.03,
-        dribbled_past:         -0.10,
-        error_leading_to_goal: -0.60,
-      },
-      cap_min: -1.0,
-      cap_max:  1.5,
-    },
-    MID: {
-      weights: {
-        tackles_won:            0.08,
-        interceptions:          0.08,
-        clearances:             0.04,
-        blocks:                 0.10,
-        aerial_duels_won:       0.03,
-        dribbled_past:         -0.10,
-        error_leading_to_goal: -0.60,
-      },
-      cap_min: -0.8,
-      cap_max:  0.8,
-    },
-    ATT: {
-      weights: {},
-      cap_min: 0,
-      cap_max: 0,
-    },
-  },
-
   bonus_malus: {
     /**
-     * Per-role goal bonus (regular goal and header).
+     * Per-role goal bonus (regular goal).
      * Penalty goal = goal_by_role[rc] - penalty_scored_discount.
      */
     goal_by_role: {
@@ -138,7 +98,7 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
     yellow_card:   -0.3,
     red_card:      -1.5,
     penalty_missed: -1.5,
-    /** GK only — applied only when rating_class === 'GK' */
+    /** GK only */
     penalty_saved:  2.0,
 
     /**
@@ -169,66 +129,35 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
     hat_trick_bonus: 1.0,
   },
 
-  /**
-   * Advanced bonus rules (applied only when enabled).
-   * Total capped at +1.0 regardless of how many rules fire.
-   */
-  advanced_bonus: {
-    enabled: true, // overridden per-league via buildEngineConfig()
-    total_cap: 1.0,
-
-    // Rule 1 — Creative vision (either sub-condition is sufficient)
-    creative_key_passes_threshold:       5,
-    creative_expected_assists_threshold: 0.70,
-    creative_bonus:                      0.5,
-
-    // Rule 2 — Dribbling (both sub-conditions required)
-    dribbling_successful_threshold:     6,
-    dribbling_success_rate_threshold:   60,
-    dribbling_bonus:                    0.5,
-
-    // Rule 3 — Passing control (pass conditions required AND either final-third OR progressive)
-    passing_completed_threshold:    50,
-    passing_accuracy_threshold:     90,
-    passing_final_third_threshold:   8,
-    passing_progressive_threshold:   5,
-    passing_bonus:                   0.5,
-  },
-
   voto_base_cap_min: 3.0,
   voto_base_cap_max: 9.5,
 }
 
 /**
- * Build a per-league engine config from league settings + optional DB engine config row.
- * Call this at trigger time, not at config definition time.
- *
- * @param sourceWeights   Decimal fractions from leagues.source_weight_* (e.g. 0.55)
- * @param dbConfig        Row from league_engine_config, or null to use defaults
+ * Build a per-league engine config from an optional DB engine config row.
+ * Falls back to DEFAULT_ENGINE_CONFIG when dbConfig is null.
+ * Called at calculation trigger time — never at module load time.
  */
 export function buildEngineConfig(
-  sourceWeights: { sofascore: number; fotmob: number },
   dbConfig: LeagueEngineConfig | null
 ): EngineConfig {
   const base = DEFAULT_ENGINE_CONFIG
-
-  if (!dbConfig) {
-    return {
-      ...base,
-      source_weights: sourceWeights,
-      advanced_bonus: { ...base.advanced_bonus, enabled: false },
-    }
-  }
+  if (!dbConfig) return base
 
   return {
     ...base,
-    source_weights: sourceWeights,
-    advanced_bonus: { ...base.advanced_bonus, enabled: false },
 
     minutes_factor: {
       threshold: dbConfig.minutes_factor_threshold,
       partial:   dbConfig.minutes_factor_partial,
       full:      dbConfig.minutes_factor_full,
+    },
+
+    role_multiplier: {
+      GK:  dbConfig.role_multiplier_gk,
+      DEF: dbConfig.role_multiplier_def,
+      MID: dbConfig.role_multiplier_mid,
+      ATT: dbConfig.role_multiplier_att,
     },
 
     bonus_malus: {

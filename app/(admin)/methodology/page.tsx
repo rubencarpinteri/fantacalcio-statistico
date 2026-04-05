@@ -14,10 +14,6 @@ function sign(n: number) {
   return n >= 0 ? `+${n}` : `${n}`
 }
 
-function pct(n: number) {
-  return `${Math.round(n * 100)}%`
-}
-
 // ─── sub-components (all RSC-safe, no hooks) ─────────────────────────────────
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -71,8 +67,6 @@ function TableWrap({ children }: { children: React.ReactNode }) {
   )
 }
 
-// ─── pipeline step badge ──────────────────────────────────────────────────────
-
 function Step({ n, label }: { n: number; label: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -90,7 +84,6 @@ export default async function MethodologyPage() {
   const ctx = await requireLeagueContext()
   const supabase = await createClient()
 
-  // Fetch per-league engine config (falls back to DEFAULT_ENGINE_CONFIG when null)
   const { data: dbEngCfg } = await supabase
     .from('league_engine_config')
     .select('*')
@@ -104,6 +97,11 @@ export default async function MethodologyPage() {
     minutes_factor_threshold: dbEngCfg?.minutes_factor_threshold ?? cfg.minutes_factor.threshold,
     minutes_factor_partial:   dbEngCfg?.minutes_factor_partial   ?? cfg.minutes_factor.partial,
     minutes_factor_full:      dbEngCfg?.minutes_factor_full      ?? cfg.minutes_factor.full,
+
+    role_multiplier_gk:  dbEngCfg?.role_multiplier_gk  ?? cfg.role_multiplier.GK,
+    role_multiplier_def: dbEngCfg?.role_multiplier_def ?? cfg.role_multiplier.DEF,
+    role_multiplier_mid: dbEngCfg?.role_multiplier_mid ?? cfg.role_multiplier.MID,
+    role_multiplier_att: dbEngCfg?.role_multiplier_att ?? cfg.role_multiplier.ATT,
 
     goal_gk:  dbEngCfg?.goal_bonus_gk  ?? bm.goal_by_role.GK,
     goal_def: dbEngCfg?.goal_bonus_def ?? bm.goal_by_role.DEF,
@@ -130,22 +128,11 @@ export default async function MethodologyPage() {
     goals_conceded_def_min_minutes:  dbEngCfg?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
   }
 
-  // Live weights from league config
-  const liveWeights = {
-    sofascore: ctx.league.source_weight_sofascore / 100,
-    fotmob:    ctx.league.source_weight_fotmob    / 100,
-  }
-
-  const sourceRows = [
-    { name: 'SofaScore', key: 'sofascore', weight: liveWeights.sofascore, mean: cfg.source_normalization.sofascore.mean, std: cfg.source_normalization.sofascore.std },
-    { name: 'FotMob',    key: 'fotmob',    weight: liveWeights.fotmob,    mean: cfg.source_normalization.fotmob.mean,    std: cfg.source_normalization.fotmob.std    },
-  ] as const
-
   const roleRows = [
-    { rc: 'GK',  label: 'Portiere',       mult: cfg.role_multiplier.GK  },
-    { rc: 'DEF', label: 'Difensore',      mult: cfg.role_multiplier.DEF },
-    { rc: 'MID', label: 'Centrocampista', mult: cfg.role_multiplier.MID },
-    { rc: 'ATT', label: 'Attaccante',     mult: cfg.role_multiplier.ATT },
+    { rc: 'GK',  label: 'Portiere',       mult: eff.role_multiplier_gk  },
+    { rc: 'DEF', label: 'Difensore',      mult: eff.role_multiplier_def },
+    { rc: 'MID', label: 'Centrocampista', mult: eff.role_multiplier_mid },
+    { rc: 'ATT', label: 'Attaccante',     mult: eff.role_multiplier_att },
   ]
 
   const rcColor: Record<string, string> = {
@@ -160,6 +147,8 @@ export default async function MethodologyPage() {
     { rc: 'ATT', label: 'Attaccante',     normal: eff.goal_att, penalty: round1(eff.goal_att - eff.penalty_scored_discount) },
   ]
 
+  void SectionTitle
+
   return (
     <div className="space-y-8 pb-12">
 
@@ -173,17 +162,16 @@ export default async function MethodologyPage() {
 
       {/* ── Pipeline overview ─────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Pipeline di calcolo" description="Il percorso dal voto fonte al fantavoto finale" />
+        <CardHeader title="Pipeline di calcolo" description="Il percorso dal voto FotMob al fantavoto finale" />
         <CardContent>
           <div className="space-y-3">
-            <Step n={1} label="Recupero voti dalle fonti (SofaScore · FotMob)" />
-            <Step n={2} label="Normalizzazione a z-score per ciascuna fonte disponibile" />
-            <Step n={3} label="Media ponderata degli z-score → z_combined" />
-            <Step n={4} label={`Fattore minuti: NV se 0', ×${eff.minutes_factor_partial} se 1–${eff.minutes_factor_threshold - 1}', ×${eff.minutes_factor_full} se ≥ ${eff.minutes_factor_threshold}'`} />
-            <Step n={5} label={`Voto base: b₀ = ${cfg.base_score} + ${cfg.scale_factor} × z_adjusted`} />
-            <Step n={6} label="Moltiplicatore ruolo: amplifica/comprime lo scostamento da 6.0" />
-            <Step n={7} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
-            <Step n={8} label="Fantavoto finale = somma di tutti i contributi precedenti" />
+            <Step n={1} label="Recupero voti da FotMob (unica fonte)" />
+            <Step n={2} label={`z-score FotMob: z = (voto − ${cfg.source_normalization.mean}) / ${cfg.source_normalization.std}`} />
+            <Step n={3} label={`Fattore minuti: NV se 0', ×${eff.minutes_factor_partial} se 1–${eff.minutes_factor_threshold - 1}', ×${eff.minutes_factor_full} se ≥ ${eff.minutes_factor_threshold}'`} />
+            <Step n={4} label={`Voto base: b₀ = ${cfg.base_score} + ${cfg.scale_factor} × z_adjusted`} />
+            <Step n={5} label="Moltiplicatore ruolo: amplifica/comprime lo scostamento da 6.0" />
+            <Step n={6} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
+            <Step n={7} label="Fantavoto finale = voto_base + bonus_malus" />
           </div>
           <div className="mt-5 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-4 py-3 font-mono text-xs text-[#8888aa]">
             <span className="text-white">Fantavoto</span>
@@ -195,58 +183,52 @@ export default async function MethodologyPage() {
         </CardContent>
       </Card>
 
-      {/* ── Fonti & pesi ─────────────────────────────────────────────────── */}
+      {/* ── Fonte: FotMob ─────────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Fonti di voto e pesi" description="Le due piattaforme di statistica e il loro contributo al voto combinato" />
-        <CardContent className="p-0">
-          <TableWrap>
-            <thead>
-              <tr className="border-b border-[#1e1e2e]">
-                <Th>Fonte</Th>
-                <Th right>Peso</Th>
-                <Th right>Media storica</Th>
-                <Th right>Deviazione standard</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1e1e2e]">
-              {sourceRows.map((s) => (
-                <tr key={s.key} className="hover:bg-[#0f0f1a]">
-                  <Td><span className="font-medium text-white">{s.name}</span></Td>
-                  <Td right mono>
-                    <span className="font-semibold text-indigo-300">{pct(s.weight)}</span>
-                  </Td>
-                  <Td right mono>{s.mean.toFixed(2)}</Td>
-                  <Td right mono>{s.std.toFixed(2)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </TableWrap>
-          <div className="border-t border-[#1e1e2e] px-4 py-3">
-            <Note>
-              Il peso di ciascuna fonte viene <strong className="text-[#c8c8e8]">ri-normalizzato</strong> tra le sole fonti disponibili per quel giocatore in quella giornata.
-              Se una fonte manca, il suo peso viene ridistribuito proporzionalmente sulle restanti.
-              Quando è disponibile <strong className="text-[#c8c8e8]">una sola fonte</strong>, lo z-score viene moltiplicato per {cfg.one_source_shrink} (riduzione del {Math.round((1 - cfg.one_source_shrink) * 100)}%) per contenere l&apos;incertezza.
-            </Note>
+        <CardHeader title="Fonte di voto: FotMob" description="L'unica piattaforma usata per il calcolo del voto base" />
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-4">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#55556a]">Media storica</p>
+              <p className="font-mono text-2xl font-bold text-white">{cfg.source_normalization.mean.toFixed(2)}</p>
+              <p className="mt-1 text-xs text-[#55556a]">
+                Corrisponde al voto &quot;sufficiente&quot; su FotMob (confermato dalle fasce cromatiche della piattaforma).
+                Un giocatore con voto {cfg.source_normalization.mean} riceve z = 0 → voto base 6.0.
+              </p>
+            </div>
+            <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-4">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#55556a]">Deviazione standard (σ)</p>
+              <p className="font-mono text-2xl font-bold text-white">{cfg.source_normalization.std.toFixed(2)}</p>
+              <p className="mt-1 text-xs text-[#55556a]">
+                Controlla la &quot;sensibilità&quot; della formula: σ più grande → le differenze di voto pesano meno.
+                Con σ = {cfg.source_normalization.std}, un voto di {(cfg.source_normalization.mean + cfg.source_normalization.std).toFixed(1)} (+1σ) produce z ≈ +1 → voto base ≈ 7.15.
+              </p>
+            </div>
           </div>
+          <Note>
+            Il voto FotMob incorpora già tutti i contributi difensivi (tackle, intercetti, salvataggi…) in un singolo numero.
+            La formula si basa su di esso come segnale sintetico, senza correzioni aggiuntive.
+          </Note>
         </CardContent>
       </Card>
 
       {/* ── Normalizzazione ───────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Normalizzazione z-score" description="Come viene convertito il voto fonte in uno scostamento dalla media" />
+        <CardHeader title="Normalizzazione z-score" description="Come viene convertito il voto FotMob in uno scostamento dalla media" />
         <CardContent>
           <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-4 py-3 font-mono text-sm">
             <span className="text-indigo-300">z</span>
             {' = ( '}
-            <span className="text-white">voto_fonte</span>
+            <span className="text-white">voto_fotmob</span>
             {' − '}
-            <span className="text-[#8888aa]">media</span>
+            <span className="text-[#8888aa]">{cfg.source_normalization.mean}</span>
             {' ) / '}
-            <span className="text-[#8888aa]">σ</span>
+            <span className="text-[#8888aa]">{cfg.source_normalization.std}</span>
           </div>
           <Note>
-            La normalizzazione consente di comparare voti provenienti da scale diverse: SofaScore e FotMob usano medie simili ma dispersioni differenti.
-            Uno z-score pari a 0 corrisponde esattamente al giocatore medio; valori positivi indicano una prestazione sopra la media.
+            Uno z-score pari a 0 corrisponde esattamente al giocatore medio (voto {cfg.source_normalization.mean} su FotMob).
+            Valori positivi indicano una prestazione sopra la media, valori negativi sotto.
+            Se FotMob non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve voto base 6.0 + B/M.
           </Note>
         </CardContent>
       </Card>
@@ -311,7 +293,7 @@ export default async function MethodologyPage() {
               {' )'}
             </div>
             <div className="pt-1 text-xs text-[#55556a]">
-              voto_base = cappato tra {cfg.voto_base_cap_min} e {cfg.voto_base_cap_max}
+              voto_base = b₁ cappato tra {cfg.voto_base_cap_min} e {cfg.voto_base_cap_max}
             </div>
           </div>
 
@@ -348,8 +330,10 @@ export default async function MethodologyPage() {
           </TableWrap>
           <Note>
             Il moltiplicatore agisce sulla <strong className="text-[#c8c8e8]">distanza dalla soglia di sufficienza</strong> (6.0), non sull&apos;intera scala.
-            Un portiere con b₀ = 7.5 ottiene b₁ = 6.0 + 1.15 × 1.5 = 7.725.
-            Un attaccante con b₀ = 7.5 ottiene b₁ = 6.0 + 0.97 × 1.5 = 7.455.
+            GK e DEF sono amplificati perché il loro voto FotMob è il segnale principale (raramente segnano).
+            ATT è leggermente compresso perché gol e assist sono già conteggiati nel B/M.
+            Valori modificabili da{' '}
+            <a href="/league/engine-config" className="text-indigo-300 hover:underline">Configurazione motore</a>.
           </Note>
         </CardContent>
       </Card>
@@ -459,8 +443,15 @@ export default async function MethodologyPage() {
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                I voti sono marcati come <strong className="text-[#c8c8e8]">provvisori</strong> quando le statistiche non sono ancora confermate dalle fonti.
+                I voti sono marcati come <strong className="text-[#c8c8e8]">provvisori</strong> quando le statistiche non sono ancora confermate da FotMob.
                 Un calcolo con voti provvisori è valido ma potrebbe cambiare dopo una nuova pubblicazione.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="shrink-0 text-indigo-300">·</span>
+              <span>
+                Se FotMob non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve <strong className="text-[#c8c8e8]">voto base 6.0</strong> con il solo contributo del B/M.
+                Questo caso è indicato con <span className="text-sky-400">⚡</span> nella pagina calcoli.
               </span>
             </li>
             <li className="flex gap-2">
@@ -480,7 +471,7 @@ export default async function MethodologyPage() {
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                I bonus/malus e il fattore minuti sono <strong className="text-[#c8c8e8]">personalizzabili per lega</strong> dalla sezione{' '}
+                Bonus/malus, fattore minuti e moltiplicatori di ruolo sono <strong className="text-[#c8c8e8]">personalizzabili per lega</strong> dalla sezione{' '}
                 <a href="/league/engine-config" className="text-indigo-300 hover:underline">Configurazione motore</a>.
                 Tutti i valori in questa pagina riflettono la configurazione attiva della tua lega.
               </span>

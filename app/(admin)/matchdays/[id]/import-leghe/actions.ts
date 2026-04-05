@@ -263,7 +263,7 @@ type TeamLineupInput = {
 
 type LeagueCtx = {
   userId: string
-  league: { id: string; source_weight_sofascore: number; source_weight_fotmob: number }
+  league: { id: string }
 }
 
 /**
@@ -407,39 +407,28 @@ async function autoFetchAndCreateRun(
     .eq('league_id', ctx.league.id)
     .maybeSingle()
 
-  const engineConfig = buildEngineConfig(
-    { sofascore: ctx.league.source_weight_sofascore / 100, fotmob: ctx.league.source_weight_fotmob / 100 },
-    dbConfig ?? null
-  )
+  const engineConfig = buildEngineConfig(dbConfig ?? null)
 
   // 7. Build engine inputs for every player that has a stats row
   const engineInputs: EnginePlayerInput[] = matched
     .filter(({ player }) => statsMap.has(player.id))
     .map(({ stat, player }) => ({
-      player_id: player.id,
-      stats_id: statsMap.get(player.id)!,
-      rating_class: player.rating_class,
-      minutes_played: stat.minutes_played,
-      is_provisional: false,
-      sofascore_rating: stat.sofascore_rating,
-      fotmob_rating: stat.fotmob_rating,
-      goals_scored: stat.goals_scored,
-      assists: stat.assists,
-      own_goals: stat.own_goals,
-      yellow_cards: stat.yellow_cards,
-      red_cards: stat.red_cards,
+      player_id:       player.id,
+      stats_id:        statsMap.get(player.id)!,
+      rating_class:    player.rating_class,
+      minutes_played:  stat.minutes_played,
+      is_provisional:  false,
+      fotmob_rating:   stat.fotmob_rating,
+      goals_scored:    stat.goals_scored,
+      assists:         stat.assists,
+      own_goals:       stat.own_goals,
+      yellow_cards:    stat.yellow_cards,
+      red_cards:       stat.red_cards,
       penalties_scored: stat.penalties_scored,
       penalties_missed: stat.penalties_missed,
-      penalties_saved: stat.penalties_saved,
-      clean_sheet: stat.goals_conceded === 0 && stat.minutes_played >= 60,
-      goals_conceded: stat.goals_conceded,
-      saves: stat.saves,
-      tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
-      aerial_duels_won: 0, dribbled_past: 0, error_leading_to_goal: 0,
-      key_passes: null, expected_assists: null,
-      successful_dribbles: null, dribble_success_rate: null,
-      completed_passes: null, pass_accuracy: null,
-      final_third_passes: null, progressive_passes: null,
+      penalties_saved:  stat.penalties_saved,
+      clean_sheet:     stat.goals_conceded === 0 && stat.minutes_played >= 60,
+      goals_conceded:  stat.goals_conceded,
     }))
 
   if (engineInputs.length === 0) return null
@@ -482,22 +471,28 @@ async function autoFetchAndCreateRun(
     if (output.kind === 'skipped') {
       return {
         ...base,
-        z_sofascore: null, z_fotmob: null, z_combined: null, weights_used: null,
-        minutes_factor: null, z_adjusted: null, b0: null, role_multiplier: null,
-        b1: null, defensive_correction: null, voto_base: null,
+        // Legacy columns (v1) — always null in v1.1
+        z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+        z_fotmob: null, minutes_factor: null, z_adjusted: null, b0: null,
+        role_multiplier: null, b1: null, voto_base: null,
         bonus_malus_breakdown: null, total_bonus_malus: null, fantavoto: null,
       }
     }
     const r = output as PlayerCalculationResult
     return {
       ...base,
-      z_sofascore: r.z_sofascore, z_fotmob: r.z_fotmob, z_combined: r.z_combined,
-      weights_used: r.weights_used as unknown as Json,
-      minutes_factor: r.minutes_factor, z_adjusted: r.z_adjusted,
-      b0: r.b0, role_multiplier: r.role_multiplier, b1: r.b1,
-      defensive_correction: r.defensive_correction, voto_base: r.voto_base,
+      // Legacy columns (v1) — always null in v1.1
+      z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+      z_fotmob:          r.z_fotmob,
+      minutes_factor:    r.minutes_factor,
+      z_adjusted:        r.z_adjusted,
+      b0:                r.b0,
+      role_multiplier:   r.role_multiplier,
+      b1:                r.b1,
+      voto_base:         r.voto_base,
       bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
-      total_bonus_malus: r.total_bonus_malus, fantavoto: r.fantavoto,
+      total_bonus_malus: r.total_bonus_malus,
+      fantavoto:         r.fantavoto,
     }
   })
 

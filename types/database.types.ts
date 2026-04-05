@@ -713,6 +713,10 @@ export type Database = {
           penalty_saved: number
           penalty_scored_discount: number
           red_card: number
+          role_multiplier_att: number
+          role_multiplier_def: number
+          role_multiplier_gk: number
+          role_multiplier_mid: number
           updated_at: string
           yellow_card: number
         }
@@ -741,6 +745,10 @@ export type Database = {
           penalty_saved?: number
           penalty_scored_discount?: number
           red_card?: number
+          role_multiplier_att?: number
+          role_multiplier_def?: number
+          role_multiplier_gk?: number
+          role_multiplier_mid?: number
           updated_at?: string
           yellow_card?: number
         }
@@ -769,6 +777,10 @@ export type Database = {
           penalty_saved?: number
           penalty_scored_discount?: number
           red_card?: number
+          role_multiplier_att?: number
+          role_multiplier_def?: number
+          role_multiplier_gk?: number
+          role_multiplier_mid?: number
           updated_at?: string
           yellow_card?: number
         }
