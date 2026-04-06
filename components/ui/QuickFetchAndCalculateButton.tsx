@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { importRatingsAction } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
-import { triggerCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
+import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
 import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
 import type { ImportMatch } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
 
@@ -12,6 +12,7 @@ type Phase =
   | 'fetching'
   | 'importing'
   | 'calculating'
+  | 'publishing'
   | 'done'
   | 'error'
 
@@ -32,7 +33,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     setError(null)
     setSummary(null)
 
-    // ── Step 1: fetch ratings from API ────────────────────────────────────
+    // ── Step 1: fetch ratings from FotMob ────────────────────────────────
     let fetchData: FetchRatingsResponse
     try {
       const res = await fetch('/api/ratings/fetch', {
@@ -89,6 +90,15 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       return
     }
 
+    // ── Step 4: publish ──────────────────────────────────────────────────
+    setPhase('publishing')
+    const publishResult = await publishCalculationAction(matchdayId, calcResult.run_id!)
+    if (publishResult.error) {
+      setPhase('error')
+      setError(publishResult.error)
+      return
+    }
+
     setSummary({
       imported: importResult.imported ?? toImport.length,
       scored: calcResult.scored_count,
@@ -102,7 +112,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     return (
       <div className="flex items-center gap-2">
         <span className="text-xs text-emerald-400 font-medium">
-          ✓ {summary.imported} importati · {summary.scored} calcolati
+          ✓ {summary.imported} importati · {summary.scored} calcolati · pubblicato
         </span>
         <button
           onClick={() => { setPhase('idle'); setSummary(null) }}
@@ -117,12 +127,12 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   if (phase === 'error') {
     return (
       <div className="flex items-center gap-2">
-        <span className="max-w-[200px] truncate text-xs text-red-400" title={error ?? ''}>
+        <span className="max-w-[260px] truncate text-xs text-red-400" title={error ?? ''}>
           {error}
         </span>
         <button
           onClick={() => { setPhase('idle'); setError(null) }}
-          className="text-xs text-[#55556a] hover:text-indigo-400 transition-colors"
+          className="text-xs text-[#55556a] hover:text-indigo-400 transition-colors whitespace-nowrap"
         >
           ↺ Riprova
         </button>
@@ -132,32 +142,59 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
 
   const busy = phase !== 'idle'
   const label = phase === 'fetching'
-    ? 'Scaricando…'
+    ? 'Scaricando voti…'
     : phase === 'importing'
     ? 'Importando…'
     : phase === 'calculating'
     ? 'Calcolando…'
+    : phase === 'publishing'
+    ? 'Pubblicando…'
     : compact
     ? '⚡'
-    : '⚡ Fetch + Calcola'
+    : '⚡ Aggiorna e pubblica'
 
+  if (compact) {
+    return (
+      <button
+        disabled={busy}
+        onClick={run}
+        title="Scarica voti da FotMob, calcola e pubblica"
+        className={[
+          'flex items-center gap-1.5 rounded-lg border font-medium transition-colors px-2 py-1 text-xs',
+          busy
+            ? 'cursor-wait border-[#2e2e42] bg-[#0d0d1a] text-[#55556a]'
+            : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50',
+        ].join(' ')}
+      >
+        {busy && (
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+        )}
+        {label}
+      </button>
+    )
+  }
+
+  // Full (large) variant
   return (
     <button
       disabled={busy}
       onClick={run}
-      title="Scarica i voti da FotMob/SofaScore e ricalcola"
+      title="Scarica voti da FotMob, calcola e pubblica in un click"
       className={[
-        'flex items-center gap-1.5 rounded-lg border font-medium transition-colors',
+        'flex w-full items-center justify-center gap-2 rounded-xl border-2 py-4 text-base font-bold transition-all',
         busy
           ? 'cursor-wait border-[#2e2e42] bg-[#0d0d1a] text-[#55556a]'
-          : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50',
-        compact ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm',
+          : 'border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 active:scale-[0.98]',
       ].join(' ')}
     >
-      {busy && (
-        <span className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+      {busy ? (
+        <>
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <span>{label}</span>
+        </>
+      ) : (
+        <span>⚡ Aggiorna e pubblica</span>
       )}
-      {label}
     </button>
   )
 }

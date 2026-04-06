@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MatchdayStatusControls } from './MatchdayStatusControls'
 import { FreezeButton } from './FreezeButton'
 import { FixturesInlineCard } from './FixturesInlineCard'
+import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -214,8 +215,29 @@ export default async function MatchdayDetailPage({
 
       <div className="space-y-4">
 
-        {/* ── TUTTE LE FORMAZIONI HERO (shown as soon as any lineup exists) ── */}
-        {isAdmin && (lineupCount ?? 0) > 0 && (
+        {/* ── ONE-CLICK HERO (shown as soon as fixtures + lineups exist, not archived) ── */}
+        {isAdmin && fixtures.length >= 10 && matchday.status !== 'archived' && (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+            <QuickFetchAndCalculateButton matchdayId={id} />
+            {(lineupCount ?? 0) > 0 && (
+              <a
+                href={`/matchdays/${id}/all-lineups`}
+                className="group flex items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 transition-colors hover:border-indigo-500/40 hover:bg-indigo-500/10"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white">Tutte le formazioni</p>
+                  <p className="text-xs text-indigo-300/70">
+                    {lineupCount} squadr{(lineupCount ?? 0) === 1 ? 'a' : 'e'} · Visualizza gli incontri
+                  </p>
+                </div>
+                <span className="text-indigo-400 text-sm group-hover:text-indigo-300 transition-colors">→</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* ── TUTTE LE FORMAZIONI HERO (no fixtures yet — lineup link only) ── */}
+        {isAdmin && fixtures.length < 10 && (lineupCount ?? 0) > 0 && (
           <a
             href={`/matchdays/${id}/all-lineups`}
             className="group flex items-center justify-between rounded-2xl border border-indigo-500/30 bg-indigo-500/5 px-5 py-4 transition-colors hover:border-indigo-500/60 hover:bg-indigo-500/10"
