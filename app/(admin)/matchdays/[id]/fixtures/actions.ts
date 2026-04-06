@@ -210,9 +210,19 @@ export async function importRatingsAction(
     saves: m.saves,
   }))
 
+  // Delete ALL existing stats for this matchday before inserting the fresh batch.
+  // This is intentional: the import always reflects the CURRENT fetch result.
+  // Players who no longer appear (e.g. filtered out because minutes_played = 0)
+  // must be removed so the engine never scores them from stale data.
+  const { error: deleteError } = await supabase
+    .from('player_match_stats')
+    .delete()
+    .eq('matchday_id', matchdayId)
+  if (deleteError) return { error: deleteError.message }
+
   const { error } = await supabase
     .from('player_match_stats')
-    .upsert(rows, { onConflict: 'matchday_id,player_id', ignoreDuplicates: false })
+    .insert(rows)
   if (error) return { error: error.message }
 
   revalidatePath(`/matchdays/${matchdayId}/stats`)
