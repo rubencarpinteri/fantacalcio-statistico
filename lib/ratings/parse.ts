@@ -234,7 +234,16 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     if (idMatch) return idMatch
   }
 
-  const exact = dbPlayers.find(p => p.normalized === statNorm)
+  // Name-matching candidates: exclude any DB player that has a fotmob_player_id set
+  // to a value OTHER than the current stat's fotmob_id. Those players have a verified
+  // identity — they can ONLY be found via exact ID (strategy 0 above). Allowing name
+  // matching for them causes false positives where a different player from another
+  // fixture (e.g. "Leão" at a different club) incorrectly matches to them.
+  const candidates = dbPlayers.filter(p =>
+    p.fotmob_player_id == null || p.fotmob_player_id === fotmobId
+  )
+
+  const exact = candidates.find(p => p.normalized === statNorm)
   if (exact) return exact
 
   const statTokens = statNorm.split(' ').filter(Boolean)
@@ -243,7 +252,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   // Token-set: same tokens, any order
   if (statTokens.length > 1) {
     const statSet = new Set(statTokens)
-    const ts = dbPlayers.find(p => {
+    const ts = candidates.find(p => {
       const pts = p.normalized.split(' ').filter(Boolean)
       if (pts.length !== statTokens.length) return false
       return pts.every(t => statSet.has(t))
@@ -254,7 +263,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   // Strip initials from both sides
   if (statSig.length > 0) {
     const sigSet = new Set(statSig)
-    const sigCands = dbPlayers.filter(p => {
+    const sigCands = candidates.filter(p => {
       const psig = p.normalized.split(' ').filter(t => t.length > 1)
       if (psig.length !== statSig.length) return false
       return psig.every(t => sigSet.has(t))
@@ -266,7 +275,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   // handles: "Bisseck" (DB) ↔ "Yann Bisseck" (FotMob)
   if (statSig.length > 0) {
     const sigSet = new Set(statSig)
-    const subCands = dbPlayers.filter(p => {
+    const subCands = candidates.filter(p => {
       const psig = p.normalized.split(' ').filter(t => t.length > 1)
       if (psig.length === 0 || psig.length >= statSig.length) return false
       return psig.every(t => sigSet.has(t))
@@ -277,7 +286,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   // FotMob tokens ⊆ DB tokens (unique match only)
   // handles: "N'Dicka" (FotMob) ↔ "Evan N'Dicka" (DB)
   if (statSig.length > 0) {
-    const superCands = dbPlayers.filter(p => {
+    const superCands = candidates.filter(p => {
       const psig = p.normalized.split(' ').filter(t => t.length > 1)
       if (psig.length <= statSig.length) return false
       return statSig.every(t => psig.includes(t))
@@ -295,7 +304,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     if (shortIdx !== -1) {
       const abbrev    = statTokens[shortIdx]!          // e.g. "k" or "se"
       const surnameT  = statTokens[1 - shortIdx]!      // e.g. "thuram" or "esposito"
-      const prefixCands = dbPlayers.filter(p => {
+      const prefixCands = candidates.filter(p => {
         const pts = p.normalized.split(' ').filter(Boolean)
         if (!pts.includes(surnameT)) return false
         return pts.some(t => t !== surnameT && t.startsWith(abbrev))
@@ -312,7 +321,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     const longTks  = statTokens.filter(t => t.length > 2)
     const shortTks = statTokens.filter(t => t.length <= 2)
     if (longTks.length > 0 && shortTks.length > 0) {
-      const multiAbbrevCands = dbPlayers.filter(p => {
+      const multiAbbrevCands = candidates.filter(p => {
         const pts = p.normalized.split(' ').filter(Boolean)
         if (!longTks.every(lt => pts.includes(lt))) return false
         const remaining = pts.filter(t => !longTks.includes(t))
@@ -337,12 +346,12 @@ export function findDbPlayer<T extends DbPlayerEntry>(
       const altSig  = altTokens.filter(t => t.length > 1)
 
       // Exact match on concatenated form
-      const exactAlt = dbPlayers.find(p => p.normalized === altNorm)
+      const exactAlt = candidates.find(p => p.normalized === altNorm)
       if (exactAlt) return exactAlt
 
       // Strategy-5 equivalent on concatenated form (unique superset)
       if (altSig.length > 0) {
-        const altSuperCands = dbPlayers.filter(p => {
+        const altSuperCands = candidates.filter(p => {
           const psig = p.normalized.split(' ').filter(t => t.length > 1)
           if (psig.length <= altSig.length) return false
           return altSig.every(t => psig.includes(t))
@@ -358,7 +367,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   // the full name than what is stored in DB.
   if (statSig.length >= 2) {
     const sigSet = new Set(statSig)
-    const intersectCands = dbPlayers.filter(p => {
+    const intersectCands = candidates.filter(p => {
       const psig = p.normalized.split(' ').filter(t => t.length > 1)
       return psig.some(t => sigSet.has(t))
     })
