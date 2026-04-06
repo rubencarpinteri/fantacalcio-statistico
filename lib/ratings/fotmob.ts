@@ -108,5 +108,12 @@ export async function fetchFotMobMatch(
     goal_description: e['goalDescription'] != null ? String(e['goalDescription']) : null,
   }))
 
-  return { data: { stats, events }, status: 200 }
+  // Strip players who logged 0 minutes — FotMob includes all squad members
+  // (bench, unused subs) in playerStats and sometimes assigns them non-null
+  // ratings from squad-form or pre-match data. A player with 0 minutes played
+  // nothing meaningful; keeping them pollutes the stats grid and can produce
+  // wrong scores if the match hasn't happened yet.
+  const playingStats = stats.filter((s) => s.minutes_played > 0)
+
+  return { data: { stats: playingStats, events }, status: 200 }
 }
