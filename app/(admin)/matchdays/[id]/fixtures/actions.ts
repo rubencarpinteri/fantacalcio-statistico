@@ -210,19 +210,33 @@ export async function importRatingsAction(
     saves: m.saves,
   }))
 
-  // Delete ALL existing stats for this matchday before inserting the fresh batch.
-  // This is intentional: the import always reflects the CURRENT fetch result.
-  // Players who no longer appear (e.g. filtered out because minutes_played = 0)
-  // must be removed so the engine never scores them from stale data.
-  const { error: deleteError } = await supabase
+  // Zero out stale rows — players who were imported in a previous fetch but are
+  // NOT in the current batch (e.g. Leão with 0 minutes filtered out).
+  // We cannot DELETE because player_calculations.stats_id is NOT NULL FK.
+  // Setting minutes_played = 0 + ratings = null causes the engine to NV-skip them.
+  const batchIds = new Set([...byPlayerId.keys()])
+  const { data: existing } = await supabase
     .from('player_match_stats')
-    .delete()
+    .select('player_id')
     .eq('matchday_id', matchdayId)
-  if (deleteError) return { error: deleteError.message }
+  const staleIds = (existing ?? []).map(r => r.player_id).filter(id => !batchIds.has(id))
+  if (staleIds.length > 0) {
+    await supabase
+      .from('player_match_stats')
+      .update({
+        minutes_played: 0, fotmob_rating: null, sofascore_rating: null,
+        goals_scored: 0, assists: 0, own_goals: 0, yellow_cards: 0,
+        red_cards: 0, penalties_scored: 0, penalties_missed: 0,
+        penalties_saved: 0, goals_conceded: 0, saves: 0,
+      })
+      .eq('matchday_id', matchdayId)
+      .in('player_id', staleIds)
+  }
 
+  // Upsert the fresh batch (covers both new players and re-imports of existing ones).
   const { error } = await supabase
     .from('player_match_stats')
-    .insert(rows)
+    .upsert(rows, { onConflict: 'matchday_id,player_id', ignoreDuplicates: false })
   if (error) return { error: error.message }
 
   revalidatePath(`/matchdays/${matchdayId}/stats`)
