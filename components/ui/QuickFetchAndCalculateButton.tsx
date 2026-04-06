@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { importRatingsAction } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
 import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
 import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
@@ -23,7 +22,6 @@ interface Props {
 }
 
 export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
-  const router = useRouter()
   const [phase, setPhase] = useState<Phase>('idle')
   const [summary, setSummary] = useState<{ imported: number; scored: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -104,7 +102,10 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       scored: calcResult.scored_count,
     })
     setPhase('done')
-    router.refresh()
+    // Show success message briefly, then hard-reload so all page data reflects the new publish.
+    // router.refresh() alone fires in the background and the UI often doesn't visibly update
+    // until the user manually reloads — a timed location.reload() is simpler and reliable.
+    setTimeout(() => window.location.reload(), 1500)
   }
 
   // ── Render ─────────────────────────────────────────────────────────────
