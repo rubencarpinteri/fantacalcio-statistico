@@ -8,8 +8,6 @@ import type { ImportMatch } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
 
 type Phase =
   | 'idle'
-  | 'fetching-ids'
-  | 'fetching-sofascore'
   | 'fetching'
   | 'importing'
   | 'calculating'
@@ -23,59 +21,23 @@ interface Props {
   compact?: boolean
 }
 
-const SS_LINEUPS_BASE = 'https://api.sofascore.com/api/v1/event'
-
 export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [summary, setSummary] = useState<{ imported: number; scored: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function run() {
-    setPhase('fetching-ids')
+    setPhase('fetching')
     setError(null)
     setSummary(null)
 
-    // ── Step 0: get sofascore_event_ids for this matchday ───────────────────
-    let sofascoreEventIds: number[] = []
-    try {
-      const idsRes = await fetch(`/api/ratings/fixtures?matchdayId=${matchdayId}`)
-      if (idsRes.ok) {
-        const idsData = await idsRes.json() as { sofascore_event_ids: number[] }
-        sofascoreEventIds = idsData.sofascore_event_ids ?? []
-      }
-    } catch {
-      // Non-fatal — proceed without SofaScore (FotMob-only mode)
-    }
-
-    // ── Step 1: browser-fetch SofaScore fantasy data ────────────────────────
-    // SofaScore /api/v1/fantasy/event/{id} has CORS access-control-allow-origin: *
-    // so browser fetches work fine. Server-side is blocked by TLS fingerprinting.
-    setPhase('fetching-sofascore')
-    const sofascoreByEventId: Record<string, Record<string, unknown>> = {}
-    for (const eventId of sofascoreEventIds) {
-      try {
-        const ssRes = await fetch(`${SS_LINEUPS_BASE}/${eventId}/lineups`)
-        if (ssRes.ok) {
-          sofascoreByEventId[String(eventId)] = await ssRes.json() as Record<string, unknown>
-        }
-      } catch {
-        // Non-fatal — skip this fixture's SofaScore data
-      }
-    }
-
-    // ── Step 2: fetch FotMob ratings (server-side) + merge SofaScore ────────
-    setPhase('fetching')
+    // ── Step 1: fetch FotMob + SofaScore ratings (both server-side now) ─────
     let fetchData: FetchRatingsResponse
     try {
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matchdayId,
-          sofascoreByEventId: Object.keys(sofascoreByEventId).length > 0
-            ? sofascoreByEventId
-            : undefined,
-        }),
+        body: JSON.stringify({ matchdayId }),
       })
       if (!res.ok) throw new Error(`Fetch fallito (HTTP ${res.status})`)
       fetchData = (await res.json()) as FetchRatingsResponse
@@ -179,11 +141,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   }
 
   const busy = phase !== 'idle'
-  const label = phase === 'fetching-ids'
-    ? 'Preparando…'
-    : phase === 'fetching-sofascore'
-    ? 'SofaScore…'
-    : phase === 'fetching'
+  const label = phase === 'fetching'
     ? 'Scaricando voti…'
     : phase === 'importing'
     ? 'Importando…'

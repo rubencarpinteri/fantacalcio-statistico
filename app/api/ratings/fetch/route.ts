@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
-import { normalizeName, mergeFixtureStats, findDbPlayer, parseSofaScoreJson } from '@/lib/ratings/parse'
+import { normalizeName, mergeFixtureStats, findDbPlayer, parseSofaScoreFantasyJson } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
+import { fetchSofaScoreLineups } from '@/lib/ratings/sofascore'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,17 +61,6 @@ export type FetchRatingsResponse = {
 
 type RequestBody = {
   matchdayId?: string
-  /**
-   * Pre-fetched SofaScore fantasy data keyed by sofascore_event_id (string).
-   * Format: { [eventId]: { playerStatistics: [...] } }
-   *
-   * SofaScore blocks server-side fetches via TLS fingerprinting.
-   * The client must browser-fetch GET /api/v1/fantasy/event/{eventId} directly
-   * (CORS is allowed with access-control-allow-origin: *) and pass the results here.
-   *
-   * When absent, SofaScore ratings are skipped (FotMob-only mode).
-   */
-  sofascoreByEventId?: Record<string, Record<string, unknown>>
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsResponse>> {
@@ -82,7 +72,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
 
   const supabase = await createClient()
   const body = await req.json() as RequestBody
-  const { matchdayId, sofascoreByEventId } = body
+  const { matchdayId } = body
   if (!matchdayId) {
     return NextResponse.json({ matched: [], unmatched: [], errors: ['matchdayId required'] }, { status: 400 })
   }
@@ -107,31 +97,30 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
 
   // Fetch fixtures sequentially to avoid rate-limiting
   for (const fx of fixtures ?? []) {
-    // FotMob: always fetch server-side
-    const fotmobResult = fx.fotmob_match_id
-      ? await fetchFotMobMatch(fx.fotmob_match_id)
-      : { data: null, status: 0 }
+    const label = fx.label ? ` (${fx.label})` : ''
 
-    // SofaScore: only use pre-fetched browser data (server-side is TLS-blocked).
-    // Parse the fantasy endpoint format: { playerStatistics: [{playerId, statistics}] }
-    // No name matching — IDs are resolved via serie_a_players.sofascore_id chain.
-    if (fx.sofascore_event_id && sofascoreByEventId?.[String(fx.sofascore_event_id)]) {
-      const lineupStats = parseSofaScoreJson(
-        sofascoreByEventId[String(fx.sofascore_event_id)]!
-      )
+    // FotMob and SofaScore fetched in parallel per fixture
+    const [fotmobResult, sofascoreResult] = await Promise.all([
+      fx.fotmob_match_id
+        ? fetchFotMobMatch(fx.fotmob_match_id)
+        : Promise.resolve({ data: null, status: 0 }),
+      fx.sofascore_event_id
+        ? fetchSofaScoreLineups(fx.sofascore_event_id)
+        : Promise.resolve({ data: null, status: 0 }),
+    ])
+
+    if (fx.fotmob_match_id && !fotmobResult.data) {
+      errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
+    }
+
+    // Populate sofascore_id → rating map from lineups response
+    if (sofascoreResult.data) {
+      const lineupStats = parseSofaScoreFantasyJson(sofascoreResult.data as unknown as Record<string, unknown>)
       for (const s of lineupStats) {
-        // Last write wins if the same player appears in multiple fixtures (unlikely)
         allSofascoreRatings.set(s.sofascore_id, s.rating)
       }
     }
 
-    const label = fx.label ? ` (${fx.label})` : ''
-    if (fx.fotmob_match_id && !fotmobResult.data) {
-      errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
-    }
-    // SofaScore absence is not an error — it enriches but is not required
-
-    // Merge FotMob data only (no name-based SofaScore merge for fantasy format)
     const merged = mergeFixtureStats(fotmobResult.data, null)
     allFetched.push(...merged)
   }

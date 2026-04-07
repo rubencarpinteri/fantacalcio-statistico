@@ -28,8 +28,7 @@ Full-stack Italian Mantra-style fantasy football app. Private league, statistics
 - z_sofascore = (rating − mean_ss) / std_ss  [defaults: mean=6.6, std=0.65]
 - No single-source shrink in v1.2 (removed from v1.1)
 - All normalization params configurable per league in `league_engine_config`
-- SofaScore fetched browser-side only (TLS-blocked server-side)
-  → `GET /api/ratings/fixtures` → browser fetches `api.sofascore.com/api/v1/event/{id}/lineups` → POST `/api/ratings/fetch`
+- SofaScore fetched server-side: `api.sofascore.com/api/v1/event/{id}/lineups` in POST `/api/ratings/fetch`
   → ID matching via `serie_a_players.sofascore_id` chain (no name matching)
 
 ## Supabase patterns
