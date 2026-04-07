@@ -9,6 +9,13 @@ import { writeAuditLog } from '@/lib/audit'
 // ── Validation schema ────────────────────────────────────────────────────────
 
 const EngineConfigSchema = z.object({
+  // Normalizzazione voti
+  fotmob_mean:    z.coerce.number().min(5).max(8),
+  fotmob_std:     z.coerce.number().min(0.1).max(3),
+  sofascore_mean: z.coerce.number().min(5).max(8),
+  sofascore_std:  z.coerce.number().min(0.1).max(3),
+  fotmob_weight:  z.coerce.number().min(0).max(1),
+
   // Fattore minuti
   minutes_factor_threshold: z.coerce.number().int().min(1).max(90),
   minutes_factor_partial:   z.coerce.number().min(0).max(1),

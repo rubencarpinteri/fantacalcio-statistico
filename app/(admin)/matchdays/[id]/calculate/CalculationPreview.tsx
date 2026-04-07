@@ -15,6 +15,7 @@ export interface CalcPlayerRow {
   player_id: string
   is_provisional: boolean
   z_fotmob: number | null
+  z_sofascore: number | null
   minutes_factor: number | null
   z_adjusted: number | null
   b0: number | null
@@ -423,6 +424,7 @@ export function CalculationPreview({
                     <th className="px-4 py-2.5">Classe</th>
                     <th className="px-4 py-2.5 text-right">Min·F</th>
                     <th className="px-4 py-2.5 text-right">z FM</th>
+                    <th className="px-4 py-2.5 text-right">z SS</th>
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
                     <th className="px-4 py-2.5 text-right font-bold text-white">Fantavoto</th>
@@ -458,6 +460,11 @@ export function CalculationPreview({
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
                             {fmt(c.z_fotmob)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-mono">
+                            {c.z_sofascore !== null
+                              ? <span className="text-indigo-300">{fmt(c.z_sofascore)}</span>
+                              : <span className="text-[#55556a]">—</span>}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
                             {fmt(c.voto_base)}
@@ -500,10 +507,11 @@ export function CalculationPreview({
                         {/* Expanded breakdown row */}
                         {isExpanded && (
                           <tr className="bg-[#0e0e1a]">
-                            <td colSpan={8} className="px-6 py-4">
+                            <td colSpan={9} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
-                                  ['FotMob z', fmt(c.z_fotmob)],
+                                  ['z FotMob', fmt(c.z_fotmob)],
+                                  ['z SofaScore', c.z_sofascore !== null ? fmt(c.z_sofascore) : '—'],
                                   ['min·factor', fmt(c.minutes_factor, 2)],
                                   ['z_adjusted', fmt(c.z_adjusted)],
                                   ['b0 (6 + z_adj)', fmt(c.b0)],
@@ -514,8 +522,8 @@ export function CalculationPreview({
                                   ['fantavoto', fmtFv(c.fantavoto)],
                                 ].map(([label, value]) => (
                                   <div key={label} className="flex justify-between gap-2">
-                                    <span className="text-[#55556a]">{label}</span>
-                                    <span className="font-mono text-[#8888aa]">{value}</span>
+                                    <span className={label?.startsWith('z Sofa') ? 'text-indigo-400/60' : label?.startsWith('z Fot') ? 'text-[#8888aa]' : 'text-[#55556a]'}>{label}</span>
+                                    <span className={`font-mono ${label?.startsWith('z Sofa') ? 'text-indigo-300' : 'text-[#8888aa]'}`}>{value}</span>
                                   </div>
                                 ))}
                               </div>

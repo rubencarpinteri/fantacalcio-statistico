@@ -701,6 +701,9 @@ export type Database = {
           goal_bonus_mid: number
           goals_conceded_def: number
           goals_conceded_def_min_minutes: number
+          fotmob_mean: number
+          fotmob_std: number
+          fotmob_weight: number
           goals_conceded_gk: number
           hat_trick_bonus: number
           id: string
@@ -717,6 +720,8 @@ export type Database = {
           role_multiplier_def: number
           role_multiplier_gk: number
           role_multiplier_mid: number
+          sofascore_mean: number
+          sofascore_std: number
           updated_at: string
           yellow_card: number
         }
@@ -733,6 +738,9 @@ export type Database = {
           goal_bonus_mid?: number
           goals_conceded_def?: number
           goals_conceded_def_min_minutes?: number
+          fotmob_mean?: number | null
+          fotmob_std?: number | null
+          fotmob_weight?: number | null
           goals_conceded_gk?: number
           hat_trick_bonus?: number
           id?: string
@@ -749,6 +757,8 @@ export type Database = {
           role_multiplier_def?: number
           role_multiplier_gk?: number
           role_multiplier_mid?: number
+          sofascore_mean?: number | null
+          sofascore_std?: number | null
           updated_at?: string
           yellow_card?: number
         }
@@ -765,6 +775,9 @@ export type Database = {
           goal_bonus_mid?: number
           goals_conceded_def?: number
           goals_conceded_def_min_minutes?: number
+          fotmob_mean?: number | null
+          fotmob_std?: number | null
+          fotmob_weight?: number | null
           goals_conceded_gk?: number
           hat_trick_bonus?: number
           id?: string
@@ -781,6 +794,8 @@ export type Database = {
           role_multiplier_def?: number
           role_multiplier_gk?: number
           role_multiplier_mid?: number
+          sofascore_mean?: number | null
+          sofascore_std?: number | null
           updated_at?: string
           yellow_card?: number
         }

@@ -86,11 +86,19 @@ export function EngineConfigForm({ current }: Props) {
   const bm = DEFAULT_ENGINE_CONFIG.bonus_malus
   const mf = DEFAULT_ENGINE_CONFIG.minutes_factor
   const rm = DEFAULT_ENGINE_CONFIG.role_multiplier
+  const fn = DEFAULT_ENGINE_CONFIG.source_normalization
+  const sn = DEFAULT_ENGINE_CONFIG.sofascore_normalization
 
   // When resetKey changes, form remounts with default values
   const src = useDefaults ? null : current
 
   const v = {
+    fotmob_mean:    src?.fotmob_mean    ?? fn.mean,
+    fotmob_std:     src?.fotmob_std     ?? fn.std,
+    sofascore_mean: src?.sofascore_mean ?? sn.mean,
+    sofascore_std:  src?.sofascore_std  ?? sn.std,
+    fotmob_weight:  src?.fotmob_weight  ?? DEFAULT_ENGINE_CONFIG.fotmob_weight,
+
     minutes_factor_threshold: src?.minutes_factor_threshold ?? mf.threshold,
     minutes_factor_partial:   src?.minutes_factor_partial   ?? mf.partial,
     minutes_factor_full:      src?.minutes_factor_full      ?? mf.full,
@@ -127,6 +135,55 @@ export function EngineConfigForm({ current }: Props) {
 
   return (
     <form key={resetKey} action={action} className="space-y-8">
+
+      {/* ── Normalizzazione voti ────────────────────────────────────── */}
+      <FieldGroup title="Normalizzazione voti (z-score)">
+        <Field
+          label="FotMob — media"
+          name="fotmob_mean"
+          defaultValue={v.fotmob_mean}
+          step="0.01"
+          min="5"
+          max="8"
+          hint="Voto medio FotMob (default 6.6)"
+        />
+        <Field
+          label="FotMob — deviazione standard"
+          name="fotmob_std"
+          defaultValue={v.fotmob_std}
+          step="0.01"
+          min="0.1"
+          max="3"
+          hint="Dispersione dei voti FotMob (default 0.79)"
+        />
+        <Field
+          label="SofaScore — media"
+          name="sofascore_mean"
+          defaultValue={v.sofascore_mean}
+          step="0.01"
+          min="5"
+          max="8"
+          hint="Voto medio SofaScore (default 6.6)"
+        />
+        <Field
+          label="SofaScore — deviazione standard"
+          name="sofascore_std"
+          defaultValue={v.sofascore_std}
+          step="0.01"
+          min="0.1"
+          max="3"
+          hint="Dispersione dei voti SofaScore (default 0.65)"
+        />
+        <Field
+          label="Peso FotMob (0–1)"
+          name="fotmob_weight"
+          defaultValue={v.fotmob_weight}
+          step="0.05"
+          min="0"
+          max="1"
+          hint="Peso FotMob nella media pesata. SofaScore = 1 − questo (default 0.55)"
+        />
+      </FieldGroup>
 
       {/* ── Fattore minuti ──────────────────────────────────────────── */}
       <FieldGroup title="Fattore minuti">

@@ -112,7 +112,15 @@
       "Bash(/usr/local/bin/npm root:*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\" -H \"x-requested-with: 0b987c\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\" -H \"x-requested-with: XMLHttpRequest\")"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\" -H \"x-requested-with: XMLHttpRequest\")",
+      "Bash(cut -d';' -f4,13,22)",
+      "Bash(column -t -s';')",
+      "Bash(cut -d';' -f13,22)",
+      "Bash(awk -F';' 'NR==1{print NF}' \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/_data/people.csv\")",
+      "Bash(for name:*)",
+      "Bash(do echo:*)",
+      "Bash(__NEW_LINE_4d52d9406963cd43__ grep:*)",
+      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/league/engine-config/\")"
     ]
   }
 }

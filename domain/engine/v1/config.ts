@@ -49,8 +49,14 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
    * mean = 6.7: SofaScore's "average" player rating.
    * std  = 0.65: typical spread of SofaScore ratings across Serie A.
    */
+  /**
+   * SofaScore rating normalization.
+   * mean = 6.6: same baseline as FotMob (both platforms use 6.0–10.0 scale with ~6.6 average).
+   * std  = 0.65: SofaScore's spread is slightly narrower than FotMob.
+   * Both values are configurable per league via league_engine_config.
+   */
   sofascore_normalization: {
-    mean: 6.7,
+    mean: 6.6,
     std:  0.65,
   },
 
@@ -58,6 +64,7 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
    * Weight of FotMob in the dual-source weighted average (0–1).
    * SofaScore weight = 1 - fotmob_weight = 0.45.
    * When only one source is available, it receives full weight (no shrink).
+   * Configurable per league via league_engine_config.
    */
   fotmob_weight: 0.55,
 
@@ -176,6 +183,18 @@ export function buildEngineConfig(
       MID: dbConfig.role_multiplier_mid ?? base.role_multiplier.MID,
       ATT: dbConfig.role_multiplier_att ?? base.role_multiplier.ATT,
     },
+
+    source_normalization: {
+      mean: dbConfig.fotmob_mean    ?? base.source_normalization.mean,
+      std:  dbConfig.fotmob_std     ?? base.source_normalization.std,
+    },
+
+    sofascore_normalization: {
+      mean: dbConfig.sofascore_mean ?? base.sofascore_normalization.mean,
+      std:  dbConfig.sofascore_std  ?? base.sofascore_normalization.std,
+    },
+
+    fotmob_weight: dbConfig.fotmob_weight ?? base.fotmob_weight,
 
     bonus_malus: {
       ...base.bonus_malus,
