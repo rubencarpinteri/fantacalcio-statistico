@@ -5,10 +5,10 @@ import { importRatingsAction } from '@/app/(admin)/matchdays/[id]/fixtures/actio
 import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
 import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
 import type { ImportMatch } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
+import { loadSsRatings } from '@/components/ui/SofaScoreManualImport'
 
 type Phase =
   | 'idle'
-  | 'fetching-sofascore'
   | 'fetching'
   | 'importing'
   | 'calculating'
@@ -28,48 +28,19 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   async function run() {
-    setPhase('fetching-sofascore')
+    setPhase('fetching')
     setError(null)
     setSsStatus(null)
     setSummary(null)
 
-    // ── Step 1: get sofascore_event_ids for this matchday ──────────────────
-    let sofascoreEventIds: number[] = []
-    try {
-      const idsRes = await fetch(`/api/ratings/fixtures?matchdayId=${matchdayId}`)
-      if (idsRes.ok) {
-        const d = await idsRes.json() as { sofascore_event_ids: number[] }
-        sofascoreEventIds = d.sofascore_event_ids ?? []
-      }
-    } catch { /* continue FotMob-only */ }
-
-    // ── Step 2: browser-fetch SofaScore fantasy data ───────────────────────
-    // Server-side is cloud-IP blocked (403). Browser fetches work.
-    const sofascoreByEventId: Record<string, unknown> = {}
-    const ssErrors: string[] = []
-
-    for (const eventId of sofascoreEventIds) {
-      try {
-        const ssRes = await fetch(`/api/sofascore-proxy?eventId=${eventId}`)
-        if (ssRes.ok) {
-          sofascoreByEventId[String(eventId)] = await ssRes.json()
-        } else {
-          ssErrors.push(`SS event ${eventId}: HTTP ${ssRes.status}`)
-        }
-      } catch (e) {
-        ssErrors.push(`SS event ${eventId}: ${String(e)}`)
-      }
-    }
-
-    const ssOk = Object.keys(sofascoreByEventId).length
-    setSsStatus(
-      ssErrors.length > 0
-        ? `SofaScore: ${ssOk}/${sofascoreEventIds.length} ok — ${ssErrors[0]}`
-        : `SofaScore: ${ssOk}/${sofascoreEventIds.length} partite`
+    // Read manually-pasted SofaScore ratings from localStorage
+    const sofascoreByPlayerId = loadSsRatings(matchdayId)
+    const ssCount = sofascoreByPlayerId ? Object.keys(sofascoreByPlayerId).length : 0
+    setSsStatus(ssCount > 0
+      ? `SofaScore: ${ssCount} giocatori`
+      : 'SofaScore: nessun dato — usa "Salva dati SofaScore" prima'
     )
 
-    // ── Step 3: fetch FotMob server-side + merge browser SS data ──────────
-    setPhase('fetching')
     let fetchData: FetchRatingsResponse
     try {
       const res = await fetch('/api/ratings/fetch', {
@@ -77,7 +48,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           matchdayId,
-          sofascoreByEventId: ssOk > 0 ? sofascoreByEventId : undefined,
+          sofascoreByPlayerId: sofascoreByPlayerId ?? undefined,
         }),
       })
       if (!res.ok) throw new Error(`Fetch fallito (HTTP ${res.status})`)
@@ -155,8 +126,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   }
 
   const busy = phase !== 'idle'
-  const label = phase === 'fetching-sofascore' ? 'SofaScore…'
-    : phase === 'fetching' ? 'Scaricando voti…'
+  const label = phase === 'fetching' ? 'Scaricando voti…'
     : phase === 'importing' ? 'Importando…'
     : phase === 'calculating' ? 'Calcolando…'
     : phase === 'publishing' ? 'Pubblicando…'

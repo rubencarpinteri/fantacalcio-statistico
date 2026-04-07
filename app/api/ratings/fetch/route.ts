@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
-import { normalizeName, mergeFixtureStats, findDbPlayer, parseSofaScoreFantasyJson } from '@/lib/ratings/parse'
+import { normalizeName, mergeFixtureStats, findDbPlayer } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 
 // ---------------------------------------------------------------------------
@@ -60,8 +60,12 @@ export type FetchRatingsResponse = {
 
 type RequestBody = {
   matchdayId?: string
-  /** Browser-fetched SofaScore fantasy data keyed by sofascore_event_id (string). Server-side is cloud-IP blocked (403). */
-  sofascoreByEventId?: Record<string, unknown>
+  /**
+   * Flat map of SofaScore player ID → rating, collected from all fixtures.
+   * SofaScore blocks all automated fetches (403). This data must be pasted
+   * manually by the admin from their browser session and passed from the client.
+   */
+  sofascoreByPlayerId?: Record<string, number | null>
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsResponse>> {
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
 
   const supabase = await createClient()
   const body = await req.json() as RequestBody
-  const { matchdayId, sofascoreByEventId } = body
+  const { matchdayId, sofascoreByPlayerId } = body
   if (!matchdayId) {
     return NextResponse.json({ matched: [], unmatched: [], errors: ['matchdayId required'] }, { status: 400 })
   }
@@ -91,33 +95,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const errors: string[] = []
   const allFetched: FetchedPlayerStat[] = []
 
-  // Build a combined sofascore_player_id → rating map from ALL fixtures.
-  // This is used AFTER FotMob matching to enrich matched players with their
-  // SofaScore rating via the serie_a_players chain (no name matching needed).
+  // Build sofascore_player_id → rating map from manually-pasted client data.
+  // SofaScore blocks all automated fetches (cloud IPs + CORS). The admin must
+  // paste each event's JSON manually; the client parses and sends this flat map.
   const allSofascoreRatings = new Map<number, number | null>()
+  if (sofascoreByPlayerId) {
+    for (const [idStr, rating] of Object.entries(sofascoreByPlayerId)) {
+      allSofascoreRatings.set(Number(idStr), rating)
+    }
+  }
 
-  // Fetch fixtures sequentially to avoid rate-limiting
+  // Fetch FotMob fixtures sequentially to avoid rate-limiting
   for (const fx of fixtures ?? []) {
     const label = fx.label ? ` (${fx.label})` : ''
-
     const fotmobResult = fx.fotmob_match_id
       ? await fetchFotMobMatch(fx.fotmob_match_id)
       : { data: null, status: 0 }
-
     if (fx.fotmob_match_id && !fotmobResult.data) {
       errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
     }
-
-    // SofaScore: use browser-passed data (server-side is cloud-IP blocked)
-    if (fx.sofascore_event_id && sofascoreByEventId?.[String(fx.sofascore_event_id)]) {
-      const fantasyStats = parseSofaScoreFantasyJson(
-        sofascoreByEventId[String(fx.sofascore_event_id)] as Record<string, unknown>
-      )
-      for (const s of fantasyStats) {
-        allSofascoreRatings.set(s.sofascore_id, s.rating)
-      }
-    }
-
     const merged = mergeFixtureStats(fotmobResult.data, null)
     allFetched.push(...merged)
   }

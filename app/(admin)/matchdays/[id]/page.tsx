@@ -8,6 +8,7 @@ import { MatchdayStatusControls } from './MatchdayStatusControls'
 import { FreezeButton } from './FreezeButton'
 import { FixturesInlineCard } from './FixturesInlineCard'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { SofaScoreManualImport } from '@/components/ui/SofaScoreManualImport'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -213,44 +214,7 @@ export default async function MatchdayDetailPage({
         </div>
       </div>
 
-      <div className="space-y-4">
-
-        {/* ── ONE-CLICK HERO (shown as soon as fixtures + lineups exist, not archived) ── */}
-        {isAdmin && fixtures.length >= 10 && matchday.status !== 'archived' && (
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
-            <QuickFetchAndCalculateButton matchdayId={id} />
-            {(lineupCount ?? 0) > 0 && (
-              <a
-                href={`/matchdays/${id}/all-lineups`}
-                className="group flex items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 transition-colors hover:border-indigo-500/40 hover:bg-indigo-500/10"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-white">Tutte le formazioni</p>
-                  <p className="text-xs text-indigo-300/70">
-                    {lineupCount} squadr{(lineupCount ?? 0) === 1 ? 'a' : 'e'} · Visualizza gli incontri
-                  </p>
-                </div>
-                <span className="text-indigo-400 text-sm group-hover:text-indigo-300 transition-colors">→</span>
-              </a>
-            )}
-          </div>
-        )}
-
-        {/* ── TUTTE LE FORMAZIONI HERO (no fixtures yet — lineup link only) ── */}
-        {isAdmin && fixtures.length < 10 && (lineupCount ?? 0) > 0 && (
-          <a
-            href={`/matchdays/${id}/all-lineups`}
-            className="group flex items-center justify-between rounded-2xl border border-indigo-500/30 bg-indigo-500/5 px-5 py-4 transition-colors hover:border-indigo-500/60 hover:bg-indigo-500/10"
-          >
-            <div>
-              <p className="text-sm font-bold text-white">Tutte le formazioni</p>
-              <p className="text-xs text-indigo-300/70">
-                {lineupCount} squadr{(lineupCount ?? 0) === 1 ? 'a' : 'e'} · Visualizza gli incontri
-              </p>
-            </div>
-            <span className="text-indigo-400 text-sm group-hover:text-indigo-300 transition-colors">→</span>
-          </a>
-        )}
+      <div className="space-y-3">
 
         {/* ── ADMIN WORKFLOW ── */}
         {isAdmin && (() => {
@@ -258,6 +222,7 @@ export default async function MatchdayDetailPage({
           const step2Done = playerStatsCount > 0
           const step3Done = v1RunId !== null
           const step4Done = (matchday.status === 'published' || matchday.status === 'archived') && publishedRunEngine === 'v1'
+          const ssEventIds = fixtures.map((f) => f.sofascore_event_id).filter((id): id is number => id != null)
 
           const StepIcon = ({ done, active }: { done: boolean; active: boolean }) => (
             <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -270,86 +235,64 @@ export default async function MatchdayDetailPage({
           )
 
           return (
-            <div className="space-y-3">
+            <div className="space-y-2">
 
-              {/* Step 1 — ID Partite */}
+              {/* Step 1 — Configura partite */}
               <div className="rounded-xl border border-[#2e2e42] bg-[#0f0f1a] p-4">
                 <div className="mb-3 flex items-center gap-3">
                   <StepIcon done={step1Done} active={!step1Done} />
-                  <div>
-                    <p className={`text-sm font-semibold ${step1Done ? 'text-white' : 'text-indigo-300'}`}>
-                      1 — ID Partite
-                    </p>
-                    <p className="text-xs text-[#55556a]">
-                      {step1Done ? `${fixtures.length} partite configurate` : 'Inserisci gli ID FotMob delle 10 partite'}
-                    </p>
-                  </div>
+                  <p className={`text-sm font-semibold ${step1Done ? 'text-white' : 'text-indigo-300'}`}>
+                    1 — Configura partite
+                  </p>
                 </div>
                 <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
               </div>
 
-              {/* Step 2 — Voti FotMob */}
-              <div className={`rounded-xl border p-4 ${step2Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step1Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
-                <div className="flex items-center gap-3">
-                  <StepIcon done={step2Done} active={step1Done && !step2Done} />
+              {/* Step 2 — Dati SofaScore */}
+              <div className={`rounded-xl border p-4 ${step1Done ? 'border-[#2e2e42] bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-50 pointer-events-none'}`}>
+                <div className="mb-3 flex items-center gap-3">
+                  <StepIcon done={false} active={step1Done} />
+                  <p className={`text-sm font-semibold ${step1Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
+                    2 — Dati SofaScore
+                  </p>
+                </div>
+                {step1Done && (
+                  <SofaScoreManualImport matchdayId={id} sofascoreEventIds={ssEventIds} />
+                )}
+              </div>
+
+              {/* Step 3 — Aggiorna e pubblica */}
+              <div className={`rounded-xl border p-4 ${step1Done ? 'border-amber-500/20 bg-amber-500/5' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-50 pointer-events-none'}`}>
+                <div className="mb-3 flex items-center gap-3">
+                  <StepIcon done={step2Done} active={step1Done} />
                   <div className="flex-1">
                     <p className={`text-sm font-semibold ${step2Done ? 'text-white' : step1Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
-                      2 — Voti FotMob
+                      3 — Scarica voti, calcola e pubblica
                     </p>
-                    <p className="text-xs text-[#55556a]">
-                      {step2Done ? `${playerStatsCount} giocatori importati` : 'I voti vengono scaricati automaticamente al salvataggio degli ID'}
-                    </p>
+                    {step2Done && (
+                      <p className="text-xs text-[#55556a]">
+                        {playerStatsCount} giocatori · Run #{v1RunNumber}
+                        {' · '}
+                        <a href={`/matchdays/${id}/stats`} className="hover:text-indigo-400">statistiche</a>
+                        {['scoring', 'published'].includes(matchday.status) && (
+                          <> · <a href={`/matchdays/${id}/overrides`} className="hover:text-orange-400">override</a></>
+                        )}
+                      </p>
+                    )}
                   </div>
-                  {step2Done && (
-                    <a
-                      href={`/matchdays/${id}/stats`}
-                      className="rounded-lg border border-[#2e2e42] px-4 py-2 text-sm font-medium text-[#55556a] transition-colors hover:border-indigo-500/40 hover:text-indigo-300"
-                    >
-                      Statistiche →
-                    </a>
-                  )}
                 </div>
+                {step1Done && (
+                  <QuickFetchAndCalculateButton matchdayId={id} />
+                )}
               </div>
 
-              {/* Step 3 — Calcolo statistico */}
-              <div className={`rounded-xl border p-4 ${step3Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step2Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
-                <div className="flex items-center gap-3">
-                  <StepIcon done={step3Done} active={step2Done && !step3Done} />
-                  <div className="flex-1">
-                    <p className={`text-sm font-semibold ${step3Done ? 'text-white' : step2Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
-                      3 — Calcolo statistico
-                    </p>
-                    <p className="text-xs text-[#55556a]">
-                      {step3Done ? `Run #${v1RunNumber} completato` : 'Esegui il calcolo con il motore FotMob'}
-                    </p>
-                  </div>
-                  <a
-                    href={`/matchdays/${id}/calculate`}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                      step3Done
-                        ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
-                        : step2Done
-                        ? 'bg-indigo-500 text-white hover:bg-indigo-400'
-                        : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
-                    }`}
-                  >
-                    {step3Done ? 'Ricalcola →' : 'Calcola →'}
-                  </a>
-                </div>
-              </div>
-
-              {/* Step 4 — Lineups + Publish */}
-              <div className={`rounded-xl border p-4 ${step4Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step3Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-60'}`}>
+              {/* Step 4 — Formazioni */}
+              <div className={`rounded-xl border p-4 ${step4Done ? 'border-[#2e2e42] bg-[#0a0a0f]' : step3Done ? 'border-indigo-500/30 bg-[#0f0f1a]' : 'border-[#1e1e2e] bg-[#0a0a0f] opacity-50'}`}>
                 <div className="flex items-start gap-3">
                   <StepIcon done={step4Done} active={step3Done && !step4Done} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold ${step4Done ? 'text-white' : step3Done ? 'text-indigo-300' : 'text-[#55556a]'}`}>
-                      4 — Formazioni + Pubblica
-                    </p>
-                    <p className="text-xs text-[#55556a]">
-                      {step4Done
-                        ? 'Pubblicata con punteggi FotMob'
-                        : 'Importa da Leghe (xlsx) oppure inserisci le formazioni manualmente'}
+                      4 — Formazioni e pubblicazione
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <a
@@ -360,43 +303,32 @@ export default async function MatchdayDetailPage({
                             : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
                         }`}
                       >
-                        Importa formazioni (testo) →
+                        Importa formazioni (testo)
                       </a>
                       <a
                         href={`/matchdays/${id}/import-leghe`}
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                          step4Done
-                            ? 'border border-[#2e2e42] text-[#55556a] hover:text-indigo-300 hover:border-indigo-500/40'
-                            : step3Done
-                            ? 'border border-[#2e2e42] text-[#8888aa] hover:border-indigo-500/40 hover:text-indigo-300'
-                            : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
-                        }`}
-                      >
-                        {step4Done ? 'Ripubblica (Leghe) →' : 'Importa Leghe (xlsx) →'}
-                      </a>
-                      <a
-                        href={`/matchdays/${id}/all-lineups`}
                         className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm font-medium text-[#8888aa] transition-colors hover:border-indigo-500/40 hover:text-indigo-300"
                       >
-                        Vedi formazioni →
+                        {step4Done ? 'Ripubblica (Leghe)' : 'Importa Leghe (xlsx)'}
                       </a>
+                      {(lineupCount ?? 0) > 0 && (
+                        <a
+                          href={`/matchdays/${id}/all-lineups`}
+                          className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-3 py-1.5 text-sm font-medium text-indigo-300 transition-colors hover:bg-indigo-500/10"
+                        >
+                          Vedi {lineupCount} formazioni →
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Extra links */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-[#55556a]">
+              {/* Admin controls strip */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 pt-1 text-xs text-[#55556a]">
                 <MatchdayStatusControls matchday={matchday} />
                 {['locked', 'scoring'].includes(matchday.status) && (
                   <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
-                )}
-                <a href={`/matchdays/${id}/all-lineups`} className="hover:text-indigo-400">Tutte le formazioni →</a>
-                {['scoring', 'published', 'archived'].includes(matchday.status) && (
-                  <a href={`/matchdays/${id}/stats`} className="hover:text-indigo-400">Statistiche →</a>
-                )}
-                {['scoring', 'published'].includes(matchday.status) && (
-                  <a href={`/matchdays/${id}/overrides`} className="hover:text-orange-400">Override →</a>
                 )}
                 {matchday.opens_at && <span>Apertura: {fmt(matchday.opens_at)}</span>}
                 {matchday.locks_at && <span>Scadenza: {fmt(matchday.locks_at)}</span>}
