@@ -46,7 +46,7 @@ export function FixturesInlineCard({
         for (let i = 0; i < sofascore_event_ids.length; i++) {
           const eventId = sofascore_event_ids[i]!
           try {
-            const ssRes = await fetch(`https://www.sofascore.com/api/v1/fantasy/event/${eventId}`)
+            const ssRes = await fetch(`https://api.sofascore.com/api/v1/event/${eventId}/lineups`)
             if (ssRes.ok) sofascoreByEventId[eventId] = await ssRes.json()
           } catch {
             // SofaScore fetch failed for this event — continue without it

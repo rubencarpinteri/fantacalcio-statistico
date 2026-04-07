@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
-import { normalizeName, mergeFixtureStats, findDbPlayer, parseSofaScoreFantasyJson } from '@/lib/ratings/parse'
+import { normalizeName, mergeFixtureStats, findDbPlayer, parseSofaScoreJson } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 
 // ---------------------------------------------------------------------------
@@ -116,10 +116,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     // Parse the fantasy endpoint format: { playerStatistics: [{playerId, statistics}] }
     // No name matching — IDs are resolved via serie_a_players.sofascore_id chain.
     if (fx.sofascore_event_id && sofascoreByEventId?.[String(fx.sofascore_event_id)]) {
-      const fantasyStats = parseSofaScoreFantasyJson(
+      const lineupStats = parseSofaScoreJson(
         sofascoreByEventId[String(fx.sofascore_event_id)]!
       )
-      for (const s of fantasyStats) {
+      for (const s of lineupStats) {
         // Last write wins if the same player appears in multiple fixtures (unlikely)
         allSofascoreRatings.set(s.sofascore_id, s.rating)
       }

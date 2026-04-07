@@ -23,7 +23,7 @@ interface Props {
   compact?: boolean
 }
 
-const SS_FANTASY_BASE = 'https://www.sofascore.com/api/v1/fantasy/event'
+const SS_LINEUPS_BASE = 'https://api.sofascore.com/api/v1/event'
 
 export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -54,7 +54,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     const sofascoreByEventId: Record<string, Record<string, unknown>> = {}
     for (const eventId of sofascoreEventIds) {
       try {
-        const ssRes = await fetch(`${SS_FANTASY_BASE}/${eventId}`)
+        const ssRes = await fetch(`${SS_LINEUPS_BASE}/${eventId}/lineups`)
         if (ssRes.ok) {
           sofascoreByEventId[String(eventId)] = await ssRes.json() as Record<string, unknown>
         }
