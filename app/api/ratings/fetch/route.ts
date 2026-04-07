@@ -137,9 +137,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const lpToSofascoreId = new Map<string, number>()
 
   const dbPlayers = (leaguePlayers ?? []).map((p) => {
-    // serie_a_players is returned as an array by PostgREST (isOneToOne: false)
-    const sapArr = p.serie_a_players as Array<{ fotmob_id: number | null; sofascore_id: number | null }> | null
-    const sap = Array.isArray(sapArr) ? sapArr[0] : null
+    // PostgREST may return the forward FK (many-to-one) as either an object or
+    // an array depending on schema introspection. Handle both.
+    type SapShape = { fotmob_id: number | null; sofascore_id: number | null }
+    const sapRaw = p.serie_a_players as SapShape | SapShape[] | null
+    const sap = Array.isArray(sapRaw) ? (sapRaw[0] ?? null) : sapRaw
     const poolFotmobId = sap?.fotmob_id ?? null
     const sofascoreId = sap?.sofascore_id ?? null
 
@@ -180,15 +182,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   // ── Enrich matched players with SofaScore ratings (ID-based, no name matching) ──
   // For each matched player: league_player_id → serie_a_players.sofascore_id
   //   → allSofascoreRatings map (populated from browser-fetched fantasy data).
+  console.log(`[ratings/fetch] ssRatings=${allSofascoreRatings.size} lpToSS=${lpToSofascoreId.size} matched=${matched.length}`)
+  let ssEnriched = 0
   if (allSofascoreRatings.size > 0) {
     for (const m of matched) {
       const sofascorePlayerId = lpToSofascoreId.get(m.league_player_id)
       if (sofascorePlayerId != null && allSofascoreRatings.has(sofascorePlayerId)) {
         m.stat.sofascore_rating = allSofascoreRatings.get(sofascorePlayerId) ?? null
         m.stat.sofascore_id = sofascorePlayerId
+        ssEnriched++
       }
     }
   }
+  console.log(`[ratings/fetch] ssEnriched=${ssEnriched}`)
+  // Debug: sample a few keys from each map to spot ID format mismatches
+  const ssSample = [...allSofascoreRatings.keys()].slice(0, 3)
+  const lpSample = [...lpToSofascoreId.values()].slice(0, 3)
+  console.log(`[ratings/fetch] ssKeys sample=${JSON.stringify(ssSample)} lpSSIds sample=${JSON.stringify(lpSample)}`)
 
   // Persist unmatched FotMob players so the admin can link them via
   // /pool/link-fotmob. Deduplicate by fotmob_id first — the same player can
