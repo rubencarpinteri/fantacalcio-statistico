@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useId } from 'react'
 import { useFormStatus } from 'react-dom'
 import { saveEngineConfigAction } from './actions'
 import type { LeagueEngineConfig } from '@/types/database.types'
@@ -65,6 +65,47 @@ function Field({
         className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
       />
       {hint && <p className="text-xs text-[#55556a]">{hint}</p>}
+    </div>
+  )
+}
+
+// ── Weight slider ────────────────────────────────────────────────────────────
+
+function WeightSlider({ defaultValue }: { defaultValue: number }) {
+  const [weight, setWeight] = useState(defaultValue)
+  const id = useId()
+  const fmPct  = Math.round(weight * 100)
+  const ssPct  = 100 - fmPct
+
+  return (
+    <div className="col-span-full flex flex-col gap-2">
+      <p className="text-xs text-[#8888aa]">Peso fonti (FotMob / SofaScore)</p>
+
+      {/* Labels + percentages */}
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className="text-indigo-300">FotMob <span className="font-mono text-white">{fmPct}%</span></span>
+        <span className="text-purple-300">SofaScore <span className="font-mono text-white">{ssPct}%</span></span>
+      </div>
+
+      {/* Slider */}
+      <div className="relative">
+        <input
+          id={id}
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={weight}
+          onChange={(e) => setWeight(Number(e.target.value))}
+          className="w-full cursor-pointer accent-indigo-500"
+        />
+        {/* Hidden input carries the value into the form action */}
+        <input type="hidden" name="fotmob_weight" value={weight} />
+      </div>
+
+      <p className="text-xs text-[#55556a]">
+        z_combinato = {fmPct}% × z_FotMob + {ssPct}% × z_SofaScore
+      </p>
     </div>
   )
 }
@@ -174,15 +215,7 @@ export function EngineConfigForm({ current }: Props) {
           max="3"
           hint="Dispersione dei voti SofaScore (default 0.65)"
         />
-        <Field
-          label="Peso FotMob (0–1)"
-          name="fotmob_weight"
-          defaultValue={v.fotmob_weight}
-          step="0.05"
-          min="0"
-          max="1"
-          hint="Peso FotMob nella media pesata. SofaScore = 1 − questo (default 0.55)"
-        />
+        <WeightSlider defaultValue={v.fotmob_weight} />
       </FieldGroup>
 
       {/* ── Fattore minuti ──────────────────────────────────────────── */}
