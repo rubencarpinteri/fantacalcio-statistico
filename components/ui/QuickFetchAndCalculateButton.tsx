@@ -70,6 +70,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       penalties_saved: m.stat.penalties_saved,
       goals_conceded: m.stat.goals_conceded,
       saves: m.stat.saves,
+      clean_sheet: m.stat.clean_sheet,
     }))
 
     const importResult = await importRatingsAction(matchdayId, toImport)

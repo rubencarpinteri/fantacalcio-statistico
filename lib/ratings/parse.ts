@@ -22,6 +22,8 @@ export type FetchedPlayerStat = {
   penalties_saved: number
   goals_conceded: number
   saves: number
+  /** True when the player's team conceded 0 goals in the match. Derived from FotMob GK data. */
+  clean_sheet: boolean
 }
 
 export function normalizeName(name: string): string {
@@ -160,8 +162,20 @@ export function mergeFixtureStats(
     }
   }
 
+  // Derive clean_sheet per team from FotMob: take the max goals_conceded across all
+  // players on each team. FotMob only populates goals_conceded for GKs, so max gives
+  // the actual goals conceded by that team. If max === 0, it's a clean sheet.
+  // Works correctly for split-GK scenarios: if team conceded 0, every GK has 0 →
+  // max = 0; if they conceded any, at least one GK shows > 0 → max > 0.
+  const maxGoalsConcededByTeam = new Map<string, number>()
+  for (const s of fotmob?.stats ?? []) {
+    const prev = maxGoalsConcededByTeam.get(s.team_name) ?? 0
+    maxGoalsConcededByTeam.set(s.team_name, Math.max(prev, s.goals_conceded))
+  }
+
   for (const s of fotmob?.stats ?? []) {
     const key = normalizeName(s.name)
+    const teamConceded = maxGoalsConcededByTeam.get(s.team_name) ?? 0
     map.set(key, {
       fotmob_id: s.fotmob_id, sofascore_id: null,
       name: s.name, normalized_name: key, team_label: s.team_name,
@@ -175,6 +189,7 @@ export function mergeFixtureStats(
       penalties_missed: penMissedByFotmobId.get(s.fotmob_id) ?? 0,
       penalties_saved: 0,
       goals_conceded: s.goals_conceded, saves: s.saves,
+      clean_sheet: teamConceded === 0,
     })
   }
 
@@ -196,6 +211,7 @@ export function mergeFixtureStats(
         yellow_cards: 0, red_cards: 0,
         penalties_scored: 0, penalties_missed: 0, penalties_saved: 0,
         goals_conceded: 0, saves: 0,
+        clean_sheet: false, // no FotMob data to derive from
       })
     }
   }

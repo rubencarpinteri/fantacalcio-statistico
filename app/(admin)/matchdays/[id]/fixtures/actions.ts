@@ -165,6 +165,7 @@ export type ImportMatch = {
   penalties_saved: number
   goals_conceded: number
   saves: number
+  clean_sheet: boolean
 }
 
 export type ImportRatingsState = { error?: string; imported?: number }
@@ -208,6 +209,7 @@ export async function importRatingsAction(
     penalties_saved: m.penalties_saved,
     goals_conceded: m.goals_conceded,
     saves: m.saves,
+    clean_sheet: m.clean_sheet,
   }))
 
   // Zero out stale rows — players who were imported in a previous fetch but are
@@ -227,7 +229,7 @@ export async function importRatingsAction(
         minutes_played: 0, fotmob_rating: null, sofascore_rating: null,
         goals_scored: 0, assists: 0, own_goals: 0, yellow_cards: 0,
         red_cards: 0, penalties_scored: 0, penalties_missed: 0,
-        penalties_saved: 0, goals_conceded: 0, saves: 0,
+        penalties_saved: 0, goals_conceded: 0, saves: 0, clean_sheet: false,
       })
       .eq('matchday_id', matchdayId)
       .in('player_id', staleIds)
