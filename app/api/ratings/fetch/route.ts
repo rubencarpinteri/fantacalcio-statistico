@@ -113,10 +113,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
     }
 
-    // Populate sofascore_id → rating map from lineups response
+    if (fx.sofascore_event_id && !sofascoreResult.data) {
+      errors.push(`SofaScore fetch failed for event ${fx.sofascore_event_id}${label} — HTTP ${sofascoreResult.status || 'network error'}`)
+    }
+
+    // Populate sofascore_id → rating map from fantasy response
     if (sofascoreResult.data) {
-      const lineupStats = parseSofaScoreFantasyJson(sofascoreResult.data as unknown as Record<string, unknown>)
-      for (const s of lineupStats) {
+      const fantasyStats = parseSofaScoreFantasyJson(sofascoreResult.data as unknown as Record<string, unknown>)
+      errors.push(`SofaScore event ${fx.sofascore_event_id}${label}: ${fantasyStats.length} players parsed`)
+      for (const s of fantasyStats) {
         allSofascoreRatings.set(s.sofascore_id, s.rating)
       }
     }
