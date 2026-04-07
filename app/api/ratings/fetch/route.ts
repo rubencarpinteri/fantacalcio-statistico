@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { normalizeName, mergeFixtureStats, findDbPlayer, parseSofaScoreFantasyJson } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
-import { fetchSofaScoreLineups } from '@/lib/ratings/sofascore'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,6 +60,8 @@ export type FetchRatingsResponse = {
 
 type RequestBody = {
   matchdayId?: string
+  /** Browser-fetched SofaScore fantasy data keyed by sofascore_event_id (string). Server-side is cloud-IP blocked (403). */
+  sofascoreByEventId?: Record<string, unknown>
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsResponse>> {
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
 
   const supabase = await createClient()
   const body = await req.json() as RequestBody
-  const { matchdayId } = body
+  const { matchdayId, sofascoreByEventId } = body
   if (!matchdayId) {
     return NextResponse.json({ matched: [], unmatched: [], errors: ['matchdayId required'] }, { status: 400 })
   }
@@ -99,28 +100,19 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   for (const fx of fixtures ?? []) {
     const label = fx.label ? ` (${fx.label})` : ''
 
-    // FotMob and SofaScore fetched in parallel per fixture
-    const [fotmobResult, sofascoreResult] = await Promise.all([
-      fx.fotmob_match_id
-        ? fetchFotMobMatch(fx.fotmob_match_id)
-        : Promise.resolve({ data: null, status: 0 }),
-      fx.sofascore_event_id
-        ? fetchSofaScoreLineups(fx.sofascore_event_id)
-        : Promise.resolve({ data: null, status: 0 }),
-    ])
+    const fotmobResult = fx.fotmob_match_id
+      ? await fetchFotMobMatch(fx.fotmob_match_id)
+      : { data: null, status: 0 }
 
     if (fx.fotmob_match_id && !fotmobResult.data) {
       errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
     }
 
-    if (fx.sofascore_event_id && !sofascoreResult.data) {
-      errors.push(`SofaScore fetch failed for event ${fx.sofascore_event_id}${label} — HTTP ${sofascoreResult.status || 'network error'}`)
-    }
-
-    // Populate sofascore_id → rating map from fantasy response
-    if (sofascoreResult.data) {
-      const fantasyStats = parseSofaScoreFantasyJson(sofascoreResult.data as unknown as Record<string, unknown>)
-      errors.push(`SofaScore event ${fx.sofascore_event_id}${label}: ${fantasyStats.length} players parsed`)
+    // SofaScore: use browser-passed data (server-side is cloud-IP blocked)
+    if (fx.sofascore_event_id && sofascoreByEventId?.[String(fx.sofascore_event_id)]) {
+      const fantasyStats = parseSofaScoreFantasyJson(
+        sofascoreByEventId[String(fx.sofascore_event_id)] as Record<string, unknown>
+      )
       for (const s of fantasyStats) {
         allSofascoreRatings.set(s.sofascore_id, s.rating)
       }
