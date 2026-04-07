@@ -8,6 +8,7 @@ import type { FetchRatingsResponse, MatchedPlayer } from '@/app/api/ratings/fetc
 
 type FetchState =
   | { phase: 'idle' }
+  | { phase: 'fetching-sofascore'; total: number; done: number }
   | { phase: 'fetching' }
   | { phase: 'preview'; data: FetchRatingsResponse }
   | { phase: 'importing' }
@@ -32,12 +33,34 @@ export function FixturesInlineCard({
   const sofascoreDefault = fixtures.map((f) => f.sofascore_event_id ?? '').join('\n')
 
   async function handleFetch() {
-    setFetchState({ phase: 'fetching' })
     try {
+      // Step 1: Get the SofaScore event IDs for this matchday
+      const idsRes = await fetch(`/api/ratings/fixtures?matchdayId=${matchdayId}`)
+      if (!idsRes.ok) throw new Error(`Fixtures lookup failed: HTTP ${idsRes.status}`)
+      const { sofascore_event_ids } = await idsRes.json() as { sofascore_event_ids: number[] }
+
+      // Step 2: Browser-fetch SofaScore fantasy data for each event
+      const sofascoreByEventId: Record<string, unknown> = {}
+      if (sofascore_event_ids.length > 0) {
+        setFetchState({ phase: 'fetching-sofascore', total: sofascore_event_ids.length, done: 0 })
+        for (let i = 0; i < sofascore_event_ids.length; i++) {
+          const eventId = sofascore_event_ids[i]!
+          try {
+            const ssRes = await fetch(`https://www.sofascore.com/api/v1/fantasy/event/${eventId}`)
+            if (ssRes.ok) sofascoreByEventId[eventId] = await ssRes.json()
+          } catch {
+            // SofaScore fetch failed for this event — continue without it
+          }
+          setFetchState({ phase: 'fetching-sofascore', total: sofascore_event_ids.length, done: i + 1 })
+        }
+      }
+
+      // Step 3: Import stats via server API (FotMob fetched server-side + SofaScore from browser)
+      setFetchState({ phase: 'fetching' })
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
+        body: JSON.stringify({ matchdayId, sofascoreByEventId }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() as FetchRatingsResponse
@@ -135,8 +158,14 @@ export function FixturesInlineCard({
             disabled={fixtures.length === 0}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
           >
-            Scarica voti da FotMob
+            Scarica voti da FotMob + SofaScore
           </button>
+        )}
+
+        {fetchState.phase === 'fetching-sofascore' && (
+          <p className="text-sm text-[#8888aa] animate-pulse">
+            SofaScore: {fetchState.done}/{fetchState.total} partite…
+          </p>
         )}
 
         {fetchState.phase === 'fetching' && (

@@ -86,6 +86,10 @@ export default async function MatchdayResultsPage({
         total_bonus_malus,
         is_override,
         is_provisional,
+        z_fotmob,
+        z_sofascore,
+        minutes_factor,
+        role_multiplier,
         league_players ( full_name, club, rating_class )
       `)
       .eq('run_id', ptr.run_id),
@@ -122,7 +126,18 @@ export default async function MatchdayResultsPage({
     total_bonus_malus: number | null
     is_override: boolean
     is_provisional: boolean
+    z_fotmob: number | null
+    z_sofascore: number | null
+    minutes_factor: number | null
+    role_multiplier: number | null
     league_players: { full_name: string; club: string; rating_class: string } | null
+  }
+
+  function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): number | null {
+    if (z === null || mf === null || rm === null) return null
+    const b0 = 6.0 + 1.15 * z * mf
+    const b1 = 6.0 + rm * (b0 - 6.0)
+    return Math.max(3.0, Math.min(9.5, b1))
   }
   const calcByPlayer = new Map<string, CalcRow>()
   for (const c of calcs ?? []) {
@@ -262,8 +277,21 @@ export default async function MatchdayResultsPage({
                             {player?.rating_class ?? '—'}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-right font-mono text-[#8888aa]">
-                          {c?.voto_base != null ? c.voto_base.toFixed(1) : '—'}
+                        <td className="px-4 py-2 text-right">
+                          <span className="font-mono text-[#8888aa]">
+                            {c?.voto_base != null ? c.voto_base.toFixed(2) : '—'}
+                          </span>
+                          {(() => {
+                            const vbFm = calcSourceVotoBase(c?.z_fotmob ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
+                            const vbSs = calcSourceVotoBase(c?.z_sofascore ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
+                            if (vbFm === null && vbSs === null) return null
+                            return (
+                              <div className="mt-0.5 flex justify-end gap-2 text-[10px]">
+                                {vbFm !== null && <span className="text-[#6666aa]">FM {vbFm.toFixed(2)}</span>}
+                                {vbSs !== null && <span className="text-indigo-400/60">SS {vbSs.toFixed(2)}</span>}
+                              </div>
+                            )
+                          })()}
                         </td>
                         <td className="px-4 py-2 text-right">
                           <BmCell breakdown={c?.bonus_malus_breakdown} total={c?.total_bonus_malus ?? null} />

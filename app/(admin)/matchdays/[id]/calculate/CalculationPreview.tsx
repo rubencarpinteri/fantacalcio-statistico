@@ -505,7 +505,26 @@ export function CalculationPreview({
                         </tr>
 
                         {/* Expanded breakdown row */}
-                        {isExpanded && (
+                        {isExpanded && (() => {
+                          // Per-source translated voto_base (computed client-side from stored intermediates)
+                          // Uses: z_fotmob / z_sofascore, minutes_factor, role_multiplier stored in the row
+                          const SCALE = 1.15
+                          const CAP_MIN = 3.0
+                          const CAP_MAX = 9.5
+                          const mf = c.minutes_factor ?? 1
+                          const rm = c.role_multiplier ?? 1
+
+                          function calcVotoBase(z: number | null): number | null {
+                            if (z === null || c.minutes_factor === null || c.role_multiplier === null) return null
+                            const b0 = 6.0 + SCALE * (z * mf)
+                            const b1 = 6.0 + rm * (b0 - 6.0)
+                            return Math.max(CAP_MIN, Math.min(CAP_MAX, b1))
+                          }
+
+                          const vbFm = calcVotoBase(c.z_fotmob)
+                          const vbSs = calcVotoBase(c.z_sofascore)
+
+                          return (
                           <tr className="bg-[#0e0e1a]">
                             <td colSpan={9} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
@@ -528,6 +547,35 @@ export function CalculationPreview({
                                 ))}
                               </div>
 
+                              {/* Per-source translated marks */}
+                              {(vbFm !== null || vbSs !== null) && (
+                                <div className="mt-3 border-t border-[#2e2e42] pt-3">
+                                  <p className="mb-1.5 text-xs font-medium text-[#55556a] uppercase tracking-wider">Voto base per fonte</p>
+                                  <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs">
+                                    {vbFm !== null && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[#8888aa]">Solo FotMob</span>
+                                        <span className="font-mono font-bold text-[#c8c8f0]">{fmt(vbFm)}</span>
+                                      </div>
+                                    )}
+                                    {vbSs !== null && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-indigo-400/60">Solo SofaScore</span>
+                                        <span className="font-mono font-bold text-indigo-300">{fmt(vbSs)}</span>
+                                      </div>
+                                    )}
+                                    {vbFm !== null && vbSs !== null && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[#55556a]">Δ FM−SS</span>
+                                        <span className={`font-mono ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                                          {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
                               {breakdown && breakdown.length > 0 && (
                                 <div className="mt-3 border-t border-[#2e2e42] pt-3">
                                   <p className="mb-1.5 text-xs font-medium text-[#55556a] uppercase tracking-wider">Bonus/Malus</p>
@@ -546,7 +594,8 @@ export function CalculationPreview({
                               )}
                             </td>
                           </tr>
-                        )}
+                          )
+                        })()}
                       </Fragment>
                     )
                   })}

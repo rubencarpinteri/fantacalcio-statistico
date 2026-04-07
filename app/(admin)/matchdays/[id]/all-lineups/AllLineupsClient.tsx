@@ -20,6 +20,10 @@ export interface SlotData {
   fantavoto: number | null
   votoBase: number | null
   bonusMalus: Array<{ label: string; total: number }> | null
+  zFotmob: number | null
+  zSofascore: number | null
+  minutesFactor: number | null
+  roleMultiplier: number | null
   assignedMantraRole: string | null
   isBenchAssignment: boolean
   benchOrderAssignment: number | null
@@ -73,6 +77,116 @@ function fmtFv(n: number | null): string {
   return n.toFixed(2)
 }
 
+// ---- Per-source voto_base helper -------------------------------------------
+
+const RC_COLORS: Record<string, string> = {
+  GK: 'text-yellow-400', DEF: 'text-blue-400', MID: 'text-green-400', ATT: 'text-red-400',
+}
+
+function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): number | null {
+  if (z === null || mf === null || rm === null) return null
+  const b0 = 6.0 + 1.15 * z * mf
+  const b1 = 6.0 + rm * (b0 - 6.0)
+  return Math.max(3.0, Math.min(9.5, b1))
+}
+
+// ---- Player detail modal ---------------------------------------------------
+
+function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => void }) {
+  const vbFm = calcSourceVotoBase(slot.zFotmob, slot.minutesFactor, slot.roleMultiplier)
+  const vbSs = calcSourceVotoBase(slot.zSofascore, slot.minutesFactor, slot.roleMultiplier)
+  const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-[#8888aa]'
+  const fv = slot.fantavoto
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xs rounded-xl border border-[#2e2e42] bg-[#111118] p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="mb-4 flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-white">{slot.playerName ?? '—'}</p>
+            <p className="text-xs text-[#55556a]">
+              {slot.playerClub ?? ''}
+              {slot.playerRatingClass && (
+                <span className={`ml-2 font-bold ${rcColor}`}>{slot.playerRatingClass}</span>
+              )}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none">×</button>
+        </div>
+
+        {/* Fantavoto */}
+        <div className="mb-4 flex items-baseline gap-3">
+          <span className="text-3xl font-black font-mono text-white">{fmtFv(fv)}</span>
+          {slot.votoBase !== null && (
+            <span className="text-sm text-[#55556a]">
+              base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Per-source breakdown */}
+        {(vbFm !== null || vbSs !== null) && (
+          <div className="mb-4 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-3">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-[#55556a]">Voto base per fonte</p>
+            <div className="space-y-1.5">
+              {vbFm !== null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#8888aa]">Solo FotMob</span>
+                  <span className="font-mono text-sm font-bold text-[#c8c8f0]">{vbFm.toFixed(2)}</span>
+                </div>
+              )}
+              {vbSs !== null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-indigo-400/70">Solo SofaScore</span>
+                  <span className="font-mono text-sm font-bold text-indigo-300">{vbSs.toFixed(2)}</span>
+                </div>
+              )}
+              {vbFm !== null && vbSs !== null && (
+                <div className="flex items-center justify-between border-t border-[#2e2e42] pt-1.5">
+                  <span className="text-xs text-[#55556a]">Δ FM − SS</span>
+                  <span className={`font-mono text-xs ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                    {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* B/M breakdown */}
+        {slot.bonusMalus && slot.bonusMalus.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-[#55556a]">Bonus / Malus</p>
+            <div className="flex flex-wrap gap-1.5">
+              {slot.bonusMalus.map((b, i) => (
+                <span
+                  key={i}
+                  className={`rounded px-2 py-0.5 text-xs font-semibold ${
+                    b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                  }`}
+                >
+                  {b.label} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {fv === null && (
+          <p className="mt-2 text-xs text-[#55556a] italic">Nessun voto disponibile (NV)</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ---- Player chip -----------------------------------------------------------
 
 function PlayerChip({
@@ -80,11 +194,13 @@ function PlayerChip({
   isEditable,
   onDragStart,
   onDrop,
+  onPlayerClick,
 }: {
   slot: SlotData
   isEditable: boolean
   onDragStart: () => void
   onDrop: () => void
+  onPlayerClick?: (slot: SlotData) => void
 }) {
   const [isDragOver, setIsDragOver] = useState(false)
   const color = roleColor(slot.playerRoles)
@@ -98,10 +214,12 @@ function PlayerChip({
       onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={(e) => { e.preventDefault(); setIsDragOver(false); onDrop() }}
+      onClick={() => slot.playerId && onPlayerClick?.(slot)}
       className={[
         'flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-colors',
         isDragOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-[#2e2e42] bg-[#0a0a0f]',
-        isEditable && slot.playerId ? 'cursor-grab active:cursor-grabbing hover:border-[#3e3e52]' : '',
+        slot.playerId ? 'cursor-pointer hover:border-[#3e3e52]' : '',
+        isEditable && slot.playerId ? 'cursor-grab active:cursor-grabbing' : '',
         slot.isBench ? 'opacity-75' : '',
       ].join(' ')}
     >
@@ -158,11 +276,13 @@ function TeamCard({
   matchdayId,
   isEditable,
   bare = false,
+  onPlayerClick,
 }: {
   team: TeamLineupData
   matchdayId: string
   isEditable: boolean
   bare?: boolean
+  onPlayerClick?: (slot: SlotData) => void
 }) {
   const [slots, setSlots] = useState<SlotData[]>(() =>
     [...team.slots].sort((a, b) => a.slotOrder - b.slotOrder)
@@ -331,6 +451,7 @@ function TeamCard({
                   isEditable={isEditable}
                   onDragStart={() => handleDragStart(slot.slotId)}
                   onDrop={() => handleDrop(slot.slotId)}
+                  onPlayerClick={onPlayerClick}
                 />
               ))}
             </div>
@@ -380,11 +501,13 @@ function MatchupRow({
   away,
   matchdayId,
   isEditable,
+  onPlayerClick,
 }: {
   home: TeamLineupData | undefined
   away: TeamLineupData | undefined
   matchdayId: string
   isEditable: boolean
+  onPlayerClick?: (slot: SlotData) => void
 }) {
   function teamFv(team: TeamLineupData | undefined): number | null {
     if (!team) return null
@@ -449,13 +572,13 @@ function MatchupRow({
       <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-y-0 md:divide-x divide-[#1e1e2e]">
         <div className="p-4">
           {home
-            ? <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare />
+            ? <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
             : <p className="py-10 text-center text-xs text-[#55556a]">Nessuna formazione</p>
           }
         </div>
         <div className="p-4">
           {away
-            ? <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare />
+            ? <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
             : <p className="py-10 text-center text-xs text-[#55556a]">Nessuna formazione</p>
           }
         </div>
@@ -468,49 +591,63 @@ function MatchupRow({
 
 export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matchups }: Props) {
   const isEditable = matchdayStatus !== 'archived'
+  const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null)
+
+  const teamMap = new Map(teamLineups.map((t) => [t.teamId, t]))
 
   // ── Matchup layout (when competition matchups are available) ──────────────
   if (matchups.length > 0) {
-    const teamMap = new Map(teamLineups.map((t) => [t.teamId, t]))
     const pairedIds = new Set(matchups.flatMap((m) => [m.homeTeamId, m.awayTeamId]))
     const unpaired = teamLineups.filter((t) => !pairedIds.has(t.teamId))
 
     return (
-      <div className="space-y-4">
-        {matchups.map((m, i) => (
-          <MatchupRow
-            key={i}
-            home={teamMap.get(m.homeTeamId)}
-            away={teamMap.get(m.awayTeamId)}
-            matchdayId={matchdayId}
-            isEditable={isEditable}
-          />
-        ))}
-        {unpaired.length > 0 && (
-          <div className="space-y-3 pt-2">
-            <p className="text-xs uppercase tracking-widest text-[#55556a]">Senza incontro</p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {unpaired.map((t) => (
-                <TeamCard key={t.teamId} team={t} matchdayId={matchdayId} isEditable={isEditable} />
-              ))}
+      <>
+        <div className="space-y-4">
+          {matchups.map((m, i) => (
+            <MatchupRow
+              key={i}
+              home={teamMap.get(m.homeTeamId)}
+              away={teamMap.get(m.awayTeamId)}
+              matchdayId={matchdayId}
+              isEditable={isEditable}
+              onPlayerClick={setSelectedSlot}
+            />
+          ))}
+          {unpaired.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <p className="text-xs uppercase tracking-widest text-[#55556a]">Senza incontro</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {unpaired.map((t) => (
+                  <TeamCard key={t.teamId} team={t} matchdayId={matchdayId} isEditable={isEditable} onPlayerClick={setSelectedSlot} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+        {selectedSlot && (
+          <PlayerDetailModal slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
         )}
-      </div>
+      </>
     )
   }
 
   // ── Fallback: plain grid (no matchup data configured) ────────────────────
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {teamLineups.map((team) => (
-        <TeamCard
-          key={team.teamId}
-          team={team}
-          matchdayId={matchdayId}
-          isEditable={isEditable}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {teamLineups.map((team) => (
+          <TeamCard
+            key={team.teamId}
+            team={team}
+            matchdayId={matchdayId}
+            isEditable={isEditable}
+            onPlayerClick={setSelectedSlot}
+          />
+        ))}
+      </div>
+      {selectedSlot && (
+        <PlayerDetailModal slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
+      )}
+    </>
   )
 }

@@ -137,17 +137,33 @@ export default async function AllLineupsPage({
   }
 
   type BonusMalusItem = { label: string; total: number }
-  const calcMap = new Map<string, { fantavoto: number | null; voto_base: number | null; bonusMalus: BonusMalusItem[] | null }>()
+  const calcMap = new Map<string, {
+    fantavoto: number | null
+    voto_base: number | null
+    bonusMalus: BonusMalusItem[] | null
+    z_fotmob: number | null
+    z_sofascore: number | null
+    minutes_factor: number | null
+    role_multiplier: number | null
+  }>()
   if (runId) {
     const { data: calcs } = await supabase
       .from('player_calculations')
-      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown')
+      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown, z_fotmob, z_sofascore, minutes_factor, role_multiplier')
       .eq('run_id', runId)
 
     for (const c of calcs ?? []) {
       const raw = c.bonus_malus_breakdown as Array<{ label: string; total: number; quantity: number; points_each: number }> | null
       const bonusMalus = raw ? raw.filter(b => b.total !== 0) : null
-      calcMap.set(c.player_id, { fantavoto: c.fantavoto, voto_base: c.voto_base, bonusMalus: bonusMalus?.length ? bonusMalus : null })
+      calcMap.set(c.player_id, {
+        fantavoto: c.fantavoto,
+        voto_base: c.voto_base,
+        bonusMalus: bonusMalus?.length ? bonusMalus : null,
+        z_fotmob: c.z_fotmob,
+        z_sofascore: c.z_sofascore,
+        minutes_factor: c.minutes_factor,
+        role_multiplier: c.role_multiplier,
+      })
     }
   }
 
@@ -213,6 +229,10 @@ export default async function AllLineupsPage({
         fantavoto: calc?.fantavoto ?? null,
         votoBase: calc?.voto_base ?? null,
         bonusMalus: calc?.bonusMalus ?? null,
+        zFotmob: calc?.z_fotmob ?? null,
+        zSofascore: calc?.z_sofascore ?? null,
+        minutesFactor: calc?.minutes_factor ?? null,
+        roleMultiplier: calc?.role_multiplier ?? null,
         assignedMantraRole: assignment?.assigned_mantra_role ?? null,
         isBenchAssignment: assignment?.is_bench ?? false,
         benchOrderAssignment: assignment?.bench_order ?? null,
