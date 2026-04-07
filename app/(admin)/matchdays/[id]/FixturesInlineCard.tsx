@@ -34,10 +34,28 @@ export function FixturesInlineCard({
   async function handleFetch() {
     try {
       setFetchState({ phase: 'fetching' })
+
+      // Browser-fetch SofaScore (server-side is cloud-IP blocked)
+      const idsRes = await fetch(`/api/ratings/fixtures?matchdayId=${matchdayId}`)
+      const sofascoreEventIds: number[] = idsRes.ok
+        ? ((await idsRes.json()) as { sofascore_event_ids: number[] }).sofascore_event_ids ?? []
+        : []
+
+      const sofascoreByEventId: Record<string, unknown> = {}
+      for (const eventId of sofascoreEventIds) {
+        try {
+          const ssRes = await fetch(`https://www.sofascore.com/api/v1/fantasy/event/${eventId}`, { credentials: 'include' })
+          if (ssRes.ok) sofascoreByEventId[String(eventId)] = await ssRes.json()
+        } catch { /* continue without this fixture */ }
+      }
+
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
+        body: JSON.stringify({
+          matchdayId,
+          sofascoreByEventId: Object.keys(sofascoreByEventId).length > 0 ? sofascoreByEventId : undefined,
+        }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() as FetchRatingsResponse
