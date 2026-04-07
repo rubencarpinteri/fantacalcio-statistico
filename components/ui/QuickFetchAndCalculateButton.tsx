@@ -8,6 +8,8 @@ import type { ImportMatch } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
 
 type Phase =
   | 'idle'
+  | 'fetching-ids'
+  | 'fetching-sofascore'
   | 'fetching'
   | 'importing'
   | 'calculating'
@@ -21,23 +23,59 @@ interface Props {
   compact?: boolean
 }
 
+const SS_FANTASY_BASE = 'https://www.sofascore.com/api/v1/fantasy/event'
+
 export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [summary, setSummary] = useState<{ imported: number; scored: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function run() {
-    setPhase('fetching')
+    setPhase('fetching-ids')
     setError(null)
     setSummary(null)
 
-    // ── Step 1: fetch ratings from FotMob ────────────────────────────────
+    // ── Step 0: get sofascore_event_ids for this matchday ───────────────────
+    let sofascoreEventIds: number[] = []
+    try {
+      const idsRes = await fetch(`/api/ratings/fixtures?matchdayId=${matchdayId}`)
+      if (idsRes.ok) {
+        const idsData = await idsRes.json() as { sofascore_event_ids: number[] }
+        sofascoreEventIds = idsData.sofascore_event_ids ?? []
+      }
+    } catch {
+      // Non-fatal — proceed without SofaScore (FotMob-only mode)
+    }
+
+    // ── Step 1: browser-fetch SofaScore fantasy data ────────────────────────
+    // SofaScore /api/v1/fantasy/event/{id} has CORS access-control-allow-origin: *
+    // so browser fetches work fine. Server-side is blocked by TLS fingerprinting.
+    setPhase('fetching-sofascore')
+    const sofascoreByEventId: Record<string, Record<string, unknown>> = {}
+    for (const eventId of sofascoreEventIds) {
+      try {
+        const ssRes = await fetch(`${SS_FANTASY_BASE}/${eventId}`)
+        if (ssRes.ok) {
+          sofascoreByEventId[String(eventId)] = await ssRes.json() as Record<string, unknown>
+        }
+      } catch {
+        // Non-fatal — skip this fixture's SofaScore data
+      }
+    }
+
+    // ── Step 2: fetch FotMob ratings (server-side) + merge SofaScore ────────
+    setPhase('fetching')
     let fetchData: FetchRatingsResponse
     try {
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
+        body: JSON.stringify({
+          matchdayId,
+          sofascoreByEventId: Object.keys(sofascoreByEventId).length > 0
+            ? sofascoreByEventId
+            : undefined,
+        }),
       })
       if (!res.ok) throw new Error(`Fetch fallito (HTTP ${res.status})`)
       fetchData = (await res.json()) as FetchRatingsResponse
@@ -53,7 +91,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       return
     }
 
-    // ── Step 2: import stats ─────────────────────────────────────────────
+    // ── Step 3: import stats ─────────────────────────────────────────────────
     setPhase('importing')
     const toImport: ImportMatch[] = fetchData.matched.map((m) => ({
       league_player_id: m.league_player_id,
@@ -80,7 +118,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       return
     }
 
-    // ── Step 3: trigger calculation ──────────────────────────────────────
+    // ── Step 4: trigger calculation ──────────────────────────────────────────
     setPhase('calculating')
     const calcResult = await triggerCalculationAction(matchdayId)
     if (calcResult.error) {
@@ -89,7 +127,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       return
     }
 
-    // ── Step 4: publish ──────────────────────────────────────────────────
+    // ── Step 5: publish ──────────────────────────────────────────────────────
     setPhase('publishing')
     const publishResult = await publishCalculationAction(matchdayId, calcResult.run_id!)
     if (publishResult.error) {
@@ -104,12 +142,10 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     })
     setPhase('done')
     // Show success message briefly, then hard-reload so all page data reflects the new publish.
-    // router.refresh() alone fires in the background and the UI often doesn't visibly update
-    // until the user manually reloads — a timed location.reload() is simpler and reliable.
     setTimeout(() => window.location.reload(), 1500)
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   if (phase === 'done' && summary) {
     return (
       <div className="flex items-center gap-2">
@@ -143,7 +179,11 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   }
 
   const busy = phase !== 'idle'
-  const label = phase === 'fetching'
+  const label = phase === 'fetching-ids'
+    ? 'Preparando…'
+    : phase === 'fetching-sofascore'
+    ? 'SofaScore…'
+    : phase === 'fetching'
     ? 'Scaricando voti…'
     : phase === 'importing'
     ? 'Importando…'
@@ -160,7 +200,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       <button
         disabled={busy}
         onClick={run}
-        title="Scarica voti da FotMob, calcola e pubblica"
+        title="Scarica voti da FotMob + SofaScore, calcola e pubblica"
         className={[
           'flex items-center gap-1.5 rounded-lg border font-medium transition-colors px-2 py-1 text-xs',
           busy
@@ -181,7 +221,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     <button
       disabled={busy}
       onClick={run}
-      title="Scarica voti da FotMob, calcola e pubblica in un click"
+      title="Scarica voti da FotMob + SofaScore, calcola e pubblica in un click"
       className={[
         'flex w-full items-center justify-center gap-2 rounded-xl border-2 py-4 text-base font-bold transition-all',
         busy

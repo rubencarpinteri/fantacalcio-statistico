@@ -87,7 +87,32 @@
       "Bash(ls /usr/local/n/versions/node/*/bin/node)",
       "Bash(PATH=\"/usr/local/bin:$PATH\")",
       "Bash(/usr/local/bin/node \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/node_modules/typescript/bin/tsc\" --noEmit --project \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/tsconfig.json\")",
-      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/all-lineups/\")"
+      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/all-lineups/\")",
+      "Bash(export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\")",
+      "Bash(find '/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/competitions' -type f)",
+      "Bash(node node_modules/.bin/tsc --noEmit)",
+      "Bash(/usr/local/bin/npx tsc:*)",
+      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/competitions/\")",
+      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/competitions/[id]/\")",
+      "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/fixtures/\")",
+      "Bash(ls /usr/local/bin/node* /opt/homebrew/bin/node* ~/.nvm/versions/node/*/bin/node)",
+      "Bash(/usr/local/bin/node /usr/local/bin/npx tsc --noEmit)",
+      "Bash(PATH=\"/usr/local/bin:$PATH\" npx tsc --noEmit)",
+      "Bash(find \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays\" -name \"schema*\")",
+      "Bash(tr ';' '\\\\n')",
+      "Bash(awk -F';' '{print NF}' people.csv)",
+      "Bash(python3 -c \":*)",
+      "Bash(curl -s -L -H \"User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/124.0.0.0 Safari/537.36\" -H \"Accept: text/html,application/xhtml+xml\" -H \"Accept-Language: it-IT,it;q=0.9,en-US;q=0.8\" \"https://www.fotmob.com/match/4803343\")",
+      "Bash(/usr/local/bin/node --version)",
+      "Bash(/opt/homebrew/bin/node --version)",
+      "Bash(PATH=/opt/homebrew/bin:/usr/local/bin:$PATH)",
+      "Bash(node -e \"const {execSync}=require\\(''child_process''\\); console.log\\(execSync\\(''npm root -g''\\).toString\\(\\).trim\\(\\)\\)\")",
+      "Bash(/opt/homebrew/bin/node -e \"const {execSync}=require\\(''child_process''\\); console.log\\(execSync\\(''/opt/homebrew/bin/npm root -g 2>&1''\\).toString\\(\\).trim\\(\\)\\)\")",
+      "Read(//opt/homebrew/lib/**)",
+      "Bash(/usr/local/bin/npm root:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\" -H \"x-requested-with: 0b987c\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://www.sofascore.com/api/v1/fantasy/event/13981723\" -H \"accept: */*\" -H \"user-agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/146.0.0.0 Safari/537.36\" -H \"x-requested-with: XMLHttpRequest\")"
     ]
   }
 }

@@ -75,6 +75,7 @@ export async function triggerCalculationAction(
       minutes_played,
       rating_class_override,
       fotmob_rating,
+      sofascore_rating,
       is_provisional,
       goals_scored,
       assists,
@@ -102,12 +103,13 @@ export async function triggerCalculationAction(
     )?.rating_class ?? 'MID'
 
     return {
-      player_id:      s.player_id,
-      stats_id:       s.id,
-      rating_class:   (s.rating_class_override as RatingClass | null) ?? storedClass,
-      minutes_played: s.minutes_played,
-      is_provisional: s.is_provisional,
-      fotmob_rating:  s.fotmob_rating,
+      player_id:        s.player_id,
+      stats_id:         s.id,
+      rating_class:     (s.rating_class_override as RatingClass | null) ?? storedClass,
+      minutes_played:   s.minutes_played,
+      is_provisional:   s.is_provisional,
+      fotmob_rating:    s.fotmob_rating,
+      sofascore_rating: s.sofascore_rating,
       goals_scored:   s.goals_scored,
       assists:        s.assists,
       own_goals:      s.own_goals,
@@ -165,7 +167,6 @@ export async function triggerCalculationAction(
         stats_id:  output.stats_id,
         is_provisional: output.is_provisional,
         is_override: false,
-        // Legacy columns (v1) — always null in v1.1
         z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
         z_fotmob: null, minutes_factor: null,
         z_adjusted: null, b0: null, role_multiplier: null, b1: null,
@@ -183,9 +184,9 @@ export async function triggerCalculationAction(
       stats_id:   r.stats_id,
       is_provisional: r.is_provisional,
       is_override: false,
-      // Legacy columns (v1) — always null in v1.1
-      z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+      z_combined: null, weights_used: null, defensive_correction: null,
       z_fotmob:          r.z_fotmob,
+      z_sofascore:       r.z_sofascore,
       minutes_factor:    r.minutes_factor,
       z_adjusted:        r.z_adjusted,
       b0:                r.b0,

@@ -106,7 +106,7 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
   return { stats, events }
 }
 
-// ─── SofaScore parser ─────────────────────────────────────────────────────────
+// ─── SofaScore parser (legacy lineup format) ──────────────────────────────────
 
 type SofaScoreStat = {
   sofascore_id: number; name: string
@@ -129,6 +129,51 @@ export function parseSofaScoreJson(json: Record<string, unknown>): SofaScoreStat
         minutes_played: Number(stats?.['minutesPlayed'] ?? 0),
       })
     }
+  }
+  return out
+}
+
+// ─── SofaScore fantasy endpoint parser ────────────────────────────────────────
+//
+// Endpoint: GET https://www.sofascore.com/api/v1/fantasy/event/{eventId}
+//   - Has CORS access-control-allow-origin: * → can be fetched by the browser
+//   - Server-side fetches are blocked by TLS fingerprinting (403)
+//   - Returns: { playerStatistics: [{ playerId, statistics: [{key, value}] }] }
+//   - No player names — matching is done via sofascore_id → serie_a_players chain
+//   - Only players who actually played are included (minutesPlayed > 0)
+
+export type SofaScoreFantasyStat = {
+  sofascore_id: number
+  /** null if SofaScore hasn't published the rating yet (live match) */
+  rating: number | null
+}
+
+export function parseSofaScoreFantasyJson(
+  json: Record<string, unknown>
+): SofaScoreFantasyStat[] {
+  const playerStatistics = json['playerStatistics'] as
+    | Array<Record<string, unknown>>
+    | undefined
+  if (!Array.isArray(playerStatistics)) return []
+
+  const out: SofaScoreFantasyStat[] = []
+  for (const p of playerStatistics) {
+    const statistics = p['statistics'] as
+      | Array<{ key: string; value: string | number }>
+      | undefined
+
+    const getStat = (key: string): string | number | null =>
+      statistics?.find((s) => s.key === key)?.value ?? null
+
+    const minutesPlayed = getStat('minutesPlayed')
+    // Only include players who actually played
+    if (minutesPlayed === null || Number(minutesPlayed) === 0) continue
+
+    const ratingVal = getStat('rating')
+    out.push({
+      sofascore_id: Number(p['playerId']),
+      rating: ratingVal != null ? Number(ratingVal) : null,
+    })
   }
   return out
 }

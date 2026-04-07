@@ -417,8 +417,9 @@ async function autoFetchAndCreateRun(
       stats_id:        statsMap.get(player.id)!,
       rating_class:    player.rating_class,
       minutes_played:  stat.minutes_played,
-      is_provisional:  false,
-      fotmob_rating:   stat.fotmob_rating,
+      is_provisional:   false,
+      fotmob_rating:    stat.fotmob_rating,
+      sofascore_rating: null, // Leghe CSV import has no SofaScore rating
       goals_scored:    stat.goals_scored,
       assists:         stat.assists,
       own_goals:       stat.own_goals,

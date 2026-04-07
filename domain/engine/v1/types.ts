@@ -1,5 +1,5 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1.1 — Types
+// Fantacalcio Statistico — Rating Engine v1.2 — Types
 // ============================================================
 
 import type { RatingClass } from '@/types/database.types'
@@ -15,8 +15,9 @@ export interface EnginePlayerInput {
   minutes_played: number
   is_provisional: boolean
 
-  // Single source rating — null if FotMob has not yet published (e.g. live match)
+  // Dual-source ratings — null when the source didn't provide data for this player
   fotmob_rating: number | null
+  sofascore_rating: number | null
 
   // Event counts
   goals_scored: number        // includes penalties_scored
@@ -77,6 +78,17 @@ export interface EngineConfig {
    * std  = 0.79 (typical spread of ratings across a Serie A season)
    */
   source_normalization: { mean: number; std: number }
+  /**
+   * SofaScore rating normalization.
+   * mean = 6.7, std = 0.65 (calibrated against SofaScore's rating distribution)
+   */
+  sofascore_normalization: { mean: number; std: number }
+  /**
+   * Weight of FotMob in the dual-source weighted average.
+   * SofaScore weight = 1 - fotmob_weight.
+   * Weights are re-normalized among available sources (if one is null, the other gets full weight).
+   */
+  fotmob_weight: number
   /** Configurable 2-band minutes factor */
   minutes_factor: MinutesFactorConfig
   /**
@@ -121,11 +133,12 @@ export interface PlayerCalculationResult {
    */
   no_ratings_exception: boolean
 
-  // null for decisive_event_exception, or when FotMob rating missing
+  // null for decisive_event_exception, or when source not available
   z_fotmob: number | null
+  z_sofascore: number | null
   // null for decisive_event_exception; set for no_ratings_exception (useful for indicator)
   minutes_factor: number | null
-  // null when z_fotmob is null
+  // null when both z-scores are null
   z_adjusted: number | null
   b0: number | null
   role_multiplier: number | null

@@ -64,6 +64,7 @@ export function FixturesInlineCard({
       penalties_saved: m.stat.penalties_saved,
       goals_conceded: m.stat.goals_conceded,
       saves: m.stat.saves,
+      clean_sheet: m.stat.clean_sheet,
     }))
     const result = await importRatingsAction(matchdayId, toImport)
     if (result.error) setFetchState({ phase: 'error', message: result.error })

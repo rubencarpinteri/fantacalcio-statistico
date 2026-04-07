@@ -1,24 +1,24 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1.1 — Config
+// Fantacalcio Statistico — Rating Engine v1.2 — Config
 // ============================================================
-// This is the authoritative source-of-truth for the v1.1 engine.
+// This is the authoritative source-of-truth for the v1.2 engine.
 // Values match the approved scoring spec exactly.
 // Do not change constants here without updating engine_version.
 //
-// Key changes from v1:
-//   - SofaScore removed (fetching not feasible)
-//   - FotMob mean corrected from 6.87 → 6.6 (matches FotMob color bands)
-//   - Weighted average + one_source_shrink removed (single source)
-//   - Defensive correction removed (stats not available; FotMob rating bakes them in)
-//   - Advanced bonus removed (stats not available)
-//   - Role multipliers now configurable per league via league_engine_config
+// Key changes from v1.1:
+//   - SofaScore re-integrated via browser-fetch of /api/v1/fantasy/event/{id}
+//     (CORS: *, ID-based matching via serie_a_players.sofascore_id chain)
+//   - Dual-source weighted average: FotMob 55%, SofaScore 45%
+//   - No shrink factor when only one source available (use directly)
+//   - SofaScore normalization: mean=6.7, std=0.65
+//   - Engine version bumped from v1.1 → v1.2
 // ============================================================
 
 import type { EngineConfig } from './types'
 import type { LeagueEngineConfig } from '@/types/database.types'
 
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
-  engine_version: 'v1.1',
+  engine_version: 'v1.2',
 
   /** Mantra baseline (sufficiency threshold) */
   base_score: 6.0,
@@ -43,6 +43,23 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
     mean: 6.6,
     std:  0.79,
   },
+
+  /**
+   * SofaScore rating normalization.
+   * mean = 6.7: SofaScore's "average" player rating.
+   * std  = 0.65: typical spread of SofaScore ratings across Serie A.
+   */
+  sofascore_normalization: {
+    mean: 6.7,
+    std:  0.65,
+  },
+
+  /**
+   * Weight of FotMob in the dual-source weighted average (0–1).
+   * SofaScore weight = 1 - fotmob_weight = 0.45.
+   * When only one source is available, it receives full weight (no shrink).
+   */
+  fotmob_weight: 0.55,
 
   /**
    * Configurable 2-band minutes factor.

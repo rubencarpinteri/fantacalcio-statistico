@@ -340,6 +340,7 @@ export async function refreshMatchdayLive(
       minutes_played:   merged.minutes_played,
       is_provisional:   db.is_provisional,
       fotmob_rating:    merged.fotmob_rating,
+      sofascore_rating: null, // live refresh has no SofaScore data
       goals_scored:     merged.goals_scored,
       assists:          merged.assists,
       own_goals:        merged.own_goals,
@@ -396,6 +397,7 @@ export async function refreshMatchdayLive(
       minutes_played:   apiData.minutes_played,
       is_provisional:   true,
       fotmob_rating:    apiData.fotmob_rating,
+      sofascore_rating: null, // live refresh has no SofaScore data
       goals_scored:     apiData.goals_scored,
       assists:          apiData.assists,
       own_goals:        apiData.own_goals,

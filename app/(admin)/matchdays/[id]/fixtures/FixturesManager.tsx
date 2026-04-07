@@ -94,7 +94,19 @@ export function FixturesManager({
                 <tr key={fx.id} className="hover:bg-[#1a1a24]">
                   <td className="px-4 py-2 text-[#55556a]">{idx + 1}</td>
                   <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.fotmob_match_id ?? '—'}</td>
-                  <td className="px-4 py-2 font-mono text-[#8888aa]">{fx.sofascore_event_id ?? '—'}</td>
+                  <td className="px-4 py-2 font-mono text-[#8888aa]">
+                    {fx.sofascore_event_id ? (
+                      <a
+                        href={`https://www.sofascore.com/api/v1/fantasy/event/${fx.sofascore_event_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 hover:underline"
+                        title="Apri JSON SofaScore (per copia manuale)"
+                      >
+                        {fx.sofascore_event_id}
+                      </a>
+                    ) : '—'}
+                  </td>
                   <td className="px-4 py-2 text-right">
                     <button
                       disabled={removing}
@@ -108,6 +120,9 @@ export function FixturesManager({
               ))}
             </tbody>
           </table>
+          <p className="mt-2 text-xs text-[#55556a]">
+            Clicca su un ID SofaScore per aprire il JSON (il fetch automatico lo recupera direttamente).
+          </p>
         </div>
       ) : (
         <p className="text-sm text-[#55556a]">Nessuna fixture configurata.</p>
@@ -122,6 +137,7 @@ export function FixturesManager({
 
 type FetchState =
   | { phase: 'idle' }
+  | { phase: 'fetching-sofascore' }
   | { phase: 'fetching' }
   | { phase: 'preview'; data: FetchRatingsResponse }
   | { phase: 'importing' }
@@ -130,24 +146,52 @@ type FetchState =
 
 import { useState } from 'react'
 
+const SS_FANTASY_BASE = 'https://www.sofascore.com/api/v1/fantasy/event'
+
 export function FetchPreview({
   matchdayId,
   hasFixtures,
+  sofascoreEventIds,
 }: {
   matchdayId: string
   hasFixtures: boolean
+  /** SofaScore event IDs for this matchday — browser-fetched before calling the API */
+  sofascoreEventIds?: number[]
 }) {
   const [state, setState] = useState<FetchState>({ phase: 'idle' })
   // overrides: league_player_id → player_id to use instead
   const [overrides, setOverrides] = useState<Map<string, string>>(new Map())
 
   async function handleFetch() {
+    // ── Step 1: browser-fetch SofaScore fantasy data ──────────────────────
+    // The fantasy endpoint has CORS access-control-allow-origin: * so browser
+    // fetches work fine. Server-side fetches are blocked by TLS fingerprinting.
+    setState({ phase: 'fetching-sofascore' })
+    const sofascoreByEventId: Record<string, Record<string, unknown>> = {}
+
+    for (const eventId of sofascoreEventIds ?? []) {
+      try {
+        const ssRes = await fetch(`${SS_FANTASY_BASE}/${eventId}`)
+        if (ssRes.ok) {
+          sofascoreByEventId[String(eventId)] = await ssRes.json() as Record<string, unknown>
+        }
+      } catch {
+        // Non-fatal — skip this fixture's SofaScore data
+      }
+    }
+
+    // ── Step 2: fetch FotMob ratings + merge SofaScore on server ──────────
     setState({ phase: 'fetching' })
     try {
       const res = await fetch('/api/ratings/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
+        body: JSON.stringify({
+          matchdayId,
+          sofascoreByEventId: Object.keys(sofascoreByEventId).length > 0
+            ? sofascoreByEventId
+            : undefined,
+        }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = (await res.json()) as FetchRatingsResponse
@@ -197,12 +241,16 @@ export function FetchPreview({
           onClick={handleFetch}
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
         >
-          Scarica voti da FotMob
+          Scarica voti da FotMob + SofaScore
         </button>
       )}
 
+      {state.phase === 'fetching-sofascore' && (
+        <p className="text-sm text-[#8888aa] animate-pulse">Recupero voti SofaScore…</p>
+      )}
+
       {state.phase === 'fetching' && (
-        <p className="text-sm text-[#8888aa] animate-pulse">Caricamento in corso…</p>
+        <p className="text-sm text-[#8888aa] animate-pulse">Caricamento FotMob in corso…</p>
       )}
 
       {state.phase === 'error' && (
@@ -343,7 +391,9 @@ function MatchedRow({ m }: { m: FetchRatingsResponse['matched'][number] }) {
       </td>
       <td className="px-3 py-1.5 text-[#8888aa]">{s.name}</td>
       <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">
-        {s.sofascore_rating != null ? s.sofascore_rating.toFixed(1) : '—'}
+        {s.sofascore_rating != null ? (
+          <span className="text-indigo-300">{s.sofascore_rating.toFixed(1)}</span>
+        ) : '—'}
       </td>
       <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">
         {s.fotmob_rating != null ? s.fotmob_rating.toFixed(2) : '—'}

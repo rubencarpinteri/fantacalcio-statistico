@@ -87,7 +87,13 @@ export default async function MatchdayFixturesPage({
           description="Recupera voti e statistiche dalle API esterne"
         />
         <CardContent>
-          <FetchPreview matchdayId={matchdayId} hasFixtures={fixtureList.length > 0} />
+          <FetchPreview
+            matchdayId={matchdayId}
+            hasFixtures={fixtureList.length > 0}
+            sofascoreEventIds={fixtureList
+              .map((fx) => fx.sofascore_event_id)
+              .filter((id): id is number => id != null)}
+          />
         </CardContent>
       </Card>
     </div>
