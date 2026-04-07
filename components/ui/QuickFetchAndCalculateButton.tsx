@@ -50,7 +50,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
 
     for (const eventId of sofascoreEventIds) {
       try {
-        const ssRes = await fetch(`https://www.sofascore.com/api/v1/fantasy/event/${eventId}`, { credentials: 'include' })
+        const ssRes = await fetch(`https://api.sofascore.com/api/v1/fantasy/event/${eventId}`)
         if (ssRes.ok) {
           sofascoreByEventId[String(eventId)] = await ssRes.json()
         } else {
