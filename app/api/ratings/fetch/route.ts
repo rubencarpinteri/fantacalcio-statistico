@@ -182,23 +182,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   // ── Enrich matched players with SofaScore ratings (ID-based, no name matching) ──
   // For each matched player: league_player_id → serie_a_players.sofascore_id
   //   → allSofascoreRatings map (populated from browser-fetched fantasy data).
-  console.log(`[ratings/fetch] ssRatings=${allSofascoreRatings.size} lpToSS=${lpToSofascoreId.size} matched=${matched.length}`)
-  let ssEnriched = 0
   if (allSofascoreRatings.size > 0) {
     for (const m of matched) {
       const sofascorePlayerId = lpToSofascoreId.get(m.league_player_id)
       if (sofascorePlayerId != null && allSofascoreRatings.has(sofascorePlayerId)) {
         m.stat.sofascore_rating = allSofascoreRatings.get(sofascorePlayerId) ?? null
         m.stat.sofascore_id = sofascorePlayerId
-        ssEnriched++
       }
     }
   }
-  console.log(`[ratings/fetch] ssEnriched=${ssEnriched}`)
-  // Debug: sample a few keys from each map to spot ID format mismatches
-  const ssSample = [...allSofascoreRatings.keys()].slice(0, 3)
-  const lpSample = [...lpToSofascoreId.values()].slice(0, 3)
-  console.log(`[ratings/fetch] ssKeys sample=${JSON.stringify(ssSample)} lpSSIds sample=${JSON.stringify(lpSample)}`)
 
   // Persist unmatched FotMob players so the admin can link them via
   // /pool/link-fotmob. Deduplicate by fotmob_id first — the same player can
