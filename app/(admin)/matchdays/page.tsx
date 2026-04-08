@@ -269,8 +269,11 @@ export default async function MatchdaysPage() {
               <a href={`/matchdays/${nextMatchday.id}`} className="text-[11px] text-indigo-400 hover:text-indigo-300">
                 Gestione →
               </a>
-              {nextMatchday.status === 'open' && (
-                <CloseMatchdayButton matchdayId={nextMatchday.id} />
+              {(nextMatchday.status === 'open' || nextMatchday.status === 'closed') && (
+                <CloseMatchdayButton
+                  matchdayId={nextMatchday.id}
+                  currentStatus={nextMatchday.status as 'open' | 'closed'}
+                />
               )}
             </div>
           )}
@@ -288,6 +291,7 @@ export default async function MatchdaysPage() {
             {matchdays.map((m) => {
               const isCurrent = m.id === current?.id
               const isOpen = m.status === 'open'
+              const isOpenOrClosed = m.status === 'open' || m.status === 'closed'
               const isEditable = ['open', 'closed'].includes(m.status)
               const provCount = provisionalByMatchday.get(m.id) ?? 0
               return (
@@ -312,9 +316,12 @@ export default async function MatchdaysPage() {
                       {isAdmin && provCount > 0 && (
                         <span className="text-[10px] text-amber-400">~{provCount}</span>
                       )}
-                      {/* Chiudi button — visible for every open matchday */}
-                      {isAdmin && isOpen && (
-                        <CloseMatchdayButton matchdayId={m.id} />
+                      {/* Status action buttons — open or closed matchdays */}
+                      {isAdmin && isOpenOrClosed && (
+                        <CloseMatchdayButton
+                          matchdayId={m.id}
+                          currentStatus={m.status as 'open' | 'closed'}
+                        />
                       )}
                     </div>
                   </div>

@@ -5,7 +5,12 @@ import { transitionMatchdayStatusAction } from './actions'
 
 type ConfirmingAction = 'close' | 'draft' | null
 
-export function CloseMatchdayButton({ matchdayId }: { matchdayId: string }) {
+interface Props {
+  matchdayId: string
+  currentStatus: 'open' | 'closed'
+}
+
+export function CloseMatchdayButton({ matchdayId, currentStatus }: Props) {
   const [isPending, startTransition] = useTransition()
   const [confirming, setConfirming] = useState<ConfirmingAction>(null)
   const [error, setError] = useState<string | null>(null)
@@ -65,12 +70,14 @@ export function CloseMatchdayButton({ matchdayId }: { matchdayId: string }) {
   return (
     <span className="inline-flex flex-col items-start gap-0.5">
       <span className="inline-flex items-center gap-1">
-        <button
-          onClick={() => setConfirming('close')}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"
-        >
-          Chiudi
-        </button>
+        {currentStatus === 'open' && (
+          <button
+            onClick={() => setConfirming('close')}
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"
+          >
+            Chiudi
+          </button>
+        )}
         <button
           onClick={() => setConfirming('draft')}
           className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-[#1e1e2e] text-[#8888aa] hover:text-white transition-colors"

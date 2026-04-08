@@ -91,7 +91,7 @@ export async function createMatchdayAction(
 const ALLOWED_TRANSITIONS: Record<MatchdayStatus, MatchdayStatus[]> = {
   draft:     ['open'],
   open:      ['closed', 'draft'],
-  closed:    ['open', 'archived'],
+  closed:    ['open', 'draft', 'archived'],
   archived:  [],
   // Legacy — kept for rows that weren't migrated
   locked:    ['closed'],
