@@ -89,12 +89,17 @@ const RC_COLORS: Record<string, string> = {
 // NOTE: uses league default target params — actual stored voto_base from engine is authoritative
 const _TARGET_MEAN = 6.0  // DEFAULT_ENGINE_CONFIG.target_mean_vote
 const _TARGET_STD  = 0.75 // DEFAULT_ENGINE_CONFIG.target_vote_std
+const _CLAMP_MIN   = 3.0
+const _CLAMP_MAX   = 10.0
 
-function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): number | null {
+type SourceVotoBase = { value: number; raw: number; clamped: boolean }
+
+function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): SourceVotoBase | null {
   if (z === null || mf === null || rm === null) return null
   const b0 = _TARGET_MEAN + _TARGET_STD * z * mf
   const b1 = _TARGET_MEAN + rm * (b0 - _TARGET_MEAN)
-  return Math.max(3.0, Math.min(9.5, b1))
+  const clamped = b1 > _CLAMP_MAX || b1 < _CLAMP_MIN
+  return { value: Math.max(_CLAMP_MIN, Math.min(_CLAMP_MAX, b1)), raw: b1, clamped }
 }
 
 // ---- Player detail modal ---------------------------------------------------
@@ -108,6 +113,14 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
   const hasFm = slot.rawFotmobRating !== null
   const hasSs = slot.rawSofascoreRating !== null
   const hasAnyRaw = hasFm || hasSs
+
+  // Δ on converted bases — use raw (unclamped) values for the true delta
+  const deltaRaw = hasFm && hasSs
+    ? slot.rawFotmobRating! - slot.rawSofascoreRating!
+    : null
+  const deltaConverted = vbFm !== null && vbSs !== null
+    ? vbFm.raw - vbSs.raw   // unclamped delta so clamping doesn't hide divergence
+    : null
 
   return (
     <div
@@ -147,11 +160,11 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
           {hasAnyRaw && (
             <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] overflow-hidden">
               <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[#55556a] border-b border-[#1e1e2e]">
-                Voti originali → voto base convertito
+                Voto originale → base convertito
               </p>
 
               {/* Column headers */}
-              <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-1.5 border-b border-[#1a1a24]">
+              <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-1.5 border-b border-[#1a1a24]">
                 <span className="text-[10px] text-[#3a3a52]">Fonte</span>
                 <span className="text-[10px] text-[#3a3a52] text-right">Voto orig.</span>
                 <span className="text-[10px] text-[#3a3a52] text-right">→ base</span>
@@ -159,46 +172,68 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
 
               <div className="divide-y divide-[#1a1a24]">
                 {hasFm && (
-                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-2 items-center">
+                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-2 items-center">
                     <span className="text-xs text-[#8888aa]">FotMob</span>
                     <span className="font-mono text-sm font-bold text-white text-right">
                       {slot.rawFotmobRating!.toFixed(1)}
                     </span>
-                    <span className="font-mono text-xs text-[#8888aa] text-right">
-                      {vbFm !== null ? vbFm.toFixed(2) : '—'}
+                    <span className="font-mono text-xs text-right">
+                      {vbFm !== null ? (
+                        <span className={vbFm.clamped ? 'text-amber-400' : 'text-[#8888aa]'}>
+                          {vbFm.value.toFixed(2)}
+                          {vbFm.clamped && (
+                            <span className="ml-1 text-[9px]" title={`Unclamped: ${vbFm.raw.toFixed(2)}`}>↑cap</span>
+                          )}
+                        </span>
+                      ) : '—'}
                     </span>
                   </div>
                 )}
                 {hasSs && (
-                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-2 items-center">
+                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-2 items-center">
                     <span className="text-xs text-indigo-400/80">SofaScore</span>
                     <span className="font-mono text-sm font-bold text-white text-right">
                       {slot.rawSofascoreRating!.toFixed(1)}
                     </span>
-                    <span className="font-mono text-xs text-indigo-300/70 text-right">
-                      {vbSs !== null ? vbSs.toFixed(2) : '—'}
+                    <span className="font-mono text-xs text-right">
+                      {vbSs !== null ? (
+                        <span className={vbSs.clamped ? 'text-amber-400' : 'text-indigo-300/70'}>
+                          {vbSs.value.toFixed(2)}
+                          {vbSs.clamped && (
+                            <span className="ml-1 text-[9px]" title={`Unclamped: ${vbSs.raw.toFixed(2)}`}>↑cap</span>
+                          )}
+                        </span>
+                      ) : '—'}
                     </span>
                   </div>
                 )}
-                {hasFm && hasSs && vbFm !== null && vbSs !== null && (
-                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-1.5 items-center bg-[#0f0f18]">
+                {deltaRaw !== null && deltaConverted !== null && (
+                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-1.5 items-center bg-[#0f0f18]">
                     <span className="text-[10px] text-[#55556a]">Δ FM − SS</span>
                     <span className={`font-mono text-[10px] text-right ${
-                      Math.abs(slot.rawFotmobRating! - slot.rawSofascoreRating!) > 0.5
-                        ? 'text-amber-400'
-                        : 'text-[#55556a]'
+                      Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'
                     }`}>
-                      {(slot.rawFotmobRating! - slot.rawSofascoreRating!) >= 0 ? '+' : ''}
-                      {(slot.rawFotmobRating! - slot.rawSofascoreRating!).toFixed(1)}
+                      {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)}
                     </span>
                     <span className={`font-mono text-[10px] text-right ${
-                      Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'
+                      Math.abs(deltaConverted) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'
                     }`}>
-                      {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
+                      {deltaConverted >= 0 ? '+' : ''}{deltaConverted.toFixed(2)}
                     </span>
                   </div>
                 )}
               </div>
+
+              {/* Clamp explanation when triggered */}
+              {((vbFm?.clamped ?? false) || (vbSs?.clamped ?? false)) && (
+                <div className="px-3 py-2 border-t border-[#1a1a24] bg-amber-500/5">
+                  <p className="text-[10px] text-amber-400/80">
+                    ↑cap — il voto base calcolato supera il massimo (9.50) e viene limitato.
+                    {vbFm?.clamped && ` FM non-capped: ${vbFm.raw.toFixed(2)}.`}
+                    {vbSs?.clamped && ` SS non-capped: ${vbSs.raw.toFixed(2)}.`}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

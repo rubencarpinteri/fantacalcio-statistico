@@ -690,6 +690,8 @@ export type Database = {
       league_engine_config: {
         Row: {
           assist: number
+          voto_base_cap_min: number | null
+          voto_base_cap_max: number | null
           brace_bonus: number
           clean_sheet_def: number
           clean_sheet_gk: number
@@ -765,6 +767,8 @@ export type Database = {
           target_vote_std?: number | null
           updated_at?: string
           yellow_card?: number
+          voto_base_cap_min?: number | null
+          voto_base_cap_max?: number | null
         }
         Update: {
           assist?: number
@@ -804,6 +808,8 @@ export type Database = {
           target_vote_std?: number | null
           updated_at?: string
           yellow_card?: number
+          voto_base_cap_min?: number | null
+          voto_base_cap_max?: number | null
         }
         Relationships: [
           {

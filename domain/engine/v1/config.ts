@@ -148,7 +148,7 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   },
 
   voto_base_cap_min: 3.0,
-  voto_base_cap_max: 9.5,
+  voto_base_cap_max: 10.0,
 
   /**
    * Target distribution parameters (Step 2 of calibration pipeline).
@@ -205,6 +205,9 @@ export function buildEngineConfig(
 
     target_mean_vote: dbConfig.target_mean_vote ?? base.target_mean_vote,
     target_vote_std:  dbConfig.target_vote_std  ?? base.target_vote_std,
+
+    voto_base_cap_min: dbConfig.voto_base_cap_min ?? base.voto_base_cap_min,
+    voto_base_cap_max: dbConfig.voto_base_cap_max ?? base.voto_base_cap_max,
 
     bonus_malus: {
       ...base.bonus_malus,

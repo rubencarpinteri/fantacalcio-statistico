@@ -115,12 +115,18 @@ function WeightSlider({ defaultValue }: { defaultValue: number }) {
 function TargetDistributionSection({
   defaultMean,
   defaultStd,
+  defaultCapMin,
+  defaultCapMax,
 }: {
   defaultMean: number
   defaultStd: number
+  defaultCapMin: number
+  defaultCapMax: number
 }) {
-  const [mean, setMean] = useState(defaultMean)
-  const [std,  setStd]  = useState(defaultStd)
+  const [mean,   setMean]   = useState(defaultMean)
+  const [std,    setStd]    = useState(defaultStd)
+  const [capMin, setCapMin] = useState(defaultCapMin)
+  const [capMax, setCapMax] = useState(defaultCapMax)
 
   // Worked example with z = +1.0 and z = -1.0
   const exampleZ    = 1.0
@@ -214,6 +220,53 @@ function TargetDistributionSection({
         </div>
       </div>
 
+      {/* Cap fields */}
+      <div>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#55556a]">
+          Limiti voto base (clamp)
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[#8888aa]" htmlFor="voto_base_cap_min">
+              Minimo voto base
+            </label>
+            <input
+              id="voto_base_cap_min"
+              name="voto_base_cap_min"
+              type="number"
+              step="0.5"
+              min="1"
+              max="6"
+              value={capMin}
+              onChange={(e) => setCapMin(Number(e.target.value))}
+              className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+            />
+            <p className="text-xs text-[#55556a]">
+              Un giocatore con NV prende 6.00 (exception path), non il minimo.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[#8888aa]" htmlFor="voto_base_cap_max">
+              Massimo voto base
+            </label>
+            <input
+              id="voto_base_cap_max"
+              name="voto_base_cap_max"
+              type="number"
+              step="0.5"
+              min="7"
+              max="10"
+              value={capMax}
+              onChange={(e) => setCapMax(Number(e.target.value))}
+              className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+            />
+            <p className="text-xs text-[#55556a]">
+              Default 10.0. Il fantavoto finale può comunque superare questo valore via bonus.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Live formula preview */}
       <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-4 space-y-3">
         <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
@@ -228,7 +281,7 @@ function TargetDistributionSection({
             b1 = {mean.toFixed(2)} + moltiplicatore_ruolo × (b0 − {mean.toFixed(2)})
           </p>
           <p className="font-mono text-xs text-[#8888aa]">
-            voto_base = clamp(b1, 3.00, 9.50)
+            voto_base = clamp(b1, <span className="text-amber-300">{capMin.toFixed(2)}</span>, <span className="text-amber-300">{capMax.toFixed(2)}</span>)
           </p>
         </div>
 
@@ -326,6 +379,9 @@ export function EngineConfigForm({ current }: Props) {
 
     target_mean_vote: src?.target_mean_vote ?? DEFAULT_ENGINE_CONFIG.target_mean_vote,
     target_vote_std:  src?.target_vote_std  ?? DEFAULT_ENGINE_CONFIG.target_vote_std,
+
+    voto_base_cap_min: src?.voto_base_cap_min ?? DEFAULT_ENGINE_CONFIG.voto_base_cap_min,
+    voto_base_cap_max: src?.voto_base_cap_max ?? DEFAULT_ENGINE_CONFIG.voto_base_cap_max,
   }
 
   return (
@@ -376,6 +432,8 @@ export function EngineConfigForm({ current }: Props) {
       <TargetDistributionSection
         defaultMean={v.target_mean_vote}
         defaultStd={v.target_vote_std}
+        defaultCapMin={v.voto_base_cap_min}
+        defaultCapMax={v.voto_base_cap_max}
       />
 
       {/* ── Fattore minuti ──────────────────────────────────────────── */}

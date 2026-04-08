@@ -58,6 +58,10 @@ const EngineConfigSchema = z.object({
   // Target vote distribution (Step 2 of calibration pipeline)
   target_mean_vote: z.coerce.number().min(4).max(8),
   target_vote_std:  z.coerce.number().min(0.1).max(3),
+
+  // Voto base clamp
+  voto_base_cap_min: z.coerce.number().min(1).max(6),
+  voto_base_cap_max: z.coerce.number().min(7).max(10),
 })
 
 export interface SaveEngineConfigResult {
