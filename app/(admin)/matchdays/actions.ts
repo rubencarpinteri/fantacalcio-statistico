@@ -123,6 +123,24 @@ export async function transitionMatchdayStatusAction(
     }
   }
 
+  // Guard: only one matchday can be open at a time
+  if (newStatus === 'open') {
+    const { data: alreadyOpen } = await supabase
+      .from('matchdays')
+      .select('id, name')
+      .eq('league_id', ctx.league.id)
+      .eq('status', 'open')
+      .neq('id', matchdayId)
+      .limit(1)
+      .maybeSingle()
+
+    if (alreadyOpen) {
+      return {
+        error: `Impossibile aprire questa giornata: "${alreadyOpen.name}" è già aperta. Chiudila prima di aprire un'altra giornata.`,
+      }
+    }
+  }
+
   const { error } = await supabase
     .from('matchdays')
     .update({ status: newStatus })
@@ -153,7 +171,8 @@ export async function transitionMatchdayStatusAction(
     afterJson: { status: newStatus, note },
   })
 
-  // When closing a matchday, auto-open the next draft matchday (by matchday_number).
+  // When closing a matchday, auto-open the next draft matchday (by matchday_number)
+  // — but only if no other matchday is already open.
   if (newStatus === 'closed') {
     const { data: currentMatchday } = await supabase
       .from('matchdays')
@@ -162,31 +181,43 @@ export async function transitionMatchdayStatusAction(
       .single()
 
     if (currentMatchday?.matchday_number != null) {
-      const { data: nextMatchday } = await supabase
+      // Check whether another open matchday already exists
+      const { data: existingOpen } = await supabase
         .from('matchdays')
         .select('id')
         .eq('league_id', ctx.league.id)
-        .eq('status', 'draft')
-        .gt('matchday_number', currentMatchday.matchday_number)
-        .order('matchday_number', { ascending: true })
+        .eq('status', 'open')
+        .neq('id', matchdayId)
         .limit(1)
         .maybeSingle()
 
-      if (nextMatchday) {
-        await supabase
+      if (!existingOpen) {
+        const { data: nextMatchday } = await supabase
           .from('matchdays')
-          .update({ status: 'open' })
-          .eq('id', nextMatchday.id)
+          .select('id')
+          .eq('league_id', ctx.league.id)
+          .eq('status', 'draft')
+          .gt('matchday_number', currentMatchday.matchday_number)
+          .order('matchday_number', { ascending: true })
+          .limit(1)
+          .maybeSingle()
 
-        await supabase.from('matchday_status_log').insert({
-          matchday_id: nextMatchday.id,
-          old_status: 'draft',
-          new_status: 'open',
-          changed_by: ctx.userId,
-          note: `Apertura automatica alla chiusura della giornata precedente`,
-        })
+        if (nextMatchday) {
+          await supabase
+            .from('matchdays')
+            .update({ status: 'open' })
+            .eq('id', nextMatchday.id)
 
-        revalidatePath('/matchdays')
+          await supabase.from('matchday_status_log').insert({
+            matchday_id: nextMatchday.id,
+            old_status: 'draft',
+            new_status: 'open',
+            changed_by: ctx.userId,
+            note: `Apertura automatica alla chiusura della giornata precedente`,
+          })
+
+          revalidatePath('/matchdays')
+        }
       }
     }
   }

@@ -170,6 +170,9 @@ export default async function MatchdaysPage() {
         )
       : '—'
 
+  const openMatchdays = (matchdays ?? []).filter((m) => m.status === 'open')
+  const multipleOpen = openMatchdays.length > 1
+
   return (
     <div className="space-y-4">
       {/* ── Page header ────────────────────────────────────────────────── */}
@@ -179,6 +182,31 @@ export default async function MatchdaysPage() {
           Classifica →
         </a>
       </div>
+
+      {/* ── Multiple open matchdays warning ────────────────────────────── */}
+      {multipleOpen && isAdmin && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 flex items-start gap-3">
+          <span className="text-red-400 text-base shrink-0 mt-0.5">⚠️</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-red-300">
+              {openMatchdays.length} giornate aperte simultaneamente
+            </p>
+            <p className="mt-0.5 text-xs text-red-400/80">
+              Solo una giornata alla volta dovrebbe essere in stato <span className="font-mono">open</span>.{' '}
+              Aperte ora:{' '}
+              {openMatchdays.map((m, i) => (
+                <span key={m.id}>
+                  <a href={`/matchdays/${m.id}`} className="underline hover:text-red-300 transition-colors">
+                    {m.name}
+                  </a>
+                  {i < openMatchdays.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+              . Chiudi le giornate non attive dalla loro pagina di gestione.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Current matchday matchups ───────────────────────────────────── */}
       {current && (
