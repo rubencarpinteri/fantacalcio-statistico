@@ -527,48 +527,56 @@ function MatchupRow({
   return (
     <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
       {/* Match header */}
-      <div className="grid grid-cols-[1fr,auto,1fr] items-center px-5 py-3 bg-[#0f0f1a] border-b border-[#2e2e42]">
-        {/* Home */}
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-white truncate">{home?.teamName ?? '?'}</p>
-          <p className="text-xs text-[#55556a] truncate">{home?.formationName ?? '—'}</p>
+      <div className="flex items-center px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
+        {/* Home team — right-aligned, takes 38% */}
+        <div className="w-[38%] min-w-0 overflow-hidden text-right pr-4">
+          <p className="block truncate text-base font-bold text-white leading-tight">
+            {home?.teamName ?? '?'}
+          </p>
+          <p className="block truncate text-xs text-[#55556a] mt-0.5">
+            {home?.formationName ?? '—'}
+          </p>
         </div>
 
-        {/* Score / VS badge */}
-        <div className="mx-6 flex flex-col items-center shrink-0">
+        {/* Score / VS — centred, takes 24% */}
+        <div className="w-[24%] shrink-0 flex items-center justify-center gap-2">
           {hasScores ? (
-            <div className="flex items-center gap-3 font-mono text-base font-black">
-              <span className={
+            <>
+              <span className={`text-2xl font-black font-mono tabular-nums leading-none ${
                 homeFv !== null && awayFv !== null
-                  ? homeFv > awayFv ? 'text-green-400'
-                  : homeFv < awayFv ? 'text-red-400'
+                  ? homeFv > awayFv ? 'text-white'
+                  : homeFv < awayFv ? 'text-[#55556a]'
                   : 'text-white'
                   : 'text-[#8888aa]'
-              }>
+              }`}>
                 {homeFv?.toFixed(2) ?? '—'}
               </span>
-              <span className="text-[#3e3e52] text-sm">–</span>
-              <span className={
+              <span className="text-[#3a3a52] text-lg font-light">–</span>
+              <span className={`text-2xl font-black font-mono tabular-nums leading-none ${
                 homeFv !== null && awayFv !== null
-                  ? awayFv > homeFv ? 'text-green-400'
-                  : awayFv < homeFv ? 'text-red-400'
+                  ? awayFv > homeFv ? 'text-white'
+                  : awayFv < homeFv ? 'text-[#55556a]'
                   : 'text-white'
                   : 'text-[#8888aa]'
-              }>
+              }`}>
                 {awayFv?.toFixed(2) ?? '—'}
               </span>
-            </div>
+            </>
           ) : (
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#55556a] px-3 py-1 rounded-full border border-[#2e2e42]">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#55556a]">
               vs
             </span>
           )}
         </div>
 
-        {/* Away */}
-        <div className="min-w-0 text-right">
-          <p className="text-sm font-bold text-white truncate">{away?.teamName ?? '?'}</p>
-          <p className="text-xs text-[#55556a] truncate">{away?.formationName ?? '—'}</p>
+        {/* Away team — left-aligned, takes 38% */}
+        <div className="w-[38%] min-w-0 overflow-hidden pl-4">
+          <p className="block truncate text-base font-bold text-white leading-tight">
+            {away?.teamName ?? '?'}
+          </p>
+          <p className="block truncate text-xs text-[#55556a] mt-0.5">
+            {away?.formationName ?? '—'}
+          </p>
         </div>
       </div>
 
