@@ -213,34 +213,41 @@ export default async function MatchdaysPage() {
                     <a
                       key={i}
                       href={`/matchdays/${current.id}/all-lineups`}
-                      className="grid grid-cols-[1fr,auto,1fr] items-center gap-2 px-4 py-2 hover:bg-[#1a1a26] transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-[#1a1a26] transition-colors"
                     >
-                      <span
-                        className={`truncate text-xs font-medium ${
-                          homeWins ? 'text-white' : awayWins ? 'text-[#55556a]' : 'text-[#c0c0d8]'
-                        }`}
-                      >
-                        {m.homeTeamName}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0 text-xs font-bold tabular-nums">
-                        <span className={homeWins ? 'text-emerald-300' : 'text-[#8888aa]'}>
+                      {/* Home team */}
+                      <div className="flex-1 min-w-0 overflow-hidden text-right">
+                        <span
+                          className={`block truncate text-sm font-semibold ${
+                            homeWins ? 'text-white' : awayWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'
+                          }`}
+                        >
+                          {m.homeTeamName}
+                        </span>
+                      </div>
+                      {/* Score */}
+                      <div className="shrink-0 w-32 flex items-center justify-center gap-1.5 tabular-nums">
+                        <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
                           {m.homeScore !== null ? m.homeScore.toFixed(1) : hasCalcData ? '0.0' : '—'}
                         </span>
-                        <span className="text-[#2e2e42]">–</span>
-                        <span className={awayWins ? 'text-emerald-300' : 'text-[#8888aa]'}>
+                        <span className="text-[#3a3a52] text-sm font-normal">–</span>
+                        <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
                           {m.awayScore !== null ? m.awayScore.toFixed(1) : hasCalcData ? '0.0' : '—'}
                         </span>
                         {m.isDraft && (
-                          <span className="ml-0.5 text-[9px] text-amber-500/60">~</span>
+                          <span className="text-[9px] text-amber-500/50">~</span>
                         )}
                       </div>
-                      <span
-                        className={`truncate text-right text-xs font-medium ${
-                          awayWins ? 'text-white' : homeWins ? 'text-[#55556a]' : 'text-[#c0c0d8]'
-                        }`}
-                      >
-                        {m.awayTeamName}
-                      </span>
+                      {/* Away team */}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <span
+                          className={`block truncate text-sm font-semibold ${
+                            awayWins ? 'text-white' : homeWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'
+                          }`}
+                        >
+                          {m.awayTeamName}
+                        </span>
+                      </div>
                     </a>
                   )
                 })}
