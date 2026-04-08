@@ -722,6 +722,8 @@ export type Database = {
           role_multiplier_mid: number
           sofascore_mean: number
           sofascore_std: number
+          target_mean_vote: number
+          target_vote_std: number
           updated_at: string
           yellow_card: number
         }
@@ -759,6 +761,8 @@ export type Database = {
           role_multiplier_mid?: number
           sofascore_mean?: number | null
           sofascore_std?: number | null
+          target_mean_vote?: number | null
+          target_vote_std?: number | null
           updated_at?: string
           yellow_card?: number
         }
@@ -796,6 +800,8 @@ export type Database = {
           role_multiplier_mid?: number
           sofascore_mean?: number | null
           sofascore_std?: number | null
+          target_mean_vote?: number | null
+          target_vote_std?: number | null
           updated_at?: string
           yellow_card?: number
         }

@@ -20,14 +20,8 @@ import type { LeagueEngineConfig } from '@/types/database.types'
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   engine_version: 'v1.2',
 
-  /** Mantra baseline (sufficiency threshold) */
+  /** Baseline used only for exception paths (decisive event, no ratings). */
   base_score: 6.0,
-
-  /**
-   * Italian base-scale conversion factor.
-   * Applied as: b0 = 6.0 + 1.15 × z_adjusted
-   */
-  scale_factor: 1.15,
 
   /**
    * FotMob rating normalization.
@@ -155,6 +149,19 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
 
   voto_base_cap_min: 3.0,
   voto_base_cap_max: 9.5,
+
+  /**
+   * Target distribution parameters (Step 2 of calibration pipeline).
+   *
+   * target_mean_vote = 6.00: a z-score of 0 → vote 6.00 (sufficiency threshold)
+   * target_vote_std  = 0.75: each ±1σ shifts the vote by 0.75 points
+   *
+   * Example (MID, full minutes, no B/M):
+   *   z = +1.00 → b0 = 6.00 + 0.75 = 6.75 → b1 = 6.00 + 1.00 × 0.75 = 6.75
+   *   z = -1.00 → b0 = 6.00 − 0.75 = 5.25 → b1 = 5.25
+   */
+  target_mean_vote: 6.00,
+  target_vote_std:  0.75,
 }
 
 /**
@@ -195,6 +202,9 @@ export function buildEngineConfig(
     },
 
     fotmob_weight: dbConfig.fotmob_weight ?? base.fotmob_weight,
+
+    target_mean_vote: dbConfig.target_mean_vote ?? base.target_mean_vote,
+    target_vote_std:  dbConfig.target_vote_std  ?? base.target_vote_std,
 
     bonus_malus: {
       ...base.bonus_malus,

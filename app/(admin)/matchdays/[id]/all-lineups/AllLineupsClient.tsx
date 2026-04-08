@@ -83,10 +83,14 @@ const RC_COLORS: Record<string, string> = {
   GK: 'text-yellow-400', DEF: 'text-blue-400', MID: 'text-green-400', ATT: 'text-red-400',
 }
 
+// NOTE: uses league default target params — actual stored voto_base from engine is authoritative
+const _TARGET_MEAN = 6.0  // DEFAULT_ENGINE_CONFIG.target_mean_vote
+const _TARGET_STD  = 0.75 // DEFAULT_ENGINE_CONFIG.target_vote_std
+
 function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): number | null {
   if (z === null || mf === null || rm === null) return null
-  const b0 = 6.0 + 1.15 * z * mf
-  const b1 = 6.0 + rm * (b0 - 6.0)
+  const b0 = _TARGET_MEAN + _TARGET_STD * z * mf
+  const b1 = _TARGET_MEAN + rm * (b0 - _TARGET_MEAN)
   return Math.max(3.0, Math.min(9.5, b1))
 }
 

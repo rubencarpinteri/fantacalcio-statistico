@@ -133,10 +133,14 @@ export default async function MatchdayResultsPage({
     league_players: { full_name: string; club: string; rating_class: string } | null
   }
 
+  // NOTE: uses league default target params — actual stored voto_base from engine is authoritative
+  const targetMean = 6.0  // DEFAULT_ENGINE_CONFIG.target_mean_vote
+  const targetStd  = 0.75 // DEFAULT_ENGINE_CONFIG.target_vote_std
+
   function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): number | null {
     if (z === null || mf === null || rm === null) return null
-    const b0 = 6.0 + 1.15 * z * mf
-    const b1 = 6.0 + rm * (b0 - 6.0)
+    const b0 = targetMean + targetStd * z * mf
+    const b1 = targetMean + rm * (b0 - targetMean)
     return Math.max(3.0, Math.min(9.5, b1))
   }
   const calcByPlayer = new Map<string, CalcRow>()

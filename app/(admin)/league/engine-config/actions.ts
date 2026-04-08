@@ -54,6 +54,10 @@ const EngineConfigSchema = z.object({
   goals_conceded_gk:               z.coerce.number().min(-5).max(0),
   goals_conceded_def:              z.coerce.number().min(-5).max(0),
   goals_conceded_def_min_minutes:  z.coerce.number().int().min(1).max(90),
+
+  // Target vote distribution (Step 2 of calibration pipeline)
+  target_mean_vote: z.coerce.number().min(4).max(8),
+  target_vote_std:  z.coerce.number().min(0.1).max(3),
 })
 
 export interface SaveEngineConfigResult {

@@ -6,15 +6,16 @@
 //
 // Per-player pipeline (normal 10+ minute flow):
 //   1.  NV / decisive-event gate       (minutes < 10)
-//   2a. z_fotmob    = (fotmob_rating    − 6.6)  / 0.79   (null if missing)
-//   2b. z_sofascore = (sofascore_rating − 6.7)  / 0.65   (null if missing)
+//   2a. z_fotmob    = (fotmob_rating    − mean_fm) / std_fm   (null if missing)
+//   2b. z_sofascore = (sofascore_rating − mean_ss) / std_ss   (null if missing)
 //   3.  NO_RATINGS guard               (both null → base 6.0 + B/M)
 //   4.  z_combined  = weighted avg of available z-scores (weights re-normalised)
 //                     FotMob 55% / SofaScore 45%; single source → no shrink
 //   5.  Minutes factor                 configurable 2-band (default: <45 → ×0.50, ≥45 → ×1.00)
 //   6.  z_adjusted  = z_combined × minutes_factor
-//   7.  b0          = 6.0 + 1.15 × z_adjusted
-//   8.  b1          = 6.0 + role_multiplier × (b0 − 6.0)
+//   ---- Target distribution (Step 2 of calibration) ----
+//   7.  b0          = target_mean_vote + target_vote_std × z_adjusted   (default: 6.0 + 0.75×z)
+//   8.  b1          = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
 //   9.  voto_base   = clamp(b1, 3.0, 9.5)
 //  10.  bonus/malus                    goals, assists, events, CS, GC, multi-goal
 //  11.  fantavoto   = voto_base + total_bonus_malus
@@ -259,18 +260,19 @@ export function calculatePlayerScore(
   const z_adjusted = round(z_combined * minutes_factor)
 
   // ----------------------------------------------------------------
-  // Step 6 — b0: Italian base-scale conversion
-  //   b0 = 6.0 + 1.15 × z_adjusted
+  // Step 6 — b0: target distribution (Step 2 of calibration pipeline)
+  //   b0 = target_mean_vote + target_vote_std × z_adjusted
+  //   (default: 6.00 + 0.75 × z_adjusted)
   // ----------------------------------------------------------------
-  const b0 = round(config.base_score + config.scale_factor * z_adjusted)
+  const b0 = round(config.target_mean_vote + config.target_vote_std * z_adjusted)
 
   // ----------------------------------------------------------------
-  // Step 7 — b1: role-distance multiplier
-  //   b1 = 6.0 + multiplier[rc] × (b0 - 6.0)
-  //   (not b0 × multiplier — expands/compresses distance from sufficiency)
+  // Step 7 — b1: role-distance multiplier applied around target_mean_vote
+  //   b1 = target_mean_vote + multiplier[rc] × (b0 − target_mean_vote)
+  //   (expands/compresses distance from the target center, not from a fixed 6.0)
   // ----------------------------------------------------------------
   const roleMultiplier = config.role_multiplier[input.rating_class]
-  const b1 = round(config.base_score + roleMultiplier * (b0 - config.base_score))
+  const b1 = round(config.target_mean_vote + roleMultiplier * (b0 - config.target_mean_vote))
 
   // ----------------------------------------------------------------
   // Step 8 — voto_base = clamp(b1, 3.0, 9.5)

@@ -110,6 +110,157 @@ function WeightSlider({ defaultValue }: { defaultValue: number }) {
   )
 }
 
+// ── Target distribution section ──────────────────────────────────────────────
+
+function TargetDistributionSection({
+  defaultMean,
+  defaultStd,
+}: {
+  defaultMean: number
+  defaultStd: number
+}) {
+  const [mean, setMean] = useState(defaultMean)
+  const [std,  setStd]  = useState(defaultStd)
+
+  // Worked example with z = +1.0 and z = -1.0
+  const exampleZ    = 1.0
+  const votoPlus    = (mean + exampleZ * std).toFixed(2)
+  const votoMinus   = (mean - exampleZ * std).toFixed(2)
+  const votoNeutral = mean.toFixed(2)
+
+  // ±2σ range (before role multiplier and clamp)
+  const rangeHigh = (mean + 2 * std).toFixed(2)
+  const rangeLow  = (mean - 2 * std).toFixed(2)
+
+  return (
+    <div className="rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-5 space-y-5">
+
+      {/* Section header */}
+      <div>
+        <p className="text-sm font-semibold text-indigo-300">Scala voto finale</p>
+        <p className="mt-1 text-xs text-[#8888aa] leading-relaxed">
+          Definisce la distribuzione dei voti base nella nostra lega. È il secondo passo della
+          calibrazione, applicato dopo la normalizzazione z-score delle fonti esterne.
+        </p>
+      </div>
+
+      {/* Two-step explanation */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-3 space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+            Passo 1 — Normalizzazione fonti
+          </p>
+          <p className="font-mono text-xs text-[#8888aa]">
+            z = (voto_fonte − media_fonte) / std_fonte
+          </p>
+          <p className="text-xs text-[#55556a]">
+            Converte i voti FotMob e SofaScore in z-score comparabili tramite le
+            impostazioni &ldquo;Normalizzazione voti&rdquo; qui sopra.
+          </p>
+        </div>
+        <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/8 p-3 space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-indigo-400">
+            Passo 2 — Calibrazione scala finale ← questa sezione
+          </p>
+          <p className="font-mono text-xs text-indigo-200">
+            voto = media_finale + z × std_finale
+          </p>
+          <p className="text-xs text-[#8888aa]">
+            Proietta lo z-score combinato sulla nostra scala fantacalcio, con centro e
+            dispersione configurabili indipendentemente dalle fonti.
+          </p>
+        </div>
+      </div>
+
+      {/* Fields */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#8888aa]" htmlFor="target_mean_vote">
+            Media voto finale
+          </label>
+          <input
+            id="target_mean_vote"
+            name="target_mean_vote"
+            type="number"
+            step="0.01"
+            min="4"
+            max="8"
+            value={mean}
+            onChange={(e) => setMean(Number(e.target.value))}
+            className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+          />
+          <p className="text-xs text-[#55556a]">
+            Definisce il centro della nostra scala voto finale (z = 0 → questo voto)
+          </p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#8888aa]" htmlFor="target_vote_std">
+            Deviazione standard voto finale
+          </label>
+          <input
+            id="target_vote_std"
+            name="target_vote_std"
+            type="number"
+            step="0.01"
+            min="0.1"
+            max="3"
+            value={std}
+            onChange={(e) => setStd(Number(e.target.value))}
+            className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+          />
+          <p className="text-xs text-[#55556a]">
+            Definisce quanto i voti finali saranno compressi o dispersi (±1σ = ±{std.toFixed(2)} pt)
+          </p>
+        </div>
+      </div>
+
+      {/* Live formula preview */}
+      <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-4 space-y-3">
+        <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+          Anteprima formula live
+        </p>
+
+        <div className="space-y-1">
+          <p className="font-mono text-xs text-indigo-200">
+            b0 = {mean.toFixed(2)} + z_combinato × {std.toFixed(2)}
+          </p>
+          <p className="font-mono text-xs text-[#8888aa]">
+            b1 = {mean.toFixed(2)} + moltiplicatore_ruolo × (b0 − {mean.toFixed(2)})
+          </p>
+          <p className="font-mono text-xs text-[#8888aa]">
+            voto_base = clamp(b1, 3.00, 9.50)
+          </p>
+        </div>
+
+        {/* Worked example */}
+        <div className="border-t border-[#2e2e42] pt-3 space-y-1">
+          <p className="text-xs font-medium text-[#55556a]">
+            Esempio pratico (MID, minuti pieni, moltiplicatore 1.00):
+          </p>
+          <div className="grid grid-cols-3 gap-2 text-xs font-mono">
+            <div className="rounded bg-green-500/10 px-2 py-1 text-center">
+              <p className="text-[#55556a]">z = +1.00</p>
+              <p className="text-green-300 font-semibold">{votoPlus}</p>
+            </div>
+            <div className="rounded bg-[#1a1a24] px-2 py-1 text-center">
+              <p className="text-[#55556a]">z = 0.00</p>
+              <p className="text-white font-semibold">{votoNeutral}</p>
+            </div>
+            <div className="rounded bg-red-500/10 px-2 py-1 text-center">
+              <p className="text-[#55556a]">z = −1.00</p>
+              <p className="text-red-300 font-semibold">{votoMinus}</p>
+            </div>
+          </div>
+          <p className="text-xs text-[#55556a] pt-1">
+            Range teorico ±2σ (prima del moltiplicatore ruolo e del clamp):{' '}
+            <span className="font-mono text-white">{rangeLow} – {rangeHigh}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -172,6 +323,9 @@ export function EngineConfigForm({ current }: Props) {
     goals_conceded_gk:               src?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
     goals_conceded_def:              src?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
     goals_conceded_def_min_minutes:  src?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
+
+    target_mean_vote: src?.target_mean_vote ?? DEFAULT_ENGINE_CONFIG.target_mean_vote,
+    target_vote_std:  src?.target_vote_std  ?? DEFAULT_ENGINE_CONFIG.target_vote_std,
   }
 
   return (
@@ -217,6 +371,12 @@ export function EngineConfigForm({ current }: Props) {
         />
         <WeightSlider defaultValue={v.fotmob_weight} />
       </FieldGroup>
+
+      {/* ── Scala voto finale ───────────────────────────────────────── */}
+      <TargetDistributionSection
+        defaultMean={v.target_mean_vote}
+        defaultStd={v.target_vote_std}
+      />
 
       {/* ── Fattore minuti ──────────────────────────────────────────── */}
       <FieldGroup title="Fattore minuti">

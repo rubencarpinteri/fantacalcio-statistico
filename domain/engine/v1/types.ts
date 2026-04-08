@@ -68,10 +68,8 @@ export interface MinutesFactorConfig {
 
 export interface EngineConfig {
   engine_version: string
-  /** Baseline score that z-deviations are applied around (6.0) */
+  /** Baseline score used for exception paths (decisive event, no ratings). Always 6.0. */
   base_score: number
-  /** Italian base-scale factor: b0 = base_score + scale_factor × z_adjusted (1.15) */
-  scale_factor: number
   /**
    * FotMob rating normalization: z = (rating - mean) / std
    * mean = 6.6 (FotMob "average" as confirmed by their color bands)
@@ -92,8 +90,8 @@ export interface EngineConfig {
   /** Configurable 2-band minutes factor */
   minutes_factor: MinutesFactorConfig
   /**
-   * Role multipliers — expand/compress distance from the 6.0 sufficiency threshold:
-   *   b1 = base_score + multiplier × (b0 - base_score)
+   * Role multipliers — expand/compress distance from target_mean_vote:
+   *   b1 = target_mean_vote + multiplier × (b0 - target_mean_vote)
    * GK/DEF: amplified (rating is the primary scoring signal)
    * MID: neutral
    * ATT: slightly compressed (goals/assists already captured in B/M)
@@ -102,6 +100,22 @@ export interface EngineConfig {
   bonus_malus: BonusMalusConfig
   voto_base_cap_min: number
   voto_base_cap_max: number
+  /**
+   * Target distribution — Step 2 of the calibration pipeline.
+   *
+   * After source normalization produces a combined z-score, these two parameters
+   * define the center and spread of the final voto_base distribution:
+   *
+   *   b0 = target_mean_vote + target_vote_std × z_adjusted
+   *   b1 = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
+   *
+   * target_mean_vote: A combined z-score of 0 maps exactly to this vote.
+   * target_vote_std:  Each ±1σ deviation shifts the vote by this many points.
+   *
+   * Configurable per league via league_engine_config.
+   */
+  target_mean_vote: number
+  target_vote_std: number
 }
 
 // ---- BM item -----------------------------------------------

@@ -126,6 +126,9 @@ export default async function MethodologyPage() {
     goals_conceded_gk:               dbEngCfg?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
     goals_conceded_def:              dbEngCfg?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
     goals_conceded_def_min_minutes:  dbEngCfg?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
+
+    target_mean_vote: dbEngCfg?.target_mean_vote ?? cfg.target_mean_vote,
+    target_vote_std:  dbEngCfg?.target_vote_std  ?? cfg.target_vote_std,
   }
 
   const roleRows = [
@@ -168,7 +171,7 @@ export default async function MethodologyPage() {
             <Step n={1} label="Recupero voti da FotMob (unica fonte)" />
             <Step n={2} label={`z-score FotMob: z = (voto − ${cfg.source_normalization.mean}) / ${cfg.source_normalization.std}`} />
             <Step n={3} label={`Fattore minuti: NV se 0', ×${eff.minutes_factor_partial} se 1–${eff.minutes_factor_threshold - 1}', ×${eff.minutes_factor_full} se ≥ ${eff.minutes_factor_threshold}'`} />
-            <Step n={4} label={`Voto base: b₀ = ${cfg.base_score} + ${cfg.scale_factor} × z_adjusted`} />
+            <Step n={4} label={`Scala finale: b₀ = ${eff.target_mean_vote} + ${eff.target_vote_std} × z_adjusted`} />
             <Step n={5} label="Moltiplicatore ruolo: amplifica/comprime lo scostamento da 6.0" />
             <Step n={6} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
             <Step n={7} label="Fantavoto finale = voto_base + bonus_malus" />
@@ -274,22 +277,22 @@ export default async function MethodologyPage() {
             <div>
               <span className="text-indigo-300">b₀</span>
               {' = '}
-              <span className="text-[#8888aa]">{cfg.base_score}</span>
+              <span className="text-[#8888aa]">{eff.target_mean_vote}</span>
               {' + '}
-              <span className="text-[#8888aa]">{cfg.scale_factor}</span>
+              <span className="text-[#8888aa]">{eff.target_vote_std}</span>
               {' × '}
               <span className="text-white">z_adjusted</span>
             </div>
             <div>
               <span className="text-indigo-300">b₁</span>
               {' = '}
-              <span className="text-[#8888aa]">{cfg.base_score}</span>
+              <span className="text-[#8888aa]">{eff.target_mean_vote}</span>
               {' + '}
               <span className="text-amber-300">moltiplicatore</span>
               {' × ( '}
               <span className="text-indigo-300">b₀</span>
               {' − '}
-              <span className="text-[#8888aa]">{cfg.base_score}</span>
+              <span className="text-[#8888aa]">{eff.target_mean_vote}</span>
               {' )'}
             </div>
             <div className="pt-1 text-xs text-[#55556a]">

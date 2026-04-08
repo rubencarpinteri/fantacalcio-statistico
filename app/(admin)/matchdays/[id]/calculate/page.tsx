@@ -31,6 +31,16 @@ export default async function CalculatePage({
 
   if (!matchday) notFound()
 
+  // League engine config — for target distribution params passed to CalculationPreview
+  const { data: engCfg } = await supabase
+    .from('league_engine_config')
+    .select('target_mean_vote, target_vote_std')
+    .eq('league_id', ctx.league.id)
+    .maybeSingle()
+
+  const targetMeanVote = engCfg?.target_mean_vote ?? 6.0
+  const targetVoteStd  = engCfg?.target_vote_std  ?? 0.75
+
   // All calculation runs, newest first
   const { data: runs } = await supabase
     .from('calculation_runs')
@@ -287,6 +297,8 @@ export default async function CalculatePage({
         canTrigger={canTrigger}
         canPublish={canPublish}
         playerStats={playerStats}
+        targetMeanVote={targetMeanVote}
+        targetVoteStd={targetVoteStd}
       />
     </div>
   )

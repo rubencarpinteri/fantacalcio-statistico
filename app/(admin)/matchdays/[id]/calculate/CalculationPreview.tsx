@@ -53,6 +53,9 @@ interface Props {
   canTrigger: boolean
   canPublish: boolean
   playerStats: Record<string, PlayerStatSnapshot>
+  /** Target distribution params from league_engine_config (or defaults if not set) */
+  targetMeanVote: number
+  targetVoteStd: number
 }
 
 // ---- Helpers -----------------------------------------------
@@ -261,6 +264,8 @@ export function CalculationPreview({
   canTrigger,
   canPublish,
   playerStats,
+  targetMeanVote,
+  targetVoteStd,
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -508,7 +513,7 @@ export function CalculationPreview({
                         {isExpanded && (() => {
                           // Per-source translated voto_base (computed client-side from stored intermediates)
                           // Uses: z_fotmob / z_sofascore, minutes_factor, role_multiplier stored in the row
-                          const SCALE = 1.15
+                          // target params come from league engine config via props
                           const CAP_MIN = 3.0
                           const CAP_MAX = 9.5
                           const mf = c.minutes_factor ?? 1
@@ -516,8 +521,8 @@ export function CalculationPreview({
 
                           function calcVotoBase(z: number | null): number | null {
                             if (z === null || c.minutes_factor === null || c.role_multiplier === null) return null
-                            const b0 = 6.0 + SCALE * (z * mf)
-                            const b1 = 6.0 + rm * (b0 - 6.0)
+                            const b0 = targetMeanVote + targetVoteStd * (z * mf)
+                            const b1 = targetMeanVote + rm * (b0 - targetMeanVote)
                             return Math.max(CAP_MIN, Math.min(CAP_MAX, b1))
                           }
 
@@ -533,7 +538,7 @@ export function CalculationPreview({
                                   ['z SofaScore', c.z_sofascore !== null ? fmt(c.z_sofascore) : '—'],
                                   ['min·factor', fmt(c.minutes_factor, 2)],
                                   ['z_adjusted', fmt(c.z_adjusted)],
-                                  ['b0 (6 + z_adj)', fmt(c.b0)],
+                                  ['b0', fmt(c.b0)],
                                   ['role_mult', fmt(c.role_multiplier, 2)],
                                   ['b1', fmt(c.b1)],
                                   ['voto_base', fmt(c.voto_base)],
