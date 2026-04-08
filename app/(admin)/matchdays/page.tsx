@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueContext } from '@/lib/league'
 import { MatchdayStatusBadge } from '@/components/ui/badge'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { CloseMatchdayButton } from './CloseMatchdayButton'
 
 export const metadata = { title: 'Giornate' }
 
@@ -345,7 +346,7 @@ export default async function MatchdaysPage() {
 
                   {/* Admin quick links */}
                   {isAdmin && isCurrent && (
-                    <div className="mt-1.5 flex flex-wrap gap-1 pl-7">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-7">
                       {isEditable && (
                         <a
                           href={`/matchdays/${m.id}/import-lineups`}
@@ -354,24 +355,16 @@ export default async function MatchdaysPage() {
                           Formazioni
                         </a>
                       )}
-                      <a
-                        href={`/matchdays/${m.id}/fixtures`}
-                        className="rounded px-1.5 py-0.5 text-[10px] bg-[#1a1a2e] text-[#8888aa] hover:text-white transition-colors"
-                      >
-                        Fetch voti
-                      </a>
-                      <a
-                        href={`/matchdays/${m.id}/calculate`}
-                        className="rounded px-1.5 py-0.5 text-[10px] bg-[#1a1a2e] text-[#8888aa] hover:text-white transition-colors"
-                      >
-                        Calcola
-                      </a>
+                      <QuickFetchAndCalculateButton matchdayId={m.id} compact />
                       <a
                         href={`/matchdays/${m.id}`}
                         className="rounded px-1.5 py-0.5 text-[10px] bg-[#1a1a2e] text-[#8888aa] hover:text-white transition-colors"
                       >
                         Gestione →
                       </a>
+                      {m.status === 'open' && (
+                        <CloseMatchdayButton matchdayId={m.id} />
+                      )}
                     </div>
                   )}
                 </div>
