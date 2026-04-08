@@ -222,7 +222,7 @@ export default async function CalculatePage({
       {!canTrigger && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-400">
           {matchday.status === 'draft'
-            ? 'La giornata è in bozza — passa ad "aperta" prima di calcolare i punteggi.'
+            ? 'La giornata è in programma — passa ad "aperta" prima di calcolare i punteggi.'
             : 'Non è possibile calcolare una giornata archiviata.'}
         </div>
       )}

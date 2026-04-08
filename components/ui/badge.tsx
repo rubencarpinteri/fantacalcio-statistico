@@ -50,7 +50,7 @@ export function MatchdayStatusBadge({ status }: { status: string }) {
     published: 'success',
   }
   const labels: Record<string, string> = {
-    draft: 'Bozza',
+    draft: 'In Programma',
     open: 'Aperta',
     closed: 'Chiusa',
     archived: 'Archiviata',

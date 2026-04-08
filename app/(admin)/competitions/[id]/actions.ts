@@ -295,7 +295,7 @@ export async function computeRoundAction(
     .single()
 
   if (!matchday) return fail('Giornata collegata non trovata.')
-  if (matchday.status === 'draft') return fail('La giornata è ancora in bozza: aggiungi statistiche e calcola prima.')
+  if (matchday.status === 'draft') return fail('La giornata è ancora in programma: aprila, aggiungi statistiche e calcola prima.')
 
   // 3. Fetch published_team_scores for the matchday
   // Scores are written by publishCalculationAction regardless of matchday status (open/scoring/published/archived).

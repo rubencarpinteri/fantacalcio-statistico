@@ -30,7 +30,14 @@ const STATUS_ACTIONS: Partial<Record<MatchdayStatus, StatusAction[]>> = {
       newStatus: 'closed',
       variant: 'primary',
       requireNote: false,
-      confirmMessage: 'Chiudere la giornata? Le formazioni saranno bloccate e la prossima giornata in bozza verrà aperta automaticamente.',
+      confirmMessage: 'Chiudere la giornata? Le formazioni saranno bloccate e la prossima giornata in programma verrà aperta automaticamente.',
+    },
+    {
+      label: 'Torna a In Programma',
+      newStatus: 'draft',
+      variant: 'secondary',
+      requireNote: false,
+      confirmMessage: 'Riportare la giornata a "In Programma"? I manager non potranno più inserire le formazioni.',
     },
   ],
   closed: [

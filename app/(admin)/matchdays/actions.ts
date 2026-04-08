@@ -90,7 +90,7 @@ export async function createMatchdayAction(
 // Legacy statuses (locked/scoring/published) can only move to closed.
 const ALLOWED_TRANSITIONS: Record<MatchdayStatus, MatchdayStatus[]> = {
   draft:     ['open'],
-  open:      ['closed'],
+  open:      ['closed', 'draft'],
   closed:    ['open', 'archived'],
   archived:  [],
   // Legacy — kept for rows that weren't migrated

@@ -83,7 +83,7 @@ export function RoundManager({ round, competitionId, matchday, hasGoals }: Round
         )}
         {round.status !== 'locked' && matchday && matchday.status === 'draft' && (
           <p className="mb-4 text-sm text-amber-400">
-            ⚠ La giornata &quot;{matchday.name}&quot; è ancora in bozza. Aggiungi statistiche e pubblica un calcolo prima.
+            ⚠ La giornata &quot;{matchday.name}&quot; è ancora in programma. Aprila, aggiungi statistiche e pubblica un calcolo prima.
           </p>
         )}
 
