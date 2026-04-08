@@ -167,6 +167,22 @@ export default async function AllLineupsPage({
     }
   }
 
+  // ── Raw source ratings from player_match_stats ────────────────────────────
+  // These are the original FotMob / SofaScore ratings before any transformation.
+  const statsMap = new Map<string, { fotmobRating: number | null; sofascoreRating: number | null }>()
+  {
+    const { data: statsRows } = await supabase
+      .from('player_match_stats')
+      .select('player_id, fotmob_rating, sofascore_rating')
+      .eq('matchday_id', matchdayId)
+    for (const s of statsRows ?? []) {
+      statsMap.set(s.player_id, {
+        fotmobRating: s.fotmob_rating !== null ? Number(s.fotmob_rating) : null,
+        sofascoreRating: s.sofascore_rating !== null ? Number(s.sofascore_rating) : null,
+      })
+    }
+  }
+
   // ── Fetch competition matchups for this round ──────────────────────────────
   // Used to pair teams in head-to-head layout instead of a plain grid.
   let matchupPairs: Array<{ homeTeamId: string; awayTeamId: string }> = []
@@ -214,6 +230,7 @@ export default async function AllLineupsPage({
       const assignment = assignmentBySlot.get(slot.id) ?? null
       const player = assignment ? (playerInfoMap.get(assignment.player_id) ?? null) : null
       const calc = assignment ? (calcMap.get(assignment.player_id) ?? null) : null
+      const rawStats = assignment ? (statsMap.get(assignment.player_id) ?? null) : null
       return {
         slotId: slot.id,
         positionName: slot.slot_name,
@@ -233,6 +250,8 @@ export default async function AllLineupsPage({
         zSofascore: calc?.z_sofascore ?? null,
         minutesFactor: calc?.minutes_factor ?? null,
         roleMultiplier: calc?.role_multiplier ?? null,
+        rawFotmobRating: rawStats?.fotmobRating ?? null,
+        rawSofascoreRating: rawStats?.sofascoreRating ?? null,
         assignedMantraRole: assignment?.assigned_mantra_role ?? null,
         isBenchAssignment: assignment?.is_bench ?? false,
         benchOrderAssignment: assignment?.bench_order ?? null,

@@ -143,227 +143,24 @@ export default async function StandingsPage() {
     .sort((a, b) => b.total - a.total)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white">Classifiche</h1>
-        <p className="text-sm text-[#8888aa]">
-          Panoramica delle competizioni attive · {ctx.league.name}
-        </p>
+        <h1 className="text-lg font-bold text-white">Classifiche</h1>
+        <p className="text-xs text-[#8888aa]">{ctx.league.name} · {ctx.league.season_name}</p>
       </div>
 
-      {list.length === 0 && setupList.length === 0 && (
-        <Card>
-          <CardContent>
-            <p className="py-8 text-center text-sm text-[#55556a]">
-              Nessuna competizione configurata.
-              {ctx.role === 'league_admin' && (
-                <> <a href="/competitions/new" className="text-indigo-400 hover:underline">Crea la prima competizione →</a></>
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* ── WIP notice ──────────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#2e2e42]">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">Classifica</p>
+          <p className="text-sm font-semibold text-white leading-tight mt-0.5">{ctx.league.name}</p>
+        </div>
+        <div className="px-4 py-10 text-center">
+          <p className="text-xs font-medium text-[#55556a]">Work in progress</p>
+          <p className="mt-1 text-[11px] text-[#3a3a52]">La classifica sarà disponibile prossimamente.</p>
+        </div>
+      </div>
 
-      {/* Active / completed competitions with standings */}
-      {list.map((comp) => {
-        const snap = snapshots[comp.id] ?? { rows: [], round_name: null }
-        const sc = comp.scoring_config as { method?: string } | null
-        const hasGoals = sc?.method !== 'direct_comparison'
-
-        return (
-          <Card key={comp.id}>
-            <CardHeader
-              title={
-                <span className="flex items-center gap-2">
-                  <span>{TYPE_ICON[comp.type] ?? '🏆'}</span>
-                  <span>{comp.name}</span>
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[comp.status] ?? ''}`}>
-                    {STATUS_LABEL[comp.status] ?? comp.status}
-                  </span>
-                </span>
-              }
-              description={
-                snap.round_name
-                  ? `${TYPE_LABEL[comp.type] ?? comp.type}${comp.season ? ` · ${comp.season}` : ''} · aggiornata al ${snap.round_name}`
-                  : `${TYPE_LABEL[comp.type] ?? comp.type}${comp.season ? ` · ${comp.season}` : ''}`
-              }
-              action={
-                <a
-                  href={`/competitions/${comp.id}/standings`}
-                  className="text-xs text-indigo-400 hover:text-indigo-300"
-                >
-                  Classifica completa →
-                </a>
-              }
-            />
-
-            {snap.rows.length === 0 ? (
-              <CardContent>
-                <p className="text-sm text-[#55556a]">
-                  Nessun turno calcolato ancora.
-                </p>
-              </CardContent>
-            ) : (
-              <CardContent className="p-0">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#1e1e2e]">
-                      {[
-                        'Pos', 'Squadra', 'G', 'V', 'N', 'P',
-                        ...(hasGoals ? ['GF', 'GS', 'DR'] : []),
-                        'Pt', 'FV',
-                      ].map((h, i) => (
-                        <th
-                          key={`${h}-${i}`}
-                          className={`px-4 py-2.5 text-xs font-medium text-[#55556a] ${
-                            i < 2 ? 'text-left' : 'text-center'
-                          }`}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1e1e2e]">
-                    {snap.rows.map((row, idx) => (
-                      <tr key={row.team_id} className="hover:bg-[#0f0f1a]">
-                        <td className="w-12 px-4 py-2.5 text-left">
-                          <span
-                            className={`text-sm font-semibold ${
-                              idx === 0
-                                ? 'text-amber-400'
-                                : idx <= 2
-                                  ? 'text-indigo-300'
-                                  : 'text-[#55556a]'
-                            }`}
-                          >
-                            {idx + 1}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-left font-medium text-white">
-                          {teamNameMap.get(row.team_id) ?? '—'}
-                        </td>
-                        <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.played}</td>
-                        <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.wins}</td>
-                        <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.draws}</td>
-                        <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.losses}</td>
-                        {hasGoals && (
-                          <>
-                            <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.goals_for}</td>
-                            <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.goals_against}</td>
-                            <td
-                              className={`px-4 py-2.5 text-center ${
-                                row.goal_difference > 0
-                                  ? 'text-emerald-400'
-                                  : row.goal_difference < 0
-                                    ? 'text-red-400'
-                                    : 'text-[#8888aa]'
-                              }`}
-                            >
-                              {row.goal_difference > 0 ? '+' : ''}
-                              {row.goal_difference}
-                            </td>
-                          </>
-                        )}
-                        <td className="px-4 py-2.5 text-center font-bold text-white">{row.points}</td>
-                        <td className="px-4 py-2.5 text-center text-[#55556a]">
-                          {row.total_fantavoto.toFixed(1)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                <div className="border-t border-[#1e1e2e] px-4 py-2">
-                  <a
-                    href={`/competitions/${comp.id}/standings`}
-                    className="text-xs text-indigo-400 hover:underline"
-                  >
-                    Classifica completa →
-                  </a>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        )
-      })}
-
-      {/* Raw fantavoto aggregate — competition-format-agnostic, published matchdays only */}
-      {rawRows.length > 0 && (
-        <Card>
-          <CardHeader
-            title="Fantavoto complessivo"
-            description="Totale pubblicato per squadra · tutte le giornate"
-          />
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#1e1e2e]">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Pos</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Squadra</th>
-                  <th className="px-4 py-2.5 text-center text-xs font-medium text-[#55556a]">G</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[#55556a]">Media FV</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[#55556a]">Totale FV</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
-                {rawRows.map((row, idx) => (
-                  <tr key={row.team_id} className="hover:bg-[#0f0f1a]">
-                    <td className="px-4 py-2.5">
-                      <span className={`text-sm font-semibold ${
-                        idx === 0 ? 'text-amber-400' : idx <= 2 ? 'text-indigo-300' : 'text-[#55556a]'
-                      }`}>
-                        {idx + 1}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 font-medium text-white">
-                      {rawTeamNameMap.get(row.team_id) ?? '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{row.count}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
-                      {row.avg.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-white">
-                      {row.total.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Setup competitions (no standings yet, just a placeholder) */}
-      {setupList.length > 0 && (
-        <Card>
-          <CardHeader title="Competizioni in configurazione" />
-          <CardContent>
-            <div className="space-y-2">
-              {setupList.map((comp) => (
-                <div
-                  key={comp.id}
-                  className="flex items-center justify-between rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span>{TYPE_ICON[comp.type] ?? '🏆'}</span>
-                    <div>
-                      <p className="text-sm font-medium text-white">{comp.name}</p>
-                      <p className="text-xs text-[#55556a]">
-                        {TYPE_LABEL[comp.type] ?? comp.type}
-                        {comp.season ? ` · ${comp.season}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="rounded px-2 py-0.5 text-xs font-medium text-[#8888aa] bg-[#1a1a24]">
-                    Setup
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

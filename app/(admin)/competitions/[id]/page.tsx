@@ -400,20 +400,13 @@ export default async function CompetitionDetailPage({
                 <a
                   key={m.id}
                   href={href}
-                  className="grid grid-cols-[1fr,auto,1fr] items-center gap-2 px-4 py-3 hover:bg-[#131320] transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#131320] transition-colors"
                 >
                   {/* Home */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                      homeWins ? 'bg-emerald-500/20 text-emerald-400'
-                        : isHomeMyTeam ? 'bg-indigo-500/20 text-indigo-400'
-                        : 'bg-[#2e2e42] text-[#8888aa]'
-                    }`}>
-                      {m.homeTeamName.slice(0, 1).toUpperCase()}
-                    </div>
-                    <span className={`truncate text-sm font-semibold ${
+                  <div className={`flex-1 min-w-0 overflow-hidden text-right ${isHomeMyTeam ? 'pr-0' : ''}`}>
+                    <span className={`block truncate text-sm font-semibold ${
                       homeWins ? 'text-white'
-                        : awayWins ? 'text-[#55556a]'
+                        : awayWins ? 'text-[#3a3a52]'
                         : isHomeMyTeam ? 'text-indigo-200'
                         : 'text-[#c0c0d8]'
                     }`}>
@@ -422,44 +415,37 @@ export default async function CompetitionDetailPage({
                   </div>
 
                   {/* Score */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`min-w-[2.8rem] rounded-md px-2 py-1 text-center text-sm font-bold tabular-nums ${
-                      homeWins ? 'bg-emerald-500/15 text-emerald-300' : 'bg-[#1e1e2e] text-white'
+                  <div className="shrink-0 w-44 flex items-center justify-center gap-2 tabular-nums">
+                    <span className={`text-base font-bold ${
+                      homeWins ? 'text-white' : 'text-[#55556a]'
                     }`}>
                       {homeScore !== null ? homeScore.toFixed(1) : hasPartialData ? '0.0' : '—'}
                     </span>
                     {hasPublished && m.result ? (
                       <HeroResultBadge result={m.result as '1' | 'X' | '2'} />
                     ) : (
-                      <span className="text-[10px] text-[#3a3a4a]">vs</span>
+                      <span className="text-[#3a3a52] text-sm font-normal">–</span>
                     )}
-                    <span className={`min-w-[2.8rem] rounded-md px-2 py-1 text-center text-sm font-bold tabular-nums ${
-                      awayWins ? 'bg-emerald-500/15 text-emerald-300' : 'bg-[#1e1e2e] text-white'
+                    <span className={`text-base font-bold ${
+                      awayWins ? 'text-white' : 'text-[#55556a]'
                     }`}>
                       {awayScore !== null ? awayScore.toFixed(1) : hasPartialData ? '0.0' : '—'}
                     </span>
                     {hasPartial && m.isDraftScore && (
-                      <span className="text-[10px] text-amber-500/60">~</span>
+                      <span className="text-[9px] text-amber-500/50">~</span>
                     )}
                   </div>
 
                   {/* Away */}
-                  <div className="flex items-center justify-end gap-2 min-w-0">
-                    <span className={`truncate text-sm font-semibold text-right ${
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <span className={`block truncate text-sm font-semibold ${
                       awayWins ? 'text-white'
-                        : homeWins ? 'text-[#55556a]'
+                        : homeWins ? 'text-[#3a3a52]'
                         : isAwayMyTeam ? 'text-indigo-200'
                         : 'text-[#c0c0d8]'
                     }`}>
                       {m.awayTeamName}
                     </span>
-                    <div className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                      awayWins ? 'bg-emerald-500/20 text-emerald-400'
-                        : isAwayMyTeam ? 'bg-indigo-500/20 text-indigo-400'
-                        : 'bg-[#2e2e42] text-[#8888aa]'
-                    }`}>
-                      {m.awayTeamName.slice(0, 1).toUpperCase()}
-                    </div>
                   </div>
                 </a>
               )
@@ -477,67 +463,16 @@ export default async function CompetitionDetailPage({
         </div>
       )}
 
-      {/* ── Classifica ──────────────────────────────────────────────────────── */}
-      <div id="classifica">
-        <Card>
-          <CardHeader title="Classifica" />
-          <CardContent className="p-0">
-            {standings.length === 0 ? (
-              <p className="px-6 py-8 text-center text-sm text-[#55556a]">
-                Nessuna squadra iscritta alla competizione.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#2e2e42]">
-                      {['Pos', 'Squadra', 'G', 'V', 'N', 'P', 'Gf', 'Gs', 'Diff', 'Pts'].map((h) => (
-                        <th
-                          key={h}
-                          className={[
-                            'px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#55556a]',
-                            h === 'Squadra' ? 'text-left' : 'text-center',
-                          ].join(' ')}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1e1e2e]">
-                    {standings.map((row, idx) => {
-                      const isMyTeam = row.team_id === myTeamId
-                      return (
-                        <tr
-                          key={row.team_id}
-                          className={['transition-colors hover:bg-[#1a1a24]', isMyTeam ? 'bg-indigo-500/5' : ''].join(' ')}
-                        >
-                          <td className="px-3 py-2.5 text-center text-[#55556a]">{idx + 1}</td>
-                          <td className="px-3 py-2.5">
-                            <span className={['font-medium', isMyTeam ? 'text-indigo-300' : 'text-white'].join(' ')}>
-                              {row.team_name}
-                              {isMyTeam && <span className="ml-1.5 text-xs text-indigo-400">(tu)</span>}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.played}</td>
-                          <td className="px-3 py-2.5 text-center text-emerald-400">{row.wins}</td>
-                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.draws}</td>
-                          <td className="px-3 py-2.5 text-center text-red-400">{row.losses}</td>
-                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.gf.toFixed(2)}</td>
-                          <td className="px-3 py-2.5 text-center text-[#8888aa]">{row.gs.toFixed(2)}</td>
-                          <td className={['px-3 py-2.5 text-center', row.diff > 0 ? 'text-emerald-400' : row.diff < 0 ? 'text-red-400' : 'text-[#8888aa]'].join(' ')}>
-                            {row.diff > 0 ? '+' : ''}{row.diff.toFixed(2)}
-                          </td>
-                          <td className="px-3 py-2.5 text-center font-bold text-white">{row.pts}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* ── Classifica — WIP ────────────────────────────────────────────────── */}
+      <div id="classifica" className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#2e2e42]">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">Classifica</p>
+          <p className="text-sm font-semibold text-white leading-tight mt-0.5">{comp.name}</p>
+        </div>
+        <div className="px-4 py-10 text-center">
+          <p className="text-xs font-medium text-[#55556a]">Work in progress</p>
+          <p className="mt-1 text-[11px] text-[#3a3a52]">La classifica sarà disponibile prossimamente.</p>
+        </div>
       </div>
 
       {/* ── Calendario — client-side dropdown ───────────────────────────────── */}

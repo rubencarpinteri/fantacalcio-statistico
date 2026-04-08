@@ -24,6 +24,9 @@ export interface SlotData {
   zSofascore: number | null
   minutesFactor: number | null
   roleMultiplier: number | null
+  // Raw ratings as fetched from the source (before any z-score / engine transformation)
+  rawFotmobRating: number | null
+  rawSofascoreRating: number | null
   assignedMantraRole: string | null
   isBenchAssignment: boolean
   benchOrderAssignment: number | null
@@ -102,17 +105,21 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
   const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-[#8888aa]'
   const fv = slot.fantavoto
 
+  const hasFm = slot.rawFotmobRating !== null
+  const hasSs = slot.rawSofascoreRating !== null
+  const hasAnyRaw = hasFm || hasSs
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xs rounded-xl border border-[#2e2e42] bg-[#111118] p-5 shadow-2xl"
+        className="w-full max-w-sm rounded-xl border border-[#2e2e42] bg-[#111118] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-[#1e1e2e]">
           <div>
             <p className="text-sm font-semibold text-white">{slot.playerName ?? '—'}</p>
             <p className="text-xs text-[#55556a]">
@@ -122,70 +129,102 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               )}
             </p>
           </div>
-          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none">×</button>
+          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none mt-0.5">×</button>
         </div>
 
-        {/* Fantavoto */}
-        <div className="mb-4 flex items-baseline gap-3">
-          <span className="text-3xl font-black font-mono text-white">{fmtFv(fv)}</span>
-          {slot.votoBase !== null && (
-            <span className="text-sm text-[#55556a]">
-              base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
-            </span>
+        <div className="p-4 space-y-4">
+          {/* Fantavoto finale */}
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl font-black font-mono text-white">{fmtFv(fv)}</span>
+            {slot.votoBase !== null && (
+              <span className="text-sm text-[#55556a]">
+                voto base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Raw ratings + per-source breakdown */}
+          {hasAnyRaw && (
+            <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] overflow-hidden">
+              <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[#55556a] border-b border-[#1e1e2e]">
+                Voti originali → voto base convertito
+              </p>
+
+              {/* Column headers */}
+              <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-1.5 border-b border-[#1a1a24]">
+                <span className="text-[10px] text-[#3a3a52]">Fonte</span>
+                <span className="text-[10px] text-[#3a3a52] text-right">Voto orig.</span>
+                <span className="text-[10px] text-[#3a3a52] text-right">→ base</span>
+              </div>
+
+              <div className="divide-y divide-[#1a1a24]">
+                {hasFm && (
+                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-2 items-center">
+                    <span className="text-xs text-[#8888aa]">FotMob</span>
+                    <span className="font-mono text-sm font-bold text-white text-right">
+                      {slot.rawFotmobRating!.toFixed(1)}
+                    </span>
+                    <span className="font-mono text-xs text-[#8888aa] text-right">
+                      {vbFm !== null ? vbFm.toFixed(2) : '—'}
+                    </span>
+                  </div>
+                )}
+                {hasSs && (
+                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-2 items-center">
+                    <span className="text-xs text-indigo-400/80">SofaScore</span>
+                    <span className="font-mono text-sm font-bold text-white text-right">
+                      {slot.rawSofascoreRating!.toFixed(1)}
+                    </span>
+                    <span className="font-mono text-xs text-indigo-300/70 text-right">
+                      {vbSs !== null ? vbSs.toFixed(2) : '—'}
+                    </span>
+                  </div>
+                )}
+                {hasFm && hasSs && vbFm !== null && vbSs !== null && (
+                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-3 px-3 py-1.5 items-center bg-[#0f0f18]">
+                    <span className="text-[10px] text-[#55556a]">Δ FM − SS</span>
+                    <span className={`font-mono text-[10px] text-right ${
+                      Math.abs(slot.rawFotmobRating! - slot.rawSofascoreRating!) > 0.5
+                        ? 'text-amber-400'
+                        : 'text-[#55556a]'
+                    }`}>
+                      {(slot.rawFotmobRating! - slot.rawSofascoreRating!) >= 0 ? '+' : ''}
+                      {(slot.rawFotmobRating! - slot.rawSofascoreRating!).toFixed(1)}
+                    </span>
+                    <span className={`font-mono text-[10px] text-right ${
+                      Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'
+                    }`}>
+                      {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bonus / Malus */}
+          {slot.bonusMalus && slot.bonusMalus.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#55556a]">Bonus / Malus</p>
+              <div className="flex flex-wrap gap-1.5">
+                {slot.bonusMalus.map((b, i) => (
+                  <span
+                    key={i}
+                    className={`rounded px-2 py-0.5 text-xs font-semibold ${
+                      b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                    }`}
+                  >
+                    {b.label} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {fv === null && !hasAnyRaw && (
+            <p className="text-xs text-[#55556a] italic">Nessun voto disponibile (NV)</p>
           )}
         </div>
-
-        {/* Per-source breakdown */}
-        {(vbFm !== null || vbSs !== null) && (
-          <div className="mb-4 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-3">
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-[#55556a]">Voto base per fonte</p>
-            <div className="space-y-1.5">
-              {vbFm !== null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#8888aa]">Solo FotMob</span>
-                  <span className="font-mono text-sm font-bold text-[#c8c8f0]">{vbFm.toFixed(2)}</span>
-                </div>
-              )}
-              {vbSs !== null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-indigo-400/70">Solo SofaScore</span>
-                  <span className="font-mono text-sm font-bold text-indigo-300">{vbSs.toFixed(2)}</span>
-                </div>
-              )}
-              {vbFm !== null && vbSs !== null && (
-                <div className="flex items-center justify-between border-t border-[#2e2e42] pt-1.5">
-                  <span className="text-xs text-[#55556a]">Δ FM − SS</span>
-                  <span className={`font-mono text-xs ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#8888aa]'}`}>
-                    {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* B/M breakdown */}
-        {slot.bonusMalus && slot.bonusMalus.length > 0 && (
-          <div>
-            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-[#55556a]">Bonus / Malus</p>
-            <div className="flex flex-wrap gap-1.5">
-              {slot.bonusMalus.map((b, i) => (
-                <span
-                  key={i}
-                  className={`rounded px-2 py-0.5 text-xs font-semibold ${
-                    b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                  }`}
-                >
-                  {b.label} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {fv === null && (
-          <p className="mt-2 text-xs text-[#55556a] italic">Nessun voto disponibile (NV)</p>
-        )}
       </div>
     </div>
   )

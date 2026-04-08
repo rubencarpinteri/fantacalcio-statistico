@@ -123,105 +123,48 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
                 <a
                   key={m.id}
                   href={href}
-                  className="grid grid-cols-[1fr,auto,1fr] items-center gap-3 px-4 py-3 hover:bg-[#131320] transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#131320] transition-colors"
                 >
                   {/* Home */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div
-                      className={`h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        homeWins
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : isHomeMyTeam
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'bg-[#2e2e42] text-[#8888aa]'
-                      }`}
-                    >
-                      {m.homeTeamName.slice(0, 1).toUpperCase()}
-                    </div>
-                    <span
-                      className={`truncate text-sm font-medium ${
-                        homeWins
-                          ? 'text-white'
-                          : awayWins
-                          ? 'text-[#55556a]'
-                          : isHomeMyTeam
-                          ? 'text-indigo-200'
-                          : 'text-[#c0c0d8]'
-                      }`}
-                    >
+                  <div className="flex-1 min-w-0 overflow-hidden text-right">
+                    <span className={`block truncate text-sm font-semibold ${
+                      homeWins ? 'text-white'
+                        : awayWins ? 'text-[#3a3a52]'
+                        : isHomeMyTeam ? 'text-indigo-200'
+                        : 'text-[#c0c0d8]'
+                    }`}>
                       {m.homeTeamName}
                     </span>
                   </div>
 
                   {/* Score */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span
-                      className={`min-w-[2.8rem] rounded-md px-2 py-1 text-center text-sm font-bold tabular-nums ${
-                        homeWins
-                          ? 'bg-emerald-500/15 text-emerald-300'
-                          : hasPublished
-                          ? 'bg-[#1e1e2e] text-white'
-                          : hasPartial
-                          ? 'bg-[#1e1e2e] text-[#a0a0c0]'
-                          : 'bg-[#1a1a24] text-[#3a3a4a]'
-                      }`}
-                    >
+                  <div className="shrink-0 w-44 flex items-center justify-center gap-2 tabular-nums">
+                    <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
                       {homeScore !== null ? homeScore.toFixed(1) : '—'}
                     </span>
-
-                    {/* Result badge OR vs divider */}
                     {hasPublished && m.result ? (
                       <ResultBadge result={m.result as '1' | 'X' | '2'} />
                     ) : (
-                      <span className="text-[10px] text-[#3a3a4a] px-0.5">vs</span>
+                      <span className="text-[#3a3a52] text-sm font-normal">–</span>
                     )}
-
-                    <span
-                      className={`min-w-[2.8rem] rounded-md px-2 py-1 text-center text-sm font-bold tabular-nums ${
-                        awayWins
-                          ? 'bg-emerald-500/15 text-emerald-300'
-                          : hasPublished
-                          ? 'bg-[#1e1e2e] text-white'
-                          : hasPartial
-                          ? 'bg-[#1e1e2e] text-[#a0a0c0]'
-                          : 'bg-[#1a1a24] text-[#3a3a4a]'
-                      }`}
-                    >
+                    <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
                       {awayScore !== null ? awayScore.toFixed(1) : '—'}
                     </span>
-
-                    {/* Draft indicator */}
                     {hasPartial && m.isDraftScore && (
-                      <span className="text-[10px] text-amber-500/60 ml-0.5">~</span>
+                      <span className="text-[9px] text-amber-500/50">~</span>
                     )}
                   </div>
 
                   {/* Away */}
-                  <div className="flex items-center justify-end gap-2 min-w-0">
-                    <span
-                      className={`truncate text-sm font-medium text-right ${
-                        awayWins
-                          ? 'text-white'
-                          : homeWins
-                          ? 'text-[#55556a]'
-                          : isAwayMyTeam
-                          ? 'text-indigo-200'
-                          : 'text-[#c0c0d8]'
-                      }`}
-                    >
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <span className={`block truncate text-sm font-semibold ${
+                      awayWins ? 'text-white'
+                        : homeWins ? 'text-[#3a3a52]'
+                        : isAwayMyTeam ? 'text-indigo-200'
+                        : 'text-[#c0c0d8]'
+                    }`}>
                       {m.awayTeamName}
                     </span>
-                    <div
-                      className={`h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        awayWins
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : isAwayMyTeam
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'bg-[#2e2e42] text-[#8888aa]'
-                      }`}
-                    >
-                      {m.awayTeamName.slice(0, 1).toUpperCase()}
-                    </div>
                   </div>
                 </a>
               )
