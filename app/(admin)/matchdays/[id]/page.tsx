@@ -9,6 +9,7 @@ import { FreezeButton } from './FreezeButton'
 import { FixturesInlineCard } from './FixturesInlineCard'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
 import { SofaScoreManualImport } from '@/components/ui/SofaScoreManualImport'
+import { getMatchesForRound } from '@/lib/calendar/serieaCalendar'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -53,6 +54,11 @@ export default async function MatchdayDetailPage({
       .order('created_at', { ascending: true })
     fixtures = (fx ?? []) as MatchdayFixture[]
   }
+
+  // Round matches from CSV — used to show guide in step 1 and label buttons in step 2
+  const roundMatches = isAdmin && matchday.matchday_number
+    ? getMatchesForRound(matchday.matchday_number)
+    : []
 
   // Published results — only fetch when needed
   type PublishedScore = {
@@ -222,7 +228,9 @@ export default async function MatchdayDetailPage({
           const step2Done = playerStatsCount > 0
           const step3Done = v1RunId !== null
           const step4Done = (matchday.status === 'closed' || matchday.status === 'archived') && publishedRunEngine === 'v1'
-          const ssEventIds = fixtures.map((f) => f.sofascore_event_id).filter((id): id is number => id != null)
+          const ssFixtures = fixtures
+            .filter((f): f is typeof f & { sofascore_event_id: number } => f.sofascore_event_id != null)
+            .map((f) => ({ sofascoreEventId: f.sofascore_event_id, label: f.label }))
 
           const StepIcon = ({ done, active }: { done: boolean; active: boolean }) => (
             <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -245,7 +253,7 @@ export default async function MatchdayDetailPage({
                     1 — Configura partite
                   </p>
                 </div>
-                <FixturesInlineCard matchdayId={id} fixtures={fixtures} />
+                <FixturesInlineCard matchdayId={id} fixtures={fixtures} roundMatches={roundMatches} />
               </div>
 
               {/* Step 2 — Dati SofaScore */}
@@ -257,7 +265,7 @@ export default async function MatchdayDetailPage({
                   </p>
                 </div>
                 {step1Done && (
-                  <SofaScoreManualImport matchdayId={id} sofascoreEventIds={ssEventIds} />
+                  <SofaScoreManualImport matchdayId={id} fixtures={ssFixtures} />
                 )}
               </div>
 

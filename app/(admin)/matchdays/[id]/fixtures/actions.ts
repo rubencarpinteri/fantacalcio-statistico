@@ -122,6 +122,20 @@ export async function saveFixturesBulkAction(
 
   const supabase = await createClient()
 
+  // Look up matchday_number to resolve team labels from CSV
+  const { data: matchday } = await supabase
+    .from('matchdays')
+    .select('matchday_number')
+    .eq('id', matchdayId)
+    .single()
+
+  let roundLabels: string[] = []
+  if (matchday?.matchday_number) {
+    const { getMatchesForRound } = await import('@/lib/calendar/serieaCalendar')
+    const matches = getMatchesForRound(matchday.matchday_number)
+    roundLabels = matches.map((m) => m.label)
+  }
+
   // Delete all existing fixtures for this matchday
   const { error: deleteError } = await supabase
     .from('matchday_fixtures')
@@ -130,12 +144,12 @@ export async function saveFixturesBulkAction(
 
   if (deleteError) return { error: 'Errore durante la cancellazione delle fixture esistenti.' }
 
-  // Build new rows
+  // Build new rows — label from CSV if available, fallback to "Partita N"
   const rows = Array.from({ length: count }, (_, i) => ({
     matchday_id: matchdayId,
     fotmob_match_id: fm.ids[i] ?? null,
     sofascore_event_id: ss.ids[i] ?? null,
-    label: `Partita ${i + 1}`,
+    label: roundLabels[i] ?? `Partita ${i + 1}`,
   }))
 
   const { error: insertError } = await supabase.from('matchday_fixtures').insert(rows)
@@ -144,6 +158,66 @@ export async function saveFixturesBulkAction(
   revalidatePath(`/matchdays/${matchdayId}/fixtures`)
   revalidatePath(`/matchdays/${matchdayId}`)
   return { success: true, count }
+}
+
+// ---------------------------------------------------------------------------
+// Auto-import fixtures from CSV (when IDs are present in the calendar file)
+// ---------------------------------------------------------------------------
+
+export type AutoImportFixturesState = { error?: string; success?: boolean; count?: number }
+
+export async function autoImportFixturesFromCsvAction(
+  matchdayId: string,
+): Promise<AutoImportFixturesState> {
+  try {
+    await requireLeagueAdmin()
+  } catch {
+    return { error: 'Non autorizzato.' }
+  }
+
+  const supabase = await createClient()
+
+  const { data: matchday } = await supabase
+    .from('matchdays')
+    .select('matchday_number')
+    .eq('id', matchdayId)
+    .single()
+
+  if (!matchday?.matchday_number) {
+    return { error: 'Numero giornata non impostato sulla giornata.' }
+  }
+
+  const { getMatchesForRound } = await import('@/lib/calendar/serieaCalendar')
+  const matches = getMatchesForRound(matchday.matchday_number)
+
+  const usableMatches = matches.filter(
+    (m) => m.sofascoreMatchId !== null || m.fotmobMatchId !== null,
+  )
+
+  if (usableMatches.length === 0) {
+    return { error: 'Nessun ID partita trovato nel CSV per questa giornata.' }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('matchday_fixtures')
+    .delete()
+    .eq('matchday_id', matchdayId)
+
+  if (deleteError) return { error: 'Errore durante la cancellazione delle fixture esistenti.' }
+
+  const rows = usableMatches.map((m) => ({
+    matchday_id: matchdayId,
+    fotmob_match_id: m.fotmobMatchId,
+    sofascore_event_id: m.sofascoreMatchId,
+    label: m.label,
+  }))
+
+  const { error: insertError } = await supabase.from('matchday_fixtures').insert(rows)
+  if (insertError) return { error: 'Errore durante il salvataggio delle fixture.' }
+
+  revalidatePath(`/matchdays/${matchdayId}/fixtures`)
+  revalidatePath(`/matchdays/${matchdayId}`)
+  return { success: true, count: rows.length }
 }
 
 // ---------------------------------------------------------------------------

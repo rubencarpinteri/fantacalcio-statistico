@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   typedRoutes: true,
+
+  // Bundle _data folder so CSV files are accessible in Vercel serverless functions
+  outputFileTracingIncludes: {
+    '**': ['_data/**'],
+  },
 }
 
 export default nextConfig

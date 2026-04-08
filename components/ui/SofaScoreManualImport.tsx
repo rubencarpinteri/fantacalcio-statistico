@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react'
 import { parseSofaScoreFantasyJson } from '@/lib/ratings/parse'
 
+interface FixtureItem {
+  sofascoreEventId: number
+  label: string
+}
+
 interface Props {
   matchdayId: string
-  sofascoreEventIds: number[]
+  fixtures: FixtureItem[]
 }
 
 export function ssRatingsKey(matchdayId: string) {
@@ -21,7 +26,7 @@ export function loadSsRatings(matchdayId: string): Record<string, number | null>
   }
 }
 
-export function SofaScoreManualImport({ matchdayId, sofascoreEventIds }: Props) {
+export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
   const [text, setText] = useState('')
   const [status, setStatus] = useState<{ players: number; events: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -33,10 +38,10 @@ export function SofaScoreManualImport({ matchdayId, sofascoreEventIds }: Props) 
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, number | null>
         const count = Object.keys(parsed).length
-        if (count > 0) setStatus({ players: count, events: sofascoreEventIds.length })
+        if (count > 0) setStatus({ players: count, events: fixtures.length })
       }
     } catch { /* ignore */ }
-  }, [matchdayId, sofascoreEventIds.length])
+  }, [matchdayId, fixtures.length])
 
   function handleSave() {
     setError(null)
@@ -95,7 +100,7 @@ export function SofaScoreManualImport({ matchdayId, sofascoreEventIds }: Props) 
 
       {status ? (
         <p className="text-xs text-green-400">
-          ✓ {status.players} giocatori da {status.events}/{sofascoreEventIds.length} partite salvati — usa &ldquo;Aggiorna e pubblica&rdquo;
+          ✓ {status.players} giocatori da {status.events}/{fixtures.length} partite salvati — usa &ldquo;Aggiorna e pubblica&rdquo;
         </p>
       ) : (
         <>
@@ -104,15 +109,16 @@ export function SofaScoreManualImport({ matchdayId, sofascoreEventIds }: Props) 
             Puoi incollare più partite in sequenza.
           </p>
           <div className="flex flex-wrap gap-2">
-            {sofascoreEventIds.map((id) => (
+            {fixtures.map((fx) => (
               <a
-                key={id}
-                href={`https://www.sofascore.com/api/v1/fantasy/event/${id}`}
+                key={fx.sofascoreEventId}
+                href={`https://www.sofascore.com/api/v1/fantasy/event/${fx.sofascoreEventId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded border border-[#2e2e42] px-2 py-1 text-xs text-indigo-400 hover:border-indigo-500 hover:text-indigo-300 font-mono"
+                className="rounded border border-[#2e2e42] px-2 py-1 text-xs text-indigo-400 hover:border-indigo-500 hover:text-indigo-300"
+                title={String(fx.sofascoreEventId)}
               >
-                {id}
+                {fx.label}
               </a>
             ))}
           </div>

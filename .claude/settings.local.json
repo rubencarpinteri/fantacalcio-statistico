@@ -123,7 +123,8 @@
       "Bash(ls \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/league/engine-config/\")",
       "Bash(ls -la \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/\")",
       "Bash(find \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/\" -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.jsx\" -o -name \"*.js\" \\\\\\))",
-      "mcp__claude_ai_Supabase__apply_migration"
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(grep -v \",,$\" \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/_data/SerieAcalendar2526.csv\")"
     ]
   }
 }
