@@ -1,17 +1,30 @@
 'use client'
 
 import { useTransition, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { transitionMatchdayStatusAction } from './actions'
 
 export function CloseMatchdayButton({ matchdayId }: { matchdayId: string }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   function handleClose() {
-    if (!window.confirm('Chiudere la giornata? Le formazioni saranno bloccate e la prossima giornata in bozza verrà aperta automaticamente.')) return
+    if (
+      !window.confirm(
+        'Chiudere la giornata? Le formazioni saranno bloccate e la prossima giornata in bozza verrà aperta automaticamente.'
+      )
+    )
+      return
+
+    setError(null)
     startTransition(async () => {
       const result = await transitionMatchdayStatusAction(matchdayId, 'closed', null)
-      if (result.error) setError(result.error)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        router.refresh()
+      }
     })
   }
 
