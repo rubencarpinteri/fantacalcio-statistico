@@ -841,17 +841,17 @@ export async function confirmLegheImportAction(
       version_number,
     })
 
-    // Transition matchday to published
+    // Transition matchday to closed
     const oldStatus = matchday.status
     await supabase
       .from('matchdays')
-      .update({ status: 'published' })
+      .update({ status: 'closed' })
       .eq('id', matchdayId)
 
     await supabase.from('matchday_status_log').insert({
       matchday_id: matchdayId,
       old_status:  oldStatus,
-      new_status:  'published',
+      new_status:  'closed',
       changed_by:  ctx.userId,
       note: `Formazioni da Leghe xlsx, punteggi da FotMob (run v1)`,
     })

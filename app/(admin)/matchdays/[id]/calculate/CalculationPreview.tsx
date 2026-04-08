@@ -272,7 +272,7 @@ export function CalculationPreview({
   const [editingPlayer, setEditingPlayer] = useState<{ id: string; name: string } | null>(null)
   const [savedPlayers, setSavedPlayers] = useState<Set<string>>(new Set())
 
-  const isEditable = matchdayStatus === 'scoring'
+  const isEditable = !['draft', 'archived'].includes(matchdayStatus)
 
   const handleTrigger = () => {
     setTriggerResult(null)

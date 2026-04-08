@@ -23,8 +23,8 @@ export async function toggleFreezeAction(
 
   if (!matchday) return { error: 'Giornata non trovata.' }
 
-  if (!['locked', 'scoring'].includes(matchday.status)) {
-    return { error: 'Il congelamento è disponibile solo quando la giornata è in stato "Chiusa" o "In calcolo".' }
+  if (!['open', 'closed'].includes(matchday.status)) {
+    return { error: 'Il congelamento è disponibile solo quando la giornata è aperta o chiusa.' }
   }
 
   const newFrozen = !matchday.is_frozen

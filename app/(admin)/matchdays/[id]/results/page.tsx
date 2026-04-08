@@ -29,7 +29,7 @@ export default async function MatchdayResultsPage({
 
   if (!matchday) notFound()
 
-  if (!['published', 'archived'].includes(matchday.status)) {
+  if (!['closed', 'archived', 'published'].includes(matchday.status)) {
     return (
       <div className="space-y-4">
         <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">

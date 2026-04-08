@@ -2294,6 +2294,7 @@ export type Database = {
       matchday_status:
         | "draft"
         | "open"
+        | "closed"
         | "locked"
         | "scoring"
         | "published"
@@ -2470,6 +2471,7 @@ export const Constants = {
       matchday_status: [
         "draft",
         "open",
+        "closed",
         "locked",
         "scoring",
         "published",

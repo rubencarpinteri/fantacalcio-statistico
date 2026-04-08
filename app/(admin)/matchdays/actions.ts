@@ -86,15 +86,17 @@ export async function createMatchdayAction(
 }
 
 // Valid transitions enforced at application level.
-// The DB stores the transition log; there is no status machine in the schema
-// itself (by design — admin can override with confirmation).
+// Simplified machine: draft → open ↔ closed → archived
+// Legacy statuses (locked/scoring/published) can only move to closed.
 const ALLOWED_TRANSITIONS: Record<MatchdayStatus, MatchdayStatus[]> = {
   draft:     ['open'],
-  open:      ['locked'],
-  locked:    ['scoring', 'open'],    // 'open' = reopen
-  scoring:   ['published', 'locked'],
-  published: ['archived', 'scoring', 'open'],
+  open:      ['closed'],
+  closed:    ['open', 'archived'],
   archived:  [],
+  // Legacy — kept for rows that weren't migrated
+  locked:    ['closed'],
+  scoring:   ['closed'],
+  published: ['closed', 'archived'],
 }
 
 export async function transitionMatchdayStatusAction(
@@ -151,11 +153,49 @@ export async function transitionMatchdayStatusAction(
     afterJson: { status: newStatus, note },
   })
 
-  // When the matchday is locked, write a lineup_lock audit entry for every
+  // When closing a matchday, auto-open the next draft matchday (by matchday_number).
+  if (newStatus === 'closed') {
+    const { data: currentMatchday } = await supabase
+      .from('matchdays')
+      .select('matchday_number')
+      .eq('id', matchdayId)
+      .single()
+
+    if (currentMatchday?.matchday_number != null) {
+      const { data: nextMatchday } = await supabase
+        .from('matchdays')
+        .select('id')
+        .eq('league_id', ctx.league.id)
+        .eq('status', 'draft')
+        .gt('matchday_number', currentMatchday.matchday_number)
+        .order('matchday_number', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      if (nextMatchday) {
+        await supabase
+          .from('matchdays')
+          .update({ status: 'open' })
+          .eq('id', nextMatchday.id)
+
+        await supabase.from('matchday_status_log').insert({
+          matchday_id: nextMatchday.id,
+          old_status: 'draft',
+          new_status: 'open',
+          changed_by: ctx.userId,
+          note: `Apertura automatica alla chiusura della giornata precedente`,
+        })
+
+        revalidatePath('/matchdays')
+      }
+    }
+  }
+
+  // When the matchday is closed (was: locked), write a lineup_lock audit entry for every
   // team that has an active submission pointer. This records exactly which
-  // submission version was frozen at lock time, without touching the
+  // submission version was frozen at close time, without touching the
   // append-only lineup_submissions rows.
-  if (newStatus === 'locked') {
+  if (newStatus === 'closed') {
     const { data: pointers } = await supabase
       .from('lineup_current_pointers')
       .select('team_id, submission_id, lineup_submissions(submission_number, status)')

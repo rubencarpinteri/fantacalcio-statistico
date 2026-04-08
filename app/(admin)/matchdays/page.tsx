@@ -7,7 +7,9 @@ export const metadata = { title: 'Giornate' }
 
 // Priority order for "current" matchday selection
 const STATUS_PRIORITY: Record<string, number> = {
-  open: 0, locked: 1, scoring: 2, published: 3, draft: 4, archived: 5,
+  open: 0, closed: 1, draft: 2, archived: 3,
+  // Legacy statuses
+  locked: 1, scoring: 1, published: 1,
 }
 
 export default async function MatchdaysPage() {
@@ -317,7 +319,7 @@ export default async function MatchdaysPage() {
         ) : (
           matchdays.map((m) => {
             const isCurrent = m.id === current?.id
-            const isEditable = ['open', 'locked', 'scoring'].includes(m.status)
+            const isEditable = ['open', 'closed'].includes(m.status)
             const provCount = provisionalByMatchday.get(m.id) ?? 0
             return (
               <div

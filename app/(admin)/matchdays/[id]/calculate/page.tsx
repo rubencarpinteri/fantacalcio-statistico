@@ -126,7 +126,7 @@ export default async function CalculatePage({
   let hasStaleOverrides = false
   let hasStaleStats = false
 
-  if (matchday.status === 'published' && publishedRunId) {
+  if (['closed', 'published'].includes(matchday.status) && publishedRunId) {
     const publishedRun = (runs ?? []).find((r) => r.id === publishedRunId)
     const publishedAt = publishedRun?.published_at ?? null
 
@@ -153,8 +153,7 @@ export default async function CalculatePage({
   // Trigger is allowed in any status except draft (no data yet) and archived (terminal).
   const canTrigger = !['draft', 'archived'].includes(matchday.status)
   // Publishing writes scores to DB — allowed whenever trigger is allowed and there is a draft run.
-  // When matchday is 'open', scores are written but the matchday status is NOT transitioned
-  // (it stays 'open'). Transition to 'published' only happens from 'scoring'.
+  // Does NOT change matchday status — that is managed separately via the status toggle.
   const canPublish = previewRunId !== null && previewRunStatus !== 'published' && !['draft', 'archived'].includes(matchday.status)
 
   return (
@@ -170,7 +169,7 @@ export default async function CalculatePage({
           </a>
           <div className="mt-1 flex items-center gap-3">
             <h1 className="text-xl font-bold text-white">Calcolo punteggi</h1>
-            <Badge variant={matchday.status === 'published' ? 'success' : 'muted'}>
+            <Badge variant={['closed', 'published'].includes(matchday.status) ? 'success' : 'muted'}>
               {matchday.status}
             </Badge>
           </div>

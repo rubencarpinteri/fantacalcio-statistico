@@ -59,8 +59,8 @@ export async function createOverrideAction(
     return { error: 'Non è possibile aggiungere override su una giornata archiviata.', success: false, stale_warning: null }
   }
 
-  const stale_warning = matchday.status === 'published'
-    ? 'La giornata è già pubblicata. I punteggi e le classifiche di competizione sono ora non aggiornati — vai a "Calcolo punteggi" e pubblica un nuovo run per aggiornare.'
+  const stale_warning = matchday.status === 'closed'
+    ? 'La giornata è chiusa. I punteggi e le classifiche di competizione sono ora non aggiornati — vai a "Calcolo punteggi" e pubblica un nuovo run per aggiornare.'
     : null
 
   // Verify player belongs to this league
@@ -191,8 +191,8 @@ export async function removeOverrideAction(
     return { error: 'Non è possibile modificare override su una giornata archiviata.', success: false, stale_warning: null }
   }
 
-  const stale_warning = matchday.status === 'published'
-    ? 'La giornata è già pubblicata. I punteggi e le classifiche di competizione sono ora non aggiornati — vai a "Calcolo punteggi" e pubblica un nuovo run per aggiornare.'
+  const stale_warning = matchday.status === 'closed'
+    ? 'La giornata è chiusa. I punteggi e le classifiche di competizione sono ora non aggiornati — vai a "Calcolo punteggi" e pubblica un nuovo run per aggiornare.'
     : null
 
   const { error: updateError } = await supabase

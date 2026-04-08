@@ -26,58 +26,60 @@ const STATUS_ACTIONS: Partial<Record<MatchdayStatus, StatusAction[]>> = {
   ],
   open: [
     {
-      label: 'Blocca formazioni',
-      newStatus: 'locked',
-      variant: 'secondary',
-      requireNote: false,
-      confirmMessage: 'Bloccare le formazioni? I manager non potranno più modificarle.',
-    },
-  ],
-  locked: [
-    {
-      label: 'Inizia calcolo voti',
-      newStatus: 'scoring',
+      label: 'Chiudi giornata',
+      newStatus: 'closed',
       variant: 'primary',
       requireNote: false,
-      confirmMessage: 'Passare alla fase di calcolo? Potrai inserire i voti.',
+      confirmMessage: 'Chiudere la giornata? Le formazioni saranno bloccate e la prossima giornata in bozza verrà aperta automaticamente.',
     },
+  ],
+  closed: [
     {
-      label: 'Riapri formazioni',
+      label: 'Riapri giornata',
       newStatus: 'open',
       variant: 'danger',
       requireNote: true,
-      confirmMessage:
-        '⚠ RIAPRI: I manager potranno modificare le formazioni. Questa azione verrà registrata nel log di audit. Continua?',
-    },
-  ],
-  scoring: [
-    {
-      label: 'Torna a blocco',
-      newStatus: 'locked',
-      variant: 'secondary',
-      requireNote: true,
-      confirmMessage: 'Tornare allo stato bloccato? Il calcolo corrente verrà sospeso.',
-    },
-  ],
-  published: [
-    {
-      label: 'Torna a calcolo',
-      newStatus: 'scoring',
-      variant: 'secondary',
-      requireNote: true,
-      confirmMessage: 'Tornare alla fase di calcolo? I punteggi pubblicati saranno nascosti fino alla nuova pubblicazione.',
-    },
-    {
-      label: 'Riapri formazioni',
-      newStatus: 'open',
-      variant: 'danger',
-      requireNote: true,
-      confirmMessage: '⚠ RIAPRI: I manager potranno modificare le formazioni e i punteggi saranno nascosti. Continua?',
+      confirmMessage: '⚠ RIAPRI: I manager potranno modificare le formazioni. Questa azione verrà registrata nel log di audit. Continua?',
     },
     {
       label: 'Archivia',
       newStatus: 'archived',
-      variant: 'ghost' as never,
+      variant: 'secondary',
+      requireNote: false,
+      confirmMessage: 'Archiviare la giornata? Questa azione non è reversibile.',
+    },
+  ],
+  // Legacy statuses — allow transitioning to closed
+  locked: [
+    {
+      label: 'Passa a Chiusa',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aggiornare allo stato "Chiusa"?',
+    },
+  ],
+  scoring: [
+    {
+      label: 'Passa a Chiusa',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aggiornare allo stato "Chiusa"?',
+    },
+  ],
+  published: [
+    {
+      label: 'Passa a Chiusa',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aggiornare allo stato "Chiusa"?',
+    },
+    {
+      label: 'Archivia',
+      newStatus: 'archived',
+      variant: 'secondary',
       requireNote: false,
       confirmMessage: 'Archiviare la giornata?',
     },
@@ -122,7 +124,7 @@ export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
   return (
     <>
       <Card>
-        <CardHeader title="Controlli stato" description={`Stato corrente: ${matchday.status}`} />
+        <CardHeader title="Stato giornata" description={`Stato corrente: ${matchday.status}`} />
         <CardContent className="space-y-3">
           {actions.length === 0 ? (
             <p className="text-sm text-[#55556a]">Nessuna transizione disponibile.</p>
@@ -142,19 +144,6 @@ export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
 
           {error && (
             <p className="text-xs text-red-400">{error}</p>
-          )}
-
-          {matchday.status === 'scoring' && (
-            <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-3 py-2.5 text-xs text-indigo-300">
-              <span className="font-semibold">Per pubblicare i risultati</span> devi eseguire il calcolo
-              punteggi e pubblicarlo dalla pagina dedicata.{' '}
-              <a
-                href={`/matchdays/${matchday.id}/calculate`}
-                className="font-semibold underline hover:text-indigo-200"
-              >
-                Vai al calcolo →
-              </a>
-            </div>
           )}
 
           <a

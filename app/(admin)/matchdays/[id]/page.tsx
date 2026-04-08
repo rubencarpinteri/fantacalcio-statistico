@@ -65,7 +65,7 @@ export default async function MatchdayDetailPage({
   type LinkedRound = { id: string; name: string; round_number: number; status: string; competition_id: string; competition_name: string }
   let linkedRounds: LinkedRound[] = []
 
-  if (isAdmin && ['published', 'archived'].includes(matchday.status)) {
+  if (isAdmin && ['closed', 'archived'].includes(matchday.status)) {
     const { data: scores } = await supabase
       .from('published_team_scores')
       .select('team_id, total_fantavoto, player_count, nv_count, published_at')
@@ -139,7 +139,7 @@ export default async function MatchdayDetailPage({
     v1RunNumber = v1Res.data?.run_number ?? null
 
     // Check if published_team_scores points to a v1 run
-    if (matchday.status === 'published' || matchday.status === 'archived') {
+    if (matchday.status === 'closed' || matchday.status === 'archived') {
       const { data: pts } = await supabase
         .from('published_team_scores')
         .select('run_id')
@@ -221,7 +221,7 @@ export default async function MatchdayDetailPage({
           const step1Done = fixtures.length >= 10
           const step2Done = playerStatsCount > 0
           const step3Done = v1RunId !== null
-          const step4Done = (matchday.status === 'published' || matchday.status === 'archived') && publishedRunEngine === 'v1'
+          const step4Done = (matchday.status === 'closed' || matchday.status === 'archived') && publishedRunEngine === 'v1'
           const ssEventIds = fixtures.map((f) => f.sofascore_event_id).filter((id): id is number => id != null)
 
           const StepIcon = ({ done, active }: { done: boolean; active: boolean }) => (
@@ -274,7 +274,7 @@ export default async function MatchdayDetailPage({
                         {playerStatsCount} giocatori · Run #{v1RunNumber}
                         {' · '}
                         <a href={`/matchdays/${id}/stats`} className="hover:text-indigo-400">statistiche</a>
-                        {['scoring', 'published'].includes(matchday.status) && (
+                        {['open', 'closed'].includes(matchday.status) && (
                           <> · <a href={`/matchdays/${id}/overrides`} className="hover:text-orange-400">override</a></>
                         )}
                       </p>
@@ -298,7 +298,7 @@ export default async function MatchdayDetailPage({
                       <a
                         href={`/matchdays/${id}/import-lineups`}
                         className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                          ['open', 'locked', 'scoring', 'published'].includes(matchday.status)
+                          ['open', 'closed'].includes(matchday.status)
                             ? 'bg-indigo-500 text-white hover:bg-indigo-400'
                             : 'pointer-events-none bg-[#1a1a24] text-[#3a3a4a]'
                         }`}
@@ -327,7 +327,7 @@ export default async function MatchdayDetailPage({
               {/* Admin controls strip */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 pt-1 text-xs text-[#55556a]">
                 <MatchdayStatusControls matchday={matchday} />
-                {['locked', 'scoring'].includes(matchday.status) && (
+                {['open', 'closed'].includes(matchday.status) && (
                   <FreezeButton matchdayId={matchday.id} isFrozen={matchday.is_frozen} />
                 )}
                 {matchday.opens_at && <span>Apertura: {fmt(matchday.opens_at)}</span>}
@@ -368,7 +368,7 @@ export default async function MatchdayDetailPage({
                 ) : (
                   <p className="text-sm text-[#55556a]">La giornata non è aperta per le formazioni.</p>
                 )}
-                {['published', 'archived'].includes(matchday.status) && (
+                {['closed', 'archived'].includes(matchday.status) && (
                   <div className="flex flex-col gap-1">
                     <a href={`/matchdays/${id}/my-results`} className="text-sm text-indigo-400 hover:underline">I tuoi risultati →</a>
                     <a href={`/matchdays/${id}/results`} className="text-sm text-[#8888aa] hover:text-indigo-400">Tutti i risultati →</a>

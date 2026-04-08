@@ -42,18 +42,22 @@ export function MatchdayStatusBadge({ status }: { status: string }) {
   const map: Record<string, BadgeVariant> = {
     draft: 'muted',
     open: 'info',
+    closed: 'success',
+    archived: 'muted',
+    // Legacy statuses
     locked: 'warning',
     scoring: 'accent',
     published: 'success',
-    archived: 'muted',
   }
   const labels: Record<string, string> = {
     draft: 'Bozza',
     open: 'Aperta',
-    locked: 'Chiusa',
-    scoring: 'In calcolo',
-    published: 'Pubblicata',
+    closed: 'Chiusa',
     archived: 'Archiviata',
+    // Legacy statuses
+    locked: 'Chiusa (legacy)',
+    scoring: 'In calcolo (legacy)',
+    published: 'Pubblicata (legacy)',
   }
   return (
     <Badge variant={map[status] ?? 'muted'}>

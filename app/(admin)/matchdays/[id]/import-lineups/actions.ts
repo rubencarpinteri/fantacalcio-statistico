@@ -144,10 +144,10 @@ export async function parseAndMatchAction(
     .single()
 
   if (!matchday) return { ok: false, error: 'Giornata non trovata.', teams: [], availableTeams: [] }
-  if (!['open', 'locked'].includes(matchday.status)) {
+  if (!['open', 'closed'].includes(matchday.status)) {
     return {
       ok: false,
-      error: `Le formazioni possono essere importate solo quando la giornata è "aperta" o "chiusa". Stato attuale: "${matchday.status}".`,
+      error: `Le formazioni possono essere importate solo quando la giornata è "aperta" o "chiusa". Stato: "${matchday.status}".`,
       teams: [],
       availableTeams: [],
     }
@@ -432,7 +432,7 @@ export async function confirmLineupImportAction(
   if (!matchday) {
     return { ok: false, error: 'Giornata non trovata.', imported: 0, skipped: 0, details: [] }
   }
-  if (!['open', 'locked'].includes(matchday.status)) {
+  if (!['open', 'closed'].includes(matchday.status)) {
     return {
       ok: false,
       error: `Importazione non consentita in stato "${matchday.status}".`,
