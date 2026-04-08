@@ -3,39 +3,45 @@ import { requireLeagueContext } from '@/lib/league'
 
 export const metadata = { title: 'Dashboard' }
 
-const STATUS_PRIORITY: Record<string, number> = {
-  open: 0, draft: 1, closed: 2, archived: 3,
-}
-
 export default async function DashboardPage() {
   const ctx = await requireLeagueContext()
   const supabase = await createClient()
   const isAdmin = ctx.role === 'league_admin'
 
-  // ── All matchdays ────────────────────────────────────────────────────────
+  // ── All matchdays (ascending by number for chronological logic) ──────────
   const { data: allMatchdays } = await supabase
     .from('matchdays')
-    .select('id, name, matchday_number, status, round_number, locks_at')
+    .select('id, name, matchday_number, status, round_number, locks_at, is_frozen')
     .eq('league_id', ctx.league.id)
-    .order('matchday_number', { ascending: false, nullsFirst: false })
+    .order('matchday_number', { ascending: true, nullsFirst: false })
 
   const matchdays = allMatchdays ?? []
+  const matchdayIds = matchdays.map((m) => m.id)
 
-  // Previous = last matchday with closed/archived status (highest matchday_number)
-  const prevMatchday = matchdays.find((m) =>
-    ['closed', 'archived'].includes(m.status)
+  // ── Which matchdays have published scores? ───────────────────────────────
+  // This is the single source of truth: a matchday "has results" iff it has
+  // at least one row in published_team_scores.
+  const scoredIds = new Set<string>()
+  if (matchdayIds.length > 0) {
+    const { data: scoredRows } = await supabase
+      .from('published_team_scores')
+      .select('matchday_id')
+      .in('matchday_id', matchdayIds)
+    for (const r of scoredRows ?? []) scoredIds.add(r.matchday_id)
+  }
+
+  // Ultima giornata = highest matchday_number that has real published scores
+  const prevMatchday = [...matchdays].reverse().find((m) => scoredIds.has(m.id)) ?? null
+
+  // Prossima giornata = first matchday (ascending) after prevMatchday that
+  // has no scores yet and is not frozen (frozen = treated as already played)
+  const prevNum = prevMatchday?.matchday_number ?? -Infinity
+  const nextMatchday = matchdays.find(
+    (m) =>
+      (m.matchday_number ?? 0) > prevNum &&
+      !scoredIds.has(m.id) &&
+      !m.is_frozen
   ) ?? null
-
-  // Next = most relevant open/draft matchday (lowest matchday_number wins)
-  const nextMatchday =
-    [...matchdays]
-      .reverse()
-      .sort((a, b) => {
-        const pa = STATUS_PRIORITY[a.status] ?? 9
-        const pb = STATUS_PRIORITY[b.status] ?? 9
-        return pa - pb
-      })
-      .find((m) => ['open', 'draft'].includes(m.status)) ?? null
 
   // ── Teams & competitions ─────────────────────────────────────────────────
   const [teamsResult, compsResult] = await Promise.all([
