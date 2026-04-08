@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
-import { normalizeName, mergeFixtureStats, findDbPlayer } from '@/lib/ratings/parse'
+import { normalizeName, mergeFixtureStats, findDbPlayer, type SofaScoreFantasyStat } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 
 // ---------------------------------------------------------------------------
@@ -32,6 +32,18 @@ export type FetchedPlayerStat = {
   saves: number
   /** True when the player's team conceded 0 goals. Derived from FotMob GK data. */
   clean_sheet: boolean
+  // SofaScore extra stats (null when SS data not available)
+  ss_shots: number | null
+  ss_shots_on_target: number | null
+  ss_big_chance_created: number | null
+  ss_big_chance_missed: number | null
+  ss_key_passes: number | null
+  ss_successful_dribbles: number | null
+  ss_dribble_attempts: number | null
+  ss_tackles: number | null
+  ss_interceptions: number | null
+  ss_clearances: number | null
+  ss_blocked_shots: number | null
 }
 
 export type MatchedPlayer = {
@@ -61,11 +73,11 @@ export type FetchRatingsResponse = {
 type RequestBody = {
   matchdayId?: string
   /**
-   * Flat map of SofaScore player ID → rating, collected from all fixtures.
+   * Flat map of SofaScore player ID → full stat object, collected from all fixtures.
    * SofaScore blocks all automated fetches (403). This data must be pasted
    * manually by the admin from their browser session and passed from the client.
    */
-  sofascoreByPlayerId?: Record<string, number | null>
+  sofascoreByPlayerId?: Record<string, SofaScoreFantasyStat>
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsResponse>> {
@@ -95,13 +107,13 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const errors: string[] = []
   const allFetched: FetchedPlayerStat[] = []
 
-  // Build sofascore_player_id → rating map from manually-pasted client data.
+  // Build sofascore_player_id → full stat map from manually-pasted client data.
   // SofaScore blocks all automated fetches (cloud IPs + CORS). The admin must
   // paste each event's JSON manually; the client parses and sends this flat map.
-  const allSofascoreRatings = new Map<number, number | null>()
+  const allSofascoreStats = new Map<number, SofaScoreFantasyStat>()
   if (sofascoreByPlayerId) {
-    for (const [idStr, rating] of Object.entries(sofascoreByPlayerId)) {
-      allSofascoreRatings.set(Number(idStr), rating)
+    for (const [idStr, stat] of Object.entries(sofascoreByPlayerId)) {
+      allSofascoreStats.set(Number(idStr), stat)
     }
   }
 
@@ -179,15 +191,28 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     }
   }
 
-  // ── Enrich matched players with SofaScore ratings (ID-based, no name matching) ──
+  // ── Enrich matched players with SofaScore data (ID-based, no name matching) ──
   // For each matched player: league_player_id → serie_a_players.sofascore_id
-  //   → allSofascoreRatings map (populated from browser-fetched fantasy data).
-  if (allSofascoreRatings.size > 0) {
+  //   → allSofascoreStats map (populated from browser-fetched fantasy data).
+  if (allSofascoreStats.size > 0) {
     for (const m of matched) {
       const sofascorePlayerId = lpToSofascoreId.get(m.league_player_id)
-      if (sofascorePlayerId != null && allSofascoreRatings.has(sofascorePlayerId)) {
-        m.stat.sofascore_rating = allSofascoreRatings.get(sofascorePlayerId) ?? null
+      if (sofascorePlayerId != null && allSofascoreStats.has(sofascorePlayerId)) {
+        const ss = allSofascoreStats.get(sofascorePlayerId)!
+        m.stat.sofascore_rating = ss.rating
         m.stat.sofascore_id = sofascorePlayerId
+        // Extra SS stats — stored in dedicated columns; FotMob event stats remain authoritative
+        m.stat.ss_shots              = ss.shots
+        m.stat.ss_shots_on_target    = ss.shots_on_target
+        m.stat.ss_big_chance_created = ss.big_chance_created
+        m.stat.ss_big_chance_missed  = ss.big_chance_missed
+        m.stat.ss_key_passes         = ss.key_passes
+        m.stat.ss_successful_dribbles = ss.successful_dribbles
+        m.stat.ss_dribble_attempts   = ss.dribble_attempts
+        m.stat.ss_tackles            = ss.tackles
+        m.stat.ss_interceptions      = ss.interceptions
+        m.stat.ss_clearances         = ss.clearances
+        m.stat.ss_blocked_shots      = ss.blocked_shots
       }
     }
   }

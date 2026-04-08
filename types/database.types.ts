@@ -1645,11 +1645,14 @@ export type Database = {
         Row: {
           aerial_duels_won: number
           assists: number
+          big_chance_created: number
+          big_chance_missed: number
           blocks: number
           clean_sheet: boolean
           clearances: number
           completed_passes: number | null
           created_at: string
+          dribble_attempts: number
           dribble_success_rate: number | null
           dribbled_past: number
           entered_by: string
@@ -1678,6 +1681,8 @@ export type Database = {
             | null
           red_cards: number
           saves: number
+          shots: number
+          shots_on_target: number
           sofascore_rating: number | null
           successful_dribbles: number | null
           tackles_won: number
@@ -1687,11 +1692,14 @@ export type Database = {
         Insert: {
           aerial_duels_won?: number
           assists?: number
+          big_chance_created?: number
+          big_chance_missed?: number
           blocks?: number
           clean_sheet?: boolean
           clearances?: number
           completed_passes?: number | null
           created_at?: string
+          dribble_attempts?: number
           dribble_success_rate?: number | null
           dribbled_past?: number
           entered_by: string
@@ -1720,6 +1728,8 @@ export type Database = {
             | null
           red_cards?: number
           saves?: number
+          shots?: number
+          shots_on_target?: number
           sofascore_rating?: number | null
           successful_dribbles?: number | null
           tackles_won?: number
@@ -1729,11 +1739,14 @@ export type Database = {
         Update: {
           aerial_duels_won?: number
           assists?: number
+          big_chance_created?: number
+          big_chance_missed?: number
           blocks?: number
           clean_sheet?: boolean
           clearances?: number
           completed_passes?: number | null
           created_at?: string
+          dribble_attempts?: number
           dribble_success_rate?: number | null
           dribbled_past?: number
           entered_by?: string
@@ -1762,6 +1775,8 @@ export type Database = {
             | null
           red_cards?: number
           saves?: number
+          shots?: number
+          shots_on_target?: number
           sofascore_rating?: number | null
           successful_dribbles?: number | null
           tackles_won?: number

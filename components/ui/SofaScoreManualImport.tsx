@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { parseSofaScoreFantasyJson } from '@/lib/ratings/parse'
+import { parseSofaScoreFantasyJson, type SofaScoreFantasyStat } from '@/lib/ratings/parse'
 
 interface FixtureItem {
   sofascoreEventId: number
@@ -17,10 +17,10 @@ export function ssRatingsKey(matchdayId: string) {
   return `ss_ratings_${matchdayId}`
 }
 
-export function loadSsRatings(matchdayId: string): Record<string, number | null> | null {
+export function loadSsStats(matchdayId: string): Record<string, SofaScoreFantasyStat> | null {
   try {
     const raw = localStorage.getItem(ssRatingsKey(matchdayId))
-    return raw ? (JSON.parse(raw) as Record<string, number | null>) : null
+    return raw ? (JSON.parse(raw) as Record<string, SofaScoreFantasyStat>) : null
   } catch {
     return null
   }
@@ -36,7 +36,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
     try {
       const raw = localStorage.getItem(ssRatingsKey(matchdayId))
       if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, number | null>
+        const parsed = JSON.parse(raw) as Record<string, SofaScoreFantasyStat>
         const count = Object.keys(parsed).length
         if (count > 0) setStatus({ players: count, events: fixtures.length })
       }
@@ -55,7 +55,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
       return
     }
 
-    const ratings: Record<string, number | null> = {}
+    const ratings: Record<string, SofaScoreFantasyStat> = {}
     let eventsOk = 0
 
     for (const chunk of chunks) {
@@ -64,7 +64,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
         const stats = parseSofaScoreFantasyJson(json)
         if (stats.length > 0) {
           for (const s of stats) {
-            ratings[String(s.sofascore_id)] = s.rating
+            ratings[String(s.sofascore_id)] = s
           }
           eventsOk++
         }

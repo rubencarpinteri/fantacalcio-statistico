@@ -27,6 +27,27 @@ export interface SlotData {
   // Raw ratings as fetched from the source (before any z-score / engine transformation)
   rawFotmobRating: number | null
   rawSofascoreRating: number | null
+  // Match stats from player_match_stats
+  minutesPlayed: number | null
+  goalsScored: number | null
+  assists: number | null
+  yellowCards: number | null
+  redCards: number | null
+  saves: number | null
+  goalsConceded: number | null
+  cleanSheet: boolean | null
+  // SofaScore extra stats
+  shots: number | null
+  shotsOnTarget: number | null
+  bigChanceCreated: number | null
+  bigChanceMissed: number | null
+  keyPasses: number | null
+  successfulDribbles: number | null
+  dribbleAttempts: number | null
+  tackles: number | null
+  interceptions: number | null
+  clearances: number | null
+  blockedShots: number | null
   assignedMantraRole: string | null
   isBenchAssignment: boolean
   benchOrderAssignment: number | null
@@ -102,6 +123,28 @@ function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | nu
   return { value: Math.max(_CLAMP_MIN, Math.min(_CLAMP_MAX, b1)), raw: b1, clamped }
 }
 
+// ---- Stat category helpers -------------------------------------------------
+
+type StatEntry = { label: string; value: number | null }
+
+function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
+  const visible = stats.filter((s) => s.value !== null && s.value > 0)
+  if (visible.length === 0) return null
+  return (
+    <div>
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#55556a]">{title}</p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+        {visible.map((s) => (
+          <div key={s.label} className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-[#8888aa]">{s.label}</span>
+            <span className="font-mono text-[11px] font-semibold text-white">{s.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---- Player detail modal ---------------------------------------------------
 
 function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => void }) {
@@ -113,13 +156,14 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
   const hasFm = slot.rawFotmobRating !== null
   const hasSs = slot.rawSofascoreRating !== null
   const hasAnyRaw = hasFm || hasSs
+  const hasStats = slot.minutesPlayed !== null
 
   // Δ on converted bases — use raw (unclamped) values for the true delta
   const deltaRaw = hasFm && hasSs
     ? slot.rawFotmobRating! - slot.rawSofascoreRating!
     : null
   const deltaConverted = vbFm !== null && vbSs !== null
-    ? vbFm.raw - vbSs.raw   // unclamped delta so clamping doesn't hide divergence
+    ? vbFm.raw - vbSs.raw
     : null
 
   return (
@@ -128,11 +172,11 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-xl border border-[#2e2e42] bg-[#111118] shadow-2xl overflow-hidden"
+        className="w-full max-w-sm rounded-xl border border-[#2e2e42] bg-[#111118] shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-[#1e1e2e]">
+        <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-[#1e1e2e] shrink-0">
           <div>
             <p className="text-sm font-semibold text-white">{slot.playerName ?? '—'}</p>
             <p className="text-xs text-[#55556a]">
@@ -142,16 +186,23 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               )}
             </p>
           </div>
-          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none mt-0.5">×</button>
+          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none mt-0.5 shrink-0">×</button>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* Fantavoto finale */}
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-black font-mono text-white">{fmtFv(fv)}</span>
-            {slot.votoBase !== null && (
-              <span className="text-sm text-[#55556a]">
-                voto base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
+        <div className="p-4 space-y-4 overflow-y-auto">
+          {/* Fantavoto + minutes */}
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-black font-mono text-white">{fmtFv(fv)}</span>
+              {slot.votoBase !== null && (
+                <span className="text-sm text-[#55556a]">
+                  voto base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
+                </span>
+              )}
+            </div>
+            {slot.minutesPlayed !== null && (
+              <span className="shrink-0 rounded-full border border-[#2e2e42] px-2 py-0.5 text-[11px] font-mono text-[#8888aa]">
+                {slot.minutesPlayed}&apos;
               </span>
             )}
           </div>
@@ -163,7 +214,6 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 Voto originale → base convertito
               </p>
 
-              {/* Column headers */}
               <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-1.5 border-b border-[#1a1a24]">
                 <span className="text-[10px] text-[#3a3a52]">Fonte</span>
                 <span className="text-[10px] text-[#3a3a52] text-right">Voto orig.</span>
@@ -181,9 +231,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                       {vbFm !== null ? (
                         <span className={vbFm.clamped ? 'text-amber-400' : 'text-[#8888aa]'}>
                           {vbFm.value.toFixed(2)}
-                          {vbFm.clamped && (
-                            <span className="ml-1 text-[9px]" title={`Unclamped: ${vbFm.raw.toFixed(2)}`}>↑cap</span>
-                          )}
+                          {vbFm.clamped && <span className="ml-1 text-[9px]" title={`Unclamped: ${vbFm.raw.toFixed(2)}`}>↑cap</span>}
                         </span>
                       ) : '—'}
                     </span>
@@ -199,9 +247,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                       {vbSs !== null ? (
                         <span className={vbSs.clamped ? 'text-amber-400' : 'text-indigo-300/70'}>
                           {vbSs.value.toFixed(2)}
-                          {vbSs.clamped && (
-                            <span className="ml-1 text-[9px]" title={`Unclamped: ${vbSs.raw.toFixed(2)}`}>↑cap</span>
-                          )}
+                          {vbSs.clamped && <span className="ml-1 text-[9px]" title={`Unclamped: ${vbSs.raw.toFixed(2)}`}>↑cap</span>}
                         </span>
                       ) : '—'}
                     </span>
@@ -210,21 +256,16 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 {deltaRaw !== null && deltaConverted !== null && (
                   <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-1.5 items-center bg-[#0f0f18]">
                     <span className="text-[10px] text-[#55556a]">Δ FM − SS</span>
-                    <span className={`font-mono text-[10px] text-right ${
-                      Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'
-                    }`}>
+                    <span className={`font-mono text-[10px] text-right ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'}`}>
                       {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)}
                     </span>
-                    <span className={`font-mono text-[10px] text-right ${
-                      Math.abs(deltaConverted) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'
-                    }`}>
+                    <span className={`font-mono text-[10px] text-right ${Math.abs(deltaConverted) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'}`}>
                       {deltaConverted >= 0 ? '+' : ''}{deltaConverted.toFixed(2)}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Clamp explanation when triggered */}
               {((vbFm?.clamped ?? false) || (vbSs?.clamped ?? false)) && (
                 <div className="px-3 py-2 border-t border-[#1a1a24] bg-amber-500/5">
                   <p className="text-[10px] text-amber-400/80">
@@ -256,7 +297,48 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
             </div>
           )}
 
-          {fv === null && !hasAnyRaw && (
+          {/* SofaScore stat categories */}
+          {hasStats && (
+            <div className="space-y-3 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400/60">
+                Statistiche SofaScore
+              </p>
+
+              <StatCategory title="Tiro" stats={[
+                { label: 'Tiri totali',    value: slot.shots },
+                { label: 'In porta',       value: slot.shotsOnTarget },
+                { label: 'Gr. occasioni perse', value: slot.bigChanceMissed },
+              ]} />
+
+              <StatCategory title="Passaggio" stats={[
+                { label: 'Passaggi chiave',      value: slot.keyPasses },
+                { label: 'Gr. occasioni create', value: slot.bigChanceCreated },
+              ]} />
+
+              <StatCategory title="Dribbling" stats={[
+                { label: 'Dribbling riusciti', value: slot.successfulDribbles },
+                { label: 'Dribbling tentati', value: slot.dribbleAttempts },
+              ]} />
+
+              <StatCategory title="Difesa" stats={[
+                { label: 'Tackle',       value: slot.tackles },
+                { label: 'Intercetti',   value: slot.interceptions },
+                { label: 'Respinte',     value: slot.clearances },
+                { label: 'Tiri bloccati', value: slot.blockedShots },
+                { label: 'Parate',       value: slot.saves },
+                { label: 'Gol subiti',   value: slot.goalsConceded },
+              ]} />
+
+              {/* All-zero fallback */}
+              {[slot.shots, slot.keyPasses, slot.successfulDribbles, slot.tackles,
+                slot.interceptions, slot.clearances, slot.saves, slot.goalsConceded,
+              ].every((v) => !v) && (
+                <p className="text-[11px] text-[#55556a] italic">Nessuna statistica SofaScore disponibile</p>
+              )}
+            </div>
+          )}
+
+          {fv === null && !hasAnyRaw && !hasStats && (
             <p className="text-xs text-[#55556a] italic">Nessun voto disponibile (NV)</p>
           )}
         </div>
@@ -549,6 +631,7 @@ function TeamCard({
                     isEditable={isEditable}
                     onDragStart={() => handleDragStart(slot.slotId)}
                     onDrop={() => handleDrop(slot.slotId)}
+                    onPlayerClick={onPlayerClick}
                   />
                 ))}
               </div>

@@ -5,7 +5,7 @@ import { importRatingsAction } from '@/app/(admin)/matchdays/[id]/fixtures/actio
 import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
 import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
 import type { ImportMatch } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
-import { loadSsRatings } from '@/components/ui/SofaScoreManualImport'
+import { loadSsStats } from '@/components/ui/SofaScoreManualImport'
 
 type Phase =
   | 'idle'
@@ -33,8 +33,8 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     setSsStatus(null)
     setSummary(null)
 
-    // Read manually-pasted SofaScore ratings from localStorage
-    const sofascoreByPlayerId = loadSsRatings(matchdayId)
+    // Read manually-pasted SofaScore stats from localStorage
+    const sofascoreByPlayerId = loadSsStats(matchdayId)
     const ssCount = sofascoreByPlayerId ? Object.keys(sofascoreByPlayerId).length : 0
     setSsStatus(ssCount > 0
       ? `SofaScore: ${ssCount} giocatori`
@@ -83,6 +83,17 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       goals_conceded: m.stat.goals_conceded,
       saves: m.stat.saves,
       clean_sheet: m.stat.clean_sheet,
+      ss_shots:               m.stat.ss_shots,
+      ss_shots_on_target:     m.stat.ss_shots_on_target,
+      ss_big_chance_created:  m.stat.ss_big_chance_created,
+      ss_big_chance_missed:   m.stat.ss_big_chance_missed,
+      ss_key_passes:          m.stat.ss_key_passes,
+      ss_successful_dribbles: m.stat.ss_successful_dribbles,
+      ss_dribble_attempts:    m.stat.ss_dribble_attempts,
+      ss_tackles:             m.stat.ss_tackles,
+      ss_interceptions:       m.stat.ss_interceptions,
+      ss_clearances:          m.stat.ss_clearances,
+      ss_blocked_shots:       m.stat.ss_blocked_shots,
     }))
 
     const importResult = await importRatingsAction(matchdayId, toImport)

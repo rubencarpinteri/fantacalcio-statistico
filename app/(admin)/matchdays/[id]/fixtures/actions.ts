@@ -240,6 +240,18 @@ export type ImportMatch = {
   goals_conceded: number
   saves: number
   clean_sheet: boolean
+  // SofaScore extra stats (null when SS data not available)
+  ss_shots: number | null
+  ss_shots_on_target: number | null
+  ss_big_chance_created: number | null
+  ss_big_chance_missed: number | null
+  ss_key_passes: number | null
+  ss_successful_dribbles: number | null
+  ss_dribble_attempts: number | null
+  ss_tackles: number | null
+  ss_interceptions: number | null
+  ss_clearances: number | null
+  ss_blocked_shots: number | null
 }
 
 export type ImportRatingsState = { error?: string; imported?: number }
@@ -284,6 +296,18 @@ export async function importRatingsAction(
     goals_conceded: m.goals_conceded,
     saves: m.saves,
     clean_sheet: m.clean_sheet,
+    // SofaScore extra stats — map to existing nullable columns where applicable
+    shots:               m.ss_shots              ?? 0,
+    shots_on_target:     m.ss_shots_on_target     ?? 0,
+    big_chance_created:  m.ss_big_chance_created  ?? 0,
+    big_chance_missed:   m.ss_big_chance_missed   ?? 0,
+    key_passes:          m.ss_key_passes,            // nullable column
+    successful_dribbles: m.ss_successful_dribbles,   // nullable column
+    dribble_attempts:    m.ss_dribble_attempts    ?? 0,
+    tackles_won:         m.ss_tackles             ?? 0,
+    interceptions:       m.ss_interceptions       ?? 0,
+    clearances:          m.ss_clearances          ?? 0,
+    blocks:              m.ss_blocked_shots        ?? 0,
   }))
 
   // Zero out stale rows — players who were imported in a previous fetch but are
@@ -304,6 +328,9 @@ export async function importRatingsAction(
         goals_scored: 0, assists: 0, own_goals: 0, yellow_cards: 0,
         red_cards: 0, penalties_scored: 0, penalties_missed: 0,
         penalties_saved: 0, goals_conceded: 0, saves: 0, clean_sheet: false,
+        shots: 0, shots_on_target: 0, big_chance_created: 0, big_chance_missed: 0,
+        key_passes: null, successful_dribbles: null, dribble_attempts: 0,
+        tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
       })
       .eq('matchday_id', matchdayId)
       .in('player_id', staleIds)

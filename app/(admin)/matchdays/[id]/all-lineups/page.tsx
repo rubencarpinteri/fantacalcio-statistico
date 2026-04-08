@@ -167,18 +167,59 @@ export default async function AllLineupsPage({
     }
   }
 
-  // ── Raw source ratings from player_match_stats ────────────────────────────
-  // These are the original FotMob / SofaScore ratings before any transformation.
-  const statsMap = new Map<string, { fotmobRating: number | null; sofascoreRating: number | null }>()
+  // ── Raw source ratings + stats from player_match_stats ───────────────────
+  type StatsRow = {
+    fotmobRating: number | null
+    sofascoreRating: number | null
+    minutesPlayed: number
+    goalsScored: number
+    assists: number
+    yellowCards: number
+    redCards: number
+    saves: number
+    goalsConceded: number
+    cleanSheet: boolean
+    shots: number
+    shotsOnTarget: number
+    bigChanceCreated: number
+    bigChanceMissed: number
+    keyPasses: number | null
+    successfulDribbles: number | null
+    dribbleAttempts: number
+    tackles: number
+    interceptions: number
+    clearances: number
+    blockedShots: number
+  }
+  const statsMap = new Map<string, StatsRow>()
   {
     const { data: statsRows } = await supabase
       .from('player_match_stats')
-      .select('player_id, fotmob_rating, sofascore_rating')
+      .select('player_id, fotmob_rating, sofascore_rating, minutes_played, goals_scored, assists, yellow_cards, red_cards, saves, goals_conceded, clean_sheet, shots, shots_on_target, big_chance_created, big_chance_missed, key_passes, successful_dribbles, dribble_attempts, tackles_won, interceptions, clearances, blocks')
       .eq('matchday_id', matchdayId)
     for (const s of statsRows ?? []) {
       statsMap.set(s.player_id, {
-        fotmobRating: s.fotmob_rating !== null ? Number(s.fotmob_rating) : null,
-        sofascoreRating: s.sofascore_rating !== null ? Number(s.sofascore_rating) : null,
+        fotmobRating:       s.fotmob_rating       !== null ? Number(s.fotmob_rating)    : null,
+        sofascoreRating:    s.sofascore_rating     !== null ? Number(s.sofascore_rating) : null,
+        minutesPlayed:      s.minutes_played       ?? 0,
+        goalsScored:        s.goals_scored         ?? 0,
+        assists:            s.assists              ?? 0,
+        yellowCards:        s.yellow_cards         ?? 0,
+        redCards:           s.red_cards            ?? 0,
+        saves:              s.saves                ?? 0,
+        goalsConceded:      s.goals_conceded       ?? 0,
+        cleanSheet:         s.clean_sheet          ?? false,
+        shots:              s.shots                ?? 0,
+        shotsOnTarget:      s.shots_on_target      ?? 0,
+        bigChanceCreated:   s.big_chance_created   ?? 0,
+        bigChanceMissed:    s.big_chance_missed    ?? 0,
+        keyPasses:          s.key_passes           !== undefined ? s.key_passes    : null,
+        successfulDribbles: s.successful_dribbles  !== undefined ? s.successful_dribbles : null,
+        dribbleAttempts:    s.dribble_attempts     ?? 0,
+        tackles:            s.tackles_won          ?? 0,
+        interceptions:      s.interceptions        ?? 0,
+        clearances:         s.clearances           ?? 0,
+        blockedShots:       s.blocks               ?? 0,
       })
     }
   }
@@ -250,8 +291,27 @@ export default async function AllLineupsPage({
         zSofascore: calc?.z_sofascore ?? null,
         minutesFactor: calc?.minutes_factor ?? null,
         roleMultiplier: calc?.role_multiplier ?? null,
-        rawFotmobRating: rawStats?.fotmobRating ?? null,
+        rawFotmobRating:    rawStats?.fotmobRating    ?? null,
         rawSofascoreRating: rawStats?.sofascoreRating ?? null,
+        minutesPlayed:      rawStats?.minutesPlayed   ?? null,
+        goalsScored:        rawStats?.goalsScored     ?? null,
+        assists:            rawStats?.assists         ?? null,
+        yellowCards:        rawStats?.yellowCards     ?? null,
+        redCards:           rawStats?.redCards        ?? null,
+        saves:              rawStats?.saves           ?? null,
+        goalsConceded:      rawStats?.goalsConceded   ?? null,
+        cleanSheet:         rawStats?.cleanSheet      ?? null,
+        shots:              rawStats?.shots           ?? null,
+        shotsOnTarget:      rawStats?.shotsOnTarget   ?? null,
+        bigChanceCreated:   rawStats?.bigChanceCreated  ?? null,
+        bigChanceMissed:    rawStats?.bigChanceMissed   ?? null,
+        keyPasses:          rawStats?.keyPasses         ?? null,
+        successfulDribbles: rawStats?.successfulDribbles ?? null,
+        dribbleAttempts:    rawStats?.dribbleAttempts   ?? null,
+        tackles:            rawStats?.tackles           ?? null,
+        interceptions:      rawStats?.interceptions     ?? null,
+        clearances:         rawStats?.clearances        ?? null,
+        blockedShots:       rawStats?.blockedShots      ?? null,
         assignedMantraRole: assignment?.assigned_mantra_role ?? null,
         isBenchAssignment: assignment?.is_bench ?? false,
         benchOrderAssignment: assignment?.bench_order ?? null,

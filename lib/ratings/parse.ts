@@ -24,6 +24,18 @@ export type FetchedPlayerStat = {
   saves: number
   /** True when the player's team conceded 0 goals in the match. Derived from FotMob GK data. */
   clean_sheet: boolean
+  // SofaScore extra stats (null until SS enrichment step in the fetch route)
+  ss_shots: number | null
+  ss_shots_on_target: number | null
+  ss_big_chance_created: number | null
+  ss_big_chance_missed: number | null
+  ss_key_passes: number | null
+  ss_successful_dribbles: number | null
+  ss_dribble_attempts: number | null
+  ss_tackles: number | null
+  ss_interceptions: number | null
+  ss_clearances: number | null
+  ss_blocked_shots: number | null
 }
 
 export function normalizeName(name: string): string {
@@ -146,6 +158,34 @@ export type SofaScoreFantasyStat = {
   sofascore_id: number
   /** null if SofaScore hasn't published the rating yet (live match) */
   rating: number | null
+  minutes_played: number
+  // Events (used for cross-validation vs FotMob)
+  goals: number
+  goal_assist: number
+  yellow_card: number
+  red_card: number
+  own_goals: number
+  penalty_scored: number
+  penalty_miss: number
+  penalty_save: number
+  // GK
+  saves: number
+  goals_conceded: number
+  // Shooting
+  shots: number
+  shots_on_target: number
+  big_chance_missed: number
+  // Passing
+  key_passes: number
+  big_chance_created: number
+  // Dribbling
+  successful_dribbles: number
+  dribble_attempts: number
+  // Defending
+  tackles: number
+  interceptions: number
+  clearances: number
+  blocked_shots: number
 }
 
 export function parseSofaScoreFantasyJson(
@@ -162,17 +202,45 @@ export function parseSofaScoreFantasyJson(
       | Array<{ key: string; value: string | number }>
       | undefined
 
-    const getStat = (key: string): string | number | null =>
-      statistics?.find((s) => s.key === key)?.value ?? null
+    const getNum = (key: string): number => {
+      const v = statistics?.find((s) => s.key === key)?.value ?? null
+      return v != null ? Number(v) : 0
+    }
+    const getNumOrNull = (key: string): number | null => {
+      const v = statistics?.find((s) => s.key === key)?.value ?? null
+      return v != null ? Number(v) : null
+    }
 
-    const minutesPlayed = getStat('minutesPlayed')
+    const minutesPlayed = getNum('minutesPlayed')
     // Only include players who actually played
-    if (minutesPlayed === null || Number(minutesPlayed) === 0) continue
+    if (minutesPlayed === 0) continue
 
-    const ratingVal = getStat('rating')
+    const ratingVal = getNumOrNull('rating')
     out.push({
       sofascore_id: Number(p['playerId']),
-      rating: ratingVal != null ? Number(ratingVal) : null,
+      rating: ratingVal,
+      minutes_played: minutesPlayed,
+      goals: getNum('goals'),
+      goal_assist: getNum('goalAssist'),
+      yellow_card: getNum('yellowCard'),
+      red_card: getNum('redCard'),
+      own_goals: getNum('ownGoals'),
+      penalty_scored: getNum('penaltyScored'),
+      penalty_miss: getNum('penaltyMiss'),
+      penalty_save: getNum('penaltySave'),
+      saves: getNum('saves'),
+      goals_conceded: getNum('goalsConceded'),
+      shots: getNum('shots'),
+      shots_on_target: getNum('shotsOnTarget'),
+      big_chance_missed: getNum('bigChanceMissed'),
+      key_passes: getNum('keyPasses'),
+      big_chance_created: getNum('bigChanceCreated'),
+      successful_dribbles: getNum('successfulDribbles'),
+      dribble_attempts: getNum('dribbleAttempts'),
+      tackles: getNum('tackles'),
+      interceptions: getNum('interceptions'),
+      clearances: getNum('clearances'),
+      blocked_shots: getNum('blockedShots'),
     })
   }
   return out
@@ -218,6 +286,14 @@ export function mergeFixtureStats(
     maxGoalsConcededByTeam.set(s.team_name, Math.max(prev, s.goals_conceded))
   }
 
+  const nullSsExtras = {
+    ss_shots: null, ss_shots_on_target: null,
+    ss_big_chance_created: null, ss_big_chance_missed: null,
+    ss_key_passes: null, ss_successful_dribbles: null,
+    ss_dribble_attempts: null, ss_tackles: null,
+    ss_interceptions: null, ss_clearances: null, ss_blocked_shots: null,
+  }
+
   for (const s of fotmob?.stats ?? []) {
     const key = normalizeName(s.name)
     const teamConceded = maxGoalsConcededByTeam.get(s.team_name) ?? 0
@@ -235,6 +311,7 @@ export function mergeFixtureStats(
       penalties_saved: 0,
       goals_conceded: s.goals_conceded, saves: s.saves,
       clean_sheet: teamConceded === 0,
+      ...nullSsExtras,
     })
   }
 
@@ -257,6 +334,7 @@ export function mergeFixtureStats(
         penalties_scored: 0, penalties_missed: 0, penalties_saved: 0,
         goals_conceded: 0, saves: 0,
         clean_sheet: false, // no FotMob data to derive from
+        ...nullSsExtras,
       })
     }
   }

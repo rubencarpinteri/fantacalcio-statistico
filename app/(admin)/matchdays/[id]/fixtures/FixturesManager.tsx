@@ -219,6 +219,17 @@ export function FetchPreview({
       goals_conceded: m.stat.goals_conceded,
       saves: m.stat.saves,
       clean_sheet: m.stat.clean_sheet,
+      ss_shots:               m.stat.ss_shots,
+      ss_shots_on_target:     m.stat.ss_shots_on_target,
+      ss_big_chance_created:  m.stat.ss_big_chance_created,
+      ss_big_chance_missed:   m.stat.ss_big_chance_missed,
+      ss_key_passes:          m.stat.ss_key_passes,
+      ss_successful_dribbles: m.stat.ss_successful_dribbles,
+      ss_dribble_attempts:    m.stat.ss_dribble_attempts,
+      ss_tackles:             m.stat.ss_tackles,
+      ss_interceptions:       m.stat.ss_interceptions,
+      ss_clearances:          m.stat.ss_clearances,
+      ss_blocked_shots:       m.stat.ss_blocked_shots,
     }))
 
     const result = await importRatingsAction(matchdayId, toImport)
