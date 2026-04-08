@@ -1,47 +1,116 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueContext } from '@/lib/league'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export const metadata = { title: 'Dashboard' }
+
+const STATUS_PRIORITY: Record<string, number> = {
+  open: 0, draft: 1, closed: 2, archived: 3,
+}
 
 export default async function DashboardPage() {
   const ctx = await requireLeagueContext()
   const supabase = await createClient()
-
   const isAdmin = ctx.role === 'league_admin'
 
-  const [teamsResult, playersResult, matchdaysResult] = await Promise.all([
-    supabase
-      .from('fantasy_teams')
-      .select('id', { count: 'exact', head: true })
-      .eq('league_id', ctx.league.id),
-    supabase
-      .from('league_players')
-      .select('id', { count: 'exact', head: true })
-      .eq('league_id', ctx.league.id)
-      .eq('is_active', true),
-    supabase
-      .from('matchdays')
-      .select('id, name, status, locks_at')
-      .eq('league_id', ctx.league.id)
-      .in('status', ['open', 'locked', 'scoring'])
-      .order('locks_at', { ascending: true })
-      .limit(3),
+  // ── All matchdays ────────────────────────────────────────────────────────
+  const { data: allMatchdays } = await supabase
+    .from('matchdays')
+    .select('id, name, matchday_number, status, round_number, locks_at')
+    .eq('league_id', ctx.league.id)
+    .order('matchday_number', { ascending: false, nullsFirst: false })
+
+  const matchdays = allMatchdays ?? []
+
+  // Previous = last matchday with closed/archived status (highest matchday_number)
+  const prevMatchday = matchdays.find((m) =>
+    ['closed', 'archived'].includes(m.status)
+  ) ?? null
+
+  // Next = most relevant open/draft matchday (lowest matchday_number wins)
+  const nextMatchday =
+    [...matchdays]
+      .reverse()
+      .sort((a, b) => {
+        const pa = STATUS_PRIORITY[a.status] ?? 9
+        const pb = STATUS_PRIORITY[b.status] ?? 9
+        return pa - pb
+      })
+      .find((m) => ['open', 'draft'].includes(m.status)) ?? null
+
+  // ── Teams & competitions ─────────────────────────────────────────────────
+  const [teamsResult, compsResult] = await Promise.all([
+    supabase.from('fantasy_teams').select('id, name').eq('league_id', ctx.league.id),
+    supabase.from('competitions').select('id').eq('league_id', ctx.league.id),
   ])
+  const teamNameMap = new Map((teamsResult.data ?? []).map((t) => [t.id, t.name]))
+  const compIds = (compsResult.data ?? []).map((c) => c.id)
 
-  const teamCount = teamsResult.count ?? 0
-  const playerCount = playersResult.count ?? 0
-  const activeMatchdays = matchdaysResult.data ?? []
-
-  // Manager-specific data: their team, current submission status, last published score
-  type ManagerTeamData = {
-    teamId: string
-    teamName: string
-    openMatchday: { id: string; name: string; hasSubmission: boolean } | null
-    lastScore: { matchdayName: string; total: number; nv: number } | null
+  // ── Helper: deduplicated matchup pairs for a round ───────────────────────
+  async function getMatchupPairs(roundNumber: number) {
+    if (compIds.length === 0) return []
+    const { data: raw } = await supabase
+      .from('competition_matchups')
+      .select('home_team_id, away_team_id')
+      .in('competition_id', compIds)
+      .eq('round_number', roundNumber)
+    const seen = new Set<string>()
+    const pairs: Array<{ homeTeamId: string; awayTeamId: string }> = []
+    for (const m of raw ?? []) {
+      const key = [m.home_team_id, m.away_team_id].sort().join('|')
+      if (!seen.has(key)) {
+        seen.add(key)
+        pairs.push({ homeTeamId: m.home_team_id, awayTeamId: m.away_team_id })
+      }
+    }
+    return pairs
   }
-  let managerData: ManagerTeamData | null = null
+
+  // ── Previous matchday: matchup results ──────────────────────────────────
+  type ResultRow = {
+    homeTeamName: string
+    awayTeamName: string
+    homeScore: number | null
+    awayScore: number | null
+    matchdayId: string
+  }
+  let prevMatchups: ResultRow[] = []
+
+  if (prevMatchday?.round_number != null) {
+    const [pairs, scoresResult] = await Promise.all([
+      getMatchupPairs(prevMatchday.round_number),
+      supabase
+        .from('published_team_scores')
+        .select('team_id, total_fantavoto')
+        .eq('matchday_id', prevMatchday.id),
+    ])
+    const scoreMap = new Map(
+      (scoresResult.data ?? []).map((s) => [s.team_id, Number(s.total_fantavoto)])
+    )
+    prevMatchups = pairs.map((p) => ({
+      homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
+      awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
+      homeScore: scoreMap.get(p.homeTeamId) ?? null,
+      awayScore: scoreMap.get(p.awayTeamId) ?? null,
+      matchdayId: prevMatchday.id,
+    }))
+  }
+
+  // ── Next matchday: upcoming fixtures ────────────────────────────────────
+  type FixtureRow = { homeTeamName: string; awayTeamName: string }
+  let nextMatchups: FixtureRow[] = []
+
+  if (nextMatchday?.round_number != null) {
+    const pairs = await getMatchupPairs(nextMatchday.round_number)
+    nextMatchups = pairs.map((p) => ({
+      homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
+      awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
+    }))
+  }
+
+  // ── Manager data ─────────────────────────────────────────────────────────
+  let myTeamId: string | null = null
+  let myTeamName: string | null = null
+  let openMatchdayForLineup: { id: string; name: string; hasSubmission: boolean } | null = null
 
   if (!isAdmin) {
     const { data: myTeam } = await supabase
@@ -52,272 +121,237 @@ export default async function DashboardPage() {
       .maybeSingle()
 
     if (myTeam) {
-      // Check submission for the first open matchday
-      const openMatchday = activeMatchdays.find((m) => m.status === 'open') ?? null
-      let hasSubmission = false
-      if (openMatchday) {
+      myTeamId = myTeam.id
+      myTeamName = myTeam.name
+      const openMd = matchdays.find((m) => m.status === 'open') ?? null
+      if (openMd) {
         const { data: ptr } = await supabase
           .from('lineup_current_pointers')
           .select('submission_id')
-          .eq('matchday_id', openMatchday.id)
+          .eq('matchday_id', openMd.id)
           .eq('team_id', myTeam.id)
           .maybeSingle()
-        hasSubmission = !!ptr
-      }
-
-      // Last published score
-      const { data: lastScoreRow } = await supabase
-        .from('published_team_scores')
-        .select('total_fantavoto, nv_count, matchday_id')
-        .eq('team_id', myTeam.id)
-        .order('published_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      let lastScore: ManagerTeamData['lastScore'] = null
-      if (lastScoreRow) {
-        const { data: md } = await supabase
-          .from('matchdays')
-          .select('name')
-          .eq('id', lastScoreRow.matchday_id)
-          .single()
-        lastScore = {
-          matchdayName: md?.name ?? '—',
-          total: Number(lastScoreRow.total_fantavoto),
-          nv: lastScoreRow.nv_count,
+        openMatchdayForLineup = {
+          id: openMd.id,
+          name: openMd.name,
+          hasSubmission: !!ptr,
         }
-      }
-
-      managerData = {
-        teamId: myTeam.id,
-        teamName: myTeam.name,
-        openMatchday: openMatchday
-          ? { id: openMatchday.id, name: openMatchday.name, hasSubmission }
-          : null,
-        lastScore,
       }
     }
   }
 
+  const fmt = (dt: string | null) =>
+    dt
+      ? new Intl.DateTimeFormat('it-IT', { dateStyle: 'short', timeStyle: 'short' }).format(
+          new Date(dt)
+        )
+      : '—'
+
   return (
-    <div className="space-y-6">
-      {/* Page header */}
+    <div className="space-y-5">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-xl font-bold text-white">{ctx.league.name}</h1>
-        <p className="mt-0.5 text-sm text-[#8888aa]">{ctx.league.season_name}</p>
+        <h1 className="text-lg font-bold text-white">{ctx.league.name}</h1>
+        <p className="text-xs text-[#8888aa]">{ctx.league.season_name}</p>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Squadre" value={teamCount.toString()} />
-        <StatCard label="Giocatori attivi" value={playerCount.toString()} />
-        <StatCard
-          label="Stagione"
-          value={ctx.league.season_name}
-          small
-        />
-        <StatCard
-          label="Modalità"
-          value={
-            ctx.league.scoring_mode === 'head_to_head'
-              ? 'Testa a testa'
-              : ctx.league.scoring_mode === 'points_only'
-              ? 'Punti'
-              : 'Entrambe'
-          }
-          small
-        />
-      </div>
+      {/* ── Manager lineup CTA (compact, only when open matchday exists) ── */}
+      {myTeamName && openMatchdayForLineup && (
+        <div className="flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-4 py-2.5">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-indigo-300">{openMatchdayForLineup.name}</p>
+            <p className="text-[11px] text-[#8888aa]">
+              {openMatchdayForLineup.hasSubmission ? 'Formazione inviata' : 'Formazione non inviata'}
+            </p>
+          </div>
+          <a
+            href={`/matchdays/${openMatchdayForLineup.id}/lineup`}
+            className="ml-4 shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
+          >
+            {openMatchdayForLineup.hasSubmission ? 'Modifica' : 'Schiera'}
+          </a>
+        </div>
+      )}
 
-      {/* Manager team card */}
-      {managerData && (
-        <Card>
-          <CardHeader
-            title={managerData.teamName}
-            description="La tua squadra"
-          />
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {/* Open matchday CTA */}
-              <div className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] p-4">
-                {managerData.openMatchday ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
-                      Formazione aperta
-                    </p>
-                    <p className="text-sm font-medium text-white">
-                      {managerData.openMatchday.name}
-                    </p>
-                    <p className="text-xs text-[#8888aa]">
-                      {managerData.openMatchday.hasSubmission
-                        ? 'Formazione inviata'
-                        : 'Non ancora inviata'}
-                    </p>
-                    <a
-                      href={`/matchdays/${managerData.openMatchday.id}/lineup`}
-                      className="inline-block rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500"
+      {/* ── Giornate grid: Ultima + Prossima ────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Ultima Giornata */}
+        <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[#2e2e42]">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+              Ultima Giornata
+            </p>
+            <p className="text-sm font-semibold text-white leading-tight">
+              {prevMatchday?.name ?? '—'}
+            </p>
+          </div>
+
+          {prevMatchups.length > 0 ? (
+            <div className="divide-y divide-[#1e1e2e]">
+              {prevMatchups.map((m, i) => {
+                const homeWins =
+                  m.homeScore !== null && m.awayScore !== null && m.homeScore > m.awayScore
+                const awayWins =
+                  m.homeScore !== null && m.awayScore !== null && m.awayScore > m.homeScore
+                return (
+                  <a
+                    key={i}
+                    href={`/matchdays/${m.matchdayId}/all-lineups`}
+                    className="grid grid-cols-[1fr,auto,1fr] items-center gap-2 px-4 py-2 hover:bg-[#1a1a26] transition-colors"
+                  >
+                    <span
+                      className={`truncate text-xs font-medium ${
+                        homeWins ? 'text-white' : awayWins ? 'text-[#55556a]' : 'text-[#c0c0d8]'
+                      }`}
                     >
-                      {managerData.openMatchday.hasSubmission ? 'Modifica' : 'Schiera'}
-                    </a>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
-                      Formazione
-                    </p>
-                    <p className="text-sm text-[#55556a]">Nessuna giornata aperta.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Last score */}
-              <div className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] p-4">
-                {managerData.lastScore ? (
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
-                      Ultimo punteggio
-                    </p>
-                    <p className="text-2xl font-bold text-white">
-                      {managerData.lastScore.total.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-[#8888aa]">
-                      {managerData.lastScore.matchdayName}
-                      {managerData.lastScore.nv > 0 && (
-                        <span className="ml-1 text-amber-400">
-                          · {managerData.lastScore.nv} NV
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
-                      Ultimo punteggio
-                    </p>
-                    <p className="text-sm text-[#55556a]">Nessun risultato pubblicato.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-3 flex gap-4">
-              <a href="/matchdays" className="text-xs text-indigo-400 hover:underline">
-                Tutte le giornate →
-              </a>
-              <a href="/standings" className="text-xs text-[#8888aa] hover:text-indigo-400">
-                Classifica →
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Active matchdays */}
-      {activeMatchdays.length > 0 && (
-        <Card>
-          <CardHeader title="Giornate attive" />
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#2e2e42]">
-                  <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#8888aa]">
-                    Giornata
-                  </th>
-                  <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#8888aa]">
-                    Stato
-                  </th>
-                  <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#8888aa]">
-                    Scadenza
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
-                {activeMatchdays.map((m) => (
-                  <tr key={m.id} className="hover:bg-[#1a1a24]">
-                    <td className="px-6 py-3 font-medium text-white">{m.name}</td>
-                    <td className="px-6 py-3">
-                      <Badge
-                        variant={
-                          m.status === 'open'
-                            ? 'info'
-                            : m.status === 'locked'
-                            ? 'warning'
-                            : 'accent'
-                        }
+                      {m.homeTeamName}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0 text-xs font-bold tabular-nums">
+                      <span
+                        className={homeWins ? 'text-emerald-300' : 'text-[#8888aa]'}
                       >
-                        {m.status === 'open'
-                          ? 'Aperta'
-                          : m.status === 'locked'
-                          ? 'Chiusa'
-                          : 'In calcolo'}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-3 text-[#8888aa]">
-                      {m.locks_at
-                        ? new Intl.DateTimeFormat('it-IT', {
-                            dateStyle: 'short',
-                            timeStyle: 'short',
-                          }).format(new Date(m.locks_at))
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Admin quick actions */}
-      {isAdmin && (
-        <Card>
-          <CardHeader title="Azioni rapide" description="Gestione lega" />
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              <QuickLink href="/league" label="Impostazioni lega" />
-              <QuickLink href="/league/role-rules" label="Regole ruoli" />
-              <QuickLink href="/players" label="Gestione giocatori" />
-              <QuickLink href="/formations" label="Formazioni" />
-              <QuickLink href="/roster" label="Importa rose" />
+                        {m.homeScore !== null ? m.homeScore.toFixed(1) : '—'}
+                      </span>
+                      <span className="text-[#2e2e42]">–</span>
+                      <span
+                        className={awayWins ? 'text-emerald-300' : 'text-[#8888aa]'}
+                      >
+                        {m.awayScore !== null ? m.awayScore.toFixed(1) : '—'}
+                      </span>
+                    </div>
+                    <span
+                      className={`truncate text-right text-xs font-medium ${
+                        awayWins ? 'text-white' : homeWins ? 'text-[#55556a]' : 'text-[#c0c0d8]'
+                      }`}
+                    >
+                      {m.awayTeamName}
+                    </span>
+                  </a>
+                )
+              })}
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="px-4 py-6 text-center text-xs text-[#55556a]">
+              {prevMatchday
+                ? 'Nessun incontro configurato.'
+                : 'Nessuna giornata conclusa.'}
+            </p>
+          )}
+
+          {prevMatchday && (
+            <div className="border-t border-[#1e1e2e] px-4 py-2">
+              <a
+                href={`/matchdays/${prevMatchday.id}/results`}
+                className="text-[11px] text-indigo-400 hover:text-indigo-300"
+              >
+                Dettaglio giornata →
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Prossima Giornata */}
+        <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[#2e2e42]">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+              Prossima Giornata
+            </p>
+            <p className="text-sm font-semibold text-white leading-tight">
+              {nextMatchday?.name ?? '—'}
+            </p>
+            {nextMatchday?.locks_at && (
+              <p className="text-[10px] text-[#55556a] mt-0.5">
+                Scadenza: {fmt(nextMatchday.locks_at)}
+              </p>
+            )}
+          </div>
+
+          {nextMatchups.length > 0 ? (
+            <div className="divide-y divide-[#1e1e2e]">
+              {nextMatchups.map((m, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[1fr,auto,1fr] items-center gap-2 px-4 py-2"
+                >
+                  <span className="truncate text-xs font-medium text-[#c0c0d8]">
+                    {m.homeTeamName}
+                  </span>
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+                    vs
+                  </span>
+                  <span className="truncate text-right text-xs font-medium text-[#c0c0d8]">
+                    {m.awayTeamName}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="px-4 py-6 text-center text-xs text-[#55556a]">
+              {nextMatchday
+                ? 'Nessun incontro configurato.'
+                : 'Nessuna prossima giornata.'}
+            </p>
+          )}
+
+          {nextMatchday && (
+            <div className="border-t border-[#1e1e2e] px-4 py-2">
+              <a
+                href="/matchdays"
+                className="text-[11px] text-indigo-400 hover:text-indigo-300"
+              >
+                Calendario completo →
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Classifica (WIP) ────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2e2e42]">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+              Classifica
+            </p>
+            <p className="text-sm font-semibold text-white leading-tight">
+              {ctx.league.name}
+            </p>
+          </div>
+          <a
+            href="/standings"
+            className="text-[11px] text-indigo-400 hover:text-indigo-300"
+          >
+            Classifica completa →
+          </a>
+        </div>
+        <div className="px-4 py-8 text-center">
+          <p className="text-xs font-medium text-[#55556a]">Work in progress</p>
+          <p className="mt-1 text-[11px] text-[#3a3a52]">
+            La classifica sarà disponibile prossimamente.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Admin quick links (compact, bottom) ─────────────────────────── */}
+      {isAdmin && (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { href: '/matchdays', label: 'Giornate' },
+            { href: '/players', label: 'Giocatori' },
+            { href: '/league', label: 'Impostazioni' },
+            { href: '/formations', label: 'Formazioni' },
+            { href: '/roster', label: 'Rose' },
+          ].map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              className="rounded-md border border-[#2e2e42] bg-[#111118] px-3 py-1.5 text-xs text-[#8888aa] hover:border-indigo-500/40 hover:text-white transition-colors"
+            >
+              {label}
+            </a>
+          ))}
+        </div>
       )}
     </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  small = false,
-}: {
-  label: string
-  value: string
-  small?: boolean
-}) {
-  return (
-    <div className="rounded-xl border border-[#2e2e42] bg-[#111118] px-5 py-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">{label}</p>
-      <p
-        className={[
-          'mt-1 font-bold text-white',
-          small ? 'text-base' : 'text-2xl',
-        ].join(' ')}
-      >
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function QuickLink({ href, label }: { href: string; label: string }) {
-  return (
-    <a
-      href={href}
-      className="rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-4 py-2 text-sm text-[#f0f0fa] transition-colors hover:border-indigo-500/50 hover:bg-[#252532]"
-    >
-      {label}
-    </a>
   )
 }
