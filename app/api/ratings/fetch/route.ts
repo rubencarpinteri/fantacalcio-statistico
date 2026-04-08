@@ -198,7 +198,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     for (const m of matched) {
       const sofascorePlayerId = lpToSofascoreId.get(m.league_player_id)
       if (sofascorePlayerId != null && allSofascoreStats.has(sofascorePlayerId)) {
-        const ss = allSofascoreStats.get(sofascorePlayerId)!
+        const ss = allSofascoreStats.get(sofascorePlayerId)
+        // Guard against old localStorage format where value could be a bare number or null
+        if (ss == null || typeof ss !== 'object') continue
         m.stat.sofascore_rating = ss.rating
         m.stat.sofascore_id = sofascorePlayerId
         // Extra SS stats — stored in dedicated columns; FotMob event stats remain authoritative
