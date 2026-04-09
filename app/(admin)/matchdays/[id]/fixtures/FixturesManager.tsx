@@ -97,7 +97,7 @@ export function FixturesManager({
                   <td className="px-4 py-2 font-mono text-[#8888aa]">
                     {fx.sofascore_event_id ? (
                       <a
-                        href={`https://www.sofascore.com/api/v1/fantasy/event/${fx.sofascore_event_id}`}
+                        href={`https://www.sofascore.com/api/v1/event/${fx.sofascore_event_id}/lineups`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-400 hover:text-indigo-300 hover:underline"
@@ -146,7 +146,7 @@ type FetchState =
 
 import { useState } from 'react'
 
-const SS_FANTASY_BASE = 'https://www.sofascore.com/api/v1/fantasy/event'
+const SS_LINEUPS_BASE = 'https://www.sofascore.com/api/v1/event'
 
 export function FetchPreview({
   matchdayId,
@@ -171,7 +171,7 @@ export function FetchPreview({
 
     for (const eventId of sofascoreEventIds ?? []) {
       try {
-        const ssRes = await fetch(`${SS_FANTASY_BASE}/${eventId}`)
+        const ssRes = await fetch(`${SS_LINEUPS_BASE}/${eventId}/lineups`)
         if (ssRes.ok) {
           sofascoreByEventId[String(eventId)] = await ssRes.json() as Record<string, unknown>
         }
@@ -219,17 +219,40 @@ export function FetchPreview({
       goals_conceded: m.stat.goals_conceded,
       saves: m.stat.saves,
       clean_sheet: m.stat.clean_sheet,
-      ss_shots:               m.stat.ss_shots,
-      ss_shots_on_target:     m.stat.ss_shots_on_target,
-      ss_big_chance_created:  m.stat.ss_big_chance_created,
-      ss_big_chance_missed:   m.stat.ss_big_chance_missed,
-      ss_key_passes:          m.stat.ss_key_passes,
-      ss_successful_dribbles: m.stat.ss_successful_dribbles,
-      ss_dribble_attempts:    m.stat.ss_dribble_attempts,
-      ss_tackles:             m.stat.ss_tackles,
-      ss_interceptions:       m.stat.ss_interceptions,
-      ss_clearances:          m.stat.ss_clearances,
-      ss_blocked_shots:       m.stat.ss_blocked_shots,
+      ss_shots:                    m.stat.ss_shots,
+      ss_shots_on_target:          m.stat.ss_shots_on_target,
+      ss_big_chance_created:       m.stat.ss_big_chance_created,
+      ss_big_chance_missed:        m.stat.ss_big_chance_missed,
+      ss_blocked_scoring_attempt:  m.stat.ss_blocked_scoring_attempt,
+      ss_xg:                       m.stat.ss_xg,
+      ss_xa:                       m.stat.ss_xa,
+      ss_key_passes:               m.stat.ss_key_passes,
+      ss_total_passes:             m.stat.ss_total_passes,
+      ss_accurate_passes:          m.stat.ss_accurate_passes,
+      ss_total_long_balls:         m.stat.ss_total_long_balls,
+      ss_accurate_long_balls:      m.stat.ss_accurate_long_balls,
+      ss_total_crosses:            m.stat.ss_total_crosses,
+      ss_successful_dribbles:      m.stat.ss_successful_dribbles,
+      ss_dribble_attempts:         m.stat.ss_dribble_attempts,
+      ss_touches:                  m.stat.ss_touches,
+      ss_ball_carries:             m.stat.ss_ball_carries,
+      ss_progressive_carries:      m.stat.ss_progressive_carries,
+      ss_dispossessed:             m.stat.ss_dispossessed,
+      ss_possession_lost_ctrl:     m.stat.ss_possession_lost_ctrl,
+      ss_tackles:                  m.stat.ss_tackles,
+      ss_total_tackles:            m.stat.ss_total_tackles,
+      ss_interceptions:            m.stat.ss_interceptions,
+      ss_clearances:               m.stat.ss_clearances,
+      ss_blocked_shots:            m.stat.ss_blocked_shots,
+      ss_duel_won:                 m.stat.ss_duel_won,
+      ss_duel_lost:                m.stat.ss_duel_lost,
+      ss_aerial_won:               m.stat.ss_aerial_won,
+      ss_aerial_lost:              m.stat.ss_aerial_lost,
+      ss_ball_recoveries:          m.stat.ss_ball_recoveries,
+      ss_fouls_committed:          m.stat.ss_fouls_committed,
+      ss_was_fouled:               m.stat.ss_was_fouled,
+      ss_market_value:             m.stat.ss_market_value,
+      ss_height:                   m.stat.ss_height,
     }))
 
     const result = await importRatingsAction(matchdayId, toImport)

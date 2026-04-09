@@ -183,43 +183,89 @@ export default async function AllLineupsPage({
     shotsOnTarget: number
     bigChanceCreated: number
     bigChanceMissed: number
+    blockedScoringAttempt: number
+    xg: number | null
+    xa: number | null
     keyPasses: number | null
+    totalPasses: number
+    accuratePasses: number
+    totalLongBalls: number
+    accurateLongBalls: number
+    totalCrosses: number
     successfulDribbles: number | null
     dribbleAttempts: number
+    touches: number
+    ballCarries: number
+    progressiveCarries: number
+    dispossessed: number
+    possessionLostCtrl: number
     tackles: number
+    totalTackles: number
     interceptions: number
     clearances: number
     blockedShots: number
+    duelWon: number
+    duelLost: number
+    aerialWon: number
+    aerialLost: number
+    ballRecoveries: number
+    foulsCommitted: number
+    wasFouled: number
+    marketValue: number | null
+    height: number | null
   }
   const statsMap = new Map<string, StatsRow>()
   {
     const { data: statsRows } = await supabase
       .from('player_match_stats')
-      .select('player_id, fotmob_rating, sofascore_rating, minutes_played, goals_scored, assists, yellow_cards, red_cards, saves, goals_conceded, clean_sheet, shots, shots_on_target, big_chance_created, big_chance_missed, key_passes, successful_dribbles, dribble_attempts, tackles_won, interceptions, clearances, blocks')
+      .select('player_id, fotmob_rating, sofascore_rating, minutes_played, goals_scored, assists, yellow_cards, red_cards, saves, goals_conceded, clean_sheet, shots, shots_on_target, big_chance_created, big_chance_missed, blocked_scoring_attempt, xg, xa, key_passes, total_passes, accurate_passes, total_long_balls, accurate_long_balls, total_crosses, successful_dribbles, dribble_attempts, touches, ball_carries, progressive_carries, dispossessed, possession_lost_ctrl, tackles_won, total_tackles, interceptions, clearances, blocks, duel_won, duel_lost, aerial_won, aerial_lost, ball_recoveries, fouls_committed, was_fouled, market_value, height')
       .eq('matchday_id', matchdayId)
     for (const s of statsRows ?? []) {
       statsMap.set(s.player_id, {
-        fotmobRating:       s.fotmob_rating       !== null ? Number(s.fotmob_rating)    : null,
-        sofascoreRating:    s.sofascore_rating     !== null ? Number(s.sofascore_rating) : null,
-        minutesPlayed:      s.minutes_played       ?? 0,
-        goalsScored:        s.goals_scored         ?? 0,
-        assists:            s.assists              ?? 0,
-        yellowCards:        s.yellow_cards         ?? 0,
-        redCards:           s.red_cards            ?? 0,
-        saves:              s.saves                ?? 0,
-        goalsConceded:      s.goals_conceded       ?? 0,
-        cleanSheet:         s.clean_sheet          ?? false,
-        shots:              s.shots                ?? 0,
-        shotsOnTarget:      s.shots_on_target      ?? 0,
-        bigChanceCreated:   s.big_chance_created   ?? 0,
-        bigChanceMissed:    s.big_chance_missed    ?? 0,
-        keyPasses:          s.key_passes           !== undefined ? s.key_passes    : null,
-        successfulDribbles: s.successful_dribbles  !== undefined ? s.successful_dribbles : null,
-        dribbleAttempts:    s.dribble_attempts     ?? 0,
-        tackles:            s.tackles_won          ?? 0,
-        interceptions:      s.interceptions        ?? 0,
-        clearances:         s.clearances           ?? 0,
-        blockedShots:       s.blocks               ?? 0,
+        fotmobRating:          s.fotmob_rating         !== null ? Number(s.fotmob_rating)    : null,
+        sofascoreRating:       s.sofascore_rating       !== null ? Number(s.sofascore_rating) : null,
+        minutesPlayed:         s.minutes_played         ?? 0,
+        goalsScored:           s.goals_scored           ?? 0,
+        assists:               s.assists                ?? 0,
+        yellowCards:           s.yellow_cards           ?? 0,
+        redCards:              s.red_cards              ?? 0,
+        saves:                 s.saves                  ?? 0,
+        goalsConceded:         s.goals_conceded         ?? 0,
+        cleanSheet:            s.clean_sheet            ?? false,
+        shots:                 s.shots                  ?? 0,
+        shotsOnTarget:         s.shots_on_target        ?? 0,
+        bigChanceCreated:      s.big_chance_created     ?? 0,
+        bigChanceMissed:       s.big_chance_missed      ?? 0,
+        blockedScoringAttempt: s.blocked_scoring_attempt ?? 0,
+        xg:                    s.xg                     !== null ? Number(s.xg) : null,
+        xa:                    s.xa                     !== null ? Number(s.xa) : null,
+        keyPasses:             s.key_passes             ?? null,
+        totalPasses:           s.total_passes           ?? 0,
+        accuratePasses:        s.accurate_passes        ?? 0,
+        totalLongBalls:        s.total_long_balls       ?? 0,
+        accurateLongBalls:     s.accurate_long_balls    ?? 0,
+        totalCrosses:          s.total_crosses          ?? 0,
+        successfulDribbles:    s.successful_dribbles    ?? null,
+        dribbleAttempts:       s.dribble_attempts       ?? 0,
+        touches:               s.touches                ?? 0,
+        ballCarries:           s.ball_carries           ?? 0,
+        progressiveCarries:    s.progressive_carries    ?? 0,
+        dispossessed:          s.dispossessed           ?? 0,
+        possessionLostCtrl:    s.possession_lost_ctrl   ?? 0,
+        tackles:               s.tackles_won            ?? 0,
+        totalTackles:          s.total_tackles          ?? 0,
+        interceptions:         s.interceptions          ?? 0,
+        clearances:            s.clearances             ?? 0,
+        blockedShots:          s.blocks                 ?? 0,
+        duelWon:               s.duel_won               ?? 0,
+        duelLost:              s.duel_lost              ?? 0,
+        aerialWon:             s.aerial_won             ?? 0,
+        aerialLost:            s.aerial_lost            ?? 0,
+        ballRecoveries:        s.ball_recoveries        ?? 0,
+        foulsCommitted:        s.fouls_committed        ?? 0,
+        wasFouled:             s.was_fouled             ?? 0,
+        marketValue:           s.market_value           !== null ? Number(s.market_value) : null,
+        height:                s.height                 !== null ? Number(s.height) : null,
       })
     }
   }
@@ -301,17 +347,40 @@ export default async function AllLineupsPage({
         saves:              rawStats?.saves           ?? null,
         goalsConceded:      rawStats?.goalsConceded   ?? null,
         cleanSheet:         rawStats?.cleanSheet      ?? null,
-        shots:              rawStats?.shots           ?? null,
-        shotsOnTarget:      rawStats?.shotsOnTarget   ?? null,
-        bigChanceCreated:   rawStats?.bigChanceCreated  ?? null,
-        bigChanceMissed:    rawStats?.bigChanceMissed   ?? null,
-        keyPasses:          rawStats?.keyPasses         ?? null,
-        successfulDribbles: rawStats?.successfulDribbles ?? null,
-        dribbleAttempts:    rawStats?.dribbleAttempts   ?? null,
-        tackles:            rawStats?.tackles           ?? null,
-        interceptions:      rawStats?.interceptions     ?? null,
-        clearances:         rawStats?.clearances        ?? null,
-        blockedShots:       rawStats?.blockedShots      ?? null,
+        shots:                 rawStats?.shots                 ?? null,
+        shotsOnTarget:         rawStats?.shotsOnTarget         ?? null,
+        bigChanceCreated:      rawStats?.bigChanceCreated      ?? null,
+        bigChanceMissed:       rawStats?.bigChanceMissed       ?? null,
+        blockedScoringAttempt: rawStats?.blockedScoringAttempt ?? null,
+        xg:                    rawStats?.xg                    ?? null,
+        xa:                    rawStats?.xa                    ?? null,
+        keyPasses:             rawStats?.keyPasses             ?? null,
+        totalPasses:           rawStats?.totalPasses           ?? null,
+        accuratePasses:        rawStats?.accuratePasses        ?? null,
+        totalLongBalls:        rawStats?.totalLongBalls        ?? null,
+        accurateLongBalls:     rawStats?.accurateLongBalls     ?? null,
+        totalCrosses:          rawStats?.totalCrosses          ?? null,
+        successfulDribbles:    rawStats?.successfulDribbles    ?? null,
+        dribbleAttempts:       rawStats?.dribbleAttempts       ?? null,
+        touches:               rawStats?.touches               ?? null,
+        ballCarries:           rawStats?.ballCarries           ?? null,
+        progressiveCarries:    rawStats?.progressiveCarries    ?? null,
+        dispossessed:          rawStats?.dispossessed          ?? null,
+        possessionLostCtrl:    rawStats?.possessionLostCtrl    ?? null,
+        tackles:               rawStats?.tackles               ?? null,
+        totalTackles:          rawStats?.totalTackles          ?? null,
+        interceptions:         rawStats?.interceptions         ?? null,
+        clearances:            rawStats?.clearances            ?? null,
+        blockedShots:          rawStats?.blockedShots          ?? null,
+        duelWon:               rawStats?.duelWon               ?? null,
+        duelLost:              rawStats?.duelLost              ?? null,
+        aerialWon:             rawStats?.aerialWon             ?? null,
+        aerialLost:            rawStats?.aerialLost            ?? null,
+        ballRecoveries:        rawStats?.ballRecoveries        ?? null,
+        foulsCommitted:        rawStats?.foulsCommitted        ?? null,
+        wasFouled:             rawStats?.wasFouled             ?? null,
+        marketValue:           rawStats?.marketValue           ?? null,
+        height:                rawStats?.height                ?? null,
         assignedMantraRole: assignment?.assigned_mantra_role ?? null,
         isBenchAssignment: assignment?.is_bench ?? false,
         benchOrderAssignment: assignment?.bench_order ?? null,

@@ -36,18 +36,41 @@ export interface SlotData {
   saves: number | null
   goalsConceded: number | null
   cleanSheet: boolean | null
-  // SofaScore extra stats
+  // SofaScore stats
   shots: number | null
   shotsOnTarget: number | null
   bigChanceCreated: number | null
   bigChanceMissed: number | null
+  blockedScoringAttempt: number | null
+  xg: number | null
+  xa: number | null
   keyPasses: number | null
+  totalPasses: number | null
+  accuratePasses: number | null
+  totalLongBalls: number | null
+  accurateLongBalls: number | null
+  totalCrosses: number | null
   successfulDribbles: number | null
   dribbleAttempts: number | null
+  touches: number | null
+  ballCarries: number | null
+  progressiveCarries: number | null
+  dispossessed: number | null
+  possessionLostCtrl: number | null
   tackles: number | null
+  totalTackles: number | null
   interceptions: number | null
   clearances: number | null
   blockedShots: number | null
+  duelWon: number | null
+  duelLost: number | null
+  aerialWon: number | null
+  aerialLost: number | null
+  ballRecoveries: number | null
+  foulsCommitted: number | null
+  wasFouled: number | null
+  marketValue: number | null
+  height: number | null
   assignedMantraRole: string | null
   isBenchAssignment: boolean
   benchOrderAssignment: number | null
@@ -125,7 +148,13 @@ function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | nu
 
 // ---- Stat category helpers -------------------------------------------------
 
-type StatEntry = { label: string; value: number | null }
+type StatEntry = { label: string; value: number | null; decimals?: number }
+
+function fmtVal(s: StatEntry): string {
+  if (s.value === null) return '—'
+  if (s.decimals !== undefined) return s.value.toFixed(s.decimals)
+  return String(s.value)
+}
 
 function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
   const visible = stats.filter((s) => s.value !== null && s.value > 0)
@@ -137,12 +166,18 @@ function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
         {visible.map((s) => (
           <div key={s.label} className="flex items-center justify-between gap-2">
             <span className="text-[11px] text-[#8888aa]">{s.label}</span>
-            <span className="font-mono text-[11px] font-semibold text-white">{s.value}</span>
+            <span className="font-mono text-[11px] font-semibold text-white">{fmtVal(s)}</span>
           </div>
         ))}
       </div>
     </div>
   )
+}
+
+function fmtMarketValue(v: number): string {
+  if (v >= 1_000_000) return `€${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `€${(v / 1_000).toFixed(0)}K`
+  return `€${v}`
 }
 
 // ---- Player detail modal ---------------------------------------------------
@@ -304,39 +339,69 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 Statistiche SofaScore
               </p>
 
+              {/* Market value + height pill row */}
+              {(slot.marketValue !== null || slot.height !== null) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {slot.marketValue !== null && (
+                    <span className="rounded-full border border-[#2e2e42] px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
+                      {fmtMarketValue(slot.marketValue)}
+                    </span>
+                  )}
+                  {slot.height !== null && (
+                    <span className="rounded-full border border-[#2e2e42] px-2 py-0.5 text-[10px] text-[#55556a] font-mono">
+                      {slot.height} cm
+                    </span>
+                  )}
+                </div>
+              )}
+
               <StatCategory title="Tiro" stats={[
-                { label: 'Tiri totali',    value: slot.shots },
-                { label: 'In porta',       value: slot.shotsOnTarget },
+                { label: 'Tiri totali',           value: slot.shots },
+                { label: 'In porta',              value: slot.shotsOnTarget },
+                { label: 'Tentativo bloccato',    value: slot.blockedScoringAttempt },
                 { label: 'Grande chance creata',  value: slot.bigChanceCreated },
                 { label: 'Grande chance mancata', value: slot.bigChanceMissed },
-              ]} />
-
-              <StatCategory title="Difesa" stats={[
-                { label: 'Tackle vinti',   value: slot.tackles },
-                { label: 'Intercetti',     value: slot.interceptions },
-                { label: 'Respinte',       value: slot.clearances },
-                { label: 'Tiri bloccati',  value: slot.blockedShots },
-                { label: 'Parate',         value: slot.saves },
-                { label: 'Gol subiti',     value: slot.goalsConceded },
+                { label: 'xG',                    value: slot.xg, decimals: 2 },
               ]} />
 
               <StatCategory title="Passaggio" stats={[
                 { label: 'Passaggi chiave', value: slot.keyPasses },
+                { label: 'Pass. riusciti',  value: slot.accuratePasses },
+                { label: 'Pass. totali',    value: slot.totalPasses },
+                { label: 'Lanci riusciti',  value: slot.accurateLongBalls },
+                { label: 'Lanci totali',    value: slot.totalLongBalls },
+                { label: 'Cross',           value: slot.totalCrosses },
+                { label: 'xA',              value: slot.xa, decimals: 2 },
               ]} />
 
-              <StatCategory title="Dribbling" stats={[
-                { label: 'Riusciti',  value: slot.successfulDribbles },
-                { label: 'Tentati',   value: slot.dribbleAttempts },
+              <StatCategory title="Dribbling / Palla" stats={[
+                { label: 'Dribbling riusciti', value: slot.successfulDribbles },
+                { label: 'Dribbling tentati',  value: slot.dribbleAttempts },
+                { label: 'Tocchi',             value: slot.touches },
+                { label: 'Conduzioni',         value: slot.ballCarries },
+                { label: 'Conduz. progressive',value: slot.progressiveCarries },
+                { label: 'Perse',              value: slot.dispossessed },
+                { label: 'Poss. perso',        value: slot.possessionLostCtrl },
               ]} />
 
-              {/* All-zero fallback — only when every single SS stat is absent/zero */}
-              {[
-                slot.shots, slot.shotsOnTarget, slot.bigChanceMissed,
-                slot.keyPasses, slot.bigChanceCreated,
-                slot.successfulDribbles, slot.dribbleAttempts,
-                slot.tackles, slot.interceptions, slot.clearances, slot.blockedShots,
-                slot.saves, slot.goalsConceded,
-              ].every((v) => !v) && (
+              <StatCategory title="Difesa" stats={[
+                { label: 'Tackle vinti',   value: slot.tackles },
+                { label: 'Tackle totali',  value: slot.totalTackles },
+                { label: 'Intercetti',     value: slot.interceptions },
+                { label: 'Respinte',       value: slot.clearances },
+                { label: 'Tiri bloccati',  value: slot.blockedShots },
+                { label: 'Duelli vinti',   value: slot.duelWon },
+                { label: 'Duelli persi',   value: slot.duelLost },
+                { label: 'Aerei vinti',    value: slot.aerialWon },
+                { label: 'Aerei persi',    value: slot.aerialLost },
+                { label: 'Recuperi',       value: slot.ballRecoveries },
+                { label: 'Falli commessi', value: slot.foulsCommitted },
+                { label: 'Falli subiti',   value: slot.wasFouled },
+                { label: 'Parate',         value: slot.saves },
+                { label: 'Gol subiti',     value: slot.goalsConceded },
+              ]} />
+
+              {!hasSs && (
                 <p className="text-[11px] text-[#55556a] italic">Nessuna statistica SofaScore disponibile</p>
               )}
             </div>

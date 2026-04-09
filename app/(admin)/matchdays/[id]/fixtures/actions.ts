@@ -245,13 +245,36 @@ export type ImportMatch = {
   ss_shots_on_target: number | null
   ss_big_chance_created: number | null
   ss_big_chance_missed: number | null
+  ss_blocked_scoring_attempt: number | null
+  ss_xg: number | null
+  ss_xa: number | null
   ss_key_passes: number | null
+  ss_total_passes: number | null
+  ss_accurate_passes: number | null
+  ss_total_long_balls: number | null
+  ss_accurate_long_balls: number | null
+  ss_total_crosses: number | null
   ss_successful_dribbles: number | null
   ss_dribble_attempts: number | null
+  ss_touches: number | null
+  ss_ball_carries: number | null
+  ss_progressive_carries: number | null
+  ss_dispossessed: number | null
+  ss_possession_lost_ctrl: number | null
   ss_tackles: number | null
+  ss_total_tackles: number | null
   ss_interceptions: number | null
   ss_clearances: number | null
   ss_blocked_shots: number | null
+  ss_duel_won: number | null
+  ss_duel_lost: number | null
+  ss_aerial_won: number | null
+  ss_aerial_lost: number | null
+  ss_ball_recoveries: number | null
+  ss_fouls_committed: number | null
+  ss_was_fouled: number | null
+  ss_market_value: number | null
+  ss_height: number | null
 }
 
 export type ImportRatingsState = { error?: string; imported?: number }
@@ -296,18 +319,41 @@ export async function importRatingsAction(
     goals_conceded: m.goals_conceded,
     saves: m.saves,
     clean_sheet: m.clean_sheet,
-    // SofaScore extra stats — map to existing nullable columns where applicable
-    shots:               m.ss_shots              ?? 0,
-    shots_on_target:     m.ss_shots_on_target     ?? 0,
-    big_chance_created:  m.ss_big_chance_created  ?? 0,
-    big_chance_missed:   m.ss_big_chance_missed   ?? 0,
-    key_passes:          m.ss_key_passes,            // nullable column
-    successful_dribbles: m.ss_successful_dribbles,   // nullable column
-    dribble_attempts:    m.ss_dribble_attempts    ?? 0,
-    tackles_won:         m.ss_tackles             ?? 0,
-    interceptions:       m.ss_interceptions       ?? 0,
-    clearances:          m.ss_clearances          ?? 0,
-    blocks:              m.ss_blocked_shots        ?? 0,
+    // SofaScore stats
+    shots:                    m.ss_shots                   ?? 0,
+    shots_on_target:          m.ss_shots_on_target          ?? 0,
+    big_chance_created:       m.ss_big_chance_created       ?? 0,
+    big_chance_missed:        m.ss_big_chance_missed        ?? 0,
+    blocked_scoring_attempt:  m.ss_blocked_scoring_attempt  ?? 0,
+    xg:                       m.ss_xg,
+    xa:                       m.ss_xa,
+    key_passes:               m.ss_key_passes,
+    total_passes:             m.ss_total_passes             ?? 0,
+    accurate_passes:          m.ss_accurate_passes          ?? 0,
+    total_long_balls:         m.ss_total_long_balls         ?? 0,
+    accurate_long_balls:      m.ss_accurate_long_balls      ?? 0,
+    total_crosses:            m.ss_total_crosses            ?? 0,
+    successful_dribbles:      m.ss_successful_dribbles,
+    dribble_attempts:         m.ss_dribble_attempts         ?? 0,
+    touches:                  m.ss_touches                  ?? 0,
+    ball_carries:             m.ss_ball_carries             ?? 0,
+    progressive_carries:      m.ss_progressive_carries      ?? 0,
+    dispossessed:             m.ss_dispossessed             ?? 0,
+    possession_lost_ctrl:     m.ss_possession_lost_ctrl     ?? 0,
+    tackles_won:              m.ss_tackles                  ?? 0,
+    total_tackles:            m.ss_total_tackles            ?? 0,
+    interceptions:            m.ss_interceptions            ?? 0,
+    clearances:               m.ss_clearances               ?? 0,
+    blocks:                   m.ss_blocked_shots            ?? 0,
+    duel_won:                 m.ss_duel_won                 ?? 0,
+    duel_lost:                m.ss_duel_lost                ?? 0,
+    aerial_won:               m.ss_aerial_won               ?? 0,
+    aerial_lost:              m.ss_aerial_lost              ?? 0,
+    ball_recoveries:          m.ss_ball_recoveries          ?? 0,
+    fouls_committed:          m.ss_fouls_committed          ?? 0,
+    was_fouled:               m.ss_was_fouled               ?? 0,
+    market_value:             m.ss_market_value,
+    height:                   m.ss_height,
   }))
 
   // Zero out stale rows — players who were imported in a previous fetch but are
@@ -329,8 +375,16 @@ export async function importRatingsAction(
         red_cards: 0, penalties_scored: 0, penalties_missed: 0,
         penalties_saved: 0, goals_conceded: 0, saves: 0, clean_sheet: false,
         shots: 0, shots_on_target: 0, big_chance_created: 0, big_chance_missed: 0,
-        key_passes: null, successful_dribbles: null, dribble_attempts: 0,
-        tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
+        blocked_scoring_attempt: 0, xg: null, xa: null,
+        key_passes: null, total_passes: 0, accurate_passes: 0,
+        total_long_balls: 0, accurate_long_balls: 0, total_crosses: 0,
+        successful_dribbles: null, dribble_attempts: 0,
+        touches: 0, ball_carries: 0, progressive_carries: 0,
+        dispossessed: 0, possession_lost_ctrl: 0,
+        tackles_won: 0, total_tackles: 0, interceptions: 0, clearances: 0, blocks: 0,
+        duel_won: 0, duel_lost: 0, aerial_won: 0, aerial_lost: 0,
+        ball_recoveries: 0, fouls_committed: 0, was_fouled: 0,
+        market_value: null, height: null,
       })
       .eq('matchday_id', matchdayId)
       .in('player_id', staleIds)

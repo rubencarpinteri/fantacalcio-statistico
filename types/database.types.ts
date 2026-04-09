@@ -591,35 +591,6 @@ export type Database = {
           },
         ]
       }
-      fotmob_ignored_players: {
-        Row: {
-          created_at: string
-          fotmob_name: string
-          fotmob_player_id: number
-          league_id: string
-        }
-        Insert: {
-          created_at?: string
-          fotmob_name: string
-          fotmob_player_id: number
-          league_id: string
-        }
-        Update: {
-          created_at?: string
-          fotmob_name?: string
-          fotmob_player_id?: number
-          league_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fotmob_ignored_players_league_id_fkey"
-            columns: ["league_id"]
-            isOneToOne: false
-            referencedRelation: "leagues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       formations: {
         Row: {
           created_at: string
@@ -648,6 +619,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "formations_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fotmob_ignored_players: {
+        Row: {
+          created_at: string
+          fotmob_name: string
+          fotmob_player_id: number
+          league_id: string
+        }
+        Insert: {
+          created_at?: string
+          fotmob_name: string
+          fotmob_player_id: number
+          league_id: string
+        }
+        Update: {
+          created_at?: string
+          fotmob_name?: string
+          fotmob_player_id?: number
+          league_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotmob_ignored_players_league_id_fkey"
             columns: ["league_id"]
             isOneToOne: false
             referencedRelation: "leagues"
@@ -690,22 +690,20 @@ export type Database = {
       league_engine_config: {
         Row: {
           assist: number
-          voto_base_cap_min: number | null
-          voto_base_cap_max: number | null
           brace_bonus: number
           clean_sheet_def: number
           clean_sheet_gk: number
           clean_sheet_min_minutes: number
           created_at: string
+          fotmob_mean: number
+          fotmob_std: number
+          fotmob_weight: number
           goal_bonus_att: number
           goal_bonus_def: number
           goal_bonus_gk: number
           goal_bonus_mid: number
           goals_conceded_def: number
           goals_conceded_def_min_minutes: number
-          fotmob_mean: number
-          fotmob_std: number
-          fotmob_weight: number
           goals_conceded_gk: number
           hat_trick_bonus: number
           id: string
@@ -724,8 +722,8 @@ export type Database = {
           role_multiplier_mid: number
           sofascore_mean: number
           sofascore_std: number
-          target_mean_vote: number
-          target_vote_std: number
+          target_mean_vote: number | null
+          target_vote_std: number | null
           updated_at: string
           yellow_card: number
         }
@@ -736,15 +734,15 @@ export type Database = {
           clean_sheet_gk?: number
           clean_sheet_min_minutes?: number
           created_at?: string
+          fotmob_mean?: number
+          fotmob_std?: number
+          fotmob_weight?: number
           goal_bonus_att?: number
           goal_bonus_def?: number
           goal_bonus_gk?: number
           goal_bonus_mid?: number
           goals_conceded_def?: number
           goals_conceded_def_min_minutes?: number
-          fotmob_mean?: number | null
-          fotmob_std?: number | null
-          fotmob_weight?: number | null
           goals_conceded_gk?: number
           hat_trick_bonus?: number
           id?: string
@@ -761,14 +759,12 @@ export type Database = {
           role_multiplier_def?: number
           role_multiplier_gk?: number
           role_multiplier_mid?: number
-          sofascore_mean?: number | null
-          sofascore_std?: number | null
+          sofascore_mean?: number
+          sofascore_std?: number
           target_mean_vote?: number | null
           target_vote_std?: number | null
           updated_at?: string
           yellow_card?: number
-          voto_base_cap_min?: number | null
-          voto_base_cap_max?: number | null
         }
         Update: {
           assist?: number
@@ -777,15 +773,15 @@ export type Database = {
           clean_sheet_gk?: number
           clean_sheet_min_minutes?: number
           created_at?: string
+          fotmob_mean?: number
+          fotmob_std?: number
+          fotmob_weight?: number
           goal_bonus_att?: number
           goal_bonus_def?: number
           goal_bonus_gk?: number
           goal_bonus_mid?: number
           goals_conceded_def?: number
           goals_conceded_def_min_minutes?: number
-          fotmob_mean?: number | null
-          fotmob_std?: number | null
-          fotmob_weight?: number | null
           goals_conceded_gk?: number
           hat_trick_bonus?: number
           id?: string
@@ -802,14 +798,12 @@ export type Database = {
           role_multiplier_def?: number
           role_multiplier_gk?: number
           role_multiplier_mid?: number
-          sofascore_mean?: number | null
-          sofascore_std?: number | null
+          sofascore_mean?: number
+          sofascore_std?: number
           target_mean_vote?: number | null
           target_vote_std?: number | null
           updated_at?: string
           yellow_card?: number
-          voto_base_cap_min?: number | null
-          voto_base_cap_max?: number | null
         }
         Relationships: [
           {
@@ -1643,30 +1637,43 @@ export type Database = {
       }
       player_match_stats: {
         Row: {
+          accurate_long_balls: number | null
+          accurate_passes: number | null
           aerial_duels_won: number
+          aerial_lost: number | null
+          aerial_won: number | null
           assists: number
+          ball_carries: number | null
+          ball_recoveries: number | null
           big_chance_created: number
           big_chance_missed: number
+          blocked_scoring_attempt: number | null
           blocks: number
           clean_sheet: boolean
           clearances: number
           completed_passes: number | null
           created_at: string
+          dispossessed: number | null
           dribble_attempts: number
           dribble_success_rate: number | null
           dribbled_past: number
+          duel_lost: number | null
+          duel_won: number | null
           entered_by: string
           error_leading_to_goal: number
           expected_assists: number | null
           final_third_passes: number | null
           fotmob_rating: number | null
+          fouls_committed: number | null
           goals_conceded: number
           goals_scored: number
           has_decisive_event: boolean
+          height: number | null
           id: string
           interceptions: number
           is_provisional: boolean
           key_passes: number | null
+          market_value: number | null
           matchday_id: string
           minutes_played: number
           own_goals: number
@@ -1675,6 +1682,8 @@ export type Database = {
           penalties_saved: number
           penalties_scored: number
           player_id: string
+          possession_lost_ctrl: number | null
+          progressive_carries: number | null
           progressive_passes: number | null
           rating_class_override:
             | Database["public"]["Enums"]["rating_class"]
@@ -1686,34 +1695,55 @@ export type Database = {
           sofascore_rating: number | null
           successful_dribbles: number | null
           tackles_won: number
+          total_crosses: number | null
+          total_long_balls: number | null
+          total_passes: number | null
+          total_tackles: number | null
+          touches: number | null
           updated_at: string
+          was_fouled: number | null
+          xa: number | null
+          xg: number | null
           yellow_cards: number
         }
         Insert: {
+          accurate_long_balls?: number | null
+          accurate_passes?: number | null
           aerial_duels_won?: number
+          aerial_lost?: number | null
+          aerial_won?: number | null
           assists?: number
+          ball_carries?: number | null
+          ball_recoveries?: number | null
           big_chance_created?: number
           big_chance_missed?: number
+          blocked_scoring_attempt?: number | null
           blocks?: number
           clean_sheet?: boolean
           clearances?: number
           completed_passes?: number | null
           created_at?: string
+          dispossessed?: number | null
           dribble_attempts?: number
           dribble_success_rate?: number | null
           dribbled_past?: number
+          duel_lost?: number | null
+          duel_won?: number | null
           entered_by: string
           error_leading_to_goal?: number
           expected_assists?: number | null
           final_third_passes?: number | null
           fotmob_rating?: number | null
+          fouls_committed?: number | null
           goals_conceded?: number
           goals_scored?: number
           has_decisive_event?: boolean
+          height?: number | null
           id?: string
           interceptions?: number
           is_provisional?: boolean
           key_passes?: number | null
+          market_value?: number | null
           matchday_id: string
           minutes_played?: number
           own_goals?: number
@@ -1722,6 +1752,8 @@ export type Database = {
           penalties_saved?: number
           penalties_scored?: number
           player_id: string
+          possession_lost_ctrl?: number | null
+          progressive_carries?: number | null
           progressive_passes?: number | null
           rating_class_override?:
             | Database["public"]["Enums"]["rating_class"]
@@ -1733,34 +1765,55 @@ export type Database = {
           sofascore_rating?: number | null
           successful_dribbles?: number | null
           tackles_won?: number
+          total_crosses?: number | null
+          total_long_balls?: number | null
+          total_passes?: number | null
+          total_tackles?: number | null
+          touches?: number | null
           updated_at?: string
+          was_fouled?: number | null
+          xa?: number | null
+          xg?: number | null
           yellow_cards?: number
         }
         Update: {
+          accurate_long_balls?: number | null
+          accurate_passes?: number | null
           aerial_duels_won?: number
+          aerial_lost?: number | null
+          aerial_won?: number | null
           assists?: number
+          ball_carries?: number | null
+          ball_recoveries?: number | null
           big_chance_created?: number
           big_chance_missed?: number
+          blocked_scoring_attempt?: number | null
           blocks?: number
           clean_sheet?: boolean
           clearances?: number
           completed_passes?: number | null
           created_at?: string
+          dispossessed?: number | null
           dribble_attempts?: number
           dribble_success_rate?: number | null
           dribbled_past?: number
+          duel_lost?: number | null
+          duel_won?: number | null
           entered_by?: string
           error_leading_to_goal?: number
           expected_assists?: number | null
           final_third_passes?: number | null
           fotmob_rating?: number | null
+          fouls_committed?: number | null
           goals_conceded?: number
           goals_scored?: number
           has_decisive_event?: boolean
+          height?: number | null
           id?: string
           interceptions?: number
           is_provisional?: boolean
           key_passes?: number | null
+          market_value?: number | null
           matchday_id?: string
           minutes_played?: number
           own_goals?: number
@@ -1769,6 +1822,8 @@ export type Database = {
           penalties_saved?: number
           penalties_scored?: number
           player_id?: string
+          possession_lost_ctrl?: number | null
+          progressive_carries?: number | null
           progressive_passes?: number | null
           rating_class_override?:
             | Database["public"]["Enums"]["rating_class"]
@@ -1780,7 +1835,15 @@ export type Database = {
           sofascore_rating?: number | null
           successful_dribbles?: number | null
           tackles_won?: number
+          total_crosses?: number | null
+          total_long_balls?: number | null
+          total_passes?: number | null
+          total_tackles?: number | null
+          touches?: number | null
           updated_at?: string
+          was_fouled?: number | null
+          xa?: number | null
+          xg?: number | null
           yellow_cards?: number
         }
         Relationships: [
@@ -2321,11 +2384,11 @@ export type Database = {
       matchday_status:
         | "draft"
         | "open"
-        | "closed"
         | "locked"
         | "scoring"
         | "published"
         | "archived"
+        | "closed"
       rating_class: "GK" | "DEF" | "MID" | "ATT"
       round_status: "pending" | "computed" | "locked"
       scoring_mode: "head_to_head" | "points_only" | "both"
@@ -2498,11 +2561,11 @@ export const Constants = {
       matchday_status: [
         "draft",
         "open",
-        "closed",
         "locked",
         "scoring",
         "published",
         "archived",
+        "closed",
       ],
       rating_class: ["GK", "DEF", "MID", "ATT"],
       round_status: ["pending", "computed", "locked"],

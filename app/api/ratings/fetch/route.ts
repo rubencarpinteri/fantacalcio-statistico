@@ -37,13 +37,36 @@ export type FetchedPlayerStat = {
   ss_shots_on_target: number | null
   ss_big_chance_created: number | null
   ss_big_chance_missed: number | null
+  ss_blocked_scoring_attempt: number | null
+  ss_xg: number | null
+  ss_xa: number | null
   ss_key_passes: number | null
+  ss_total_passes: number | null
+  ss_accurate_passes: number | null
+  ss_total_long_balls: number | null
+  ss_accurate_long_balls: number | null
+  ss_total_crosses: number | null
   ss_successful_dribbles: number | null
   ss_dribble_attempts: number | null
+  ss_touches: number | null
+  ss_ball_carries: number | null
+  ss_progressive_carries: number | null
+  ss_dispossessed: number | null
+  ss_possession_lost_ctrl: number | null
   ss_tackles: number | null
+  ss_total_tackles: number | null
   ss_interceptions: number | null
   ss_clearances: number | null
   ss_blocked_shots: number | null
+  ss_duel_won: number | null
+  ss_duel_lost: number | null
+  ss_aerial_won: number | null
+  ss_aerial_lost: number | null
+  ss_ball_recoveries: number | null
+  ss_fouls_committed: number | null
+  ss_was_fouled: number | null
+  ss_market_value: number | null
+  ss_height: number | null
 }
 
 export type MatchedPlayer = {
@@ -203,18 +226,41 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
         if (ss == null || typeof ss !== 'object') continue
         m.stat.sofascore_rating = ss.rating
         m.stat.sofascore_id = sofascorePlayerId
-        // Extra SS stats — stored in dedicated columns; FotMob event stats remain authoritative
-        m.stat.ss_shots              = ss.shots
-        m.stat.ss_shots_on_target    = ss.shots_on_target
-        m.stat.ss_big_chance_created = ss.big_chance_created
-        m.stat.ss_big_chance_missed  = ss.big_chance_missed
-        m.stat.ss_key_passes         = ss.key_passes
-        m.stat.ss_successful_dribbles = ss.successful_dribbles
-        m.stat.ss_dribble_attempts   = ss.dribble_attempts
-        m.stat.ss_tackles            = ss.tackles
-        m.stat.ss_interceptions      = ss.interceptions
-        m.stat.ss_clearances         = ss.clearances
-        m.stat.ss_blocked_shots      = ss.blocked_shots
+        // Extra SS stats
+        m.stat.ss_shots                   = ss.shots
+        m.stat.ss_shots_on_target         = ss.shots_on_target
+        m.stat.ss_big_chance_created      = ss.big_chance_created
+        m.stat.ss_big_chance_missed       = ss.big_chance_missed
+        m.stat.ss_blocked_scoring_attempt = ss.blocked_scoring_attempt
+        m.stat.ss_xg                      = ss.xg
+        m.stat.ss_xa                      = ss.xa
+        m.stat.ss_key_passes              = ss.key_passes
+        m.stat.ss_total_passes            = ss.total_passes
+        m.stat.ss_accurate_passes         = ss.accurate_passes
+        m.stat.ss_total_long_balls        = ss.total_long_balls
+        m.stat.ss_accurate_long_balls     = ss.accurate_long_balls
+        m.stat.ss_total_crosses           = ss.total_crosses
+        m.stat.ss_successful_dribbles     = ss.successful_dribbles
+        m.stat.ss_dribble_attempts        = ss.dribble_attempts
+        m.stat.ss_touches                 = ss.touches
+        m.stat.ss_ball_carries            = ss.ball_carries
+        m.stat.ss_progressive_carries     = ss.progressive_carries
+        m.stat.ss_dispossessed            = ss.dispossessed
+        m.stat.ss_possession_lost_ctrl    = ss.possession_lost_ctrl
+        m.stat.ss_tackles                 = ss.tackles
+        m.stat.ss_total_tackles           = ss.total_tackles
+        m.stat.ss_interceptions           = ss.interceptions
+        m.stat.ss_clearances              = ss.clearances
+        m.stat.ss_blocked_shots           = ss.blocked_shots
+        m.stat.ss_duel_won                = ss.duel_won
+        m.stat.ss_duel_lost               = ss.duel_lost
+        m.stat.ss_aerial_won              = ss.aerial_won
+        m.stat.ss_aerial_lost             = ss.aerial_lost
+        m.stat.ss_ball_recoveries         = ss.ball_recoveries
+        m.stat.ss_fouls_committed         = ss.fouls_committed
+        m.stat.ss_was_fouled              = ss.was_fouled
+        m.stat.ss_market_value            = ss.market_value
+        m.stat.ss_height                  = ss.height
       }
     }
   }

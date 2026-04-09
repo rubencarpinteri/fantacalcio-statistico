@@ -29,13 +29,36 @@ export type FetchedPlayerStat = {
   ss_shots_on_target: number | null
   ss_big_chance_created: number | null
   ss_big_chance_missed: number | null
+  ss_blocked_scoring_attempt: number | null
+  ss_xg: number | null
+  ss_xa: number | null
   ss_key_passes: number | null
+  ss_total_passes: number | null
+  ss_accurate_passes: number | null
+  ss_total_long_balls: number | null
+  ss_accurate_long_balls: number | null
+  ss_total_crosses: number | null
   ss_successful_dribbles: number | null
   ss_dribble_attempts: number | null
+  ss_touches: number | null
+  ss_ball_carries: number | null
+  ss_progressive_carries: number | null
+  ss_dispossessed: number | null
+  ss_possession_lost_ctrl: number | null
   ss_tackles: number | null
+  ss_total_tackles: number | null
   ss_interceptions: number | null
   ss_clearances: number | null
   ss_blocked_shots: number | null
+  ss_duel_won: number | null
+  ss_duel_lost: number | null
+  ss_aerial_won: number | null
+  ss_aerial_lost: number | null
+  ss_ball_recoveries: number | null
+  ss_fouls_committed: number | null
+  ss_was_fouled: number | null
+  ss_market_value: number | null
+  ss_height: number | null
 }
 
 export function normalizeName(name: string): string {
@@ -182,35 +205,63 @@ export function parseSofaScoreLineupsJson(
       const minutesPlayed = get('minutesPlayed')
       if (minutesPlayed === 0) continue
 
+      const playerObj = p['player'] as Record<string, unknown> | undefined
+      const mvRaw = playerObj?.['proposedMarketValueRaw'] as Record<string, unknown> | undefined
+
       out.push({
-        sofascore_id:        Number(player['id']),
-        rating:              getOrNull('rating'),
-        minutes_played:      minutesPlayed,
-        goals:               get('goals'),
-        goal_assist:         get('goalAssist'),
-        yellow_card:         get('yellowCard'),
-        red_card:            get('redCard'),
-        own_goals:           get('ownGoals'),
-        penalty_scored:      get('penaltyScore'),
-        penalty_miss:        get('attemptPenaltyMiss'),
-        penalty_save:        get('penaltySaves'),
-        saves:               get('savedShotsFromInsideTheBox') + get('savedShotsFromOutsideTheBox'),
-        goals_conceded:      get('goalsConceded'),
-        // Shooting — available in lineups (not in fantasy)
-        shots:               get('totalShots'),
-        shots_on_target:     get('onTargetScoringAttempt'),
-        big_chance_created:  get('bigChanceCreated'),
-        big_chance_missed:   get('bigChanceMissed'),
+        sofascore_id:              Number(player['id']),
+        rating:                    getOrNull('rating'),
+        minutes_played:            minutesPlayed,
+        goals:                     get('goals'),
+        goal_assist:               get('goalAssist'),
+        yellow_card:               get('yellowCard'),
+        red_card:                  get('redCard'),
+        own_goals:                 get('ownGoals'),
+        penalty_scored:            get('penaltyScore'),
+        penalty_miss:              get('attemptPenaltyMiss'),
+        penalty_save:              get('penaltySaves'),
+        saves:                     get('savedShotsFromInsideTheBox') + get('savedShotsFromOutsideTheBox'),
+        goals_conceded:            get('goalsConceded'),
+        // Shooting
+        shots:                     get('totalShots'),
+        shots_on_target:           get('onTargetScoringAttempt'),
+        big_chance_created:        get('bigChanceCreated'),
+        big_chance_missed:         get('bigChanceMissed'),
+        blocked_scoring_attempt:   get('blockedScoringAttempt'),
+        // Advanced metrics
+        xg:                        getOrNull('expectedGoals'),
+        xa:                        getOrNull('expectedAssists'),
         // Passing
-        key_passes:          get('keyPass'),
-        // Dribbling — plain numbers in lineups (not ratio strings like fantasy)
-        successful_dribbles: getOrNull('wonContest'),
-        dribble_attempts:    getOrNull('totalContest'),
+        key_passes:                get('keyPass'),
+        total_passes:              get('totalPass'),
+        accurate_passes:           get('accuratePass'),
+        total_long_balls:          get('totalLongBalls'),
+        accurate_long_balls:       get('accurateLongBalls'),
+        total_crosses:             get('totalCross'),
+        // Dribbling / carrying
+        successful_dribbles:       getOrNull('wonContest'),
+        dribble_attempts:          getOrNull('totalContest'),
+        touches:                   get('touches'),
+        ball_carries:              get('ballCarriesCount'),
+        progressive_carries:       get('progressiveBallCarriesCount'),
+        dispossessed:              get('dispossessed'),
+        possession_lost_ctrl:      get('possessionLostCtrl'),
         // Defending
-        tackles:             get('wonTackle'),
-        interceptions:       get('interceptionWon'),
-        clearances:          get('totalClearance'),
-        blocked_shots:       get('outfielderBlock'),
+        tackles:                   get('wonTackle'),
+        total_tackles:             get('totalTackle'),
+        interceptions:             get('interceptionWon'),
+        clearances:                get('totalClearance'),
+        blocked_shots:             get('outfielderBlock'),
+        duel_won:                  get('duelWon'),
+        duel_lost:                 get('duelLost'),
+        aerial_won:                get('aerialWon'),
+        aerial_lost:               get('aerialLost'),
+        ball_recoveries:           get('ballRecovery'),
+        fouls_committed:           get('fouls'),
+        was_fouled:                get('wasFouled'),
+        // Player snapshot
+        market_value:              mvRaw?.['value'] != null ? Number(mvRaw['value']) : null,
+        height:                    player['height'] != null ? Number(player['height']) : null,
       })
     }
   }
@@ -234,31 +285,56 @@ export type SofaScoreFantasyStat = {
   minutes_played: number
   // Events
   goals: number
-  goal_assist: number        // key: 'assists'
-  yellow_card: number        // key: 'yellowCard'
-  red_card: number           // key: 'redCard'
-  own_goals: number          // key: 'ownGoals'
-  penalty_scored: number     // key: 'penaltyScore'
-  penalty_miss: number       // key: 'attemptPenaltyMiss'
-  penalty_save: number       // key: 'penaltySaves'
-  // GK — sum of inside + outside box saves
+  goal_assist: number
+  yellow_card: number
+  red_card: number
+  own_goals: number
+  penalty_scored: number
+  penalty_miss: number
+  penalty_save: number
+  // GK
   saves: number              // savedShotsFromInsideTheBox + savedShotsFromOutsideTheBox
-  goals_conceded: number     // key: 'goalsConceded'
-  // Shooting — NOT present in the fantasy endpoint; always 0
-  shots: number
-  shots_on_target: number
-  big_chance_missed: number
+  goals_conceded: number
+  // Shooting
+  shots: number              // totalShots
+  shots_on_target: number    // onTargetScoringAttempt
   big_chance_created: number
+  big_chance_missed: number
+  blocked_scoring_attempt: number  // blockedScoringAttempt (opponent blocked your shot)
+  // Advanced metrics
+  xg: number | null          // expectedGoals
+  xa: number | null          // expectedAssists
   // Passing
-  key_passes: number         // key: 'keyPass' (singular)
-  // Dribbling — extracted from 'wonContest' ratio string e.g. "1/2 (50.0%)"
-  successful_dribbles: number | null
-  dribble_attempts: number | null
+  key_passes: number         // keyPass
+  total_passes: number       // totalPass
+  accurate_passes: number    // accuratePass
+  total_long_balls: number   // totalLongBalls
+  accurate_long_balls: number // accurateLongBalls
+  total_crosses: number      // totalCross
+  // Dribbling / carrying
+  successful_dribbles: number | null  // wonContest
+  dribble_attempts: number | null     // totalContest
+  touches: number            // touches
+  ball_carries: number       // ballCarriesCount
+  progressive_carries: number // progressiveBallCarriesCount
+  dispossessed: number       // dispossessed
+  possession_lost_ctrl: number // possessionLostCtrl
   // Defending
-  tackles: number            // key: 'wonTackles'
-  interceptions: number      // key: 'interceptions'
-  clearances: number         // key: 'totalClearances'
-  blocked_shots: number      // key: 'blockedShots'
+  tackles: number            // wonTackle
+  total_tackles: number      // totalTackle
+  interceptions: number      // interceptionWon
+  clearances: number         // totalClearance
+  blocked_shots: number      // outfielderBlock (you blocked opponent's shot)
+  duel_won: number           // duelWon
+  duel_lost: number          // duelLost
+  aerial_won: number         // aerialWon
+  aerial_lost: number        // aerialLost
+  ball_recoveries: number    // ballRecovery
+  fouls_committed: number    // fouls
+  was_fouled: number         // wasFouled
+  // Player snapshot (from player object, not statistics)
+  market_value: number | null  // proposedMarketValueRaw.value in EUR
+  height: number | null        // height in cm
 }
 
 // Extract numerator / denominator from SofaScore ratio strings: "X/Y (Z%)"
@@ -304,32 +380,54 @@ export function parseSofaScoreFantasyJson(
     if (minutesPlayed === 0) continue
 
     out.push({
-      sofascore_id:       Number(p['playerId']),
-      rating:             getNumOrNull('rating'),
-      minutes_played:     minutesPlayed,
-      goals:              getNum('goals'),
-      goal_assist:        getNum('assists'),                       // 'assists', not 'goalAssist'
-      yellow_card:        getNum('yellowCard'),
-      red_card:           getNum('redCard'),
-      own_goals:          getNum('ownGoals'),
-      penalty_scored:     getNum('penaltyScore'),
-      penalty_miss:       getNum('attemptPenaltyMiss'),
-      penalty_save:       getNum('penaltySaves'),
-      saves:              getNum('savedShotsFromInsideTheBox')     // GK: inside + outside box
-                        + getNum('savedShotsFromOutsideTheBox'),
-      goals_conceded:     getNum('goalsConceded'),
-      // Not provided by the fantasy endpoint — always 0
-      shots:              0,
-      shots_on_target:    0,
-      big_chance_missed:  0,
-      big_chance_created: 0,
-      key_passes:         getNum('keyPass'),                       // singular 'keyPass'
-      successful_dribbles: ratioNum(getRaw('wonContest')),        // "X/Y (Z%)" → X
-      dribble_attempts:    ratioDen(getRaw('wonContest')),        // "X/Y (Z%)" → Y
-      tackles:             getNum('wonTackles'),                   // 'wonTackles', not 'tackles'
-      interceptions:       getNum('interceptions'),
-      clearances:          getNum('totalClearances'),              // 'totalClearances'
-      blocked_shots:       getNum('blockedShots'),
+      sofascore_id:              Number(p['playerId']),
+      rating:                    getNumOrNull('rating'),
+      minutes_played:            minutesPlayed,
+      goals:                     getNum('goals'),
+      goal_assist:               getNum('assists'),
+      yellow_card:               getNum('yellowCard'),
+      red_card:                  getNum('redCard'),
+      own_goals:                 getNum('ownGoals'),
+      penalty_scored:            getNum('penaltyScore'),
+      penalty_miss:              getNum('attemptPenaltyMiss'),
+      penalty_save:              getNum('penaltySaves'),
+      saves:                     getNum('savedShotsFromInsideTheBox')
+                               + getNum('savedShotsFromOutsideTheBox'),
+      goals_conceded:            getNum('goalsConceded'),
+      shots:                     0,
+      shots_on_target:           0,
+      big_chance_created:        0,
+      big_chance_missed:         0,
+      blocked_scoring_attempt:   0,
+      xg:                        null,
+      xa:                        null,
+      key_passes:                getNum('keyPass'),
+      total_passes:              0,
+      accurate_passes:           0,
+      total_long_balls:          0,
+      accurate_long_balls:       0,
+      total_crosses:             0,
+      successful_dribbles:       ratioNum(getRaw('wonContest')),
+      dribble_attempts:          ratioDen(getRaw('wonContest')),
+      touches:                   0,
+      ball_carries:              0,
+      progressive_carries:       0,
+      dispossessed:              0,
+      possession_lost_ctrl:      0,
+      tackles:                   getNum('wonTackles'),
+      total_tackles:             0,
+      interceptions:             getNum('interceptions'),
+      clearances:                getNum('totalClearances'),
+      blocked_shots:             getNum('blockedShots'),
+      duel_won:                  0,
+      duel_lost:                 0,
+      aerial_won:                0,
+      aerial_lost:               0,
+      ball_recoveries:           0,
+      fouls_committed:           0,
+      was_fouled:                0,
+      market_value:              null,
+      height:                    null,
     })
   }
   return out
@@ -378,9 +476,22 @@ export function mergeFixtureStats(
   const nullSsExtras = {
     ss_shots: null, ss_shots_on_target: null,
     ss_big_chance_created: null, ss_big_chance_missed: null,
-    ss_key_passes: null, ss_successful_dribbles: null,
-    ss_dribble_attempts: null, ss_tackles: null,
+    ss_blocked_scoring_attempt: null,
+    ss_xg: null, ss_xa: null,
+    ss_key_passes: null,
+    ss_total_passes: null, ss_accurate_passes: null,
+    ss_total_long_balls: null, ss_accurate_long_balls: null,
+    ss_total_crosses: null,
+    ss_successful_dribbles: null, ss_dribble_attempts: null,
+    ss_touches: null, ss_ball_carries: null, ss_progressive_carries: null,
+    ss_dispossessed: null, ss_possession_lost_ctrl: null,
+    ss_tackles: null, ss_total_tackles: null,
     ss_interceptions: null, ss_clearances: null, ss_blocked_shots: null,
+    ss_duel_won: null, ss_duel_lost: null,
+    ss_aerial_won: null, ss_aerial_lost: null,
+    ss_ball_recoveries: null,
+    ss_fouls_committed: null, ss_was_fouled: null,
+    ss_market_value: null, ss_height: null,
   }
 
   for (const s of fotmob?.stats ?? []) {
