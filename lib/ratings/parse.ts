@@ -118,7 +118,9 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
   return { stats, events }
 }
 
-// ─── SofaScore parser (legacy lineup format) ──────────────────────────────────
+// ─── SofaScore legacy lineup parser (name + rating only) ─────────────────────
+// Used by the legacy /api/ratings/process route and mergeFixtureStats.
+// Returns only id/name/rating/minutes — kept for backward compat.
 
 type SofaScoreStat = {
   sofascore_id: number; name: string
@@ -145,6 +147,77 @@ export function parseSofaScoreJson(json: Record<string, unknown>): SofaScoreStat
   return out
 }
 
+// ─── SofaScore lineups endpoint parser ────────────────────────────────────────
+//
+// Endpoint: GET https://www.sofascore.com/api/v1/event/{eventId}/lineups
+//   - Blocked server-side (TLS fingerprinting / 403). Must be fetched manually
+//     in the browser and pasted into the admin UI.
+//   - Structure: { home: { players: [{player: {id, name}, statistics: {...}}] }, away: {...} }
+//   - statistics is a flat object with plain numeric values (no ratio strings)
+//   - Use statistics.rating for the official rating; ignore ratingVersions.alternative
+//   - Only players with minutesPlayed > 0 are included in the output
+
+export function parseSofaScoreLineupsJson(
+  json: Record<string, unknown>
+): SofaScoreFantasyStat[] {
+  const out: SofaScoreFantasyStat[] = []
+
+  for (const side of ['home', 'away'] as const) {
+    const team = json[side] as Record<string, unknown> | undefined
+    const players = team?.['players'] as Array<Record<string, unknown>> | undefined
+    for (const p of players ?? []) {
+      const player = p['player'] as Record<string, unknown> | undefined
+      const stats  = p['statistics'] as Record<string, number | null | undefined> | undefined
+      if (!player || !stats) continue
+
+      const get = (key: string): number => {
+        const v = stats[key]
+        return v != null ? Number(v) : 0
+      }
+      const getOrNull = (key: string): number | null => {
+        const v = stats[key]
+        return v != null ? Number(v) : null
+      }
+
+      const minutesPlayed = get('minutesPlayed')
+      if (minutesPlayed === 0) continue
+
+      out.push({
+        sofascore_id:        Number(player['id']),
+        rating:              getOrNull('rating'),
+        minutes_played:      minutesPlayed,
+        goals:               get('goals'),
+        goal_assist:         get('goalAssist'),
+        yellow_card:         get('yellowCard'),
+        red_card:            get('redCard'),
+        own_goals:           get('ownGoals'),
+        penalty_scored:      get('penaltyScore'),
+        penalty_miss:        get('attemptPenaltyMiss'),
+        penalty_save:        get('penaltySaves'),
+        saves:               get('savedShotsFromInsideTheBox') + get('savedShotsFromOutsideTheBox'),
+        goals_conceded:      get('goalsConceded'),
+        // Shooting — available in lineups (not in fantasy)
+        shots:               get('totalShots'),
+        shots_on_target:     get('onTargetScoringAttempt'),
+        big_chance_created:  get('bigChanceCreated'),
+        big_chance_missed:   get('bigChanceMissed'),
+        // Passing
+        key_passes:          get('keyPass'),
+        // Dribbling — plain numbers in lineups (not ratio strings like fantasy)
+        successful_dribbles: getOrNull('wonContest'),
+        dribble_attempts:    getOrNull('totalContest'),
+        // Defending
+        tackles:             get('wonTackle'),
+        interceptions:       get('interceptionWon'),
+        clearances:          get('totalClearance'),
+        blocked_shots:       get('outfielderBlock'),
+      })
+    }
+  }
+
+  return out
+}
+
 // ─── SofaScore fantasy endpoint parser ────────────────────────────────────────
 //
 // Endpoint: GET https://www.sofascore.com/api/v1/fantasy/event/{eventId}
@@ -159,33 +232,45 @@ export type SofaScoreFantasyStat = {
   /** null if SofaScore hasn't published the rating yet (live match) */
   rating: number | null
   minutes_played: number
-  // Events (used for cross-validation vs FotMob)
+  // Events
   goals: number
-  goal_assist: number
-  yellow_card: number
-  red_card: number
-  own_goals: number
-  penalty_scored: number
-  penalty_miss: number
-  penalty_save: number
-  // GK
-  saves: number
-  goals_conceded: number
-  // Shooting
+  goal_assist: number        // key: 'assists'
+  yellow_card: number        // key: 'yellowCard'
+  red_card: number           // key: 'redCard'
+  own_goals: number          // key: 'ownGoals'
+  penalty_scored: number     // key: 'penaltyScore'
+  penalty_miss: number       // key: 'attemptPenaltyMiss'
+  penalty_save: number       // key: 'penaltySaves'
+  // GK — sum of inside + outside box saves
+  saves: number              // savedShotsFromInsideTheBox + savedShotsFromOutsideTheBox
+  goals_conceded: number     // key: 'goalsConceded'
+  // Shooting — NOT present in the fantasy endpoint; always 0
   shots: number
   shots_on_target: number
   big_chance_missed: number
-  // Passing
-  key_passes: number
   big_chance_created: number
-  // Dribbling
-  successful_dribbles: number
-  dribble_attempts: number
+  // Passing
+  key_passes: number         // key: 'keyPass' (singular)
+  // Dribbling — extracted from 'wonContest' ratio string e.g. "1/2 (50.0%)"
+  successful_dribbles: number | null
+  dribble_attempts: number | null
   // Defending
-  tackles: number
-  interceptions: number
-  clearances: number
-  blocked_shots: number
+  tackles: number            // key: 'wonTackles'
+  interceptions: number      // key: 'interceptions'
+  clearances: number         // key: 'totalClearances'
+  blocked_shots: number      // key: 'blockedShots'
+}
+
+// Extract numerator / denominator from SofaScore ratio strings: "X/Y (Z%)"
+function ratioNum(v: string | number | null | undefined): number | null {
+  if (v == null) return null
+  const m = String(v).match(/^(\d+)\/(\d+)/)
+  return m ? Number(m[1]) : null
+}
+function ratioDen(v: string | number | null | undefined): number | null {
+  if (v == null) return null
+  const m = String(v).match(/^(\d+)\/(\d+)/)
+  return m ? Number(m[2]) : null
 }
 
 export function parseSofaScoreFantasyJson(
@@ -202,12 +287,15 @@ export function parseSofaScoreFantasyJson(
       | Array<{ key: string; value: string | number }>
       | undefined
 
+    const getRaw = (key: string): string | number | null =>
+      statistics?.find((s) => s.key === key)?.value ?? null
+
     const getNum = (key: string): number => {
-      const v = statistics?.find((s) => s.key === key)?.value ?? null
+      const v = getRaw(key)
       return v != null ? Number(v) : 0
     }
     const getNumOrNull = (key: string): number | null => {
-      const v = statistics?.find((s) => s.key === key)?.value ?? null
+      const v = getRaw(key)
       return v != null ? Number(v) : null
     }
 
@@ -215,32 +303,33 @@ export function parseSofaScoreFantasyJson(
     // Only include players who actually played
     if (minutesPlayed === 0) continue
 
-    const ratingVal = getNumOrNull('rating')
     out.push({
-      sofascore_id: Number(p['playerId']),
-      rating: ratingVal,
-      minutes_played: minutesPlayed,
-      goals: getNum('goals'),
-      goal_assist: getNum('goalAssist'),
-      yellow_card: getNum('yellowCard'),
-      red_card: getNum('redCard'),
-      own_goals: getNum('ownGoals'),
-      penalty_scored: getNum('penaltyScored'),
-      penalty_miss: getNum('penaltyMiss'),
-      penalty_save: getNum('penaltySave'),
-      saves: getNum('saves'),
-      goals_conceded: getNum('goalsConceded'),
-      shots: getNum('shots'),
-      shots_on_target: getNum('shotsOnTarget'),
-      big_chance_missed: getNum('bigChanceMissed'),
-      key_passes: getNum('keyPasses'),
-      big_chance_created: getNum('bigChanceCreated'),
-      successful_dribbles: getNum('successfulDribbles'),
-      dribble_attempts: getNum('dribbleAttempts'),
-      tackles: getNum('tackles'),
-      interceptions: getNum('interceptions'),
-      clearances: getNum('clearances'),
-      blocked_shots: getNum('blockedShots'),
+      sofascore_id:       Number(p['playerId']),
+      rating:             getNumOrNull('rating'),
+      minutes_played:     minutesPlayed,
+      goals:              getNum('goals'),
+      goal_assist:        getNum('assists'),                       // 'assists', not 'goalAssist'
+      yellow_card:        getNum('yellowCard'),
+      red_card:           getNum('redCard'),
+      own_goals:          getNum('ownGoals'),
+      penalty_scored:     getNum('penaltyScore'),
+      penalty_miss:       getNum('attemptPenaltyMiss'),
+      penalty_save:       getNum('penaltySaves'),
+      saves:              getNum('savedShotsFromInsideTheBox')     // GK: inside + outside box
+                        + getNum('savedShotsFromOutsideTheBox'),
+      goals_conceded:     getNum('goalsConceded'),
+      // Not provided by the fantasy endpoint — always 0
+      shots:              0,
+      shots_on_target:    0,
+      big_chance_missed:  0,
+      big_chance_created: 0,
+      key_passes:         getNum('keyPass'),                       // singular 'keyPass'
+      successful_dribbles: ratioNum(getRaw('wonContest')),        // "X/Y (Z%)" → X
+      dribble_attempts:    ratioDen(getRaw('wonContest')),        // "X/Y (Z%)" → Y
+      tackles:             getNum('wonTackles'),                   // 'wonTackles', not 'tackles'
+      interceptions:       getNum('interceptions'),
+      clearances:          getNum('totalClearances'),              // 'totalClearances'
+      blocked_shots:       getNum('blockedShots'),
     })
   }
   return out

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { parseSofaScoreFantasyJson, type SofaScoreFantasyStat } from '@/lib/ratings/parse'
+import { parseSofaScoreLineupsJson, type SofaScoreFantasyStat } from '@/lib/ratings/parse'
 
 interface FixtureItem {
   sofascoreEventId: number
@@ -61,7 +61,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
     for (const chunk of chunks) {
       try {
         const json = JSON.parse(chunk) as Record<string, unknown>
-        const stats = parseSofaScoreFantasyJson(json)
+        const stats = parseSofaScoreLineupsJson(json)
         if (stats.length > 0) {
           for (const s of stats) {
             ratings[String(s.sofascore_id)] = s
@@ -72,7 +72,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
     }
 
     if (eventsOk === 0) {
-      setError('JSON incollato non contiene dati playerStatistics validi.')
+      setError('JSON incollato non contiene dati lineups validi (nessun giocatore con minutesPlayed > 0).')
       return
     }
 
@@ -112,7 +112,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
             {fixtures.map((fx) => (
               <a
                 key={fx.sofascoreEventId}
-                href={`https://www.sofascore.com/api/v1/fantasy/event/${fx.sofascoreEventId}`}
+                href={`https://www.sofascore.com/api/v1/event/${fx.sofascoreEventId}/lineups`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded border border-[#2e2e42] px-2 py-1 text-xs text-indigo-400 hover:border-indigo-500 hover:text-indigo-300"

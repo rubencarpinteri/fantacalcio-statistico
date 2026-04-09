@@ -307,31 +307,35 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               <StatCategory title="Tiro" stats={[
                 { label: 'Tiri totali',    value: slot.shots },
                 { label: 'In porta',       value: slot.shotsOnTarget },
-                { label: 'Gr. occasioni perse', value: slot.bigChanceMissed },
-              ]} />
-
-              <StatCategory title="Passaggio" stats={[
-                { label: 'Passaggi chiave',      value: slot.keyPasses },
-                { label: 'Gr. occasioni create', value: slot.bigChanceCreated },
-              ]} />
-
-              <StatCategory title="Dribbling" stats={[
-                { label: 'Dribbling riusciti', value: slot.successfulDribbles },
-                { label: 'Dribbling tentati', value: slot.dribbleAttempts },
+                { label: 'Grande chance creata',  value: slot.bigChanceCreated },
+                { label: 'Grande chance mancata', value: slot.bigChanceMissed },
               ]} />
 
               <StatCategory title="Difesa" stats={[
-                { label: 'Tackle',       value: slot.tackles },
-                { label: 'Intercetti',   value: slot.interceptions },
-                { label: 'Respinte',     value: slot.clearances },
-                { label: 'Tiri bloccati', value: slot.blockedShots },
-                { label: 'Parate',       value: slot.saves },
-                { label: 'Gol subiti',   value: slot.goalsConceded },
+                { label: 'Tackle vinti',   value: slot.tackles },
+                { label: 'Intercetti',     value: slot.interceptions },
+                { label: 'Respinte',       value: slot.clearances },
+                { label: 'Tiri bloccati',  value: slot.blockedShots },
+                { label: 'Parate',         value: slot.saves },
+                { label: 'Gol subiti',     value: slot.goalsConceded },
               ]} />
 
-              {/* All-zero fallback */}
-              {[slot.shots, slot.keyPasses, slot.successfulDribbles, slot.tackles,
-                slot.interceptions, slot.clearances, slot.saves, slot.goalsConceded,
+              <StatCategory title="Passaggio" stats={[
+                { label: 'Passaggi chiave', value: slot.keyPasses },
+              ]} />
+
+              <StatCategory title="Dribbling" stats={[
+                { label: 'Riusciti',  value: slot.successfulDribbles },
+                { label: 'Tentati',   value: slot.dribbleAttempts },
+              ]} />
+
+              {/* All-zero fallback — only when every single SS stat is absent/zero */}
+              {[
+                slot.shots, slot.shotsOnTarget, slot.bigChanceMissed,
+                slot.keyPasses, slot.bigChanceCreated,
+                slot.successfulDribbles, slot.dribbleAttempts,
+                slot.tackles, slot.interceptions, slot.clearances, slot.blockedShots,
+                slot.saves, slot.goalsConceded,
               ].every((v) => !v) && (
                 <p className="text-[11px] text-[#55556a] italic">Nessuna statistica SofaScore disponibile</p>
               )}
