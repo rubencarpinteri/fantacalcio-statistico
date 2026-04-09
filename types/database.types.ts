@@ -725,6 +725,8 @@ export type Database = {
           target_mean_vote: number | null
           target_vote_std: number | null
           updated_at: string
+          voto_base_cap_max: number | null
+          voto_base_cap_min: number | null
           yellow_card: number
         }
         Insert: {
@@ -764,6 +766,8 @@ export type Database = {
           target_mean_vote?: number | null
           target_vote_std?: number | null
           updated_at?: string
+          voto_base_cap_max?: number | null
+          voto_base_cap_min?: number | null
           yellow_card?: number
         }
         Update: {
@@ -803,6 +807,8 @@ export type Database = {
           target_mean_vote?: number | null
           target_vote_std?: number | null
           updated_at?: string
+          voto_base_cap_max?: number | null
+          voto_base_cap_min?: number | null
           yellow_card?: number
         }
         Relationships: [
