@@ -148,12 +148,16 @@ function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | nu
 
 // ---- Stat category helpers -------------------------------------------------
 
-type StatEntry = { label: string; value: number | null; decimals?: number }
+type StatEntry = { label: string; value: number | null; decimals?: number; total?: number | null }
 
 function fmtVal(s: StatEntry): string {
   if (s.value === null) return '—'
-  if (s.decimals !== undefined) return s.value.toFixed(s.decimals)
-  return String(s.value)
+  const base = s.decimals !== undefined ? s.value.toFixed(s.decimals) : String(s.value)
+  if (s.total != null && s.total > 0) {
+    const pct = Math.round((s.value / s.total) * 100)
+    return `${base}/${s.total} (${pct}%)`
+  }
+  return base
 }
 
 function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
@@ -161,12 +165,12 @@ function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
   if (visible.length === 0) return null
   return (
     <div>
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#55556a]">{title}</p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#55556a]">{title}</p>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0">
         {visible.map((s) => (
-          <div key={s.label} className="flex items-center justify-between gap-2">
-            <span className="text-[11px] text-[#8888aa]">{s.label}</span>
-            <span className="font-mono text-[11px] font-semibold text-white">{fmtVal(s)}</span>
+          <div key={s.label} className="flex items-center justify-between gap-1 py-px">
+            <span className="text-[10px] text-[#8888aa] truncate">{s.label}</span>
+            <span className="font-mono text-[10px] font-semibold text-white shrink-0">{fmtVal(s)}</span>
           </div>
         ))}
       </div>
@@ -178,6 +182,18 @@ function fmtMarketValue(v: number): string {
   if (v >= 1_000_000) return `€${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1_000) return `€${(v / 1_000).toFixed(0)}K`
   return `€${v}`
+}
+
+// ---- Rating colour helper --------------------------------------------------
+
+function fvColor(fv: number | null): string {
+  if (fv === null) return 'text-[#A4A9B3]'
+  if (fv < 5)  return 'text-[#DC0C00]'
+  if (fv < 6)  return 'text-[#ED7E07]'
+  if (fv < 7)  return 'text-[#D9AF00]'
+  if (fv < 8)  return 'text-[#00C424]'
+  if (fv < 9)  return 'text-[#00ADC4]'
+  return 'text-[#374DF5]'
 }
 
 // ---- Player detail modal ---------------------------------------------------
@@ -193,121 +209,98 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
   const hasAnyRaw = hasFm || hasSs
   const hasStats = slot.minutesPlayed !== null
 
-  // Δ on converted bases — use raw (unclamped) values for the true delta
-  const deltaRaw = hasFm && hasSs
-    ? slot.rawFotmobRating! - slot.rawSofascoreRating!
+  const deltaRaw = hasFm && hasSs ? slot.rawFotmobRating! - slot.rawSofascoreRating! : null
+  const deltaConverted = vbFm !== null && vbSs !== null ? vbFm.raw - vbSs.raw : null
+
+  const aerialTotal = (slot.aerialWon !== null || slot.aerialLost !== null)
+    ? ((slot.aerialWon ?? 0) + (slot.aerialLost ?? 0)) || null
     : null
-  const deltaConverted = vbFm !== null && vbSs !== null
-    ? vbFm.raw - vbSs.raw
+  const duelTotal = (slot.duelWon !== null || slot.duelLost !== null)
+    ? ((slot.duelWon ?? 0) + (slot.duelLost ?? 0)) || null
     : null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-xl border border-[#2e2e42] bg-[#111118] shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
+        className="w-full max-w-md rounded-xl border border-[#2e2e42] bg-[#111118] shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-[#1e1e2e] shrink-0">
-          <div>
-            <p className="text-sm font-semibold text-white">{slot.playerName ?? '—'}</p>
-            <p className="text-xs text-[#55556a]">
-              {slot.playerClub ?? ''}
+        {/* Compact header: name + RC + FV + minutes */}
+        <div className="flex items-center gap-3 px-3 py-2 border-b border-[#1e1e2e] shrink-0">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-bold text-white truncate">{slot.playerName ?? '—'}</p>
               {slot.playerRatingClass && (
-                <span className={`ml-2 font-bold ${rcColor}`}>{slot.playerRatingClass}</span>
-              )}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none mt-0.5 shrink-0">×</button>
-        </div>
-
-        <div className="p-4 space-y-4 overflow-y-auto">
-          {/* Fantavoto + minutes */}
-          <div className="flex items-baseline justify-between gap-3">
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-black font-mono text-white">{fmtFv(fv)}</span>
-              {slot.votoBase !== null && (
-                <span className="text-sm text-[#55556a]">
-                  voto base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
-                </span>
+                <span className={`text-[10px] font-bold shrink-0 ${rcColor}`}>{slot.playerRatingClass}</span>
               )}
             </div>
+            <p className="text-[11px] text-[#55556a] truncate">{slot.playerClub ?? ''}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`text-2xl font-black font-mono ${fvColor(fv)}`}>{fmtFv(fv)}</span>
             {slot.minutesPlayed !== null && (
-              <span className="shrink-0 rounded-full border border-[#2e2e42] px-2 py-0.5 text-[11px] font-mono text-[#8888aa]">
+              <span className="rounded border border-[#2e2e42] px-1.5 py-0.5 text-[10px] font-mono text-[#8888aa]">
                 {slot.minutesPlayed}&apos;
               </span>
             )}
+            <button onClick={onClose} className="text-[#55556a] hover:text-white text-xl leading-none">×</button>
           </div>
+        </div>
 
-          {/* Raw ratings + per-source breakdown */}
+        <div className="p-3 space-y-2.5 overflow-y-auto">
+          {/* Voto base */}
+          {slot.votoBase !== null && (
+            <div className="text-[11px] text-[#55556a]">
+              voto base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Source breakdown — 2 color-coded cards */}
           {hasAnyRaw && (
-            <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] overflow-hidden">
-              <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[#55556a] border-b border-[#1e1e2e]">
-                Voto originale → base convertito
-              </p>
-
-              <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-1.5 border-b border-[#1a1a24]">
-                <span className="text-[10px] text-[#3a3a52]">Fonte</span>
-                <span className="text-[10px] text-[#3a3a52] text-right">Voto orig.</span>
-                <span className="text-[10px] text-[#3a3a52] text-right">→ base</span>
-              </div>
-
-              <div className="divide-y divide-[#1a1a24]">
-                {hasFm && (
-                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-2 items-center">
-                    <span className="text-xs text-[#8888aa]">FotMob</span>
-                    <span className="font-mono text-sm font-bold text-white text-right">
-                      {slot.rawFotmobRating!.toFixed(1)}
-                    </span>
-                    <span className="font-mono text-xs text-right">
-                      {vbFm !== null ? (
-                        <span className={vbFm.clamped ? 'text-amber-400' : 'text-[#8888aa]'}>
-                          {vbFm.value.toFixed(2)}
-                          {vbFm.clamped && <span className="ml-1 text-[9px]" title={`Unclamped: ${vbFm.raw.toFixed(2)}`}>↑cap</span>}
-                        </span>
-                      ) : '—'}
-                    </span>
+            <div className={`grid gap-2 ${hasFm && hasSs ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {hasFm && (
+                <div className="rounded-lg p-2" style={{ border: '1px solid rgba(4,156,100,0.3)', background: 'rgba(4,156,100,0.07)' }}>
+                  <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>FotMob</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-black font-mono text-white">{slot.rawFotmobRating!.toFixed(1)}</span>
+                    {vbFm !== null && (
+                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                        → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
+                      </span>
+                    )}
                   </div>
-                )}
-                {hasSs && (
-                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-2 items-center">
-                    <span className="text-xs text-indigo-400/80">SofaScore</span>
-                    <span className="font-mono text-sm font-bold text-white text-right">
-                      {slot.rawSofascoreRating!.toFixed(1)}
-                    </span>
-                    <span className="font-mono text-xs text-right">
-                      {vbSs !== null ? (
-                        <span className={vbSs.clamped ? 'text-amber-400' : 'text-indigo-300/70'}>
-                          {vbSs.value.toFixed(2)}
-                          {vbSs.clamped && <span className="ml-1 text-[9px]" title={`Unclamped: ${vbSs.raw.toFixed(2)}`}>↑cap</span>}
-                        </span>
-                      ) : '—'}
-                    </span>
+                </div>
+              )}
+              {hasSs && (
+                <div className="rounded-lg p-2" style={{ border: '1px solid rgba(55,77,245,0.3)', background: 'rgba(55,77,245,0.07)' }}>
+                  <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#374DF5' }}>SofaScore</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-black font-mono text-white">{slot.rawSofascoreRating!.toFixed(1)}</span>
+                    {vbSs !== null && (
+                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                        → {vbSs.value.toFixed(2)}{vbSs.clamped ? ' ↑' : ''}
+                      </span>
+                    )}
                   </div>
-                )}
-                {deltaRaw !== null && deltaConverted !== null && (
-                  <div className="grid grid-cols-[1fr,auto,auto] gap-x-4 px-3 py-1.5 items-center bg-[#0f0f18]">
-                    <span className="text-[10px] text-[#55556a]">Δ FM − SS</span>
-                    <span className={`font-mono text-[10px] text-right ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'}`}>
-                      {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)}
-                    </span>
-                    <span className={`font-mono text-[10px] text-right ${Math.abs(deltaConverted) > 0.5 ? 'text-amber-400' : 'text-[#55556a]'}`}>
-                      {deltaConverted >= 0 ? '+' : ''}{deltaConverted.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-
+                </div>
+              )}
+              {deltaRaw !== null && deltaConverted !== null && (
+                <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-[#55556a]">
+                  <span>Δ FM−SS</span>
+                  <span className={`font-mono ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : ''}`}>
+                    {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)} orig
+                  </span>
+                  <span className={`font-mono ${Math.abs(deltaConverted) > 0.5 ? 'text-amber-400' : ''}`}>
+                    {deltaConverted >= 0 ? '+' : ''}{deltaConverted.toFixed(2)} conv
+                  </span>
+                </div>
+              )}
               {((vbFm?.clamped ?? false) || (vbSs?.clamped ?? false)) && (
-                <div className="px-3 py-2 border-t border-[#1a1a24] bg-amber-500/5">
-                  <p className="text-[10px] text-amber-400/80">
-                    ↑cap — il voto base calcolato supera il massimo (9.50) e viene limitato.
-                    {vbFm?.clamped && ` FM non-capped: ${vbFm.raw.toFixed(2)}.`}
-                    {vbSs?.clamped && ` SS non-capped: ${vbSs.raw.toFixed(2)}.`}
-                  </p>
+                <div className="col-span-2 rounded px-2 py-1 bg-amber-500/8 text-[9px] text-amber-400/80">
+                  ↑ voto base supera il massimo (9.50) e viene limitato
                 </div>
               )}
             </div>
@@ -315,33 +308,29 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
 
           {/* Bonus / Malus */}
           {slot.bonusMalus && slot.bonusMalus.length > 0 && (
-            <div>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#55556a]">Bonus / Malus</p>
-              <div className="flex flex-wrap gap-1.5">
-                {slot.bonusMalus.map((b, i) => (
-                  <span
-                    key={i}
-                    className={`rounded px-2 py-0.5 text-xs font-semibold ${
-                      b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                    }`}
-                  >
-                    {b.label} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-1">
+              {slot.bonusMalus.map((b, i) => (
+                <span
+                  key={i}
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                    b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                  }`}
+                >
+                  {b.label} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
+                </span>
+              ))}
             </div>
           )}
 
-          {/* SofaScore stat categories */}
+          {/* SofaScore stats — compact */}
           {hasStats && (
-            <div className="space-y-3 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400/60">
+            <div className="space-y-2 rounded-lg p-2.5" style={{ border: '1px solid rgba(55,77,245,0.2)', background: '#0a0a0f' }}>
+              <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#374DF5' }}>
                 Statistiche SofaScore
               </p>
 
-              {/* Market value + height pill row */}
               {(slot.marketValue !== null || slot.height !== null) && (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex gap-1.5">
                   {slot.marketValue !== null && (
                     <span className="rounded-full border border-[#2e2e42] px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
                       {fmtMarketValue(slot.marketValue)}
@@ -356,44 +345,38 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               )}
 
               <StatCategory title="Tiro" stats={[
-                { label: 'Tiri totali',           value: slot.shots },
-                { label: 'In porta',              value: slot.shotsOnTarget },
-                { label: 'Tentativo bloccato',    value: slot.blockedScoringAttempt },
-                { label: 'Grande chance creata',  value: slot.bigChanceCreated },
-                { label: 'Grande chance mancata', value: slot.bigChanceMissed },
-                { label: 'xG',                    value: slot.xg, decimals: 2 },
+                { label: 'Tiri totali',        value: slot.shots },
+                { label: 'In porta',           value: slot.shotsOnTarget, total: slot.shots },
+                { label: 'Bloccato',           value: slot.blockedScoringAttempt },
+                { label: 'Gr. chance creata',  value: slot.bigChanceCreated },
+                { label: 'Gr. chance mancata', value: slot.bigChanceMissed },
+                { label: 'xG',                 value: slot.xg, decimals: 2 },
               ]} />
 
               <StatCategory title="Passaggio" stats={[
-                { label: 'Passaggi chiave', value: slot.keyPasses },
-                { label: 'Pass. riusciti',  value: slot.accuratePasses },
-                { label: 'Pass. totali',    value: slot.totalPasses },
-                { label: 'Lanci riusciti',  value: slot.accurateLongBalls },
-                { label: 'Lanci totali',    value: slot.totalLongBalls },
-                { label: 'Cross',           value: slot.totalCrosses },
-                { label: 'xA',              value: slot.xa, decimals: 2 },
+                { label: 'Pass. chiave',   value: slot.keyPasses },
+                { label: 'Pass. riusciti', value: slot.accuratePasses, total: slot.totalPasses },
+                { label: 'Lanci riusciti', value: slot.accurateLongBalls, total: slot.totalLongBalls },
+                { label: 'Cross',          value: slot.totalCrosses },
+                { label: 'xA',             value: slot.xa, decimals: 2 },
               ]} />
 
               <StatCategory title="Dribbling / Palla" stats={[
-                { label: 'Dribbling riusciti', value: slot.successfulDribbles },
-                { label: 'Dribbling tentati',  value: slot.dribbleAttempts },
-                { label: 'Tocchi',             value: slot.touches },
-                { label: 'Conduzioni',         value: slot.ballCarries },
-                { label: 'Conduz. progressive',value: slot.progressiveCarries },
-                { label: 'Perse',              value: slot.dispossessed },
-                { label: 'Poss. perso',        value: slot.possessionLostCtrl },
+                { label: 'Dribbling',       value: slot.successfulDribbles, total: slot.dribbleAttempts },
+                { label: 'Tocchi',          value: slot.touches },
+                { label: 'Conduzioni',      value: slot.ballCarries },
+                { label: 'Cond. progr.',    value: slot.progressiveCarries },
+                { label: 'Perse',           value: slot.dispossessed },
+                { label: 'Poss. perso',     value: slot.possessionLostCtrl },
               ]} />
 
               <StatCategory title="Difesa" stats={[
-                { label: 'Tackle vinti',   value: slot.tackles },
-                { label: 'Tackle totali',  value: slot.totalTackles },
+                { label: 'Tackle',         value: slot.tackles, total: slot.totalTackles },
                 { label: 'Intercetti',     value: slot.interceptions },
                 { label: 'Respinte',       value: slot.clearances },
                 { label: 'Tiri bloccati',  value: slot.blockedShots },
-                { label: 'Duelli vinti',   value: slot.duelWon },
-                { label: 'Duelli persi',   value: slot.duelLost },
-                { label: 'Aerei vinti',    value: slot.aerialWon },
-                { label: 'Aerei persi',    value: slot.aerialLost },
+                { label: 'Duelli vinti',   value: slot.duelWon, total: duelTotal },
+                { label: 'Aerei vinti',    value: slot.aerialWon, total: aerialTotal },
                 { label: 'Recuperi',       value: slot.ballRecoveries },
                 { label: 'Falli commessi', value: slot.foulsCommitted },
                 { label: 'Falli subiti',   value: slot.wasFouled },
@@ -402,7 +385,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               ]} />
 
               {!hasSs && (
-                <p className="text-[11px] text-[#55556a] italic">Nessuna statistica SofaScore disponibile</p>
+                <p className="text-[10px] text-[#55556a] italic">Nessuna statistica SofaScore disponibile</p>
               )}
             </div>
           )}
@@ -486,9 +469,7 @@ function PlayerChip({
       )}
 
       {/* Fantavoto */}
-      <span className={`shrink-0 font-mono font-bold ${bm && bm.length > 0 ? '' : 'ml-auto'} ${
-        fv === null ? 'text-[#55556a]' : fv >= 7 ? 'text-green-400' : fv >= 6 ? 'text-white' : 'text-amber-400'
-      }`}>
+      <span className={`shrink-0 font-mono font-bold ${bm && bm.length > 0 ? '' : 'ml-auto'} ${fvColor(fv)}`}>
         {fmtFv(fv)}
       </span>
     </div>
@@ -756,7 +737,7 @@ function MatchupRow({
       <div className="flex items-center px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
         {/* Home team — right-aligned, takes 38% */}
         <div className="w-[38%] min-w-0 overflow-hidden text-right pr-4">
-          <p className="block truncate text-base font-bold text-white leading-tight">
+          <p className="block truncate text-xl font-bold text-white leading-tight">
             {home?.teamName ?? '?'}
           </p>
           <p className="block truncate text-xs text-[#55556a] mt-0.5">
@@ -768,7 +749,7 @@ function MatchupRow({
         <div className="w-[24%] shrink-0 flex items-center justify-center gap-2">
           {hasScores ? (
             <>
-              <span className={`text-2xl font-black font-mono tabular-nums leading-none ${
+              <span className={`text-3xl font-black font-mono tabular-nums leading-none ${
                 homeFv !== null && awayFv !== null
                   ? homeFv > awayFv ? 'text-white'
                   : homeFv < awayFv ? 'text-[#55556a]'
@@ -777,8 +758,8 @@ function MatchupRow({
               }`}>
                 {homeFv?.toFixed(2) ?? '—'}
               </span>
-              <span className="text-[#3a3a52] text-lg font-light">–</span>
-              <span className={`text-2xl font-black font-mono tabular-nums leading-none ${
+              <span className="text-[#3a3a52] text-xl font-light">–</span>
+              <span className={`text-3xl font-black font-mono tabular-nums leading-none ${
                 homeFv !== null && awayFv !== null
                   ? awayFv > homeFv ? 'text-white'
                   : awayFv < homeFv ? 'text-[#55556a]'
@@ -797,7 +778,7 @@ function MatchupRow({
 
         {/* Away team — left-aligned, takes 38% */}
         <div className="w-[38%] min-w-0 overflow-hidden pl-4">
-          <p className="block truncate text-base font-bold text-white leading-tight">
+          <p className="block truncate text-xl font-bold text-white leading-tight">
             {away?.teamName ?? '?'}
           </p>
           <p className="block truncate text-xs text-[#55556a] mt-0.5">
@@ -830,6 +811,7 @@ function MatchupRow({
 export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matchups }: Props) {
   const isEditable = matchdayStatus !== 'archived'
   const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null)
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0)
 
   const teamMap = new Map(teamLineups.map((t) => [t.teamId, t]))
 
@@ -840,28 +822,78 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
 
     return (
       <>
-        <div className="space-y-4">
-          {matchups.map((m, i) => (
-            <MatchupRow
-              key={i}
-              home={teamMap.get(m.homeTeamId)}
-              away={teamMap.get(m.awayTeamId)}
-              matchdayId={matchdayId}
-              isEditable={isEditable}
-              onPlayerClick={setSelectedSlot}
-            />
-          ))}
-          {unpaired.length > 0 && (
-            <div className="space-y-3 pt-2">
-              <p className="text-xs uppercase tracking-widest text-[#55556a]">Senza incontro</p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {unpaired.map((t) => (
-                  <TeamCard key={t.teamId} team={t} matchdayId={matchdayId} isEditable={isEditable} onPlayerClick={setSelectedSlot} />
-                ))}
+        {/* Match tab navigation */}
+        {matchups.length > 1 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+            {matchups.map((m, i) => {
+              const home = teamMap.get(m.homeTeamId)
+              const away = teamMap.get(m.awayTeamId)
+              const isActive = activeMatchIndex === i
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActiveMatchIndex(i)}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium border transition-colors ${
+                    isActive
+                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                      : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
+                  }`}
+                >
+                  {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Carousel: one match at a time with slide animation */}
+        <div className="overflow-hidden rounded-2xl">
+          <div
+            className="flex transition-transform duration-300 ease-in-out"
+            style={{ transform: `translateX(-${activeMatchIndex * 100}%)` }}
+          >
+            {matchups.map((m, i) => (
+              <div key={i} className="w-full shrink-0">
+                <MatchupRow
+                  home={teamMap.get(m.homeTeamId)}
+                  away={teamMap.get(m.awayTeamId)}
+                  matchdayId={matchdayId}
+                  isEditable={isEditable}
+                  onPlayerClick={setSelectedSlot}
+                />
               </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+
+        {/* Dot indicators */}
+        {matchups.length > 1 && (
+          <div className="flex justify-center gap-1.5 pt-1">
+            {matchups.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveMatchIndex(i)}
+                className={`rounded-full transition-all duration-200 ${
+                  activeMatchIndex === i
+                    ? 'w-4 h-1.5 bg-indigo-400'
+                    : 'w-1.5 h-1.5 bg-[#2e2e42] hover:bg-[#4e4e62]'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {unpaired.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <p className="text-xs uppercase tracking-widest text-[#55556a]">Senza incontro</p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {unpaired.map((t) => (
+                <TeamCard key={t.teamId} team={t} matchdayId={matchdayId} isEditable={isEditable} onPlayerClick={setSelectedSlot} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {selectedSlot && (
           <PlayerDetailModal slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
         )}

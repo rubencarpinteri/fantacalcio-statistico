@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { MatchdayStatusBadge } from '@/components/ui/badge'
 
+const FADE_SLIDE_CSS = `
+@keyframes calRoundIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+`
+
 export type MatchupData = {
   id: string
   homeTeamId: string
@@ -49,6 +56,7 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
 
   return (
     <div className="space-y-3">
+      <style>{FADE_SLIDE_CSS}</style>
       {/* Round selector */}
       <div className="flex items-center gap-3">
         <label className="text-xs font-medium uppercase tracking-widest text-[#55556a]">
@@ -86,6 +94,7 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
       </div>
 
       {/* Matchups for selected round */}
+      <div key={selectedRound} style={{ animation: 'calRoundIn 200ms ease' }}>
       <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
         {round.matchups.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-[#55556a]">
@@ -180,6 +189,7 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
             </p>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
