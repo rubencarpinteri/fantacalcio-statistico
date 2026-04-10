@@ -452,38 +452,32 @@ function PlayerChip({
           <span className={`shrink-0 font-bold text-[10px] ${color.split(' ')[1]}`}>
             {slot.playerRoles[0] ?? '?'}
           </span>
-          {/* Name: last-name-only on small screens, full name on sm+ */}
-          <span className="flex-1 truncate text-white min-w-0">
+          {/* Name: last-name only on small screens, full on sm+ */}
+          <span className="min-w-0 truncate text-white shrink">
             <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
             <span className="hidden sm:inline">{slot.playerName}</span>
           </span>
-          {/* Club: hidden on small screens */}
+          {/* Club: desktop only */}
           <span className="shrink-0 text-[#3a3a52] text-[10px] hidden sm:inline">{slot.playerClub}</span>
+
+          {/* Right group: B/M badges + FV — pushed right with ml-auto */}
+          <div className="ml-auto flex items-center gap-1 shrink-0">
+            {bm && bm.length > 0 && bm.map((b, i) => (
+              <span
+                key={i}
+                className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
+                  b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                }`}
+              >
+                {b.label} {b.total > 0 ? '+' : ''}{b.total}
+              </span>
+            ))}
+            <span className={`font-mono font-bold text-[11px] ${fvColor(fv)}`}>{fmtFv(fv)}</span>
+          </div>
         </>
       ) : (
         <span className="text-[#3e3e52] italic flex-1">vuoto</span>
       )}
-
-      {/* Bonus / Malus badges */}
-      {bm && bm.length > 0 && (
-        <span className="flex items-center gap-0.5 shrink-0">
-          {bm.map((b, i) => (
-            <span
-              key={i}
-              className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
-                b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-              }`}
-            >
-              {b.label} {b.total > 0 ? '+' : ''}{b.total}
-            </span>
-          ))}
-        </span>
-      )}
-
-      {/* Fantavoto — always at the end, no ml-auto needed since name is flex-1 */}
-      <span className={`shrink-0 font-mono font-bold text-[11px] ${fvColor(fv)}`}>
-        {fmtFv(fv)}
-      </span>
     </div>
   )
 }
@@ -745,19 +739,49 @@ function MatchupRow({
 
   return (
     <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
-      {/* Match header — 3-column grid keeps the separator always dead-centre */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0 px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
+      {/* Match header — responsive: stacked on mobile, side-by-side on md+ */}
+
+      {/* ── Mobile header (< md) ─────────────────────────────────── */}
+      <div className="md:hidden flex flex-col items-center gap-1 px-4 pt-3 pb-3 bg-[#0f0f1a] border-b border-[#2e2e42]">
+        {/* Team names row */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full gap-1">
+          <p className="text-sm font-bold text-white text-right truncate min-w-0">{home?.teamName ?? '?'}</p>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#3a3a52] px-2">vs</span>
+          <p className="text-sm font-bold text-white text-left truncate min-w-0">{away?.teamName ?? '?'}</p>
+        </div>
+        {/* Formations row */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full gap-1">
+          <p className="text-[10px] text-[#55556a] text-right truncate min-w-0">{home?.formationName ?? '—'}</p>
+          <span className="px-2" />
+          <p className="text-[10px] text-[#55556a] text-left truncate min-w-0">{away?.formationName ?? '—'}</p>
+        </div>
+        {/* Score row — grid ensures separator stays perfectly centred */}
+        {hasScores && (
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full pt-1">
+            <span className={`text-2xl font-black font-mono tabular-nums text-right pr-2 ${
+              homeFv !== null && awayFv !== null
+                ? homeFv > awayFv ? 'text-white' : homeFv < awayFv ? 'text-[#3a3a52]' : 'text-white'
+                : homeFv !== null ? 'text-white' : 'text-[#55556a]'
+            }`}>{homeFv !== null ? homeFv.toFixed(2) : 'NV'}</span>
+            <span className="text-[#3a3a52] text-lg font-light text-center">–</span>
+            <span className={`text-2xl font-black font-mono tabular-nums text-left pl-2 ${
+              homeFv !== null && awayFv !== null
+                ? awayFv > homeFv ? 'text-white' : awayFv < homeFv ? 'text-[#3a3a52]' : 'text-white'
+                : awayFv !== null ? 'text-white' : 'text-[#55556a]'
+            }`}>{awayFv !== null ? awayFv.toFixed(2) : 'NV'}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop header (≥ md) — 3-col grid keeps separator dead-centre ── */}
+      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
         {/* Home team — right-aligned */}
         <div className="min-w-0 overflow-hidden text-right pr-4">
-          <p className="block truncate text-xl font-bold text-white leading-tight">
-            {home?.teamName ?? '?'}
-          </p>
-          <p className="block truncate text-xs text-[#55556a] mt-0.5">
-            {home?.formationName ?? '—'}
-          </p>
+          <p className="block truncate text-xl font-bold text-white leading-tight">{home?.teamName ?? '?'}</p>
+          <p className="block truncate text-xs text-[#55556a] mt-0.5">{home?.formationName ?? '—'}</p>
         </div>
 
-        {/* Score / VS — always perfectly centred */}
+        {/* Score / VS — always centred */}
         <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center w-48">
           {hasScores ? (
             <>
@@ -765,17 +789,13 @@ function MatchupRow({
                 homeFv !== null && awayFv !== null
                   ? homeFv > awayFv ? 'text-white' : homeFv < awayFv ? 'text-[#3a3a52]' : 'text-white'
                   : homeFv !== null ? 'text-white' : 'text-[#55556a]'
-              }`}>
-                {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
-              </span>
+              }`}>{homeFv !== null ? homeFv.toFixed(2) : 'NV'}</span>
               <span className="text-[#3a3a52] text-xl font-light px-2 text-center">–</span>
               <span className={`text-3xl font-black font-mono tabular-nums leading-none text-left ${
                 homeFv !== null && awayFv !== null
                   ? awayFv > homeFv ? 'text-white' : awayFv < homeFv ? 'text-[#3a3a52]' : 'text-white'
                   : awayFv !== null ? 'text-white' : 'text-[#55556a]'
-              }`}>
-                {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
-              </span>
+              }`}>{awayFv !== null ? awayFv.toFixed(2) : 'NV'}</span>
             </>
           ) : (
             <>
@@ -788,12 +808,8 @@ function MatchupRow({
 
         {/* Away team — left-aligned */}
         <div className="min-w-0 overflow-hidden pl-4">
-          <p className="block truncate text-xl font-bold text-white leading-tight">
-            {away?.teamName ?? '?'}
-          </p>
-          <p className="block truncate text-xs text-[#55556a] mt-0.5">
-            {away?.formationName ?? '—'}
-          </p>
+          <p className="block truncate text-xl font-bold text-white leading-tight">{away?.teamName ?? '?'}</p>
+          <p className="block truncate text-xs text-[#55556a] mt-0.5">{away?.formationName ?? '—'}</p>
         </div>
       </div>
 
@@ -833,9 +849,14 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
     return (
       <>
         {/* Match tab navigation + action button */}
-        <div className="flex items-center gap-2">
+        <div className="space-y-2">
+          {/* Button row — always top-right */}
+          <div className="flex items-center justify-end">
+            <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
+          </div>
+
           {matchups.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto pb-1 flex-1 -mx-0.5 px-0.5">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:overflow-x-auto sm:pb-1 sm:flex-nowrap">
               {matchups.map((m, i) => {
                 const home = teamMap.get(m.homeTeamId)
                 const away = teamMap.get(m.awayTeamId)
@@ -844,7 +865,7 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
                   <button
                     key={i}
                     onClick={() => setActiveMatchIndex(i)}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium border transition-colors ${
+                    className={`w-full sm:w-auto sm:shrink-0 text-left rounded-lg px-3 py-2 sm:py-1.5 text-[11px] font-medium border transition-colors ${
                       isActive
                         ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
                         : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
@@ -856,9 +877,6 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
               })}
             </div>
           )}
-          <div className="shrink-0 ml-auto">
-            <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
-          </div>
         </div>
 
         {/* Carousel: one match at a time with slide animation */}
