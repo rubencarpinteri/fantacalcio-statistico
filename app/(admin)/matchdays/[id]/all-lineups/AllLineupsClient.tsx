@@ -428,7 +428,7 @@ function PlayerChip({
       onDrop={(e) => { e.preventDefault(); setIsDragOver(false); onDrop() }}
       onClick={() => slot.playerId && onPlayerClick?.(slot)}
       className={[
-        'flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-colors',
+        'flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors',
         isDragOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-[#2e2e42] bg-[#0a0a0f]',
         slot.playerId ? 'cursor-pointer hover:border-[#3e3e52]' : '',
         isEditable && slot.playerId ? 'cursor-grab active:cursor-grabbing' : '',
@@ -436,8 +436,8 @@ function PlayerChip({
       ].join(' ')}
     >
       {/* Position label */}
-      <span className="shrink-0 w-14 text-[#55556a] font-mono text-[10px]">
-        {slot.isBench ? `PAN ${slot.benchOrder ?? ''}` : slot.positionName}
+      <span className="shrink-0 w-10 text-[#55556a] font-mono text-[10px]">
+        {slot.isBench ? `P${slot.benchOrder ?? ''}` : slot.positionName}
       </span>
 
       {slot.playerId ? (
@@ -445,8 +445,9 @@ function PlayerChip({
           <span className={`shrink-0 font-bold text-[10px] ${color.split(' ')[1]}`}>
             {slot.playerRoles[0] ?? '?'}
           </span>
-          <span className="truncate text-white min-w-0">{slot.playerName}</span>
-          <span className="shrink-0 text-[#55556a]">{slot.playerClub}</span>
+          {/* Name: flex-1 eliminates the gap — club hidden on small screens */}
+          <span className="flex-1 truncate text-white min-w-0">{slot.playerName}</span>
+          <span className="shrink-0 text-[#3a3a52] text-[10px] hidden sm:inline">{slot.playerClub}</span>
         </>
       ) : (
         <span className="text-[#3e3e52] italic flex-1">vuoto</span>
@@ -454,7 +455,7 @@ function PlayerChip({
 
       {/* Bonus / Malus badges */}
       {bm && bm.length > 0 && (
-        <span className="ml-auto flex items-center gap-0.5 shrink-0">
+        <span className="flex items-center gap-0.5 shrink-0">
           {bm.map((b, i) => (
             <span
               key={i}
@@ -468,8 +469,8 @@ function PlayerChip({
         </span>
       )}
 
-      {/* Fantavoto */}
-      <span className={`shrink-0 font-mono font-bold ${bm && bm.length > 0 ? '' : 'ml-auto'} ${fvColor(fv)}`}>
+      {/* Fantavoto — always at the end, no ml-auto needed since name is flex-1 */}
+      <span className={`shrink-0 font-mono font-bold text-[11px] ${fvColor(fv)}`}>
         {fmtFv(fv)}
       </span>
     </div>
@@ -752,21 +753,21 @@ function MatchupRow({
               <span className={`text-3xl font-black font-mono tabular-nums leading-none ${
                 homeFv !== null && awayFv !== null
                   ? homeFv > awayFv ? 'text-white'
-                  : homeFv < awayFv ? 'text-[#55556a]'
+                  : homeFv < awayFv ? 'text-[#3a3a52]'
                   : 'text-white'
-                  : 'text-[#8888aa]'
+                  : homeFv !== null ? 'text-white' : 'text-[#55556a]'
               }`}>
-                {homeFv?.toFixed(2) ?? '—'}
+                {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
               </span>
               <span className="text-[#3a3a52] text-xl font-light">–</span>
               <span className={`text-3xl font-black font-mono tabular-nums leading-none ${
                 homeFv !== null && awayFv !== null
                   ? awayFv > homeFv ? 'text-white'
-                  : awayFv < homeFv ? 'text-[#55556a]'
+                  : awayFv < homeFv ? 'text-[#3a3a52]'
                   : 'text-white'
-                  : 'text-[#8888aa]'
+                  : awayFv !== null ? 'text-white' : 'text-[#55556a]'
               }`}>
-                {awayFv?.toFixed(2) ?? '—'}
+                {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
               </span>
             </>
           ) : (
