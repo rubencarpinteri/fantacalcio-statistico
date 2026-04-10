@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { adminOverrideLineupAction } from './actions'
+import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
 
 // ---- Types ----------------------------------------------------------------
 
@@ -176,6 +177,12 @@ function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
       </div>
     </div>
   )
+}
+
+// Returns only the last word of a name (family name in Italian convention)
+function lastNameOnly(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  return parts[parts.length - 1] ?? name
 }
 
 function fmtMarketValue(v: number): string {
@@ -445,8 +452,12 @@ function PlayerChip({
           <span className={`shrink-0 font-bold text-[10px] ${color.split(' ')[1]}`}>
             {slot.playerRoles[0] ?? '?'}
           </span>
-          {/* Name: flex-1 eliminates the gap — club hidden on small screens */}
-          <span className="flex-1 truncate text-white min-w-0">{slot.playerName}</span>
+          {/* Name: last-name-only on small screens, full name on sm+ */}
+          <span className="flex-1 truncate text-white min-w-0">
+            <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
+            <span className="hidden sm:inline">{slot.playerName}</span>
+          </span>
+          {/* Club: hidden on small screens */}
           <span className="shrink-0 text-[#3a3a52] text-[10px] hidden sm:inline">{slot.playerClub}</span>
         </>
       ) : (
@@ -734,10 +745,10 @@ function MatchupRow({
 
   return (
     <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
-      {/* Match header */}
-      <div className="flex items-center px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
-        {/* Home team — right-aligned, takes 38% */}
-        <div className="w-[38%] min-w-0 overflow-hidden text-right pr-4">
+      {/* Match header — 3-column grid keeps the separator always dead-centre */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0 px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
+        {/* Home team — right-aligned */}
+        <div className="min-w-0 overflow-hidden text-right pr-4">
           <p className="block truncate text-xl font-bold text-white leading-tight">
             {home?.teamName ?? '?'}
           </p>
@@ -746,39 +757,37 @@ function MatchupRow({
           </p>
         </div>
 
-        {/* Score / VS — centred, takes 24% */}
-        <div className="w-[24%] shrink-0 flex items-center justify-center gap-2">
+        {/* Score / VS — always perfectly centred */}
+        <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center w-48">
           {hasScores ? (
             <>
-              <span className={`text-3xl font-black font-mono tabular-nums leading-none ${
+              <span className={`text-3xl font-black font-mono tabular-nums leading-none text-right ${
                 homeFv !== null && awayFv !== null
-                  ? homeFv > awayFv ? 'text-white'
-                  : homeFv < awayFv ? 'text-[#3a3a52]'
-                  : 'text-white'
+                  ? homeFv > awayFv ? 'text-white' : homeFv < awayFv ? 'text-[#3a3a52]' : 'text-white'
                   : homeFv !== null ? 'text-white' : 'text-[#55556a]'
               }`}>
                 {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
               </span>
-              <span className="text-[#3a3a52] text-xl font-light">–</span>
-              <span className={`text-3xl font-black font-mono tabular-nums leading-none ${
+              <span className="text-[#3a3a52] text-xl font-light px-2 text-center">–</span>
+              <span className={`text-3xl font-black font-mono tabular-nums leading-none text-left ${
                 homeFv !== null && awayFv !== null
-                  ? awayFv > homeFv ? 'text-white'
-                  : awayFv < homeFv ? 'text-[#3a3a52]'
-                  : 'text-white'
+                  ? awayFv > homeFv ? 'text-white' : awayFv < homeFv ? 'text-[#3a3a52]' : 'text-white'
                   : awayFv !== null ? 'text-white' : 'text-[#55556a]'
               }`}>
                 {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
               </span>
             </>
           ) : (
-            <span className="text-[11px] font-bold uppercase tracking-widest text-[#55556a]">
-              vs
-            </span>
+            <>
+              <span />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[#55556a] px-2">vs</span>
+              <span />
+            </>
           )}
         </div>
 
-        {/* Away team — left-aligned, takes 38% */}
-        <div className="w-[38%] min-w-0 overflow-hidden pl-4">
+        {/* Away team — left-aligned */}
+        <div className="min-w-0 overflow-hidden pl-4">
           <p className="block truncate text-xl font-bold text-white leading-tight">
             {away?.teamName ?? '?'}
           </p>
@@ -823,29 +832,34 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
 
     return (
       <>
-        {/* Match tab navigation */}
-        {matchups.length > 1 && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5">
-            {matchups.map((m, i) => {
-              const home = teamMap.get(m.homeTeamId)
-              const away = teamMap.get(m.awayTeamId)
-              const isActive = activeMatchIndex === i
-              return (
-                <button
-                  key={i}
-                  onClick={() => setActiveMatchIndex(i)}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium border transition-colors ${
-                    isActive
-                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                      : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
-                  }`}
-                >
-                  {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
-                </button>
-              )
-            })}
+        {/* Match tab navigation + action button */}
+        <div className="flex items-center gap-2">
+          {matchups.length > 1 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 flex-1 -mx-0.5 px-0.5">
+              {matchups.map((m, i) => {
+                const home = teamMap.get(m.homeTeamId)
+                const away = teamMap.get(m.awayTeamId)
+                const isActive = activeMatchIndex === i
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setActiveMatchIndex(i)}
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium border transition-colors ${
+                      isActive
+                        ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                        : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
+                    }`}
+                  >
+                    {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <div className="shrink-0 ml-auto">
+            <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
           </div>
-        )}
+        </div>
 
         {/* Carousel: one match at a time with slide animation */}
         <div className="overflow-hidden rounded-2xl">
