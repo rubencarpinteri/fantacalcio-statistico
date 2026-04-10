@@ -4,6 +4,7 @@ import { requireLeagueAdmin } from '@/lib/league'
 import { AllLineupsClient } from './AllLineupsClient'
 import type { TeamLineupData, MatchupPair } from './AllLineupsClient'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { FontSwitcher } from './FontSwitcher'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -399,26 +400,31 @@ export default async function AllLineupsPage({
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
-            ← {matchday.name}
-          </a>
-          <h1 className="mt-1 text-xl font-bold text-white">Tutte le formazioni</h1>
-          <p className="text-sm text-[#55556a]">
-            Trascina i giocatori per correggere titolari/panchina · salva per ogni squadra
-          </p>
+    <>
+      <div className="space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+              ← {matchday.name}
+            </a>
+            <h1 className="mt-1 text-xl font-bold text-white">Tutte le formazioni</h1>
+            <p className="text-sm text-[#55556a]">
+              Trascina i giocatori per correggere titolari/panchina · salva per ogni squadra
+            </p>
+          </div>
+          <QuickFetchAndCalculateButton matchdayId={matchdayId} />
         </div>
-        <QuickFetchAndCalculateButton matchdayId={matchdayId} />
+
+        <AllLineupsClient
+          matchdayId={matchdayId}
+          matchdayStatus={matchday.status}
+          teamLineups={teamLineups}
+          matchups={matchupPairs}
+        />
       </div>
 
-      <AllLineupsClient
-        matchdayId={matchdayId}
-        matchdayStatus={matchday.status}
-        teamLineups={teamLineups}
-        matchups={matchupPairs}
-      />
-    </div>
+      {/* ── TEMPORARY: font preview tool — remove once font is chosen ── */}
+      <FontSwitcher />
+    </>
   )
 }
