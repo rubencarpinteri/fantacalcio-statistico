@@ -83,6 +83,18 @@ export default async function LeagueSettingsPage() {
                   </div>
                   <span className="text-[#55556a]">→</span>
                 </a>
+                <a
+                  href="/roster"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-[#1a1a24]"
+                >
+                  <div>
+                    <p className="font-medium text-white">Gestione Rose</p>
+                    <p className="text-xs text-[#8888aa]">
+                      Visualizza e modifica le rose delle squadre
+                    </p>
+                  </div>
+                  <span className="text-[#55556a]">→</span>
+                </a>
               </nav>
             </CardContent>
           </Card>

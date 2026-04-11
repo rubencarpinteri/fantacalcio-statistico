@@ -736,80 +736,69 @@ function MatchupRow({
   const homeFv = teamFv(home)
   const awayFv = teamFv(away)
   const hasScores = homeFv !== null || awayFv !== null
+  const homeWins = homeFv !== null && awayFv !== null && homeFv > awayFv
+  const awayWins = homeFv !== null && awayFv !== null && awayFv > homeFv
+  const homeFvClass = awayWins ? 'text-[#3a3a52]' : 'text-white'
+  const awayFvClass = homeWins ? 'text-[#3a3a52]' : 'text-white'
 
   return (
     <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
       {/* Match header — responsive: stacked on mobile, side-by-side on md+ */}
 
-      {/* ── Mobile header (< md) ─────────────────────────────────── */}
-      <div className="md:hidden flex flex-col items-center gap-1 px-4 pt-3 pb-3 bg-[#0f0f1a] border-b border-[#2e2e42]">
-        {/* Team names row */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full gap-1">
-          <p className="text-sm font-bold text-white text-right truncate min-w-0">{home?.teamName ?? '?'}</p>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#3a3a52] px-2">vs</span>
-          <p className="text-sm font-bold text-white text-left truncate min-w-0">{away?.teamName ?? '?'}</p>
+      {/* ── Mobile header (< md) ── */}
+      <div className="md:hidden px-4 pt-4 pb-3 bg-[#0f0f1a] border-b border-[#2e2e42]">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-2 mb-0.5">
+          <p className="text-sm font-bold text-white text-right truncate min-w-0 leading-tight">{home?.teamName ?? '?'}</p>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-[#2e2e42] px-1 select-none">vs</span>
+          <p className="text-sm font-bold text-white text-left truncate min-w-0 leading-tight">{away?.teamName ?? '?'}</p>
         </div>
-        {/* Formations row */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full gap-1">
-          <p className="text-[10px] text-[#55556a] text-right truncate min-w-0">{home?.formationName ?? '—'}</p>
-          <span className="px-2" />
-          <p className="text-[10px] text-[#55556a] text-left truncate min-w-0">{away?.formationName ?? '—'}</p>
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 mb-2">
+          <p className="text-[10px] text-[#4a4a65] text-right truncate font-mono">{home?.formationName ?? '—'}</p>
+          <span className="invisible text-[9px] px-1">vs</span>
+          <p className="text-[10px] text-[#4a4a65] text-left truncate font-mono">{away?.formationName ?? '—'}</p>
         </div>
-        {/* Score row — grid ensures separator stays perfectly centred */}
         {hasScores && (
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full pt-1">
-            <span className={`text-2xl font-black font-mono tabular-nums text-right pr-2 ${
-              homeFv !== null && awayFv !== null
-                ? homeFv > awayFv ? 'text-white' : homeFv < awayFv ? 'text-[#3a3a52]' : 'text-white'
-                : homeFv !== null ? 'text-white' : 'text-[#55556a]'
-            }`}>{homeFv !== null ? homeFv.toFixed(2) : 'NV'}</span>
-            <span className="text-[#3a3a52] text-lg font-light text-center">–</span>
-            <span className={`text-2xl font-black font-mono tabular-nums text-left pl-2 ${
-              homeFv !== null && awayFv !== null
-                ? awayFv > homeFv ? 'text-white' : awayFv < homeFv ? 'text-[#3a3a52]' : 'text-white'
-                : awayFv !== null ? 'text-white' : 'text-[#55556a]'
-            }`}>{awayFv !== null ? awayFv.toFixed(2) : 'NV'}</span>
+          <div className="flex items-center justify-center pt-2 border-t border-[#1a1a2a]">
+            <span className={`w-20 text-right text-xl font-black font-mono tabular-nums leading-none ${homeFvClass}`}>
+              {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
+            </span>
+            <span className="text-[#2a2a3e] text-xl font-thin px-2.5 leading-none select-none">–</span>
+            <span className={`w-20 text-left text-xl font-black font-mono tabular-nums leading-none ${awayFvClass}`}>
+              {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
+            </span>
           </div>
         )}
       </div>
 
-      {/* ── Desktop header (≥ md) — 3-col grid keeps separator dead-centre ── */}
-      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center px-6 py-4 bg-[#0f0f1a] border-b border-[#2e2e42]">
-        {/* Home team — right-aligned */}
-        <div className="min-w-0 overflow-hidden text-right pr-4">
-          <p className="block truncate text-xl font-bold text-white leading-tight">{home?.teamName ?? '?'}</p>
-          <p className="block truncate text-xs text-[#55556a] mt-0.5">{home?.formationName ?? '—'}</p>
+      {/* ── Desktop header (≥ md) ── */}
+      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center px-8 py-5 bg-[#0f0f1a] border-b border-[#2e2e42]">
+        {/* Home — right-aligned */}
+        <div className="min-w-0 overflow-hidden text-right pr-6">
+          <p className="block truncate text-2xl font-bold text-white tracking-tight leading-tight">{home?.teamName ?? '?'}</p>
+          <p className="block truncate text-[11px] text-[#4a4a65] mt-1 font-mono">{home?.formationName ?? '—'}</p>
         </div>
 
-        {/* Score / VS — always centred */}
-        <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center w-48">
+        {/* Score — fixed-width spans keep the separator at the geometric center */}
+        <div className="shrink-0 flex items-center">
           {hasScores ? (
             <>
-              <span className={`text-3xl font-black font-mono tabular-nums leading-none text-right ${
-                homeFv !== null && awayFv !== null
-                  ? homeFv > awayFv ? 'text-white' : homeFv < awayFv ? 'text-[#3a3a52]' : 'text-white'
-                  : homeFv !== null ? 'text-white' : 'text-[#55556a]'
-              }`}>{homeFv !== null ? homeFv.toFixed(2) : 'NV'}</span>
-              <span className="text-[#3a3a52] text-xl font-light px-2 text-center">–</span>
-              <span className={`text-3xl font-black font-mono tabular-nums leading-none text-left ${
-                homeFv !== null && awayFv !== null
-                  ? awayFv > homeFv ? 'text-white' : awayFv < homeFv ? 'text-[#3a3a52]' : 'text-white'
-                  : awayFv !== null ? 'text-white' : 'text-[#55556a]'
-              }`}>{awayFv !== null ? awayFv.toFixed(2) : 'NV'}</span>
+              <span className={`w-24 text-right text-3xl font-black font-mono tabular-nums leading-none ${homeFvClass}`}>
+                {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
+              </span>
+              <span className="text-[#2a2a3e] text-3xl font-thin px-3 leading-none select-none">–</span>
+              <span className={`w-24 text-left text-3xl font-black font-mono tabular-nums leading-none ${awayFvClass}`}>
+                {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
+              </span>
             </>
           ) : (
-            <>
-              <span />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-[#55556a] px-2">vs</span>
-              <span />
-            </>
+            <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#3a3a52] px-6">vs</span>
           )}
         </div>
 
-        {/* Away team — left-aligned */}
-        <div className="min-w-0 overflow-hidden pl-4">
-          <p className="block truncate text-xl font-bold text-white leading-tight">{away?.teamName ?? '?'}</p>
-          <p className="block truncate text-xs text-[#55556a] mt-0.5">{away?.formationName ?? '—'}</p>
+        {/* Away — left-aligned */}
+        <div className="min-w-0 overflow-hidden pl-6">
+          <p className="block truncate text-2xl font-bold text-white tracking-tight leading-tight">{away?.teamName ?? '?'}</p>
+          <p className="block truncate text-[11px] text-[#4a4a65] mt-1 font-mono">{away?.formationName ?? '—'}</p>
         </div>
       </div>
 
@@ -848,35 +837,65 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
 
     return (
       <>
-        {/* Match tab navigation + action button */}
-        <div className="space-y-2">
-          {/* Button row — always top-right */}
-          <div className="flex items-center justify-end">
-            <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
+        {/* Match nav — desktop: tabs + button inline; mobile: button above, vertical list below */}
+        <div>
+          {/* ── Desktop (sm+): horizontal pills + button ── */}
+          <div className="hidden sm:flex items-center gap-2">
+            {matchups.length > 1 && (
+              <div className="flex gap-1.5 overflow-x-auto flex-1 pb-0.5">
+                {matchups.map((m, i) => {
+                  const home = teamMap.get(m.homeTeamId)
+                  const away = teamMap.get(m.awayTeamId)
+                  const isActive = activeMatchIndex === i
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setActiveMatchIndex(i)}
+                      className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium border transition-colors ${
+                        isActive
+                          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                          : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
+                      }`}
+                    >
+                      {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <div className="shrink-0 ml-auto">
+              <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
+            </div>
           </div>
 
-          {matchups.length > 1 && (
-            <div className="flex flex-col gap-1.5 sm:flex-row sm:overflow-x-auto sm:pb-1 sm:flex-nowrap">
-              {matchups.map((m, i) => {
-                const home = teamMap.get(m.homeTeamId)
-                const away = teamMap.get(m.awayTeamId)
-                const isActive = activeMatchIndex === i
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setActiveMatchIndex(i)}
-                    className={`w-full sm:w-auto sm:shrink-0 text-left rounded-lg px-3 py-2 sm:py-1.5 text-[11px] font-medium border transition-colors ${
-                      isActive
-                        ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                        : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
-                    }`}
-                  >
-                    {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
-                  </button>
-                )
-              })}
+          {/* ── Mobile (< sm): button row + vertical list ── */}
+          <div className="sm:hidden flex flex-col gap-2">
+            <div className="flex items-center justify-end">
+              <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
             </div>
-          )}
+            {matchups.length > 1 && (
+              <div className="flex flex-col gap-1">
+                {matchups.map((m, i) => {
+                  const home = teamMap.get(m.homeTeamId)
+                  const away = teamMap.get(m.awayTeamId)
+                  const isActive = activeMatchIndex === i
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setActiveMatchIndex(i)}
+                      className={`w-full text-left rounded-lg px-3 py-2 text-[11px] font-medium border transition-colors ${
+                        isActive
+                          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                          : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
+                      }`}
+                    >
+                      {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Carousel: one match at a time with slide animation */}

@@ -164,7 +164,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     : phase === 'importing' ? 'Importando…'
     : phase === 'calculating' ? 'Calcolando…'
     : phase === 'publishing' ? 'Pubblicando…'
-    : compact ? '⚡' : '⚡ Aggiorna e pubblica'
+    : compact ? '⚡ Aggiorna e Pubblica' : '⚡ Aggiorna e pubblica'
 
   if (compact) {
     return (
@@ -174,7 +174,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
           onClick={run}
           title="Scarica voti da FotMob + SofaScore, calcola e pubblica"
           className={[
-            'flex items-center gap-1.5 rounded-lg border font-medium transition-colors px-2 py-1 text-xs',
+            'flex items-center gap-1.5 rounded-lg border font-medium transition-colors px-2.5 py-1.5 text-xs whitespace-nowrap',
             busy
               ? 'cursor-wait border-[#2e2e42] bg-[#0d0d1a] text-[#55556a]'
               : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50',
