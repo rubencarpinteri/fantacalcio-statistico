@@ -10,6 +10,13 @@ import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
 import type { EnginePlayerInput, PlayerCalculationResult } from '@/domain/engine/v1/types'
 import type { Json, RatingClass } from '@/types/database.types'
 
+function applyRounding(value: number | null, mode: string): number | null {
+  if (value === null) return null
+  if (mode === 'nearest_half') return Math.round(value * 2) / 2
+  // one_decimal (default)
+  return Math.round(value * 10) / 10
+}
+
 // ============================================================
 // triggerCalculationAction
 // ============================================================
@@ -227,6 +234,12 @@ export async function triggerCalculationAction(
         ;(row as Record<string, unknown>)['override_id'] = ov.id
       }
     }
+  }
+
+  // Apply display rounding to all fantavoto values (including any override values)
+  const roundingMode = ctx.league.display_rounding
+  for (const row of calcRows) {
+    row.fantavoto = applyRounding(row.fantavoto, roundingMode)
   }
 
   const { error: calcError } = await supabase
