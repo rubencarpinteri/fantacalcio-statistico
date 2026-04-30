@@ -5,9 +5,11 @@ import { useFormStatus } from 'react-dom'
 import {
   generateCalendarioAction,
   createBattleRoyaleRoundAction,
+  bulkCreateBattleRoyaleRoundsAction,
   linkRoundToMatchdayAction,
   computeRoundAction,
 } from '../actions'
+import type { BulkBRResult } from '../actions'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type { CompetitionRound, Matchday } from '@/types/database.types'
 
@@ -79,6 +81,25 @@ export function RoundsManager({
     },
     { error: null, message: undefined }
   )
+
+  // ---- Battle Royale: bulk-create all published matchdays ----
+  const [bulkBRState, setBulkBRState] = useState<{
+    loading: boolean
+    result: BulkBRResult | null
+  }>({ loading: false, result: null })
+
+  async function handleBulkBR() {
+    if (bulkBRState.loading) return
+    const eligibleCount = availableForBR.length
+    if (eligibleCount === 0) return
+    const confirmed = window.confirm(
+      `Aggiungere ${eligibleCount} giornate al Battle Royale e calcolare ${eligibleCount * Math.max(1, (teamCount * (teamCount - 1)) / 2)} incontri totali?\n\nL'operazione è sequenziale e può richiedere alcuni secondi.`
+    )
+    if (!confirmed) return
+    setBulkBRState({ loading: true, result: null })
+    const result = await bulkCreateBattleRoyaleRoundsAction(competitionId)
+    setBulkBRState({ loading: false, result })
+  }
 
   // ---- Per-round compute ----
   const [computeState, setComputeState] = useState<Record<string, { error: string | null; loading: boolean }>>({})
@@ -168,19 +189,78 @@ export function RoundsManager({
               <p className="text-sm text-[#55556a]">Nessuna giornata pubblicata disponibile da aggiungere.</p>
             )}
             {availableForBR.length > 0 && (
-              <form action={brAction} className="flex items-end gap-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-[#8888aa]">Giornata pubblicata</label>
-                  <select name="matchday_id"
-                    className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
-                    <option value="">— Seleziona —</option>
-                    {availableForBR.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
+              <>
+                <form action={brAction} className="flex items-end gap-4">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-[#8888aa]">Giornata pubblicata</label>
+                    <select name="matchday_id"
+                      className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+                      <option value="">— Seleziona —</option>
+                      {availableForBR.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <SubmitBtn label="Aggiungi e calcola" pendingLabel="Calcolo..." />
+                </form>
+
+                {/* Bulk-create all button */}
+                <div className="mt-4 border-t border-[#1e1e2e] pt-4">
+                  <p className="mb-2 text-xs text-[#55556a]">
+                    Oppure popola tutte le {availableForBR.length} giornate pubblicate non ancora collegate in un&apos;unica operazione.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { void handleBulkBR() }}
+                    disabled={bulkBRState.loading || teamCount < 2}
+                    className="rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {bulkBRState.loading && <Spinner />}
+                    {bulkBRState.loading ? 'Calcolo in corso...' : `Aggiungi tutte le ${availableForBR.length} giornate`}
+                  </button>
                 </div>
-                <SubmitBtn label="Aggiungi e calcola" pendingLabel="Calcolo..." />
-              </form>
+              </>
+            )}
+
+            {/* Bulk-create result feedback */}
+            {bulkBRState.result && (
+              <div className="mt-4 space-y-2">
+                {bulkBRState.result.error ? (
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+                    {bulkBRState.result.error}
+                  </div>
+                ) : (
+                  <div className={`rounded-lg border px-4 py-3 text-sm ${
+                    bulkBRState.result.rounds_failed === 0
+                      ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+                      : 'border-amber-500/30 bg-amber-500/5 text-amber-300'
+                  }`}>
+                    Creati <span className="font-semibold">{bulkBRState.result.rounds_created}</span> turni
+                    {' · '}
+                    <span className="font-semibold">{bulkBRState.result.fixtures_total}</span> incontri totali
+                    {bulkBRState.result.rounds_skipped > 0 && (
+                      <> · {bulkBRState.result.rounds_skipped} già esistenti</>
+                    )}
+                    {bulkBRState.result.rounds_failed > 0 && (
+                      <> · <span className="text-red-400">{bulkBRState.result.rounds_failed} falliti</span></>
+                    )}
+                  </div>
+                )}
+                {bulkBRState.result.failures.length > 0 && (
+                  <details className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2">
+                    <summary className="cursor-pointer text-xs font-medium text-red-400">
+                      Dettaglio errori ({bulkBRState.result.failures.length})
+                    </summary>
+                    <ul className="mt-2 space-y-1 text-xs text-red-300">
+                      {bulkBRState.result.failures.map((f, i) => (
+                        <li key={i}>
+                          <span className="font-medium">{f.matchday_name}:</span> {f.error}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

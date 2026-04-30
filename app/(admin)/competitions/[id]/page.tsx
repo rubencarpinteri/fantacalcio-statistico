@@ -8,6 +8,7 @@ import { GenerateMatchdaysForm } from './GenerateMatchdaysForm'
 import { CalendarioClient } from './CalendarioClient'
 import type { RoundData, MatchupData } from './CalendarioClient'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { BattleRoyaleDetailView } from './BattleRoyaleDetailView'
 
 const TYPE_LABEL: Record<string, string> = {
   campionato: 'Campionato', battle_royale: 'Battle Royale', coppa: 'Coppa',
@@ -75,6 +76,27 @@ export default async function CompetitionDetailPage({
 
   const allTeams = (teams ?? []) as Pick<FantasyTeam, 'id' | 'name'>[]
   const teamNameMap = new Map(allTeams.map((t) => [t.id, t.name]))
+
+  // ── Battle Royale: render dedicated hub view ──────────────────────────
+  // BR uses competition_fixtures + standings_snapshots, not competition_matchups.
+  // Render a focused view instead of falling through the Campionato logic.
+  if (competition.type === 'battle_royale') {
+    const { data: myTeamRow } = await supabase
+      .from('fantasy_teams')
+      .select('id')
+      .eq('league_id', ctx.league.id)
+      .eq('manager_id', ctx.userId)
+      .maybeSingle()
+
+    return (
+      <BattleRoyaleDetailView
+        competition={competition}
+        isAdmin={isAdmin}
+        myTeamId={myTeamRow?.id ?? null}
+        allTeams={allTeams}
+      />
+    )
+  }
 
   // All matchups for this competition
   const { data: matchupsRaw } = await supabase

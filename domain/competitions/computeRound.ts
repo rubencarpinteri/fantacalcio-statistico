@@ -9,8 +9,9 @@
 // Returns enriched fixture results + new accumulated standings.
 // ============================================================
 
-import { fantaVotoToGoals } from './goalThresholds'
+import { computeFixtureResult } from './resultRules'
 import type { GoalThreshold } from './goalThresholds'
+import type { SmoothingConfig } from './resultRules'
 
 // ---- Config types ------------------------------------------
 
@@ -19,6 +20,8 @@ export type ScoringMethod = 'goal_thresholds' | 'direct_comparison'
 export interface ScoringConfig {
   method: ScoringMethod
   thresholds?: GoalThreshold[]
+  /** Optional smoothing for goal_thresholds method. Ignored for direct_comparison. */
+  smoothing?: SmoothingConfig
   points: { win: number; draw: number; loss: number }
 }
 
@@ -107,11 +110,13 @@ export function computeRound(
     let result: 'home_win' | 'away_win' | 'draw'
 
     if (scoringConfig.method === 'goal_thresholds' && scoringConfig.thresholds) {
-      homeScore = fantaVotoToGoals(homeFV, scoringConfig.thresholds)
-      awayScore = fantaVotoToGoals(awayFV, scoringConfig.thresholds)
-      if (homeScore > awayScore)      result = 'home_win'
-      else if (awayScore > homeScore) result = 'away_win'
-      else                            result = 'draw'
+      const outcome = computeFixtureResult(homeFV, awayFV, {
+        thresholds: scoringConfig.thresholds,
+        smoothing: scoringConfig.smoothing ?? { drawIfDiffBelow: 0, drawIf1GoalLeadAndDiffBelow: 0 },
+      })
+      homeScore = outcome.home_goals
+      awayScore = outcome.away_goals
+      result = outcome.outcome
     } else {
       // direct_comparison
       if (homeFV > awayFV)      result = 'home_win'

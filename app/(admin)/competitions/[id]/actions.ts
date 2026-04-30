@@ -580,3 +580,150 @@ export async function createBattleRoyaleRoundAction(
   const computeResult = await computeRoundAction(round.id)
   return { ...computeResult, round_id: round.id }
 }
+
+// ============================================================
+// bulkCreateBattleRoyaleRoundsAction
+// ============================================================
+// Convenience action: for a Battle Royale competition, creates a
+// round + computes fixtures for every published matchday in the
+// league that doesn't already have a BR round in this competition.
+//
+// Returns a per-matchday breakdown so the UI can show what
+// succeeded vs what failed.
+// ============================================================
+
+export interface BulkBRResult {
+  error: string | null
+  success: boolean
+  rounds_created: number
+  rounds_failed: number
+  rounds_skipped: number
+  fixtures_total: number
+  failures: Array<{ matchday_name: string; error: string }>
+}
+
+export async function bulkCreateBattleRoyaleRoundsAction(
+  competitionId: string
+): Promise<BulkBRResult> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const fail = (error: string): BulkBRResult => ({
+    error,
+    success: false,
+    rounds_created: 0,
+    rounds_failed: 0,
+    rounds_skipped: 0,
+    fixtures_total: 0,
+    failures: [],
+  })
+
+  // 1. Verify competition belongs to league + is BR
+  const { data: comp } = await supabase
+    .from('competitions')
+    .select('id, type, status')
+    .eq('id', competitionId)
+    .eq('league_id', ctx.league.id)
+    .single()
+
+  if (!comp) return fail('Competizione non trovata.')
+  if (comp.type !== 'battle_royale') {
+    return fail('Questa azione è disponibile solo per il Battle Royale.')
+  }
+
+  // 2. At least 2 enrolled teams required
+  const { count: teamCount } = await supabase
+    .from('competition_teams')
+    .select('id', { count: 'exact', head: true })
+    .eq('competition_id', competitionId)
+
+  if ((teamCount ?? 0) < 2) {
+    return fail('Iscrivi almeno 2 squadre prima di calcolare il Battle Royale.')
+  }
+
+  // 3. Find every published matchday in the league
+  const { data: matchdays } = await supabase
+    .from('matchdays')
+    .select('id, name, matchday_number')
+    .eq('league_id', ctx.league.id)
+    .eq('status', 'published')
+    .order('matchday_number', { ascending: true, nullsFirst: false })
+
+  const allPublished = matchdays ?? []
+  if (allPublished.length === 0) {
+    return fail('Nessuna giornata pubblicata da aggiungere.')
+  }
+
+  // 4. Filter out matchdays already linked to a round in this competition
+  const { data: linkedRounds } = await supabase
+    .from('competition_rounds')
+    .select('matchday_id')
+    .eq('competition_id', competitionId)
+
+  const linkedIds = new Set(
+    (linkedRounds ?? []).map((r) => r.matchday_id).filter((x): x is string => !!x)
+  )
+
+  const toCreate = allPublished.filter((m) => !linkedIds.has(m.id))
+  const skipped = allPublished.length - toCreate.length
+
+  if (toCreate.length === 0) {
+    return {
+      error: null,
+      success: true,
+      rounds_created: 0,
+      rounds_failed: 0,
+      rounds_skipped: skipped,
+      fixtures_total: 0,
+      failures: [],
+    }
+  }
+
+  // 5. For each: create round + compute (sequentially so round_number stays
+  //    monotonic and prior standings build up correctly).
+  let roundsCreated = 0
+  let roundsFailed = 0
+  let fixturesTotal = 0
+  const failures: Array<{ matchday_name: string; error: string }> = []
+
+  for (const md of toCreate) {
+    const result = await createBattleRoyaleRoundAction(competitionId, md.id)
+    if (result.success) {
+      roundsCreated++
+      fixturesTotal += result.fixtures_computed
+    } else {
+      roundsFailed++
+      failures.push({ matchday_name: md.name, error: result.error ?? 'Errore sconosciuto' })
+    }
+  }
+
+  await writeAuditLog({
+    supabase,
+    leagueId:    ctx.league.id,
+    actorUserId: ctx.userId,
+    actionType:  'competition_round_compute',
+    entityType:  'competition',
+    entityId:    competitionId,
+    afterJson: {
+      bulk_action:    'battle_royale_bulk_create',
+      rounds_created: roundsCreated,
+      rounds_failed:  roundsFailed,
+      rounds_skipped: skipped,
+      fixtures_total: fixturesTotal,
+    },
+  })
+
+  revalidatePath(`/competitions/${competitionId}/rounds`)
+  revalidatePath(`/competitions/${competitionId}`)
+  revalidatePath(`/competitions/${competitionId}/standings`)
+
+  return {
+    error: null,
+    success: roundsFailed === 0,
+    rounds_created: roundsCreated,
+    rounds_failed: roundsFailed,
+    rounds_skipped: skipped,
+    fixtures_total: fixturesTotal,
+    failures,
+  }
+}

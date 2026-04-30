@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/matchdays',     label: 'Giornate',     icon: '📅' },
   { href: '/competitions',  label: 'Competizioni', icon: '🏆', adminOnly: true },
   { href: '/players',       label: 'Giocatori',    icon: '👤', adminOnly: true },
+  { href: '/playground',    label: 'Playground',   icon: '🧪', adminOnly: true },
   { href: '/league',        label: 'Impostazioni', icon: '⚙',  adminOnly: true },
 ]
 
