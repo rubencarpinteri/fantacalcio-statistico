@@ -127,11 +127,11 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
       style={{
         width: size,
         height: size,
-        background: `linear-gradient(135deg, hsl(${hue} 55% 38%), hsl(${(hue + 40) % 360} 60% 28%))`,
-        color: `hsl(${hue} 70% 88%)`,
+        background: `linear-gradient(135deg, hsl(${hue} 60% 88%), hsl(${(hue + 40) % 360} 65% 80%))`,
+        color: `hsl(${hue} 50% 28%)`,
         fontSize: Math.round(size * 0.38),
-        border: '1px solid rgba(255,255,255,0.10)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 1px 2px rgba(0,0,0,0.3)',
+        border: '1px solid rgba(20,24,60,0.10)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 1px 2px rgba(20,24,60,0.06)',
       }}
     >
       {initials}
@@ -778,19 +778,7 @@ function TeamCard({
 
   if (bare) return <div>{inner}</div>
 
-  return (
-    <div
-      className="rounded-2xl border border-hairline p-4 backdrop-blur-2xl"
-      style={{
-        background:
-          'linear-gradient(180deg, rgba(46,50,88,0.40), rgba(30,32,56,0.55))',
-        boxShadow:
-          '0 1px 2px rgba(0,0,0,0.35), 0 8px 26px rgba(0,0,0,0.30)',
-      }}
-    >
-      {inner}
-    </div>
-  )
+  return <div className="glass p-4">{inner}</div>
 }
 
 // ---- Matchup row -----------------------------------------------------------
@@ -895,10 +883,7 @@ function MatchupRow({
           </span>
         )}
         {hasFv && (
-          <div
-            className="flex items-center gap-2 rounded-full border border-hairline px-2.5 py-1 font-mono text-[11px] tabular-nums"
-            style={{ background: 'rgba(255,255,255,0.04)' }}
-          >
+          <div className="flex items-center gap-2 rounded-full border border-hairline bg-glass-tint px-2.5 py-1 font-mono text-[11px] tabular-nums">
             <span style={{ color: fvBg(homeFv !== null ? homeFv / 11 : null) }}>
               {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
             </span>
@@ -913,39 +898,9 @@ function MatchupRow({
   }
 
   return (
-    <div
-      className="relative overflow-hidden rounded-3xl border border-hairline backdrop-blur-2xl"
-      style={{
-        background:
-          'linear-gradient(180deg, rgba(46,50,88,0.55), rgba(28,30,56,0.65))',
-        boxShadow:
-          '0 1px 2px rgba(0,0,0,0.35), 0 8px 26px rgba(0,0,0,0.30), 0 24px 60px -20px rgba(0,0,0,0.5)',
-      }}
-    >
-      {/* Soft halo */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          top: -40,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 360,
-          height: 80,
-          background:
-            'radial-gradient(60% 100% at 50% 50%, rgba(99,102,241,0.30), rgba(99,102,241,0))',
-          filter: 'blur(20px)',
-        }}
-      />
-
+    <div className="hero relative overflow-hidden">
       {/* Header */}
-      <div
-        className="relative border-b border-hairline px-6 py-6 md:px-8 md:py-7"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0))',
-        }}
-      >
+      <div className="relative border-b border-hairline px-6 py-6 md:px-8 md:py-7">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-6">
           {/* Home */}
           <div className="flex min-w-0 items-center justify-end gap-3 text-right">
@@ -1026,13 +981,7 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
         {/* Match selector — eyebrow + team names per pill */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {matchups.length > 1 && (
-            <div
-              className="flex flex-1 gap-1.5 overflow-x-auto rounded-2xl border border-hairline p-1.5 backdrop-blur-xl"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(46,50,88,0.45), rgba(28,30,56,0.55))',
-              }}
-            >
+            <div className="glass flex flex-1 gap-1.5 overflow-x-auto p-1.5">
               {matchups.map((m, i) => {
                 const home = teamMap.get(m.homeTeamId)
                 const away = teamMap.get(m.awayTeamId)
@@ -1103,7 +1052,7 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
                   width: activeMatchIndex === i ? 22 : 7,
                   height: 7,
                   background:
-                    activeMatchIndex === i ? '#6366f1' : 'rgba(255,255,255,0.18)',
+                    activeMatchIndex === i ? 'var(--color-indigo)' : 'var(--hairline-strong)',
                 }}
               />
             ))}

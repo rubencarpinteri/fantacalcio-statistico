@@ -5,18 +5,7 @@ interface CardProps {
 
 export function Card({ children, className = '' }: CardProps) {
   return (
-    <div
-      className={[
-        'rounded-2xl border border-hairline backdrop-blur-2xl',
-        className,
-      ].join(' ')}
-      style={{
-        background:
-          'linear-gradient(180deg, rgba(46,50,88,0.45), rgba(28,30,56,0.55))',
-        boxShadow:
-          '0 1px 2px rgba(0,0,0,0.35), 0 8px 26px rgba(0,0,0,0.30)',
-      }}
-    >
+    <div className={['glass', className].join(' ')}>
       {children}
     </div>
   )

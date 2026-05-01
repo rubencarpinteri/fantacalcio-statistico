@@ -41,7 +41,14 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="ambient" aria-hidden="true">
+          <div className="blob b3" />
+          <div className="blob b4" />
+          <div className="grain" />
+        </div>
+        <div className="relative z-10">{children}</div>
+      </body>
     </html>
   )
 }
