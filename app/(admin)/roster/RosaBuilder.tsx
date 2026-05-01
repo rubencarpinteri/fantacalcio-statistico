@@ -62,7 +62,7 @@ function RCBadge({ rc }: { rc: string }) {
     <span
       className={[
         'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-mono font-bold shrink-0',
-        RC_COLORS[rc] ?? 'bg-[#2e2e42] text-[#8888aa] border-[#3a3a52]',
+        RC_COLORS[rc] ?? 'bg-white/[0.06] text-[#b8bcdc] border-white/15',
       ].join(' ')}
     >
       {rc}
@@ -299,9 +299,9 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
   // ---- No teams ----
   if (teams.length === 0) {
     return (
-      <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d18] px-6 py-10 text-center">
-        <p className="text-[#8888aa]">Nessuna squadra trovata in questa lega.</p>
-        <p className="mt-1 text-sm text-[#55556a]">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-10 text-center">
+        <p className="text-[#b8bcdc]">Nessuna squadra trovata in questa lega.</p>
+        <p className="mt-1 text-sm text-[#9095b8]">
           Crea prima le squadre dalla pagina Lega.
         </p>
       </div>
@@ -312,9 +312,9 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
     <div className="flex gap-4 min-h-[600px]">
       {/* ---- Left panel: team list ---- */}
       <div className="w-64 shrink-0">
-        <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d18] overflow-hidden">
-          <div className="border-b border-[#2e2e42] px-4 py-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#55556a]">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden">
+          <div className="border-b border-white/10 px-4 py-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9095b8]">
               Squadre
             </h3>
           </div>
@@ -335,7 +335,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                     'group/team relative transition-colors',
                     isActive
                       ? 'bg-indigo-500/10 border-l-2 border-indigo-500'
-                      : 'hover:bg-[#13131e]',
+                      : 'hover:bg-white/[0.05]',
                   ].join(' ')}
                 >
                   {isRenaming ? (
@@ -349,9 +349,9 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                           if (e.key === 'Escape') setRenamingTeamId(null)
                         }}
                         onBlur={() => void handleRenameSubmit(team.id)}
-                        className="w-full rounded border border-indigo-500/60 bg-[#1a1a2e] px-2 py-1 text-sm text-white outline-none"
+                        className="w-full rounded border border-indigo-500/60 bg-white/[0.06] px-2 py-1 text-sm text-white outline-none"
                       />
-                      <p className="mt-1 text-xs text-[#55556a]">Invio per salvare · Esc per annullare</p>
+                      <p className="mt-1 text-xs text-[#9095b8]">Invio per salvare · Esc per annullare</p>
                     </div>
                   ) : (
                     <button
@@ -369,7 +369,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                           <p className={`truncate text-sm font-medium ${isActive ? 'text-indigo-300' : 'text-white'}`}>
                             {displayName}
                           </p>
-                          <p className="truncate text-xs text-[#55556a]">{team.manager_name}</p>
+                          <p className="truncate text-xs text-[#9095b8]">{team.manager_name}</p>
                         </div>
                         <span
                           className={`mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full ${dot}`}
@@ -377,7 +377,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                         />
                       </div>
                       <div className="mt-1.5 flex items-center gap-2">
-                        <span className="text-xs text-[#8888aa]">{count}/{MAX_ROSTER}</span>
+                        <span className="text-xs text-[#b8bcdc]">{count}/{MAX_ROSTER}</span>
                         <span className={['text-xs', gkCount >= MIN_GK ? 'text-green-500' : 'text-red-400'].join(' ')}>
                           P: {gkCount}
                         </span>
@@ -389,7 +389,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                       type="button"
                       onClick={() => handleRenameStart(team)}
                       title="Rinomina squadra"
-                      className="absolute right-2 top-2 rounded p-1 text-[#3a3a52] opacity-0 transition-opacity hover:bg-[#2e2e42] hover:text-[#8888aa] group-hover/team:opacity-100"
+                      className="absolute right-2 top-2 rounded p-1 text-[#6a6f8e] opacity-0 transition-opacity hover:bg-white/[0.08] hover:text-[#b8bcdc] group-hover/team:opacity-100"
                     >
                       ✎
                     </button>
@@ -404,12 +404,12 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
       {/* ---- Right panel: selected team rosa ---- */}
       <div className="flex-1 min-w-0">
         {selectedTeam ? (
-          <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d18] overflow-hidden">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden">
             {/* Header */}
-            <div className="border-b border-[#2e2e42] px-4 py-3 flex items-center justify-between">
+            <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-white">Rosa — {selectedTeamName}</h3>
-                <p className="text-xs text-[#55556a]">{selectedRoster.length}/{MAX_ROSTER} giocatori</p>
+                <p className="text-xs text-[#9095b8]">{selectedRoster.length}/{MAX_ROSTER} giocatori</p>
               </div>
             </div>
 
@@ -441,22 +441,22 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                     if (searchResults.length > 0) setShowDropdown(true)
                   }}
                   placeholder="Aggiungi giocatore..."
-                  className="w-full rounded-lg border border-[#2e2e42] bg-[#13131e] px-3 py-2 text-sm text-[#f0f0fa] placeholder-[#55556a] outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-[#f5f7ff] placeholder-[#9095b8] outline-none focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-500/30"
                   disabled={isPending}
                 />
 
                 {/* Loading indicator */}
                 {searchLoading && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#55556a]">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9095b8]">
                     …
                   </div>
                 )}
 
                 {/* Dropdown */}
                 {showDropdown && (
-                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-[#2e2e42] bg-[#13131e] shadow-xl overflow-hidden">
+                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-white/[0.05] shadow-xl overflow-hidden">
                     {searchResults.length === 0 ? (
-                      <div className="px-3 py-3 text-sm text-[#55556a]">
+                      <div className="px-3 py-3 text-sm text-[#9095b8]">
                         Nessun risultato per &quot;{debouncedQuery}&quot;
                       </div>
                     ) : (
@@ -466,14 +466,14 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                             key={player.id}
                             type="button"
                             onClick={() => handleAssign(player)}
-                            className="w-full px-3 py-2.5 text-left hover:bg-[#1a1a2e] transition-colors flex items-center gap-2.5"
+                            className="w-full px-3 py-2.5 text-left hover:bg-white/[0.06] transition-colors flex items-center gap-2.5"
                           >
                             <RCBadge rc={player.rating_class} />
                             <div className="flex-1 min-w-0">
                               <span className="block text-sm font-medium text-white truncate">
                                 {player.full_name}
                               </span>
-                              <span className="block text-xs text-[#55556a] truncate">
+                              <span className="block text-xs text-[#9095b8] truncate">
                                 {player.club}
                                 {player.mantra_roles.length > 0
                                   ? ` — ${player.mantra_roles.join('/')}`
@@ -490,42 +490,42 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
 
               {/* Player list */}
               {sortedRoster.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-[#2e2e42] px-4 py-8 text-center">
-                  <p className="text-sm text-[#55556a]">Nessun giocatore in rosa.</p>
-                  <p className="mt-1 text-xs text-[#3a3a52]">
+                <div className="rounded-lg border border-dashed border-white/10 px-4 py-8 text-center">
+                  <p className="text-sm text-[#9095b8]">Nessun giocatore in rosa.</p>
+                  <p className="mt-1 text-xs text-[#6a6f8e]">
                     Usa la ricerca per aggiungere giocatori dal pool.
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-[#2e2e42]">
+                <div className="overflow-x-auto rounded-lg border border-white/10">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-[#2e2e42] text-left">
-                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                      <tr className="border-b border-white/10 text-left">
+                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                           Classe
                         </th>
-                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                           Giocatore
                         </th>
-                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                           Squadra
                         </th>
-                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                           Ruoli
                         </th>
-                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#8888aa] w-10" />
+                        <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#b8bcdc] w-10" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1e1e2a]">
                       {sortedRoster.map((player) => (
-                        <tr key={player.entry_id} className="hover:bg-[#0f0f1a] group">
+                        <tr key={player.entry_id} className="hover:bg-white/[0.04] group">
                           <td className="px-3 py-2">
                             <RCBadge rc={player.rating_class} />
                           </td>
                           <td className="px-3 py-2 font-medium text-white">
                             {player.full_name}
                           </td>
-                          <td className="px-3 py-2 text-[#8888aa] text-xs">
+                          <td className="px-3 py-2 text-[#b8bcdc] text-xs">
                             {player.club}
                           </td>
                           <td className="px-3 py-2">
@@ -533,13 +533,13 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                               {player.mantra_roles.map((role) => (
                                 <span
                                   key={role}
-                                  className="rounded bg-[#1e1e2e] px-1.5 py-0.5 text-xs text-[#8888aa] border border-[#2e2e42]"
+                                  className="rounded bg-white/[0.06] px-1.5 py-0.5 text-xs text-[#b8bcdc] border border-white/10"
                                 >
                                   {role}
                                 </span>
                               ))}
                               {player.mantra_roles.length === 0 && (
-                                <span className="text-xs text-[#55556a]">—</span>
+                                <span className="text-xs text-[#9095b8]">—</span>
                               )}
                             </div>
                           </td>
@@ -555,7 +555,7 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
                               }
                               disabled={isPending}
                               title={`Rilascia ${player.full_name}`}
-                              className="opacity-0 group-hover:opacity-100 rounded px-1.5 py-0.5 text-xs text-[#55556a] hover:bg-red-500/20 hover:text-red-400 transition-all disabled:cursor-not-allowed"
+                              className="opacity-0 group-hover:opacity-100 rounded px-1.5 py-0.5 text-xs text-[#9095b8] hover:bg-red-500/20 hover:text-red-400 transition-all disabled:cursor-not-allowed"
                             >
                               ✕
                             </button>
@@ -569,8 +569,8 @@ export function RosaBuilder({ teams, initialRosters, leagueId }: Props) {
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-[#2e2e42] px-4 py-12 text-center">
-            <p className="text-[#55556a]">Seleziona una squadra dalla lista.</p>
+          <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center">
+            <p className="text-[#9095b8]">Seleziona una squadra dalla lista.</p>
           </div>
         )}
       </div>

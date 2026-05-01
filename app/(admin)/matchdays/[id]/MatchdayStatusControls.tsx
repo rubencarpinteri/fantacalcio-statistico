@@ -134,7 +134,7 @@ export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
         <CardHeader title="Stato giornata" description={`Stato corrente: ${matchday.status}`} />
         <CardContent className="space-y-3">
           {actions.length === 0 ? (
-            <p className="text-sm text-[#55556a]">Nessuna transizione disponibile.</p>
+            <p className="text-sm text-[#9095b8]">Nessuna transizione disponibile.</p>
           ) : (
             actions.map((action) => (
               <Button
@@ -165,9 +165,9 @@ export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
       {/* Note modal for actions requiring explanation */}
       {noteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-xl border border-[#2e2e42] bg-[#111118] p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl">
             <h3 className="mb-2 text-sm font-semibold text-white">{noteModal.label}</h3>
-            <p className="mb-4 text-xs text-[#8888aa]">
+            <p className="mb-4 text-xs text-[#9095b8]">
               Inserisci un motivo per questa azione (obbligatorio per il log di audit).
             </p>
             <textarea
@@ -175,7 +175,7 @@ export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
               onChange={(e) => setNote(e.target.value)}
               rows={3}
               placeholder="Motivo obbligatorio…"
-              className="mb-4 w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+              className="mb-4 w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
             />
             <div className="flex gap-3">
               <Button

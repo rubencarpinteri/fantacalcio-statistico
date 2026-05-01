@@ -77,13 +77,13 @@ function rcBadge(rc: string) {
     MID: 'text-green-400',
     ATT: 'text-red-400',
   }
-  return <span className={`font-mono text-xs font-bold ${colors[rc] ?? 'text-[#8888aa]'}`}>{rc}</span>
+  return <span className={`font-mono text-xs font-bold ${colors[rc] ?? 'text-[#b8bcdc]'}`}>{rc}</span>
 }
 
 // ---- Breakdown tooltip -------------------------------------
 
 function BMBreakdown({ breakdown }: { breakdown: BonusMalusItem[] }) {
-  if (!breakdown || breakdown.length === 0) return <span className="text-[#55556a]">—</span>
+  if (!breakdown || breakdown.length === 0) return <span className="text-[#9095b8]">—</span>
   return (
     <span className="cursor-help border-b border-dotted border-[#55556a] text-white" title={
       breakdown.map((b) => `${b.label}: ${b.quantity > 1 ? `${b.quantity}×` : ''}${b.points_each > 0 ? '+' : ''}${b.points_each} = ${b.total > 0 ? '+' : ''}${b.total}`).join('\n')
@@ -117,13 +117,13 @@ function EditStatsModal({
 
   const n = (field: keyof typeof form, label: string) => (
     <div className="flex flex-col gap-1">
-      <label className="text-xs text-[#8888aa]">{label}</label>
+      <label className="text-xs text-[#b8bcdc]">{label}</label>
       <input
         type="number"
         min={0}
         value={form[field] as number}
         onChange={(e) => setForm((prev) => ({ ...prev, [field]: Number(e.target.value) || 0 }))}
-        className="w-full rounded border border-[#2e2e42] bg-[#1a1a24] px-2 py-1.5 text-center text-sm text-white focus:border-indigo-500 focus:outline-none"
+        className="w-full rounded border border-white/10 bg-white/[0.05] px-2 py-1.5 text-center text-sm text-white focus:border-indigo-400/60 focus:outline-none"
       />
     </div>
   )
@@ -182,15 +182,15 @@ function EditStatsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-xl border border-[#2e2e42] bg-[#111118] p-5 shadow-2xl"
+        className="w-full max-w-sm rounded-xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-white">{playerName}</h3>
-            <p className="text-xs text-[#55556a]">Modifica bonus/malus</p>
+            <p className="text-xs text-[#9095b8]">Modifica bonus/malus</p>
           </div>
-          <button onClick={onClose} className="text-[#55556a] hover:text-white text-lg leading-none">×</button>
+          <button onClick={onClose} className="text-[#9095b8] hover:text-white text-lg leading-none">×</button>
         </div>
 
         <div className="mb-4 grid grid-cols-3 gap-3">
@@ -207,21 +207,21 @@ function EditStatsModal({
         </div>
 
         <div className="mb-4 flex items-center gap-4">
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#8888aa]">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#b8bcdc]">
             <input
               type="checkbox"
               checked={form.clean_sheet}
               onChange={(e) => setForm((prev) => ({ ...prev, clean_sheet: e.target.checked }))}
-              className="rounded border-[#2e2e42] bg-[#1a1a24] accent-indigo-500"
+              className="rounded border-white/10 bg-white/[0.05] accent-indigo-500"
             />
             Clean sheet
           </label>
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#8888aa]">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#b8bcdc]">
             <input
               type="checkbox"
               checked={form.is_provisional}
               onChange={(e) => setForm((prev) => ({ ...prev, is_provisional: e.target.checked }))}
-              className="rounded border-[#2e2e42] bg-[#1a1a24] accent-indigo-500"
+              className="rounded border-white/10 bg-white/[0.05] accent-indigo-500"
             />
             Provvisorio
           </label>
@@ -239,7 +239,7 @@ function EditStatsModal({
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg border border-[#2e2e42] px-3 py-2 text-sm text-[#8888aa] hover:text-white"
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-[#b8bcdc] hover:text-white"
           >
             Annulla
           </button>
@@ -376,7 +376,7 @@ export function CalculationPreview({
                   <span className={cr.error ? 'text-red-400' : 'text-emerald-400'}>
                     {cr.error ? '✗' : '✓'}
                   </span>
-                  <span className="text-[#8888aa]">
+                  <span className="text-[#b8bcdc]">
                     {cr.competition_name} — {cr.round_name}
                   </span>
                   {cr.error && (
@@ -396,7 +396,7 @@ export function CalculationPreview({
             title={
               <div className="flex items-center gap-4">
                 <span>Risultati run attivo</span>
-                <span className="text-sm font-normal text-[#8888aa]">
+                <span className="text-sm font-normal text-[#b8bcdc]">
                   {scoredCount} calcolati · {nvCount} NV/senza voti
                 </span>
               </div>
@@ -404,13 +404,13 @@ export function CalculationPreview({
           />
           <CardContent className="p-0">
             {/* Filters */}
-            <div className="flex items-center gap-3 border-b border-[#2e2e42] px-6 py-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#8888aa]">
+            <div className="flex items-center gap-3 border-b border-white/10 px-6 py-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#b8bcdc]">
                 <input
                   type="checkbox"
                   checked={filterNV}
                   onChange={(e) => setFilterNV(e.target.checked)}
-                  className="rounded border-[#2e2e42] bg-[#111118]"
+                  className="rounded border-white/10 bg-white/[0.04]"
                 />
                 Nascondi NV
               </label>
@@ -424,8 +424,8 @@ export function CalculationPreview({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
-                    <th className="px-6 py-2.5 sticky left-0 bg-[#111118]">Giocatore</th>
+                  <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
+                    <th className="px-6 py-2.5 sticky left-0 bg-white/[0.04]">Giocatore</th>
                     <th className="px-4 py-2.5">Classe</th>
                     <th className="px-4 py-2.5 text-right">Min·F</th>
                     <th className="px-4 py-2.5 text-right">z FM</th>
@@ -436,7 +436,7 @@ export function CalculationPreview({
                     <th className="px-4 py-2.5 w-16"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e1e2e]">
+                <tbody className="divide-y divide-white/8">
                   {displayed.map((c) => {
                     const player = c.league_players
                     const isNV = c.fantavoto === null
@@ -453,32 +453,32 @@ export function CalculationPreview({
                           className={`${isNV ? 'opacity-50' : ''} ${wasEdited ? 'bg-amber-500/5' : ''} hover:bg-[#1a1a2a] cursor-pointer`}
                           onClick={() => setExpandedRow(isExpanded ? null : c.id)}
                         >
-                          <td className="px-6 py-2.5 sticky left-0 bg-[#111118]">
+                          <td className="px-6 py-2.5 sticky left-0 bg-white/[0.04]">
                             <div className="font-medium text-white">{player?.full_name ?? '—'}</div>
-                            <div className="text-xs text-[#55556a]">{player?.club ?? ''}</div>
+                            <div className="text-xs text-[#9095b8]">{player?.club ?? ''}</div>
                           </td>
                           <td className="px-4 py-2.5">
                             {rcBadge(player?.rating_class ?? '')}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
+                          <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
                             {c.minutes_factor !== null ? `×${c.minutes_factor.toFixed(1)}` : '—'}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
+                          <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
                             {fmt(c.z_fotmob)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono">
                             {c.z_sofascore !== null
                               ? <span className="text-indigo-300">{fmt(c.z_sofascore)}</span>
-                              : <span className="text-[#55556a]">—</span>}
+                              : <span className="text-[#9095b8]">—</span>}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-[#8888aa]">
+                          <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
                             {fmt(c.voto_base)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono">
-                            {breakdown ? <BMBreakdown breakdown={breakdown} /> : <span className="text-[#55556a]">—</span>}
+                            {breakdown ? <BMBreakdown breakdown={breakdown} /> : <span className="text-[#9095b8]">—</span>}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono font-bold">
-                            <span className={isNV ? 'text-[#55556a]' : 'text-white'}>
+                            <span className={isNV ? 'text-[#9095b8]' : 'text-white'}>
                               {fmtFv(c.fantavoto)}
                             </span>
                             {c.is_provisional && (
@@ -499,12 +499,12 @@ export function CalculationPreview({
                                 <button
                                   title="Modifica statistiche"
                                   onClick={() => setEditingPlayer({ id: c.player_id, name: player?.full_name ?? '—' })}
-                                  className="rounded px-1.5 py-0.5 text-xs text-[#55556a] hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors"
+                                  className="rounded px-1.5 py-0.5 text-xs text-[#9095b8] hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors"
                                 >
                                   ✎
                                 </button>
                               )}
-                              <span className="text-xs text-[#55556a]">{isExpanded ? '▲' : '▼'}</span>
+                              <span className="text-xs text-[#9095b8]">{isExpanded ? '▲' : '▼'}</span>
                             </div>
                           </td>
                         </tr>
@@ -530,7 +530,7 @@ export function CalculationPreview({
                           const vbSs = calcVotoBase(c.z_sofascore)
 
                           return (
-                          <tr className="bg-[#0e0e1a]">
+                          <tr className="bg-white/[0.03]">
                             <td colSpan={9} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
@@ -546,20 +546,20 @@ export function CalculationPreview({
                                   ['fantavoto', fmtFv(c.fantavoto)],
                                 ].map(([label, value]) => (
                                   <div key={label} className="flex justify-between gap-2">
-                                    <span className={label?.startsWith('z Sofa') ? 'text-indigo-400/60' : label?.startsWith('z Fot') ? 'text-[#8888aa]' : 'text-[#55556a]'}>{label}</span>
-                                    <span className={`font-mono ${label?.startsWith('z Sofa') ? 'text-indigo-300' : 'text-[#8888aa]'}`}>{value}</span>
+                                    <span className={label?.startsWith('z Sofa') ? 'text-indigo-400/60' : label?.startsWith('z Fot') ? 'text-[#b8bcdc]' : 'text-[#9095b8]'}>{label}</span>
+                                    <span className={`font-mono ${label?.startsWith('z Sofa') ? 'text-indigo-300' : 'text-[#b8bcdc]'}`}>{value}</span>
                                   </div>
                                 ))}
                               </div>
 
                               {/* Per-source translated marks */}
                               {(vbFm !== null || vbSs !== null) && (
-                                <div className="mt-3 border-t border-[#2e2e42] pt-3">
-                                  <p className="mb-1.5 text-xs font-medium text-[#55556a] uppercase tracking-wider">Voto base per fonte</p>
+                                <div className="mt-3 border-t border-white/10 pt-3">
+                                  <p className="mb-1.5 text-xs font-medium text-[#9095b8] uppercase tracking-wider">Voto base per fonte</p>
                                   <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs">
                                     {vbFm !== null && (
                                       <div className="flex items-center gap-2">
-                                        <span className="text-[#8888aa]">Solo FotMob</span>
+                                        <span className="text-[#b8bcdc]">Solo FotMob</span>
                                         <span className="font-mono font-bold text-[#c8c8f0]">{fmt(vbFm)}</span>
                                       </div>
                                     )}
@@ -571,8 +571,8 @@ export function CalculationPreview({
                                     )}
                                     {vbFm !== null && vbSs !== null && (
                                       <div className="flex items-center gap-2">
-                                        <span className="text-[#55556a]">Δ FM−SS</span>
-                                        <span className={`font-mono ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                                        <span className="text-[#9095b8]">Δ FM−SS</span>
+                                        <span className={`font-mono ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#b8bcdc]'}`}>
                                           {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
                                         </span>
                                       </div>
@@ -582,13 +582,13 @@ export function CalculationPreview({
                               )}
 
                               {breakdown && breakdown.length > 0 && (
-                                <div className="mt-3 border-t border-[#2e2e42] pt-3">
-                                  <p className="mb-1.5 text-xs font-medium text-[#55556a] uppercase tracking-wider">Bonus/Malus</p>
+                                <div className="mt-3 border-t border-white/10 pt-3">
+                                  <p className="mb-1.5 text-xs font-medium text-[#9095b8] uppercase tracking-wider">Bonus/Malus</p>
                                   <div className="flex flex-wrap gap-x-6 gap-y-1">
                                     {breakdown.map((b) => (
                                       <span key={b.label} className="text-xs">
-                                        <span className="text-[#8888aa]">{b.label}</span>{' '}
-                                        {b.quantity > 1 && <span className="font-mono text-[#55556a]">{b.quantity}× </span>}
+                                        <span className="text-[#b8bcdc]">{b.label}</span>{' '}
+                                        {b.quantity > 1 && <span className="font-mono text-[#9095b8]">{b.quantity}× </span>}
                                         <span className={`font-mono font-bold ${b.total >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                           {b.total >= 0 ? '+' : ''}{b.total.toFixed(1)}
                                         </span>
@@ -612,7 +612,7 @@ export function CalculationPreview({
       )}
 
       {calcs.length === 0 && !canTrigger && (
-        <p className="text-sm text-[#55556a]">
+        <p className="text-sm text-[#9095b8]">
           Nessun calcolo disponibile. Porta la giornata in &quot;aperta&quot; per iniziare.
         </p>
       )}

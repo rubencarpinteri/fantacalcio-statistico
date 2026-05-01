@@ -26,7 +26,7 @@ export function GenerateMatchdaysForm({
   // All rounds already have matchdays
   if (linkedCount >= totalRounds && totalRounds > 0) {
     return (
-      <span className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm text-[#55556a]">
+      <span className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-[#9095b8]">
         Giornate gia generate ({linkedCount})
       </span>
     )

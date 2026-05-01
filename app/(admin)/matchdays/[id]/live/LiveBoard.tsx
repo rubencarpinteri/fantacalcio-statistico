@@ -15,7 +15,7 @@ function roleColor(role: string | null): string {
     case 'M': case 'C': case 'T': return 'bg-green-500/20 text-green-300'
     case 'W': return 'bg-teal-500/20 text-teal-300'
     case 'A': case 'Pc': return 'bg-red-500/20 text-red-300'
-    default: return 'bg-[#2e2e42] text-[#8888aa]'
+    default: return 'bg-[#2e2e42] text-[#b8bcdc]'
   }
 }
 
@@ -58,12 +58,12 @@ function TeamCard({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-[#2e2e42] bg-[#111118] p-4 hover:border-indigo-500/50 hover:bg-[#16161f] transition-all"
+      className="w-full text-left rounded-xl border border-white/10 bg-white/[0.04] p-4 hover:border-indigo-500/50 hover:bg-[#16161f] transition-all"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className={`text-sm font-bold tabular-nums w-5 ${
-            rank === 1 ? 'text-amber-400' : rank <= 3 ? 'text-indigo-300' : 'text-[#55556a]'
+            rank === 1 ? 'text-amber-400' : rank <= 3 ? 'text-indigo-300' : 'text-[#9095b8]'
           }`}>
             {rank}
           </span>
@@ -74,18 +74,18 @@ function TeamCard({
         </span>
       </div>
 
-      <div className="mt-2 flex items-center gap-3 text-xs text-[#55556a]">
+      <div className="mt-2 flex items-center gap-3 text-xs text-[#9095b8]">
         <span>{team.player_count} titolari</span>
         {team.nv_count > 0 && (
           <span className="text-amber-400">{team.nv_count} NV</span>
         )}
         {team.players.length === 0 && (
-          <span className="text-[#3a3a52]">nessuna formazione</span>
+          <span className="text-[#6a6f8e]">nessuna formazione</span>
         )}
       </div>
 
       {topScorer && (
-        <div className="mt-2 flex items-center gap-1.5 text-xs text-[#8888aa]">
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-[#b8bcdc]">
           <span className={`rounded px-1 py-0.5 text-[10px] font-medium ${roleColor(topScorer.assigned_mantra_role)}`}>
             {topScorer.assigned_mantra_role ?? '?'}
           </span>
@@ -134,8 +134,8 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
           )}
           <span className={`font-medium ${
             isBenchUsed ? 'text-indigo-300' :
-            isSubbedOut ? 'text-[#55556a] line-through' :
-            isNV ? 'text-[#55556a]' : 'text-[#f0f0fa]'
+            isSubbedOut ? 'text-[#9095b8] line-through' :
+            isNV ? 'text-[#9095b8]' : 'text-[#f5f7ff]'
           }`}>
             {p.player_name}
           </span>
@@ -144,7 +144,7 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
           )}
         </div>
         {p.minutes_played > 0 && (
-          <span className="text-[#55556a]">{p.minutes_played}&apos;</span>
+          <span className="text-[#9095b8]">{p.minutes_played}&apos;</span>
         )}
       </td>
 
@@ -154,7 +154,7 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
       </td>
 
       {/* SS | FM */}
-      <td className="px-2 py-2 text-right font-mono text-[#8888aa] whitespace-nowrap">
+      <td className="px-2 py-2 text-right font-mono text-[#b8bcdc] whitespace-nowrap">
         {p.sofascore_rating != null ? p.sofascore_rating.toFixed(1) : '—'}
         <span className="mx-0.5 text-[#2e2e42]">|</span>
         {p.fotmob_rating != null ? p.fotmob_rating.toFixed(2) : '—'}
@@ -163,9 +163,9 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
       {/* Fantavoto */}
       <td className="px-3 py-2 text-right font-mono font-bold w-16">
         {isNV || isSubbedOut ? (
-          <span className="text-[#55556a] font-normal">NV</span>
+          <span className="text-[#9095b8] font-normal">NV</span>
         ) : isBenchNV ? (
-          <span className="text-[#55556a] font-normal">NV</span>
+          <span className="text-[#9095b8] font-normal">NV</span>
         ) : p.fantavoto != null ? (
           <span className={
             p.fantavoto >= 7.5 ? 'text-green-400' :
@@ -174,7 +174,7 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
             {p.fantavoto.toFixed(2)}
           </span>
         ) : (
-          <span className="text-[#3a3a52]">—</span>
+          <span className="text-[#6a6f8e]">—</span>
         )}
       </td>
     </tr>
@@ -192,20 +192,20 @@ function TeamDetail({ team, onBack }: { team: LiveTeamRow; onBack: () => void })
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="text-sm text-[#8888aa] hover:text-indigo-400"
+          className="text-sm text-[#b8bcdc] hover:text-indigo-400"
         >
           ← Tutti i punteggi
         </button>
       </div>
 
-      <div className="rounded-xl border border-[#2e2e42] bg-[#111118] p-4">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-bold text-white">{team.team_name}</h2>
           <span className="font-mono text-3xl font-bold text-white">
             {team.total_fantavoto.toFixed(2)}
           </span>
         </div>
-        <div className="mt-1 flex gap-3 text-xs text-[#55556a]">
+        <div className="mt-1 flex gap-3 text-xs text-[#9095b8]">
           <span>{team.player_count} titolari</span>
           {team.nv_count > 0 && (
             <span className="text-amber-400">{team.nv_count} NV senza cambio</span>
@@ -215,13 +215,13 @@ function TeamDetail({ team, onBack }: { team: LiveTeamRow; onBack: () => void })
 
       {/* Starters */}
       <div>
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
           Titolari
         </p>
-        <div className="overflow-x-auto rounded-lg border border-[#2e2e42]">
+        <div className="overflow-x-auto rounded-lg border border-white/10">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#2e2e42] text-[10px] uppercase tracking-wider text-[#55556a]">
+              <tr className="border-b border-white/10 text-[10px] uppercase tracking-wider text-[#9095b8]">
                 <th className="px-3 py-2 text-left">Ruolo</th>
                 <th className="px-2 py-2 text-left">Giocatore</th>
                 <th className="px-2 py-2 text-left">Eventi</th>
@@ -241,10 +241,10 @@ function TeamDetail({ team, onBack }: { team: LiveTeamRow; onBack: () => void })
       {/* Bench */}
       {bench.length > 0 && (
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
             Panchina
           </p>
-          <div className="overflow-x-auto rounded-lg border border-[#2e2e42]">
+          <div className="overflow-x-auto rounded-lg border border-white/10">
             <table className="w-full">
               <tbody>
                 {bench.map((p) => (
@@ -257,7 +257,7 @@ function TeamDetail({ team, onBack }: { team: LiveTeamRow; onBack: () => void })
       )}
 
       {team.players.length === 0 && (
-        <p className="text-sm text-[#55556a]">Nessuna formazione inviata.</p>
+        <p className="text-sm text-[#9095b8]">Nessuna formazione inviata.</p>
       )}
     </div>
   )
@@ -333,15 +333,15 @@ export function LiveBoard({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
               </span>
-              <span className="text-[#8888aa]">
+              <span className="text-[#b8bcdc]">
                 Aggiornato {timeAgo(data.refreshed_at)}
-                <span className="ml-1 text-[#3a3a52]">· si aggiorna ogni 60s</span>
+                <span className="ml-1 text-[#6a6f8e]">· si aggiorna ogni 60s</span>
               </span>
             </>
           ) : (
             <>
               <span className="h-2 w-2 rounded-full bg-[#3a3a52]" />
-              <span className="text-[#55556a]">Nessun dato live</span>
+              <span className="text-[#9095b8]">Nessun dato live</span>
             </>
           )}
         </div>
@@ -350,7 +350,7 @@ export function LiveBoard({
           <button
             onClick={handleManualRefresh}
             disabled={isPending}
-            className="rounded-lg border border-[#2e2e42] bg-[#111118] px-3 py-1.5 text-xs font-medium text-[#8888aa] hover:border-indigo-500/50 hover:text-indigo-400 disabled:opacity-40"
+            className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#b8bcdc] hover:border-indigo-500/50 hover:text-indigo-400 disabled:opacity-40"
           >
             {isPending ? 'Aggiornamento…' : '↻ Aggiorna ora'}
           </button>
@@ -363,12 +363,12 @@ export function LiveBoard({
 
       {/* No data state */}
       {data.teams.length === 0 && (
-        <div className="rounded-xl border border-[#2e2e42] bg-[#111118] px-6 py-10 text-center">
-          <p className="text-[#55556a]">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-10 text-center">
+          <p className="text-[#9095b8]">
             Nessun punteggio live disponibile per <span className="text-white">{matchdayName}</span>.
           </p>
           {isAdmin && (
-            <p className="mt-2 text-xs text-[#3a3a52]">
+            <p className="mt-2 text-xs text-[#6a6f8e]">
               Clicca &ldquo;Aggiorna ora&rdquo; per avviare il primo calcolo live,
               oppure configura il cron su cron-job.org per aggiornamenti automatici ogni 5 minuti.
             </p>
@@ -397,13 +397,13 @@ export function LiveBoard({
 
       {/* Setup hint for admin */}
       {isAdmin && data.teams.length > 0 && !selectedTeam && (
-        <div className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-4 py-3 text-xs text-[#55556a] space-y-1">
-          <p className="font-medium text-[#8888aa]">Aggiornamento automatico</p>
+        <div className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-xs text-[#9095b8] space-y-1">
+          <p className="font-medium text-[#b8bcdc]">Aggiornamento automatico</p>
           <p>
             Su Vercel Hobby il cron non è disponibile. Configura un task su{' '}
             <span className="text-indigo-400">cron-job.org</span> che chiama:
           </p>
-          <code className="block rounded bg-[#1a1a24] px-3 py-1.5 font-mono text-[#f0f0fa]">
+          <code className="block rounded bg-white/[0.05] px-3 py-1.5 font-mono text-[#f5f7ff]">
             GET /api/cron/live-ratings
             <br />
             Authorization: Bearer {'<'}CRON_SECRET{'>'}

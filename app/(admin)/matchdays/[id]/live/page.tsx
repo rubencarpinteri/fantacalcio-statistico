@@ -127,7 +127,7 @@ export default async function LivePage({
       <div>
         <a
           href={`/matchdays/${matchdayId}`}
-          className="text-sm text-[#55556a] hover:text-indigo-400"
+          className="text-sm text-[#9095b8] hover:text-indigo-400"
         >
           ← {matchday.name}
         </a>

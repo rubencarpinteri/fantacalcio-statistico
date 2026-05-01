@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
   locked:   'Bloccato',
 }
 const STATUS_COLOR: Record<string, string> = {
-  pending:  'text-[#8888aa] bg-[#1a1a24]',
+  pending:  'text-[#9095b8] bg-white/[0.06]',
   computed: 'text-emerald-400 bg-emerald-500/10',
   locked:   'text-indigo-300 bg-indigo-500/10',
 }
@@ -44,27 +44,27 @@ export function RoundManager({ round, competitionId, matchday, hasGoals }: Round
         {/* Status row */}
         <div className="mb-5 flex flex-wrap items-center gap-6">
           <div>
-            <p className="mb-1 text-xs text-[#55556a]">Stato</p>
+            <p className="mb-1 text-xs text-[#9095b8]">Stato</p>
             <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[round.status] ?? ''}`}>
               {STATUS_LABEL[round.status] ?? round.status}
             </span>
           </div>
 
           <div>
-            <p className="mb-1 text-xs text-[#55556a]">Giornata collegata</p>
+            <p className="mb-1 text-xs text-[#9095b8]">Giornata collegata</p>
             <span className="text-sm text-white">{matchday?.name ?? '—'}</span>
           </div>
 
           {matchday && (
             <div>
-              <p className="mb-1 text-xs text-[#55556a]">Stato giornata</p>
-              <span className="text-sm text-[#8888aa]">{matchday.status}</span>
+              <p className="mb-1 text-xs text-[#9095b8]">Stato giornata</p>
+              <span className="text-sm text-[#9095b8]">{matchday.status}</span>
             </div>
           )}
 
           <div>
-            <p className="mb-1 text-xs text-[#55556a]">Metodo punteggio</p>
-            <span className="text-sm text-[#8888aa]">
+            <p className="mb-1 text-xs text-[#9095b8]">Metodo punteggio</p>
+            <span className="text-sm text-[#9095b8]">
               {hasGoals ? 'Soglie gol (Mantra)' : 'Confronto diretto'}
             </span>
           </div>
@@ -72,7 +72,7 @@ export function RoundManager({ round, competitionId, matchday, hasGoals }: Round
 
         {/* Warnings / blockers */}
         {round.status === 'locked' && (
-          <p className="mb-4 text-sm text-[#55556a]">
+          <p className="mb-4 text-sm text-[#9095b8]">
             Questo turno è bloccato e non può essere ricalcolato.
           </p>
         )}
@@ -112,7 +112,7 @@ export function RoundManager({ round, competitionId, matchday, hasGoals }: Round
         )}
 
         {round.computed_at && (
-          <p className="mt-4 text-xs text-[#55556a]">
+          <p className="mt-4 text-xs text-[#9095b8]">
             Ultimo calcolo: {new Date(round.computed_at).toLocaleString('it-IT')}
           </p>
         )}

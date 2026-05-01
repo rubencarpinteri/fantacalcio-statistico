@@ -53,7 +53,7 @@ export default async function LineupHistoryPage({
 
   if (!team) {
     return (
-      <div className="py-12 text-center text-sm text-[#55556a]">
+      <div className="py-12 text-center text-sm text-[#9095b8]">
         Nessuna squadra trovata per il tuo account.
       </div>
     )
@@ -70,10 +70,10 @@ export default async function LineupHistoryPage({
   if (!submissions || submissions.length === 0) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}/lineup`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}/lineup`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← Torna alla formazione
         </a>
-        <p className="text-sm text-[#55556a]">Nessun invio trovato per questa giornata.</p>
+        <p className="text-sm text-[#9095b8]">Nessun invio trovato per questa giornata.</p>
       </div>
     )
   }
@@ -147,13 +147,13 @@ export default async function LineupHistoryPage({
   return (
     <div className="space-y-4">
       <div>
-        <a href={`/matchdays/${matchdayId}/lineup`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}/lineup`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← Torna alla formazione
         </a>
         <h1 className="mt-1 text-xl font-bold text-white">
           Storico invii — {matchday.name}
         </h1>
-        <p className="text-sm text-[#8888aa]">
+        <p className="text-sm text-[#b8bcdc]">
           {submissions.length} versione{submissions.length !== 1 ? 'i' : 'e'} salvat{submissions.length !== 1 ? 'e' : 'a'}
         </p>
       </div>
@@ -189,7 +189,7 @@ export default async function LineupHistoryPage({
                   </span>
                 }
                 description={
-                  <span className="text-xs text-[#55556a]">
+                  <span className="text-xs text-[#9095b8]">
                     {sub.formation?.name ?? '—'} ·{' '}
                     {new Intl.DateTimeFormat('it-IT', {
                       dateStyle: 'short',
@@ -202,7 +202,7 @@ export default async function LineupHistoryPage({
                 <div className="grid gap-6 sm:grid-cols-2">
                   {/* Starters */}
                   <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                       Titolari ({starters.length})
                     </p>
                     <div className="space-y-1">
@@ -244,14 +244,14 @@ export default async function LineupHistoryPage({
                         )
                       })}
                       {starters.length === 0 && (
-                        <p className="text-xs text-[#55556a]">Nessun titolare</p>
+                        <p className="text-xs text-[#9095b8]">Nessun titolare</p>
                       )}
                     </div>
                   </div>
 
                   {/* Bench */}
                   <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                       Panchina ({bench.length})
                     </p>
                     <div className="space-y-1">
@@ -272,7 +272,7 @@ export default async function LineupHistoryPage({
                                 : '',
                             ].join(' ')}
                           >
-                            <span className="w-10 shrink-0 font-mono text-xs text-[#55556a]">
+                            <span className="w-10 shrink-0 font-mono text-xs text-[#9095b8]">
                               P{sp.slot?.bench_order ?? '?'}
                             </span>
                             <span className="text-white">
@@ -293,7 +293,7 @@ export default async function LineupHistoryPage({
                         )
                       })}
                       {bench.length === 0 && (
-                        <p className="text-xs text-[#55556a]">Nessun panchinaro</p>
+                        <p className="text-xs text-[#9095b8]">Nessun panchinaro</p>
                       )}
                     </div>
                   </div>
@@ -301,7 +301,7 @@ export default async function LineupHistoryPage({
 
                 {/* Diff legend for non-first versions */}
                 {prevSub !== null && (
-                  <p className="mt-3 text-xs text-[#55556a]">
+                  <p className="mt-3 text-xs text-[#9095b8]">
                     <span className="inline-block w-2 h-2 rounded-sm bg-amber-500/40 mr-1" />
                     modificato rispetto alla versione precedente
                     {' · '}

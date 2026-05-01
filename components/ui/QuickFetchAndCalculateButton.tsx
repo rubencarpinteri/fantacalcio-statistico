@@ -143,8 +143,8 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
         <span className="text-xs text-emerald-400 font-medium">
           ✓ {summary.imported} importati · {summary.scored} calcolati · pubblicato
         </span>
-        {ssStatus && <span className="text-xs text-[#55556a]">{ssStatus}</span>}
-        <button onClick={() => { setPhase('idle'); setSummary(null) }} className="text-xs text-[#55556a] hover:text-indigo-400">↺</button>
+        {ssStatus && <span className="text-xs text-[#9095b8]">{ssStatus}</span>}
+        <button onClick={() => { setPhase('idle'); setSummary(null) }} className="text-xs text-[#9095b8] hover:text-indigo-400">↺</button>
       </div>
     )
   }
@@ -154,7 +154,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       <div className="flex flex-col gap-1">
         <span className="text-xs text-red-400">{error}</span>
         {ssStatus && <span className="text-xs text-amber-400">{ssStatus}</span>}
-        <button onClick={() => { setPhase('idle'); setError(null) }} className="text-xs text-[#55556a] hover:text-indigo-400">↺ Riprova</button>
+        <button onClick={() => { setPhase('idle'); setError(null) }} className="text-xs text-[#9095b8] hover:text-indigo-400">↺ Riprova</button>
       </div>
     )
   }
@@ -176,14 +176,14 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
           className={[
             'flex items-center gap-1.5 rounded-lg border font-medium transition-colors px-2.5 py-1.5 text-xs whitespace-nowrap',
             busy
-              ? 'cursor-wait border-[#2e2e42] bg-[#0d0d1a] text-[#55556a]'
+              ? 'cursor-wait border-white/10 bg-[#0d0d1a] text-[#9095b8]'
               : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50',
           ].join(' ')}
         >
           {busy && <span className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />}
           {label}
         </button>
-        {ssStatus && <span className="text-xs text-[#55556a]">{ssStatus}</span>}
+        {ssStatus && <span className="text-xs text-[#9095b8]">{ssStatus}</span>}
       </div>
     )
   }
@@ -197,7 +197,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
         className={[
           'flex w-full items-center justify-center gap-2 rounded-xl border-2 py-4 text-base font-bold transition-all',
           busy
-            ? 'cursor-wait border-[#2e2e42] bg-[#0d0d1a] text-[#55556a]'
+            ? 'cursor-wait border-white/10 bg-[#0d0d1a] text-[#9095b8]'
             : 'border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 active:scale-[0.98]',
         ].join(' ')}
       >
@@ -210,7 +210,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
           <span>⚡ Aggiorna e pubblica</span>
         )}
       </button>
-      {ssStatus && <span className="text-xs text-center text-[#55556a]">{ssStatus}</span>}
+      {ssStatus && <span className="text-xs text-center text-[#9095b8]">{ssStatus}</span>}
     </div>
   )
 }

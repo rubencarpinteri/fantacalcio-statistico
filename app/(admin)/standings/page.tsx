@@ -16,7 +16,7 @@ const TYPE_ICON: Record<string, string> = {
   coppa:         '🏆',
 }
 const STATUS_BADGE: Record<string, string> = {
-  setup:     'text-[#8888aa] bg-[#1a1a24]',
+  setup:     'text-[#b8bcdc] bg-white/[0.05]',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
   cancelled: 'text-red-400 bg-red-500/10',
@@ -146,18 +146,18 @@ export default async function StandingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-lg font-bold text-white">Classifiche</h1>
-        <p className="text-xs text-[#8888aa]">{ctx.league.name} · {ctx.league.season_name}</p>
+        <p className="text-xs text-[#b8bcdc]">{ctx.league.name} · {ctx.league.season_name}</p>
       </div>
 
       {/* ── WIP notice ──────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#2e2e42]">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">Classifica</p>
+      <div className="rounded-xl border border-white/10 bg-[#0d0d1a] overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">Classifica</p>
           <p className="text-sm font-semibold text-white leading-tight mt-0.5">{ctx.league.name}</p>
         </div>
         <div className="px-4 py-10 text-center">
-          <p className="text-xs font-medium text-[#55556a]">Work in progress</p>
-          <p className="mt-1 text-[11px] text-[#3a3a52]">La classifica sarà disponibile prossimamente.</p>
+          <p className="text-xs font-medium text-[#9095b8]">Work in progress</p>
+          <p className="mt-1 text-[11px] text-[#6a6f8e]">La classifica sarà disponibile prossimamente.</p>
         </div>
       </div>
 

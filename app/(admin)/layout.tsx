@@ -32,10 +32,10 @@ export default async function AdminLayout({
     // User exists in auth but has no league membership yet
     // Show a holding page rather than a hard redirect
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0f] text-[#8888aa]">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-white">Accesso in attesa</p>
-          <p className="mt-2 text-sm">
+      <div className="flex min-h-screen items-center justify-center text-[#9095b8]">
+        <div className="glass max-w-sm px-8 py-7 text-center">
+          <p className="text-[15px] font-semibold tracking-tight text-[#f5f7ff]">Accesso in attesa</p>
+          <p className="mt-2 text-[13px] leading-[1.55] text-[#b8bcdc]">
             Il tuo account non è ancora stato associato a una lega. Contatta l&apos;admin.
           </p>
         </div>
@@ -51,15 +51,15 @@ export default async function AdminLayout({
   const leagueData = membership.leagues as unknown as { name: string } | null
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0a0a0f]">
+    <div className="flex h-screen overflow-hidden">
       <AdminSidebar
         isAdmin={isAdmin}
         username={profile?.username ?? user.email ?? 'Utente'}
         leagueName={leagueData?.name ?? 'Fantacalcio'}
       />
       <main className="flex-1 overflow-y-auto">
-        {/* pb-20 on mobile reserves space above the fixed bottom nav bar */}
-        <div className="mx-auto max-w-6xl px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-6">
+        {/* pb-24 on mobile reserves space above the fixed bottom nav bar */}
+        <div className="mx-auto max-w-6xl px-4 py-5 pb-24 md:px-8 md:py-7 md:pb-8">
           {children}
         </div>
       </main>

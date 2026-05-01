@@ -22,7 +22,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="text-xs font-medium uppercase tracking-wider text-[#8888aa]"
+            className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9095b8]"
           >
             {label}
           </label>
@@ -31,12 +31,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={[
-            'rounded-lg border bg-[#1a1a24] px-3 py-2 text-sm text-white',
-            'transition-colors focus:border-indigo-500 focus:outline-none',
+            'rounded-xl border px-3.5 py-2.5 text-[13.5px] text-[#f5f7ff]',
+            'bg-white/[0.04] backdrop-blur-xl',
+            'transition-all focus:bg-white/[0.07] focus:outline-none',
             'appearance-none cursor-pointer',
             error
-              ? 'border-red-500/60'
-              : 'border-[#2e2e42]',
+              ? 'border-rose-400/50 focus:border-rose-400'
+              : 'border-white/10 focus:border-indigo-400/60',
             className,
           ].join(' ')}
           {...props}
@@ -52,8 +53,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && <p className="text-xs text-red-400">{error}</p>}
-        {hint && !error && <p className="text-xs text-[#55556a]">{hint}</p>}
+        {error && <p className="text-[11.5px] text-rose-300">{error}</p>}
+        {hint && !error && <p className="text-[11.5px] text-[#9095b8]">{hint}</p>}
       </div>
     )
   }

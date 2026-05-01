@@ -112,7 +112,7 @@ export function ImportPreview({ teams }: { teams: Team[] }) {
 
           <div className="space-y-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                 File CSV
               </label>
               <input
@@ -120,19 +120,19 @@ export function ImportPreview({ teams }: { teams: Team[] }) {
                 type="file"
                 accept=".csv,text/csv"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-[#8888aa] file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-700"
+                className="block w-full text-sm text-[#b8bcdc] file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-700"
               />
             </div>
 
             {teams.length > 0 && (
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
                   Assegna alla squadra (opzionale)
                 </label>
                 <select
                   value={selectedTeamId}
                   onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
                 >
                   <option value="">— Nessuna squadra —</option>
                   {teams.map((t) => (
@@ -145,9 +145,9 @@ export function ImportPreview({ teams }: { teams: Team[] }) {
             )}
           </div>
 
-          <div className="rounded-lg border border-[#2e2e42] bg-[#111118] p-4">
-            <p className="mb-2 text-xs font-medium text-[#8888aa]">Formato CSV atteso:</p>
-            <pre className="text-xs text-[#55556a]">
+          <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            <p className="mb-2 text-xs font-medium text-[#b8bcdc]">Formato CSV atteso:</p>
+            <pre className="text-xs text-[#9095b8]">
 {`Nome,Squadra,Ruolo
 Marco Rossi,Milan,Dc/E
 Lorenzo Verde,Juventus,M/C
@@ -174,7 +174,7 @@ Anna Bianchi,Inter,Por`}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Anteprima importazione</h2>
-            <p className="text-sm text-[#8888aa]">
+            <p className="text-sm text-[#b8bcdc]">
               {rows.length} righe trovate ·{' '}
               <span className="text-green-400">{validRows.length} valide</span>
               {errorRows.length > 0 && (
@@ -201,13 +201,13 @@ Anna Bianchi,Inter,Por`}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#2e2e42] text-left">
-                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]">#</th>
-                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]">Nome</th>
-                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]">Squadra</th>
-                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]">Ruoli</th>
-                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]">Rating Class</th>
-                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]">Stato</th>
+                  <tr className="border-b border-white/10 text-left">
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">#</th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">Nome</th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">Squadra</th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">Ruoli</th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">Rating Class</th>
+                    <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">Stato</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1e1e2a]">
@@ -223,11 +223,11 @@ Anna Bianchi,Inter,Por`}
                           hasError ? 'bg-red-500/5' : needsConfirm && !isConfirmed ? 'bg-amber-500/5' : '',
                         ].join('')}
                       >
-                        <td className="px-4 py-2.5 font-mono text-xs text-[#55556a]">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#9095b8]">
                           {row.rowIndex + 2}
                         </td>
                         <td className="px-4 py-2.5 text-white">{row.full_name || '—'}</td>
-                        <td className="px-4 py-2.5 text-[#8888aa]">{row.club || '—'}</td>
+                        <td className="px-4 py-2.5 text-[#b8bcdc]">{row.club || '—'}</td>
                         <td className="px-4 py-2.5">
                           <div className="flex flex-wrap gap-1">
                             {row.mantra_roles.map((r) => (
@@ -239,16 +239,16 @@ Anna Bianchi,Inter,Por`}
                         </td>
                         <td className="px-4 py-2.5">
                           {hasError ? (
-                            <span className="text-xs text-[#55556a]">—</span>
+                            <span className="text-xs text-[#9095b8]">—</span>
                           ) : (
                             <select
                               value={overrides[row.rowIndex] ?? ''}
                               onChange={(e) => setOverride(row.rowIndex, e.target.value as RatingClass)}
                               className={[
-                                'rounded border px-2 py-1 text-xs bg-[#1a1a24] focus:outline-none focus:border-indigo-500',
+                                'rounded border px-2 py-1 text-xs bg-white/[0.05] focus:outline-none focus:border-indigo-400/60',
                                 needsConfirm && !isConfirmed
                                   ? 'border-amber-500/60 text-amber-400'
-                                  : 'border-[#2e2e42] text-white',
+                                  : 'border-white/10 text-white',
                               ].join(' ')}
                             >
                               <option value="">— Seleziona —</option>

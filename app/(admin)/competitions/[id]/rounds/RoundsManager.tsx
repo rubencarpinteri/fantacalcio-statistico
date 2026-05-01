@@ -29,7 +29,7 @@ function SubmitBtn({ label, pendingLabel }: { label: string; pendingLabel?: stri
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  pending:  'text-[#8888aa] bg-[#1a1a24]',
+  pending:  'text-[#9095b8] bg-white/[0.06]',
   computed: 'text-emerald-400 bg-emerald-500/10',
   locked:   'text-indigo-300 bg-indigo-500/10',
 }
@@ -154,9 +154,9 @@ export function RoundsManager({
             )}
             <form action={genAction} className="flex items-end gap-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[#8888aa]">Gironi</label>
+                <label className="mb-1.5 block text-xs font-medium text-[#9095b8]">Gironi</label>
                 <select name="legs" defaultValue="2"
-                  className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+                  className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none">
                   <option value="2">Andata e ritorno (default)</option>
                   <option value="1">Solo andata</option>
                 </select>
@@ -186,15 +186,15 @@ export function RoundsManager({
               <p className="mb-3 text-sm text-amber-400">⚠ Iscrivi almeno 2 squadre prima di calcolare.</p>
             )}
             {availableForBR.length === 0 && teamCount >= 2 && (
-              <p className="text-sm text-[#55556a]">Nessuna giornata pubblicata disponibile da aggiungere.</p>
+              <p className="text-sm text-[#9095b8]">Nessuna giornata pubblicata disponibile da aggiungere.</p>
             )}
             {availableForBR.length > 0 && (
               <>
                 <form action={brAction} className="flex items-end gap-4">
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium text-[#8888aa]">Giornata pubblicata</label>
+                    <label className="mb-1.5 block text-xs font-medium text-[#9095b8]">Giornata pubblicata</label>
                     <select name="matchday_id"
-                      className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+                      className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none">
                       <option value="">— Seleziona —</option>
                       {availableForBR.map((m) => (
                         <option key={m.id} value={m.id}>{m.name}</option>
@@ -205,8 +205,8 @@ export function RoundsManager({
                 </form>
 
                 {/* Bulk-create all button */}
-                <div className="mt-4 border-t border-[#1e1e2e] pt-4">
-                  <p className="mb-2 text-xs text-[#55556a]">
+                <div className="mt-4 border-t border-white/8 pt-4">
+                  <p className="mb-2 text-xs text-[#9095b8]">
                     Oppure popola tutte le {availableForBR.length} giornate pubblicate non ancora collegate in un&apos;unica operazione.
                   </p>
                   <button
@@ -270,7 +270,7 @@ export function RoundsManager({
       {competitionType === 'coppa' && rounds.length === 0 && (
         <Card>
           <CardContent>
-            <p className="py-4 text-center text-sm text-[#55556a]">
+            <p className="py-4 text-center text-sm text-[#9095b8]">
               La gestione completa dei turni di Coppa (gironi + eliminazione diretta) è in arrivo.
             </p>
           </CardContent>
@@ -289,28 +289,28 @@ export function RoundsManager({
             )}
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e1e2e]">
+                <tr className="border-b border-white/8">
                   {['#','Nome','Giornata','Stato','Azioni'].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">{h}</th>
+                    <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
+              <tbody className="divide-y divide-white/8">
                 {rounds.map((r) => {
                   const roundCompute = computeState[r.id]
                   const linkedMatchday = publishedMatchdays.find((m) => m.id === r.matchday_id)
                   return (
-                    <tr key={r.id} className="hover:bg-[#0f0f1a]">
-                      <td className="px-4 py-3 text-[#55556a] w-10">{r.round_number}</td>
+                    <tr key={r.id} className="hover:bg-white/[0.04]">
+                      <td className="px-4 py-3 text-[#9095b8] w-10">{r.round_number}</td>
                       <td className="px-4 py-3 text-white">{r.name}</td>
-                      <td className="px-4 py-3 text-[#8888aa]">
+                      <td className="px-4 py-3 text-[#9095b8]">
                         {linkedMatchday ? (
                           <span className="text-white">{linkedMatchday.name}</span>
                         ) : competitionType === 'campionato' ? (
                           <form action={linkFormAction} className="flex items-center gap-2">
                             <input type="hidden" name="round_id" value={r.id} />
                             <select name="matchday_id"
-                              className="rounded border border-[#2e2e42] bg-[#0a0a0f] px-2 py-1 text-xs text-white focus:border-indigo-500 focus:outline-none">
+                              className="rounded border border-white/10 bg-transparent px-2 py-1 text-xs text-white focus:border-indigo-400/60 focus:outline-none">
                               <option value="">— Collega giornata —</option>
                               {publishedMatchdays.map((m) => (
                                 <option key={m.id} value={m.id}>{m.name}</option>
@@ -345,7 +345,7 @@ export function RoundsManager({
                           )}
                           <a
                             href={`/competitions/${competitionId}/rounds/${r.round_number}`}
-                            className="text-xs text-[#55556a] hover:text-indigo-400"
+                            className="text-xs text-[#9095b8] hover:text-indigo-400"
                           >
                             Dettaglio →
                           </a>
@@ -363,7 +363,7 @@ export function RoundsManager({
       {rounds.length === 0 && competitionType !== 'battle_royale' && competitionType !== 'coppa' && (
         <Card>
           <CardContent>
-            <p className="py-8 text-center text-sm text-[#55556a]">
+            <p className="py-8 text-center text-sm text-[#9095b8]">
               Nessun turno generato. Usa il pulsante qui sopra per generare il calendario.
             </p>
           </CardContent>

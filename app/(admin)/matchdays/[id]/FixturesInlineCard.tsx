@@ -49,7 +49,7 @@ export function FixturesInlineCard({
             <span className="text-xs text-amber-400">Nessuna partita configurata</span>
           )}
         </div>
-        <button onClick={() => setOpen((v) => !v)} className="text-xs text-[#55556a] hover:text-indigo-400">
+        <button onClick={() => setOpen((v) => !v)} className="text-xs text-[#9095b8] hover:text-indigo-400">
           {open ? 'Riduci ↑' : 'Modifica ↓'}
         </button>
       </div>
@@ -77,7 +77,7 @@ export function FixturesInlineCard({
           <button
             onClick={handleAutoImport}
             disabled={importing}
-            className="text-xs text-[#55556a] hover:text-emerald-400 disabled:opacity-50"
+            className="text-xs text-[#9095b8] hover:text-emerald-400 disabled:opacity-50"
           >
             {importing ? 'Caricamento…' : 'Ricaricare dal CSV ↺'}
           </button>
@@ -89,14 +89,14 @@ export function FixturesInlineCard({
         <form action={formAction} className="mt-3 space-y-3">
           <input type="hidden" name="matchdayId" value={matchdayId} />
           {roundMatches.length > 0 && !csvHasIds && (
-            <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2">
-              <p className="mb-1.5 text-xs font-medium text-[#55556a] uppercase tracking-wider">
+            <div className="rounded-lg border border-white/10 bg-transparent px-3 py-2">
+              <p className="mb-1.5 text-xs font-medium text-[#9095b8] uppercase tracking-wider">
                 Ordine partite dalla giornata (incolla gli ID in quest&apos;ordine)
               </p>
               <ol className="space-y-0.5">
                 {roundMatches.map((m, i) => (
-                  <li key={m.matchNumber} className="text-xs text-[#8888aa]">
-                    <span className="mr-2 text-[#55556a]">{i + 1}.</span>
+                  <li key={m.matchNumber} className="text-xs text-[#9095b8]">
+                    <span className="mr-2 text-[#9095b8]">{i + 1}.</span>
                     {m.label}
                   </li>
                 ))}
@@ -105,23 +105,23 @@ export function FixturesInlineCard({
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#8888aa] mb-1">FotMob IDs</label>
+              <label className="block text-xs font-medium text-[#9095b8] mb-1">FotMob IDs</label>
               <textarea
                 name="fotmobIds"
                 rows={10}
                 defaultValue={fotmobDefault}
                 placeholder={'4803335\n4803336\n...'}
-                className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm font-mono text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none resize-none"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-mono text-[#f5f7ff] placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none resize-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#8888aa] mb-1">SofaScore IDs</label>
+              <label className="block text-xs font-medium text-[#9095b8] mb-1">SofaScore IDs</label>
               <textarea
                 name="sofascoreIds"
                 rows={10}
                 defaultValue={sofascoreDefault}
                 placeholder={'13981724\n13981725\n...'}
-                className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-sm font-mono text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none resize-none"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-mono text-[#f5f7ff] placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none resize-none"
               />
             </div>
           </div>

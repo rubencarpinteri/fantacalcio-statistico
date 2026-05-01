@@ -33,14 +33,20 @@ export default async function ImportLineupsPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <a href={`/matchdays/${id}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${id}`} className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
           ← {matchday.name}
         </a>
-        <div className="mt-1 flex items-center gap-3">
-          <h1 className="text-xl font-bold text-white">Importa Formazioni</h1>
+        <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <h1
+            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
+          >
+            <span className="font-semibold">Importa</span>
+            <span className="serif font-normal text-[#b8bcdc]">— formazioni</span>
+          </h1>
           <MatchdayStatusBadge status={matchday.status} />
         </div>
-        <p className="mt-1 text-sm text-[#8888aa]">
+        <p className="mt-1.5 max-w-2xl text-[12.5px] leading-[1.55] text-[#9095b8]">
           Incolla il testo delle formazioni da Leghe per salvare le rose di tutte le squadre in un colpo solo.
         </p>
       </div>
@@ -58,8 +64,8 @@ export default async function ImportLineupsPage({
       {/* Info box */}
       <Card>
         <CardContent>
-          <div className="space-y-2 text-xs text-[#55556a]">
-            <p className="font-medium text-[#8888aa]">Come funziona</p>
+          <div className="space-y-2 text-xs text-[#9095b8]">
+            <p className="font-medium text-[#b8bcdc]">Come funziona</p>
             <ul className="space-y-1 list-disc list-inside">
               <li>Incolla il testo completo delle formazioni (anche più sfide insieme)</li>
               <li>Il sistema abbina automaticamente squadre, giocatori e slot della formazione</li>

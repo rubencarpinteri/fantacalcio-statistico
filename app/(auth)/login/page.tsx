@@ -10,7 +10,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full rounded-xl border border-indigo-400/30 bg-gradient-to-b from-indigo-500 to-indigo-600 px-4 py-2.5 text-[13.5px] font-semibold tracking-tight text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_18px_-4px_rgba(99,102,241,0.45),0_1px_2px_rgba(0,0,0,0.4)] transition-all hover:from-indigo-400 hover:to-indigo-500 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55"
     >
       {pending ? 'Accesso in corso…' : 'Accedi'}
     </button>
@@ -19,33 +19,50 @@ function SubmitButton() {
 
 const initialState: LoginActionState = { error: null }
 
+const fieldClass =
+  'w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[13.5px] text-[#f5f7ff] placeholder:text-[#6a6f8e] backdrop-blur-xl transition-all focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none'
+
+const labelClass =
+  'mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9095b8]'
+
 export default function LoginPage() {
   const [state, formAction] = useActionState(loginAction, initialState)
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0a0a0f] px-4">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo / brand */}
-        <div className="mb-8 text-center">
-          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/20 text-2xl">
-            ⚽
+        <div className="mb-7 text-center">
+          <div
+            className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl text-indigo-200"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(99,102,241,0.30), rgba(139,111,225,0.20))',
+              border: '1px solid rgba(99,102,241,0.35)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 3l3 5-3 4-3-4z" />
+              <path d="M12 12l5 3-2 5M12 12l-5 3 2 5M12 12l4-7M12 12l-4-7" />
+            </svg>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-white">
-            Fantacalcio Statistico
+          <h1
+            className="flex flex-wrap items-baseline justify-center gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            style={{ fontSize: 'clamp(22px, 2.4vw, 28px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
+          >
+            <span className="font-semibold">Fantacalcio</span>
+            <span className="serif font-normal text-[#b8bcdc]">Statistico</span>
           </h1>
-          <p className="mt-1 text-sm text-[#8888aa]">Lega privata · Accesso riservato</p>
+          <p className="mt-1.5 text-[12px] text-[#9095b8]">Lega privata · Accesso riservato</p>
         </div>
 
-        {/* Form card */}
-        <div className="rounded-2xl border border-[#2e2e42] bg-[#111118] p-6 shadow-2xl">
+        {/* Form card — glass */}
+        <div className="glass-strong p-7">
           <form action={formAction} className="space-y-4">
             <div>
-              <label
-                htmlFor="email"
-                className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#8888aa]"
-              >
-                Email
-              </label>
+              <label htmlFor="email" className={labelClass}>Email</label>
               <input
                 id="email"
                 name="email"
@@ -53,17 +70,12 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 placeholder="tu@esempio.it"
-                className="w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2.5 text-sm text-white placeholder-[#55556a] transition-colors focus:border-indigo-500 focus:outline-none"
+                className={fieldClass}
               />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#8888aa]"
-              >
-                Password
-              </label>
+              <label htmlFor="password" className={labelClass}>Password</label>
               <input
                 id="password"
                 name="password"
@@ -71,12 +83,12 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
                 placeholder="••••••••"
-                className="w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2.5 text-sm text-white placeholder-[#55556a] transition-colors focus:border-indigo-500 focus:outline-none"
+                className={fieldClass}
               />
             </div>
 
             {state.error && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              <div className="rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-[12.5px] text-rose-200 backdrop-blur-xl">
                 {state.error}
               </div>
             )}
@@ -87,7 +99,7 @@ export default function LoginPage() {
           <div className="mt-4 text-center">
             <a
               href="/reset-password"
-              className="text-xs text-[#8888aa] hover:text-indigo-400 transition-colors"
+              className="text-[11.5px] text-[#9095b8] transition-colors hover:text-indigo-300"
             >
               Password dimenticata?
             </a>

@@ -14,20 +14,20 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default:  'border border-[#2e2e42] bg-[#252532] text-[#f0f0fa]',
-  success:  'border border-green-500/30 bg-green-500/10 text-green-400',
-  warning:  'border border-amber-500/30 bg-amber-500/10 text-amber-400',
-  danger:   'border border-red-500/30 bg-red-500/10 text-red-400',
-  info:     'border border-blue-500/30 bg-blue-500/10 text-blue-400',
-  accent:   'border border-indigo-500/30 bg-indigo-500/10 text-indigo-400',
-  muted:    'border border-transparent bg-[#1a1a24] text-[#8888aa]',
+  default: 'border border-white/10 bg-white/[0.06] text-[#e4e7fa]',
+  success: 'border border-emerald-400/25 bg-emerald-500/10 text-emerald-300',
+  warning: 'border border-amber-400/25 bg-amber-500/10 text-amber-300',
+  danger:  'border border-rose-400/25 bg-rose-500/10 text-rose-300',
+  info:    'border border-sky-400/25 bg-sky-500/10 text-sky-300',
+  accent:  'border border-indigo-400/25 bg-indigo-500/10 text-indigo-300',
+  muted:   'border border-transparent bg-white/[0.04] text-[#9095b8]',
 }
 
 export function Badge({ variant = 'default', children, className = '' }: BadgeProps) {
   return (
     <span
       className={[
-        'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium',
         variantClasses[variant],
         className,
       ].join(' ')}

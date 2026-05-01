@@ -7,9 +7,15 @@ export function Card({ children, className = '' }: CardProps) {
   return (
     <div
       className={[
-        'rounded-xl border border-[#2e2e42] bg-[#111118]',
+        'rounded-2xl border border-white/10 backdrop-blur-2xl',
         className,
       ].join(' ')}
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(46,50,88,0.45), rgba(28,30,56,0.55))',
+        boxShadow:
+          '0 1px 2px rgba(0,0,0,0.35), 0 8px 26px rgba(0,0,0,0.30)',
+      }}
     >
       {children}
     </div>
@@ -27,14 +33,14 @@ export function CardHeader({ title, description, action, className = '' }: CardH
   return (
     <div
       className={[
-        'flex items-start justify-between gap-4 border-b border-[#2e2e42] px-6 py-4',
+        'flex items-start justify-between gap-4 border-b border-white/8 px-6 py-4',
         className,
       ].join(' ')}
     >
       <div>
-        <h2 className="text-sm font-semibold text-[#f0f0fa]">{title}</h2>
+        <h2 className="text-[14px] font-semibold tracking-tight text-[#f5f7ff]">{title}</h2>
         {description && (
-          <p className="mt-0.5 text-xs text-[#8888aa]">{description}</p>
+          <p className="mt-1 text-[12px] text-[#9095b8]">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -43,16 +49,14 @@ export function CardHeader({ title, description, action, className = '' }: CardH
 }
 
 export function CardContent({ children, className = '' }: CardProps) {
-  return (
-    <div className={['px-6 py-4', className].join(' ')}>{children}</div>
-  )
+  return <div className={['px-6 py-4', className].join(' ')}>{children}</div>
 }
 
 export function CardFooter({ children, className = '' }: CardProps) {
   return (
     <div
       className={[
-        'border-t border-[#2e2e42] px-6 py-3 flex items-center gap-3',
+        'flex items-center gap-3 border-t border-white/8 px-6 py-3',
         className,
       ].join(' ')}
     >

@@ -63,9 +63,9 @@ export default async function LinkFotmobPage() {
   return (
     <div className="space-y-6">
       <div>
-        <a href="/pool" className="text-sm text-[#55556a] hover:text-indigo-400">← Pool giocatori</a>
+        <a href="/pool" className="text-sm text-[#9095b8] hover:text-indigo-400">← Pool giocatori</a>
         <h1 className="mt-1 text-xl font-bold text-white">Collega giocatori FotMob</h1>
-        <p className="mt-1 text-sm text-[#55556a]">
+        <p className="mt-1 text-sm text-[#9095b8]">
           Associa i giocatori non riconosciuti da FotMob ai tuoi giocatori in rosa.
           Una volta collegati, il matching avverrà tramite ID numerico.
         </p>
@@ -73,22 +73,22 @@ export default async function LinkFotmobPage() {
 
       {/* Stats */}
       <div className="flex gap-4">
-        <div className="rounded border border-[#3a3a52] bg-[#16162a] px-4 py-3">
+        <div className="rounded border border-white/15 bg-[#16162a] px-4 py-3">
           <div className="text-2xl font-bold text-white">{unmatched.length}</div>
-          <div className="text-xs text-[#55556a]">non abbinati</div>
+          <div className="text-xs text-[#9095b8]">non abbinati</div>
         </div>
-        <div className="rounded border border-[#3a3a52] bg-[#16162a] px-4 py-3">
+        <div className="rounded border border-white/15 bg-[#16162a] px-4 py-3">
           <div className="text-2xl font-bold text-white">{linkedCount}</div>
-          <div className="text-xs text-[#55556a]">giocatori con ID FotMob</div>
+          <div className="text-xs text-[#9095b8]">giocatori con ID FotMob</div>
         </div>
-        <div className="rounded border border-[#3a3a52] bg-[#16162a] px-4 py-3">
+        <div className="rounded border border-white/15 bg-[#16162a] px-4 py-3">
           <div className="text-2xl font-bold text-white">{leaguePlayers.length - linkedCount}</div>
-          <div className="text-xs text-[#55556a]">ancora senza ID</div>
+          <div className="text-xs text-[#9095b8]">ancora senza ID</div>
         </div>
       </div>
 
       {unmatched.length > 0 && (
-        <p className="text-xs text-[#55556a]">
+        <p className="text-xs text-[#9095b8]">
           Cerca il giocatore corrispondente e clicca <strong className="text-white">Collega</strong>.
           Se il giocatore non è in rosa (es. avversario), clicca <strong className="text-white">Ignora</strong>.
         </p>

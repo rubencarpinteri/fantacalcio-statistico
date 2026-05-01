@@ -32,10 +32,10 @@ export default async function MatchdayResultsPage({
   if (!['closed', 'archived', 'published'].includes(matchday.status)) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
-        <p className="text-sm text-[#55556a]">
+        <p className="text-sm text-[#9095b8]">
           I risultati non sono disponibili — la giornata non è ancora pubblicata.
         </p>
       </div>
@@ -51,10 +51,10 @@ export default async function MatchdayResultsPage({
   if (!ptr?.run_id) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
-        <p className="text-sm text-[#55556a]">Nessun calcolo pubblicato per questa giornata.</p>
+        <p className="text-sm text-[#9095b8]">Nessun calcolo pubblicato per questa giornata.</p>
       </div>
     )
   }
@@ -184,10 +184,10 @@ export default async function MatchdayResultsPage({
   // Matches the BMBreakdown pattern in CalculationPreview.tsx.
   function BmCell({ breakdown, total }: { breakdown: unknown; total: number | null }) {
     const items = Array.isArray(breakdown) ? (breakdown as BonusMalusItem[]) : []
-    if (total === null) return <span className="text-[#55556a]">—</span>
+    if (total === null) return <span className="text-[#9095b8]">—</span>
     if (items.length === 0) {
       return (
-        <span className="font-mono text-[#8888aa]">
+        <span className="font-mono text-[#b8bcdc]">
           {total >= 0 ? '+' : ''}{total.toFixed(1)}
         </span>
       )
@@ -199,7 +199,7 @@ export default async function MatchdayResultsPage({
       .join('\n')
     return (
       <span
-        className="cursor-help border-b border-dotted border-[#55556a] font-mono text-[#8888aa]"
+        className="cursor-help border-b border-dotted border-[#55556a] font-mono text-[#b8bcdc]"
         title={titleText}
       >
         {total >= 0 ? '+' : ''}{total.toFixed(1)}
@@ -211,12 +211,18 @@ export default async function MatchdayResultsPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
           ← {matchday.name}
         </a>
-        <h1 className="mt-1 text-xl font-bold text-white">Risultati pubblicati</h1>
+        <h1
+          className="mt-2 flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+          style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
+        >
+          <span className="font-semibold">Risultati</span>
+          <span className="serif font-normal text-[#b8bcdc]">— pubblicati</span>
+        </h1>
         {run && (
-          <p className="mt-0.5 text-xs text-[#55556a]">
+          <p className="mt-1.5 text-[12.5px] text-[#9095b8]">
             Run #{run.run_number}
             {run.engine_version ? ` · ${run.engine_version}` : ''}
             {fmtDate(run.published_at) ? ` · Pubblicato il ${fmtDate(run.published_at)}` : ''}
@@ -257,7 +263,7 @@ export default async function MatchdayResultsPage({
             <CardContent className="p-0">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
+                  <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
                     <th className="px-6 py-2">Giocatore</th>
                     <th className="px-4 py-2">Ruolo</th>
                     <th className="px-4 py-2 text-right">Voto base</th>
@@ -265,7 +271,7 @@ export default async function MatchdayResultsPage({
                     <th className="px-4 py-2 text-right font-medium text-white">Fantavoto</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e1e2e]">
+                <tbody className="divide-y divide-white/8">
                   {starters.map(({ player_id }) => {
                     const c = calcByPlayer.get(player_id)
                     const player = c?.league_players
@@ -274,15 +280,15 @@ export default async function MatchdayResultsPage({
                       <tr key={player_id} className={isNV ? 'opacity-50' : ''}>
                         <td className="px-6 py-2">
                           <div className="font-medium text-white">{player?.full_name ?? '—'}</div>
-                          <div className="text-xs text-[#55556a]">{player?.club ?? ''}</div>
+                          <div className="text-xs text-[#9095b8]">{player?.club ?? ''}</div>
                         </td>
                         <td className="px-4 py-2">
-                          <span className={`font-mono text-xs font-bold ${rcColors[player?.rating_class ?? ''] ?? 'text-[#8888aa]'}`}>
+                          <span className={`font-mono text-xs font-bold ${rcColors[player?.rating_class ?? ''] ?? 'text-[#b8bcdc]'}`}>
                             {player?.rating_class ?? '—'}
                           </span>
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <span className="font-mono text-[#8888aa]">
+                          <span className="font-mono text-[#b8bcdc]">
                             {c?.voto_base != null ? c.voto_base.toFixed(2) : '—'}
                           </span>
                           {(() => {
@@ -301,7 +307,7 @@ export default async function MatchdayResultsPage({
                           <BmCell breakdown={c?.bonus_malus_breakdown} total={c?.total_bonus_malus ?? null} />
                         </td>
                         <td className="px-4 py-2 text-right font-mono font-bold">
-                          <span className={isNV ? 'text-[#55556a]' : 'text-white'}>
+                          <span className={isNV ? 'text-[#9095b8]' : 'text-white'}>
                             {c?.fantavoto != null ? c.fantavoto.toFixed(2) : 'NV'}
                           </span>
                           {c?.is_provisional && (
@@ -319,7 +325,7 @@ export default async function MatchdayResultsPage({
                     <tr>
                       <td
                         colSpan={5}
-                        className="bg-[#0e0e1a] px-6 py-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]"
+                        className="bg-white/[0.03] px-6 py-1.5 text-xs font-medium uppercase tracking-wider text-[#9095b8]"
                       >
                         Panchina
                       </td>
@@ -332,23 +338,23 @@ export default async function MatchdayResultsPage({
                     return (
                       <tr key={player_id} className="opacity-50">
                         <td className="px-6 py-2">
-                          <div className="text-[#8888aa]">{player?.full_name ?? '—'}</div>
-                          <div className="text-xs text-[#55556a]">{player?.club ?? ''}</div>
+                          <div className="text-[#b8bcdc]">{player?.full_name ?? '—'}</div>
+                          <div className="text-xs text-[#9095b8]">{player?.club ?? ''}</div>
                         </td>
                         <td className="px-4 py-2">
-                          <span className={`font-mono text-xs font-bold ${rcColors[player?.rating_class ?? ''] ?? 'text-[#55556a]'}`}>
+                          <span className={`font-mono text-xs font-bold ${rcColors[player?.rating_class ?? ''] ?? 'text-[#9095b8]'}`}>
                             {player?.rating_class ?? '—'}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-right font-mono text-[#55556a]">
+                        <td className="px-4 py-2 text-right font-mono text-[#9095b8]">
                           {c?.voto_base != null ? c.voto_base.toFixed(1) : '—'}
                         </td>
-                        <td className="px-4 py-2 text-right font-mono text-[#55556a]">
+                        <td className="px-4 py-2 text-right font-mono text-[#9095b8]">
                           {c?.total_bonus_malus != null
                             ? (c.total_bonus_malus >= 0 ? '+' : '') + c.total_bonus_malus.toFixed(1)
                             : '—'}
                         </td>
-                        <td className="px-4 py-2 text-right font-mono text-[#55556a]">
+                        <td className="px-4 py-2 text-right font-mono text-[#9095b8]">
                           {c?.fantavoto != null ? c.fantavoto.toFixed(2) : 'NV'}
                           {c?.is_override && (
                             <span className="ml-1 text-xs text-orange-400" title="Override manuale">★</span>
@@ -360,7 +366,7 @@ export default async function MatchdayResultsPage({
 
                   {lineup.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-3 text-sm text-[#55556a]">
+                      <td colSpan={5} className="px-6 py-3 text-sm text-[#9095b8]">
                         Nessuna formazione registrata.
                       </td>
                     </tr>
@@ -373,7 +379,7 @@ export default async function MatchdayResultsPage({
       })}
 
       {(teamScores ?? []).length === 0 && (
-        <p className="text-sm text-[#55556a]">Nessun punteggio pubblicato per questa giornata.</p>
+        <p className="text-sm text-[#9095b8]">Nessun punteggio pubblicato per questa giornata.</p>
       )}
     </div>
   )

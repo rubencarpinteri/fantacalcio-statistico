@@ -39,8 +39,8 @@ export default async function AllLineupsPage({
   if (!teams || teams.length === 0) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">← {matchday.name}</a>
-        <p className="text-sm text-[#55556a]">Nessuna squadra trovata.</p>
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">← {matchday.name}</a>
+        <p className="text-sm text-[#9095b8]">Nessuna squadra trovata.</p>
       </div>
     )
   }
@@ -435,12 +435,24 @@ export default async function AllLineupsPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+          <a href={`/matchdays/${matchdayId}`} className="text-[12.5px] text-[#b8bcdc] hover:text-indigo-400">
             ← {matchday.name}
           </a>
-          <h1 className="mt-1 text-xl font-bold text-white">Tutte le formazioni</h1>
-          <p className="text-sm text-[#55556a]">
-            Trascina i giocatori per correggere titolari/panchina · salva per ogni squadra
+          <h1
+            className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-light text-[#f5f7ff]"
+            style={{
+              fontSize: 'clamp(26px, 3.4vw, 38px)',
+              lineHeight: 1.12,
+              letterSpacing: '-0.035em',
+            }}
+          >
+            <span className="font-semibold">{matchday.name}</span>
+            <span className="font-normal italic text-[#b8bcdc]" style={{ fontFamily: 'var(--font-instrument-serif), Times New Roman, serif' }}>
+              — formazioni
+            </span>
+          </h1>
+          <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-[#b8bcdc]">
+            Trascina i giocatori per correggere titolari e panchina, salva ogni squadra individualmente.
           </p>
         </div>
       </div>

@@ -28,11 +28,11 @@ export default async function CampionatoPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-white">Campionato</h1>
-        <p className="mt-0.5 text-sm text-[#8888aa]">Competizione tipo campionato</p>
+        <p className="mt-0.5 text-sm text-[#b8bcdc]">Competizione tipo campionato</p>
       </div>
       <Card>
         <CardContent>
-          <p className="py-8 text-center text-sm text-[#55556a]">
+          <p className="py-8 text-center text-sm text-[#9095b8]">
             Nessun campionato configurato per questa lega.
           </p>
         </CardContent>

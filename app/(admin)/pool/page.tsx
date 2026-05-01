@@ -19,7 +19,7 @@ function RCBadge({ rc }: { rc: string }) {
     <span
       className={[
         'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-mono font-bold',
-        RC_COLORS[rc] ?? 'bg-[#2e2e42] text-[#8888aa] border-[#3a3a52]',
+        RC_COLORS[rc] ?? 'bg-[#2e2e42] text-[#b8bcdc] border-white/15',
       ].join(' ')}
     >
       {rc}
@@ -52,13 +52,13 @@ export default async function PoolPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-white">Pool Giocatori Serie A</h1>
-          <p className="text-sm text-[#8888aa]">
+          <p className="text-sm text-[#b8bcdc]">
             Stagione {CURRENT_SEASON} — database globale dei giocatori di Serie A per l&apos;assegnazione alle rose.
           </p>
         </div>
         <a
           href="/pool/link-fotmob"
-          className="shrink-0 rounded border border-[#3a3a52] px-3 py-1.5 text-sm text-[#8888aa] hover:border-indigo-500 hover:text-white"
+          className="shrink-0 rounded border border-white/15 px-3 py-1.5 text-sm text-[#b8bcdc] hover:border-indigo-500 hover:text-white"
         >
           Collega FotMob →
         </a>
@@ -74,10 +74,10 @@ export default async function PoolPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-xl border border-[#2e2e42] bg-[#0d0d18] px-4 py-4"
+            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-4"
           >
             <div className={`text-3xl font-bold tabular-nums ${s.color}`}>{s.value}</div>
-            <div className="mt-1 text-xs text-[#55556a]">{s.label}</div>
+            <div className="mt-1 text-xs text-[#9095b8]">{s.label}</div>
           </div>
         ))}
       </div>
@@ -94,14 +94,14 @@ export default async function PoolPage() {
           <h2 className="mb-3 text-base font-semibold text-white">
             Giocatori nel pool — stagione {CURRENT_SEASON}
           </h2>
-          <div className="overflow-x-auto rounded-xl border border-[#2e2e42]">
+          <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2e2e42] text-left">
+                <tr className="border-b border-white/10 text-left">
                   {['Nome', 'Squadra', 'Ruolo', 'Classe', 'SS ID', 'FM ID', 'Attivo'].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8888aa]"
+                      className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]"
                     >
                       {h}
                     </th>
@@ -110,19 +110,19 @@ export default async function PoolPage() {
               </thead>
               <tbody className="divide-y divide-[#1e1e2a]">
                 {allPlayers.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#0d0d18]">
+                  <tr key={p.id} className="hover:bg-white/[0.04]">
                     <td className="px-4 py-2.5 font-medium text-white">{p.full_name}</td>
-                    <td className="px-4 py-2.5 text-[#8888aa]">{p.club}</td>
-                    <td className="px-4 py-2.5 text-xs text-[#f0f0fa]">
+                    <td className="px-4 py-2.5 text-[#b8bcdc]">{p.club}</td>
+                    <td className="px-4 py-2.5 text-xs text-[#f5f7ff]">
                       {p.mantra_roles.length > 0 ? p.mantra_roles.join('/') : '—'}
                     </td>
                     <td className="px-4 py-2.5">
                       <RCBadge rc={p.rating_class} />
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-[#8888aa]">
+                    <td className="px-4 py-2.5 font-mono text-xs text-[#b8bcdc]">
                       {p.sofascore_id ?? '—'}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-[#8888aa]">
+                    <td className="px-4 py-2.5 font-mono text-xs text-[#b8bcdc]">
                       {p.fotmob_id ?? '—'}
                     </td>
                     <td className="px-4 py-2.5">
@@ -137,18 +137,18 @@ export default async function PoolPage() {
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-[#55556a]">
+          <p className="mt-2 text-xs text-[#9095b8]">
             {totalPlayers} giocatori — scorri per vedere tutti
           </p>
         </div>
       )}
 
       {allPlayers.length === 0 && (
-        <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d18] px-6 py-10 text-center">
-          <p className="text-[#8888aa]">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-10 text-center">
+          <p className="text-[#b8bcdc]">
             Nessun giocatore nel pool per la stagione {CURRENT_SEASON}.
           </p>
-          <p className="mt-1 text-sm text-[#55556a]">
+          <p className="mt-1 text-sm text-[#9095b8]">
             Usa il modulo qui sopra per importare i giocatori da SofaScore, FotMob e Leghe Fantacalcio.
           </p>
         </div>

@@ -96,9 +96,9 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#8888aa] uppercase tracking-wide">SofaScore (manuale)</span>
+        <span className="text-xs font-semibold text-[#b8bcdc] uppercase tracking-wide">SofaScore (manuale)</span>
         {hasData && (
-          <button onClick={handleClear} className="text-xs text-[#55556a] hover:text-red-400">
+          <button onClick={handleClear} className="text-xs text-[#9095b8] hover:text-red-400">
             Cancella dati
           </button>
         )}
@@ -108,15 +108,15 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
         <p className="text-xs text-green-400">
           ✓ {savedCount} giocatori salvati
           {lastAdded !== null && lastAdded > 0 && (
-            <span className="text-[#8888aa]"> (+{lastAdded} nuovi)</span>
+            <span className="text-[#b8bcdc]"> (+{lastAdded} nuovi)</span>
           )}
           {lastAdded === 0 && (
-            <span className="text-[#55556a]"> (nessun nuovo giocatore)</span>
+            <span className="text-[#9095b8]"> (nessun nuovo giocatore)</span>
           )}
         </p>
       )}
 
-      <p className="text-xs text-[#55556a]">
+      <p className="text-xs text-[#9095b8]">
         {hasData
           ? 'Incolla altre partite per aggiungerne i dati — verranno uniti a quelli già salvati.'
           : 'Apri i link qui sotto nel browser, seleziona tutto (Ctrl+A), copia (Ctrl+C) e incolla qui. Puoi incollare più partite in sequenza.'}
@@ -129,7 +129,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
             href={`https://www.sofascore.com/api/v1/event/${fx.sofascoreEventId}/lineups`}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded border border-[#2e2e42] px-2 py-1 text-xs text-indigo-400 hover:border-indigo-500 hover:text-indigo-300"
+            className="rounded border border-white/10 px-2 py-1 text-xs text-indigo-400 hover:border-indigo-500 hover:text-indigo-300"
             title={String(fx.sofascoreEventId)}
           >
             {fx.label}
@@ -142,7 +142,7 @@ export function SofaScoreManualImport({ matchdayId, fixtures }: Props) {
         onChange={(e) => setText(e.target.value)}
         rows={6}
         placeholder={hasData ? 'Incolla qui il JSON delle partite da aggiungere…' : 'Incolla qui il JSON di una o più partite…'}
-        className="w-full rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-2 text-xs font-mono text-[#f0f0fa] placeholder-[#55556a] focus:border-indigo-500 focus:outline-none resize-none"
+        className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-mono text-[#f5f7ff] placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none resize-none"
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
       <button

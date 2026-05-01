@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  setup:     'text-[#8888aa] bg-[#1a1a24]',
+  setup:     'text-[#9095b8] bg-white/[0.06]',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
   cancelled: 'text-red-400 bg-red-500/10',
@@ -60,12 +60,17 @@ export default async function CompetitionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Competizioni</h1>
-          <p className="text-sm text-[#8888aa]">Campionato · Battle Royale · Coppa</p>
+          <h1
+            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            style={{ fontSize: 'clamp(22px, 2.6vw, 30px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
+          >
+            <span className="font-semibold">Competizioni</span>
+            <span className="serif font-normal text-[#b8bcdc]">— Campionato · Battle Royale · Coppa</span>
+          </h1>
         </div>
         <a
           href="/competitions/new"
-          className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-400/30 bg-gradient-to-b from-indigo-500 to-indigo-600 px-4 py-2 text-[13px] font-medium tracking-tight text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_18px_-4px_rgba(99,102,241,0.45),0_1px_2px_rgba(0,0,0,0.4)] transition-all hover:from-indigo-400 hover:to-indigo-500 active:translate-y-px"
         >
           + Nuova competizione
         </a>
@@ -74,7 +79,7 @@ export default async function CompetitionsPage() {
       {list.length === 0 ? (
         <Card>
           <CardContent>
-            <p className="py-8 text-center text-sm text-[#55556a]">
+            <p className="py-8 text-center text-sm text-[#9095b8]">
               Nessuna competizione creata. Crea il Campionato, il Battle Royale e la Coppa.
             </p>
           </CardContent>
@@ -85,7 +90,7 @@ export default async function CompetitionsPage() {
             <a
               key={comp.id}
               href={`/competitions/${comp.id}`}
-              className="group rounded-xl border border-[#2e2e42] bg-[#0f0f1a] p-5 transition-colors hover:border-indigo-500/40 hover:bg-[#12121f]"
+              className="group rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-indigo-500/40 hover:bg-white/[0.07]"
             >
               <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
@@ -94,7 +99,7 @@ export default async function CompetitionsPage() {
                     <p className="font-semibold text-white group-hover:text-indigo-300 transition-colors">
                       {comp.name}
                     </p>
-                    <p className="text-xs text-[#55556a]">
+                    <p className="text-xs text-[#9095b8]">
                       {TYPE_LABEL[comp.type] ?? comp.type}
                       {comp.season ? ` · ${comp.season}` : ''}
                     </p>
@@ -106,7 +111,7 @@ export default async function CompetitionsPage() {
                   {STATUS_LABEL[comp.status] ?? comp.status}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-[#55556a]">
+              <div className="flex items-center gap-4 text-xs text-[#9095b8]">
                 <span>{teamCountMap.get(comp.id) ?? 0} squadre</span>
                 <span>→ Gestisci</span>
               </div>

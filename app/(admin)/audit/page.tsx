@@ -105,10 +105,10 @@ export default async function AuditLogPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Audit Log</h1>
-          <p className="text-sm text-[#8888aa]">
+          <p className="text-sm text-[#b8bcdc]">
             Registro delle operazioni · {ctx.league.name}
             {count != null && (
-              <span className="ml-2 text-[#55556a]">({count.toLocaleString('it-IT')} voci totali)</span>
+              <span className="ml-2 text-[#9095b8]">({count.toLocaleString('it-IT')} voci totali)</span>
             )}
           </p>
         </div>
@@ -118,7 +118,7 @@ export default async function AuditLogPage({
           <select
             name="action"
             defaultValue={actionParam ?? ''}
-            className="rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-3 py-1.5 text-sm text-[#f0f0fa] focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-sm text-[#f5f7ff] focus:border-indigo-400/60 focus:outline-none"
           >
             <option value="">Tutte le azioni</option>
             {(Object.keys(ACTION_LABEL) as AuditAction[]).map((a) => (
@@ -136,7 +136,7 @@ export default async function AuditLogPage({
           {actionParam && (
             <a
               href="/audit"
-              className="rounded-lg px-3 py-1.5 text-sm text-[#55556a] hover:text-white"
+              className="rounded-lg px-3 py-1.5 text-sm text-[#9095b8] hover:text-white"
             >
               ✕
             </a>
@@ -147,7 +147,7 @@ export default async function AuditLogPage({
       <Card>
         {logList.length === 0 ? (
           <CardContent>
-            <p className="py-8 text-center text-sm text-[#55556a]">
+            <p className="py-8 text-center text-sm text-[#9095b8]">
               Nessun log trovato{actionParam ? ' per questa azione' : ''}.
             </p>
           </CardContent>
@@ -155,15 +155,15 @@ export default async function AuditLogPage({
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e1e2e]">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Data/Ora</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Utente</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Azione</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Entità</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#55556a]">Dettagli</th>
+                <tr className="border-b border-white/8">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Data/Ora</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Utente</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Azione</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Entità</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Dettagli</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
+              <tbody className="divide-y divide-white/8">
                 {logList.map((log) => {
                   const details = (log.after_json ?? log.metadata_json) as Record<string, unknown> | null
                   const detailStr = details
@@ -174,17 +174,17 @@ export default async function AuditLogPage({
                         .join(' · ')
                     : null
 
-                  const actionColor = ACTION_COLOR[log.action_type as AuditAction] ?? 'text-[#8888aa]'
+                  const actionColor = ACTION_COLOR[log.action_type as AuditAction] ?? 'text-[#b8bcdc]'
 
                   return (
-                    <tr key={log.id} className="hover:bg-[#0f0f1a]">
-                      <td className="px-4 py-2.5 text-[#55556a] whitespace-nowrap text-xs">
+                    <tr key={log.id} className="hover:bg-white/[0.04]">
+                      <td className="px-4 py-2.5 text-[#9095b8] whitespace-nowrap text-xs">
                         {new Date(log.created_at).toLocaleString('it-IT', {
                           dateStyle: 'short',
                           timeStyle: 'short',
                         })}
                       </td>
-                      <td className="px-4 py-2.5 text-[#8888aa] text-xs">
+                      <td className="px-4 py-2.5 text-[#b8bcdc] text-xs">
                         {log.actor_user_id ? (actorMap.get(log.actor_user_id) ?? '—') : 'sistema'}
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
@@ -192,15 +192,15 @@ export default async function AuditLogPage({
                           {ACTION_LABEL[log.action_type as AuditAction] ?? log.action_type}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-[#55556a]">
+                      <td className="px-4 py-2.5 text-xs text-[#9095b8]">
                         {ENTITY_LABEL[log.entity_type] ?? log.entity_type}
                         {log.entity_id && (
-                          <span className="ml-1 font-mono text-[10px] text-[#3a3a52]">
+                          <span className="ml-1 font-mono text-[10px] text-[#6a6f8e]">
                             {log.entity_id.slice(0, 8)}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 max-w-xs truncate text-xs text-[#55556a]" title={detailStr ?? undefined}>
+                      <td className="px-4 py-2.5 max-w-xs truncate text-xs text-[#9095b8]" title={detailStr ?? undefined}>
                         {detailStr ?? '—'}
                       </td>
                     </tr>
@@ -215,14 +215,14 @@ export default async function AuditLogPage({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
-          <span className="text-[#55556a]">
+          <span className="text-[#9095b8]">
             Pagina {page} di {totalPages}
           </span>
           <div className="flex gap-2">
             {page > 1 && (
               <a
                 href={`/audit?page=${page - 1}${actionParam ? `&action=${actionParam}` : ''}`}
-                className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-[#8888aa] hover:bg-[#1a1a24] hover:text-white"
+                className="rounded-lg border border-white/10 px-3 py-1.5 text-[#b8bcdc] hover:bg-white/[0.05] hover:text-white"
               >
                 ← Precedente
               </a>
@@ -230,7 +230,7 @@ export default async function AuditLogPage({
             {page < totalPages && (
               <a
                 href={`/audit?page=${page + 1}${actionParam ? `&action=${actionParam}` : ''}`}
-                className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-[#8888aa] hover:bg-[#1a1a24] hover:text-white"
+                className="rounded-lg border border-white/10 px-3 py-1.5 text-[#b8bcdc] hover:bg-white/[0.05] hover:text-white"
               >
                 Successiva →
               </a>

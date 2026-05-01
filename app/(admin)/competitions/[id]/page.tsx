@@ -14,7 +14,7 @@ const TYPE_LABEL: Record<string, string> = {
   campionato: 'Campionato', battle_royale: 'Battle Royale', coppa: 'Coppa',
 }
 const STATUS_COLOR: Record<string, string> = {
-  setup:     'text-[#8888aa] bg-[#1a1a24]',
+  setup:     'text-[#9095b8] bg-white/[0.06]',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
   cancelled: 'text-red-400 bg-red-500/10',
@@ -375,25 +375,30 @@ export default async function CompetitionDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <a href="/competitions" className="text-sm text-[#55556a] hover:text-indigo-400">
+          <a href="/competitions" className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
             ← Competizioni
           </a>
-          <div className="mt-1 flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-white">{competition.name}</h1>
-            {competition.season && <Badge variant="muted">{competition.season}</Badge>}
-            <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[competition.status] ?? ''}`}>
-              {STATUS_LABEL[competition.status] ?? competition.status}
-            </span>
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+            <h1
+              className="flex items-baseline gap-2 font-light tracking-tight text-[#f5f7ff]"
+              style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
+            >
+              <span className="font-semibold">{competition.name}</span>
+              <span className="serif font-normal text-[#b8bcdc]">— {TYPE_LABEL[competition.type] ?? competition.type}</span>
+            </h1>
+            <div className="flex items-center gap-2">
+              {competition.season && <Badge variant="muted">{competition.season}</Badge>}
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${STATUS_COLOR[competition.status] ?? ''}`}>
+                {STATUS_LABEL[competition.status] ?? competition.status}
+              </span>
+            </div>
           </div>
-          <p className="text-sm text-[#8888aa]">
-            {TYPE_LABEL[competition.type] ?? competition.type}
-          </p>
         </div>
         {isAdmin && (
           <div className="flex flex-wrap items-center gap-2">
             <a
               href={`/competitions/${id}/rounds`}
-              className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm text-[#8888aa] hover:bg-[#1a1a24] hover:text-white transition-colors"
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-[#9095b8] hover:bg-white/[0.06] hover:text-white transition-colors"
             >
               Gestisci turni →
             </a>
@@ -410,7 +415,7 @@ export default async function CompetitionDetailPage({
 
       {/* ── Giornata corrente — hero matchup block ──────────────────────────── */}
       {currentRoundData && currentRoundData.matchups.length > 0 && (
-        <div className="rounded-xl border border-[#1e1e2e] bg-[#0b0b14] overflow-hidden">
+        <div className="rounded-xl border border-white/8 bg-white/[0.04] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between gap-3 px-5 py-3.5">
             <div className="flex items-baseline gap-3 flex-wrap min-w-0">
@@ -435,7 +440,7 @@ export default async function CompetitionDetailPage({
             )}
           </div>
 
-          <div className="h-px bg-[#1a1a26]" />
+          <div className="h-px bg-white/[0.05]" />
 
           {/* Matchup rows */}
           <div>
@@ -462,11 +467,11 @@ export default async function CompetitionDetailPage({
                 : false
 
               const homeTone =
-                awayWins ? 'text-[#3a3a52]' : isHomeMyTeam ? 'text-indigo-200' : 'text-white'
+                awayWins ? 'text-[#6a6f8e]' : isHomeMyTeam ? 'text-indigo-200' : 'text-white'
               const awayTone =
-                homeWins ? 'text-[#3a3a52]' : isAwayMyTeam ? 'text-indigo-200' : 'text-white'
-              const homeNum = awayWins ? 'text-[#3a3a52]' : 'text-white'
-              const awayNum = homeWins ? 'text-[#3a3a52]' : 'text-white'
+                homeWins ? 'text-[#6a6f8e]' : isAwayMyTeam ? 'text-indigo-200' : 'text-white'
+              const homeNum = awayWins ? 'text-[#6a6f8e]' : 'text-white'
+              const awayNum = homeWins ? 'text-[#6a6f8e]' : 'text-white'
 
               const href = m.matchdayId
                 ? `/matchdays/${m.matchdayId}/all-lineups`
@@ -476,8 +481,8 @@ export default async function CompetitionDetailPage({
                 <a
                   key={m.id}
                   href={href}
-                  className={`grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 hover:bg-[#11111e] transition-colors ${
-                    idx === currentRoundData.matchups.length - 1 ? '' : 'border-b border-[#1a1a26]'
+                  className={`grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 hover:bg-white/[0.05] transition-colors ${
+                    idx === currentRoundData.matchups.length - 1 ? '' : 'border-b border-white/8'
                   }`}
                 >
                   <span className={`truncate text-right text-[14px] font-medium tracking-tight ${homeTone}`}>
@@ -489,13 +494,13 @@ export default async function CompetitionDetailPage({
                       <>
                         <div className="flex items-baseline">
                           <span className={`w-7 text-right text-2xl font-light leading-none ${homeNum}`}>{m.homeGoals}</span>
-                          <span className="px-2 text-xl font-thin text-[#2a2a3e] leading-none select-none">–</span>
+                          <span className="px-2 text-xl font-thin text-[#6a6f8e] leading-none select-none">–</span>
                           <span className={`w-7 text-left text-2xl font-light leading-none ${awayNum}`}>{m.awayGoals}</span>
                         </div>
                         {m.publishedHomeScore !== null && m.publishedAwayScore !== null && (
-                          <div className="mt-1 flex items-center gap-1 text-[10px] text-[#55556a]">
+                          <div className="mt-1 flex items-center gap-1 text-[10px] text-[#9095b8]">
                             <span>{m.publishedHomeScore.toFixed(1)}</span>
-                            <span className="text-[#2a2a3e]">–</span>
+                            <span className="text-[#6a6f8e]">–</span>
                             <span>{m.publishedAwayScore.toFixed(1)}</span>
                           </div>
                         )}
@@ -505,7 +510,7 @@ export default async function CompetitionDetailPage({
                         <span className={`w-10 text-right text-[15px] font-medium ${homeNum}`}>
                           {m.publishedHomeScore !== null ? m.publishedHomeScore.toFixed(1) : '—'}
                         </span>
-                        <span className="px-1.5 text-sm font-thin text-[#2a2a3e]">–</span>
+                        <span className="px-1.5 text-sm font-thin text-[#6a6f8e]">–</span>
                         <span className={`w-10 text-left text-[15px] font-medium ${awayNum}`}>
                           {m.publishedAwayScore !== null ? m.publishedAwayScore.toFixed(1) : '—'}
                         </span>
@@ -515,14 +520,14 @@ export default async function CompetitionDetailPage({
                         <span className={`w-10 text-right text-[15px] font-medium ${homeNum}`}>
                           {m.partialHomeScore !== null ? m.partialHomeScore.toFixed(1) : '—'}
                         </span>
-                        <span className="px-1.5 text-sm font-thin text-[#2a2a3e]">–</span>
+                        <span className="px-1.5 text-sm font-thin text-[#6a6f8e]">–</span>
                         <span className={`w-10 text-left text-[15px] font-medium ${awayNum}`}>
                           {m.partialAwayScore !== null ? m.partialAwayScore.toFixed(1) : '—'}
                         </span>
                         {m.isDraftScore && <span className="ml-1 text-[9px] text-amber-500/50">~</span>}
                       </div>
                     ) : (
-                      <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#3a3a52]">vs</span>
+                      <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#6a6f8e]">vs</span>
                     )}
                   </div>
 
@@ -536,7 +541,7 @@ export default async function CompetitionDetailPage({
 
           {/* Draft footnote */}
           {isDraftScore && hasPartialData && currentRoundData.matchups.some((m) => m.result === null) && (
-            <div className="border-t border-[#1a1a26] px-5 py-2.5">
+            <div className="border-t border-white/8 px-5 py-2.5">
               <p className="text-[10px] text-amber-500/50">
                 ~ punteggi parziali (calcolo non ancora pubblicato)
               </p>
@@ -546,22 +551,22 @@ export default async function CompetitionDetailPage({
       )}
 
       {/* ── Classifica — WIP ────────────────────────────────────────────────── */}
-      <div id="classifica" className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#2e2e42]">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">Classifica</p>
+      <div id="classifica" className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">Classifica</p>
           <p className="text-sm font-semibold text-white leading-tight mt-0.5">{comp.name}</p>
         </div>
         <div className="px-4 py-10 text-center">
-          <p className="text-xs font-medium text-[#55556a]">Work in progress</p>
-          <p className="mt-1 text-[11px] text-[#3a3a52]">La classifica sarà disponibile prossimamente.</p>
+          <p className="text-xs font-medium text-[#9095b8]">Work in progress</p>
+          <p className="mt-1 text-[11px] text-[#6a6f8e]">La classifica sarà disponibile prossimamente.</p>
         </div>
       </div>
 
       {/* ── Calendario — client-side dropdown ───────────────────────────────── */}
       <div id="calendario">
-        <h2 className="mb-3 text-base font-semibold text-white">Calendario</h2>
+        <h2 className="eyebrow mb-3" style={{ fontSize: 11 }}>Calendario</h2>
         {roundDataList.length === 0 ? (
-          <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] px-6 py-12 text-center text-sm text-[#55556a]">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl px-6 py-12 text-center text-sm text-[#9095b8]">
             Nessun turno generato per questa competizione.
           </div>
         ) : (

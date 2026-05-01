@@ -49,26 +49,26 @@ export function CompetitionForm() {
 
       {/* Name */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-[#8888aa]">
+        <label className="mb-1.5 block text-sm font-medium text-[#9095b8]">
           Nome competizione
         </label>
         <input
           name="name"
           required
           placeholder="es. Campionato 2025-26"
-          className="w-full rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
         />
       </div>
 
       {/* Type */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-[#8888aa]">
+        <label className="mb-1.5 block text-sm font-medium text-[#9095b8]">
           Tipo di competizione
         </label>
         <select
           name="type"
           required
-          className="w-full rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
         >
           <option value="campionato">🏟 Campionato</option>
           <option value="battle_royale">⚔ Battle Royale</option>
@@ -78,19 +78,19 @@ export function CompetitionForm() {
 
       {/* Season */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-[#8888aa]">
-          Stagione <span className="text-[#55556a]">(opzionale)</span>
+        <label className="mb-1.5 block text-sm font-medium text-[#9095b8]">
+          Stagione <span className="text-[#9095b8]">(opzionale)</span>
         </label>
         <input
           name="season"
           placeholder="es. 2025-26"
-          className="w-full rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
         />
       </div>
 
       {/* Scoring method */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-[#8888aa]">
+        <label className="mb-2 block text-sm font-medium text-[#9095b8]">
           Metodo di punteggio
         </label>
         <div className="flex gap-4">
@@ -115,27 +115,27 @@ export function CompetitionForm() {
       {/* Threshold editor */}
       {method === 'goal_thresholds' && (
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#8888aa]">
+          <label className="mb-2 block text-sm font-medium text-[#9095b8]">
             Soglie fantavoto → gol
           </label>
           <div className="space-y-2">
             {thresholds.map((t, i) => (
               <div key={i} className="flex items-center gap-3">
-                <span className="w-16 text-right text-xs text-[#55556a]">da</span>
+                <span className="w-16 text-right text-xs text-[#9095b8]">da</span>
                 <input
                   type="number"
                   value={t.min}
                   onChange={(e) => updateThreshold(i, 'min', Number(e.target.value))}
-                  className="w-20 rounded border border-[#2e2e42] bg-[#0a0a0f] px-2 py-1.5 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-20 rounded border border-white/10 bg-transparent px-2 py-1.5 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
                 />
-                <span className="text-xs text-[#55556a]">pt →</span>
+                <span className="text-xs text-[#9095b8]">pt →</span>
                 <input
                   type="number"
                   value={t.goals}
                   onChange={(e) => updateThreshold(i, 'goals', Number(e.target.value))}
-                  className="w-16 rounded border border-[#2e2e42] bg-[#0a0a0f] px-2 py-1.5 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-16 rounded border border-white/10 bg-transparent px-2 py-1.5 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
                 />
-                <span className="text-xs text-[#55556a]">gol</span>
+                <span className="text-xs text-[#9095b8]">gol</span>
                 <button
                   type="button"
                   onClick={() => removeThreshold(i)}
@@ -164,13 +164,13 @@ export function CompetitionForm() {
 
       {/* Points */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-[#8888aa]">
+        <label className="mb-2 block text-sm font-medium text-[#9095b8]">
           Punteggi vittoria / pareggio / sconfitta
         </label>
         <div className="flex items-center gap-4">
           {(['win', 'draw', 'loss'] as const).map((k) => (
             <div key={k} className="flex items-center gap-1.5">
-              <span className="text-xs text-[#55556a]">
+              <span className="text-xs text-[#9095b8]">
                 {k === 'win' ? 'Vittoria' : k === 'draw' ? 'Pareggio' : 'Sconfitta'}
               </span>
               <input
@@ -179,7 +179,7 @@ export function CompetitionForm() {
                 defaultValue={k === 'win' ? 3 : k === 'draw' ? 1 : 0}
                 min={0}
                 max={10}
-                className="w-14 rounded border border-[#2e2e42] bg-[#0a0a0f] px-2 py-1.5 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                className="w-14 rounded border border-white/10 bg-transparent px-2 py-1.5 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
               />
             </div>
           ))}
@@ -188,7 +188,7 @@ export function CompetitionForm() {
 
       <div className="flex items-center gap-4 pt-2">
         <SubmitButton />
-        <a href="/competitions" className="text-sm text-[#55556a] hover:text-white">
+        <a href="/competitions" className="text-sm text-[#9095b8] hover:text-white">
           Annulla
         </a>
       </div>

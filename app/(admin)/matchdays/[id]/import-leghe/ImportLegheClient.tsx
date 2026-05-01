@@ -43,15 +43,15 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
       {teams.map(team => {
         const diff = team.legheTotal !== null ? team.total - team.legheTotal : null
         return (
-          <div key={team.teamId} className="rounded-lg border border-[#2e2e42] overflow-hidden">
+          <div key={team.teamId} className="rounded-lg border border-white/10 overflow-hidden">
             {/* Team header */}
-            <div className="flex items-center justify-between border-b border-[#2e2e42] bg-[#0f0f1a] px-4 py-2.5">
+            <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-2.5">
               <span className="text-sm font-semibold text-white">{team.legheName}</span>
               <div className="flex items-center gap-3 text-sm font-mono">
-                <span className="text-[#55556a]">Leghe: {team.legheTotal !== null ? team.legheTotal.toFixed(2) : '—'}</span>
+                <span className="text-[#9095b8]">Leghe: {team.legheTotal !== null ? team.legheTotal.toFixed(2) : '—'}</span>
                 <span className="text-white font-semibold">FotMob: {team.total.toFixed(2)}</span>
                 {diff !== null && (
-                  <span className={Math.abs(diff) > 2 ? 'text-amber-400 font-semibold' : 'text-[#55556a]'}>
+                  <span className={Math.abs(diff) > 2 ? 'text-amber-400 font-semibold' : 'text-[#9095b8]'}>
                     ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
                   </span>
                 )}
@@ -60,7 +60,7 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
 
             {/* Warnings */}
             {team.warnings.length > 0 && (
-              <div className="border-b border-[#2e2e42] bg-amber-500/5 px-4 py-2 space-y-0.5">
+              <div className="border-b border-white/10 bg-amber-500/5 px-4 py-2 space-y-0.5">
                 {team.warnings.map((w, i) => (
                   <p key={i} className="text-xs text-amber-400">⚠ {w}</p>
                 ))}
@@ -70,7 +70,7 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
             {/* Player rows */}
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[#1a1a24] text-[10px] uppercase tracking-wider text-[#3a3a52]">
+                <tr className="border-b border-[#1a1a24] text-[10px] uppercase tracking-wider text-[#6a6f8e]">
                   <th className="w-8 px-3 py-1 text-left">R</th>
                   <th className="px-3 py-1 text-left">Giocatore</th>
                   <th className="px-3 py-1 text-left">Bonus/Malus</th>
@@ -81,13 +81,13 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
               <tbody className="divide-y divide-[#1a1a24]">
                 {team.players.map((p, i) => (
                   <tr key={i} className={p.isNv ? 'opacity-40' : p.isActiveSub ? 'bg-indigo-500/5' : ''}>
-                    <td className="w-8 px-3 py-1.5 text-[#55556a]">{p.role}</td>
+                    <td className="w-8 px-3 py-1.5 text-[#9095b8]">{p.role}</td>
                     <td className="px-3 py-1.5">
                       {p.isNv && <span className="mr-1 rounded bg-red-500/20 px-1 py-0.5 font-medium text-red-400">NV</span>}
                       {p.isActiveSub && <span className="mr-1 rounded bg-indigo-500/20 px-1 py-0.5 font-medium text-indigo-400">↑</span>}
-                      <span className={p.isNv ? 'line-through text-[#55556a]' : 'text-white'}>{p.name}</span>
+                      <span className={p.isNv ? 'line-through text-[#9095b8]' : 'text-white'}>{p.name}</span>
                       {p.isActiveSub && p.subbedForNv && (
-                        <span className="ml-1 text-[#55556a]">↳ {p.subbedForNv}</span>
+                        <span className="ml-1 text-[#9095b8]">↳ {p.subbedForNv}</span>
                       )}
                     </td>
                     <td className="px-3 py-1.5">
@@ -100,10 +100,10 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
                           ))}
                         </span>
                       ) : (
-                        <span className="text-[#3a3a52]">—</span>
+                        <span className="text-[#6a6f8e]">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-right font-mono text-[#8888aa]">
+                    <td className="px-3 py-1.5 text-right font-mono text-[#b8bcdc]">
                       {p.votoBase != null ? p.votoBase.toFixed(2) : '—'}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono font-semibold">
@@ -214,16 +214,16 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         )}
         <form action={parseDispatch} className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-[#8888aa]">
+            <label className="mb-2 block text-sm font-medium text-[#b8bcdc]">
               File Leghe Fantacalcio — <span className="text-white">{matchdayName}</span>
             </label>
-            <p className="mb-3 text-xs text-[#55556a]">Carica il file .xlsx scaricato da Leghe Fantacalcio (accetta anche .csv).</p>
+            <p className="mb-3 text-xs text-[#9095b8]">Carica il file .xlsx scaricato da Leghe Fantacalcio (accetta anche .csv).</p>
             <input
               type="file"
               name="file"
               accept=".xlsx,.xls,.csv"
               required
-              className="block w-full text-sm text-[#8888aa] file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-500/20 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-300 hover:file:bg-indigo-500/30"
+              className="block w-full text-sm text-[#b8bcdc] file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-500/20 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-300 hover:file:bg-indigo-500/30"
             />
           </div>
           <button
@@ -285,21 +285,21 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
       {/* ── Team matching table ── */}
       <div>
         <h2 className="text-base font-semibold text-white">Anteprima importazione</h2>
-        <p className="text-sm text-[#8888aa]">{matchups.length} matchup trovati — verifica le associazioni squadra</p>
+        <p className="text-sm text-[#b8bcdc]">{matchups.length} matchup trovati — verifica le associazioni squadra</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-[#2e2e42]">
+      <div className="overflow-hidden rounded-lg border border-white/10">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#2e2e42]">
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#55556a]">Squadra (xlsx)</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#55556a]">Associata a</th>
-              <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-[#55556a]">Titolari</th>
-              <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-[#55556a]">NV</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-[#55556a]">Totale Leghe</th>
+            <tr className="border-b border-white/10">
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#9095b8]">Squadra (xlsx)</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#9095b8]">Associata a</th>
+              <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-[#9095b8]">Titolari</th>
+              <th className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-[#9095b8]">NV</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-[#9095b8]">Totale Leghe</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1e1e2e]">
+          <tbody className="divide-y divide-white/8">
             {matchups.flatMap(mu =>
               [mu.team1, mu.team2].map(side => {
                 const resolved = overrides[side.name] ?? side.teamId ?? null
@@ -320,7 +320,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
                         <select
                           value={overrides[side.name] ?? ''}
                           onChange={e => handleOverride(side.name, e.target.value)}
-                          className="rounded border border-red-500/40 bg-[#0f0f1a] px-2 py-1 text-xs text-white"
+                          className="rounded border border-red-500/40 bg-white/[0.04] px-2 py-1 text-xs text-white"
                         >
                           <option value="">— seleziona squadra —</option>
                           {allTeams.map(t => (
@@ -329,11 +329,11 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
                         </select>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-center text-[#8888aa]">{side.playersPlayed}</td>
+                    <td className="px-4 py-2.5 text-center text-[#b8bcdc]">{side.playersPlayed}</td>
                     <td className="px-4 py-2.5 text-center">
-                      <span className={side.nvCount > 0 ? 'text-amber-400' : 'text-[#55556a]'}>{side.nvCount}</span>
+                      <span className={side.nvCount > 0 ? 'text-amber-400' : 'text-[#9095b8]'}>{side.nvCount}</span>
                     </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-[#55556a]">
+                    <td className="px-4 py-2.5 text-right font-mono text-[#9095b8]">
                       {side.total !== null ? side.total.toFixed(2) : '—'}
                     </td>
                   </tr>
@@ -349,7 +349,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         <div className="space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-white">Sostituzioni NV</h3>
-            <p className="text-xs text-[#55556a]">Per ogni titolare NV, scegli quale panchinaro entra nel conteggio. Svuota il campo per non far entrare nessuno.</p>
+            <p className="text-xs text-[#9095b8]">Per ogni titolare NV, scegli quale panchinaro entra nel conteggio. Svuota il campo per non far entrare nessuno.</p>
           </div>
           {teamsWithNv.map(side => {
             const nvStarters = side.starters.filter(p => p.fantavoto === null)
@@ -359,10 +359,10 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
               new Set(Object.entries(assignments).filter(([k]) => k !== forNvName).map(([, v]) => v).filter(Boolean))
 
             return (
-              <div key={side.name} className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f]">
-                <div className="border-b border-[#2e2e42] px-4 py-2">
+              <div key={side.name} className="rounded-lg border border-white/10 bg-transparent">
+                <div className="border-b border-white/10 px-4 py-2">
                   <span className="text-sm font-medium text-white">{side.name}</span>
-                  <span className="ml-2 text-xs text-[#55556a]">
+                  <span className="ml-2 text-xs text-[#9095b8]">
                     {overrides[side.name] ? `→ ${allTeams.find(t => t.id === (overrides[side.name] ?? side.teamId))?.name ?? side.teamId}` : `→ ${allTeams.find(t => t.id === side.teamId)?.name ?? '?'}`}
                   </span>
                 </div>
@@ -376,13 +376,13 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
                     return (
                       <div key={starter.name} className="flex items-center gap-3 px-4 py-2.5">
                         <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-xs font-medium text-red-400">NV</span>
-                        <span className="min-w-[120px] text-sm text-[#8888aa] line-through">{starter.name}</span>
-                        <span className="text-xs text-[#55556a]">{starter.role}</span>
-                        <span className="text-xs text-[#55556a]">→</span>
+                        <span className="min-w-[120px] text-sm text-[#b8bcdc] line-through">{starter.name}</span>
+                        <span className="text-xs text-[#9095b8]">{starter.role}</span>
+                        <span className="text-xs text-[#9095b8]">→</span>
                         <select
                           value={current}
                           onChange={e => handleSubChange(side.name, starter.name, e.target.value)}
-                          className="flex-1 rounded border border-[#2e2e42] bg-[#0f0f1a] px-2 py-1 text-xs text-white"
+                          className="flex-1 rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-white"
                         >
                           <option value="">— nessuna sostituzione —</option>
                           {pool.map(b => (
@@ -406,7 +406,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-white">Verifica punteggi</h3>
-            <p className="text-xs text-[#55556a]">Controlla i voti FotMob per ogni giocatore prima di pubblicare.</p>
+            <p className="text-xs text-[#9095b8]">Controlla i voti FotMob per ogni giocatore prima di pubblicare.</p>
           </div>
           {hasVerified && (
             <span className="flex items-center gap-1.5 text-xs text-emerald-400">
@@ -473,7 +473,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="text-sm text-[#55556a] hover:text-white"
+          className="text-sm text-[#9095b8] hover:text-white"
         >
           Ricomincia
         </button>

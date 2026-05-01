@@ -263,14 +263,14 @@ export function LineupBuilder({
         <select
           value={selectedFormationId}
           onChange={e => setSelectedFormationId(e.target.value)}
-          className="rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-1.5 text-sm font-semibold text-white focus:border-indigo-500 focus:outline-none"
+          className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm font-semibold text-white focus:border-indigo-400/60 focus:outline-none"
         >
           {formations.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
         </select>
       </div>
 
       {loadingSlots ? (
-        <p className="text-center text-sm text-[#55556a] py-12">Caricamento…</p>
+        <p className="text-center text-sm text-[#9095b8] py-12">Caricamento…</p>
       ) : (
         <>
           {/* ── PITCH ─────────────────────────────────── */}
@@ -304,7 +304,7 @@ export function LineupBuilder({
 
           {/* ── BENCH ──────────────────────────────────── */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8888aa] mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#b8bcdc] mb-2">
               Panchina · ordine sostituzione
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -321,11 +321,11 @@ export function LineupBuilder({
                       isActive
                         ? 'border-white bg-white/20 scale-105'
                         : player
-                        ? 'border-[#3e3e5a] bg-[#1e1e2e]'
-                        : 'border-[#2e2e42] bg-[#12121a]',
+                        ? 'border-[#3e3e5a] bg-white/[0.06]'
+                        : 'border-white/10 bg-[#12121a]',
                     ].join(' ')}
                   >
-                    <span className="text-[9px] font-bold text-[#55556a]">P{slot.bench_order}</span>
+                    <span className="text-[9px] font-bold text-[#9095b8]">P{slot.bench_order}</span>
                     {player ? (
                       <>
                         <span className="text-[10px] text-white font-medium leading-tight text-center px-0.5">
@@ -348,10 +348,10 @@ export function LineupBuilder({
           {/* ── PLAYER POOL ────────────────────────────── */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8888aa]">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#b8bcdc]">
                 {activeSlotId ? `Scegli per: ${activeSlot?.slot_name}` : 'I tuoi giocatori'}
               </p>
-              <span className="text-xs text-[#55556a]">
+              <span className="text-xs text-[#9095b8]">
                 {rosterPlayers.length - usedPlayerIds.size} / {rosterPlayers.length} disponibili
               </span>
             </div>
@@ -361,7 +361,7 @@ export function LineupBuilder({
               placeholder="Cerca per nome o squadra…"
               value={playerSearch}
               onChange={e => setPlayerSearch(e.target.value)}
-              className="w-full rounded-xl border border-[#2e2e42] bg-[#1a1a24] px-4 py-2.5 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
             />
 
             {/* Role chips */}
@@ -369,7 +369,7 @@ export function LineupBuilder({
               <button
                 onClick={() => setRoleFilter(null)}
                 className={`rounded-full px-3 py-1 text-xs font-semibold border transition-colors ${
-                  roleFilter === null ? 'bg-white text-black border-white' : 'border-[#2e2e42] text-[#8888aa] hover:border-white/40 hover:text-white'
+                  roleFilter === null ? 'bg-white text-black border-white' : 'border-white/10 text-[#b8bcdc] hover:border-white/40 hover:text-white'
                 }`}
               >Tutti</button>
               {ALL_ROLES.map(r => {
@@ -389,7 +389,7 @@ export function LineupBuilder({
             {/* Player cards */}
             <div className="space-y-1.5">
               {visiblePlayers.length === 0 && (
-                <p className="text-center text-sm text-[#55556a] py-8">Nessun giocatore trovato</p>
+                <p className="text-center text-sm text-[#9095b8] py-8">Nessun giocatore trovato</p>
               )}
               {visiblePlayers.map(player => {
                 const isUsed = usedPlayerIds.has(player.id)
@@ -403,12 +403,12 @@ export function LineupBuilder({
                     className={[
                       'flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all',
                       isUsed
-                        ? 'opacity-30 cursor-not-allowed border-[#2e2e42] bg-[#12121a]'
+                        ? 'opacity-30 cursor-not-allowed border-white/10 bg-[#12121a]'
                         : activeSlotId
                         ? isCompatible
                           ? 'cursor-pointer border-green-500/60 bg-green-950/60 active:scale-[0.98]'
-                          : 'cursor-pointer border-[#2e2e42] bg-[#12121a] opacity-50'
-                        : 'border-[#2e2e42] bg-[#12121a]',
+                          : 'cursor-pointer border-white/10 bg-[#12121a] opacity-50'
+                        : 'border-white/10 bg-[#12121a]',
                     ].join(' ')}
                   >
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-xs font-bold ${prs.bg} ${prs.text} ${prs.border}`}>
@@ -416,11 +416,11 @@ export function LineupBuilder({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-white truncate">{player.full_name}</p>
-                      <p className="text-xs text-[#8888aa]">{player.mantra_roles.join(' · ')} · {player.club}</p>
+                      <p className="text-xs text-[#b8bcdc]">{player.mantra_roles.join(' · ')} · {player.club}</p>
                     </div>
-                    {isUsed && <span className="text-xs text-[#55556a] shrink-0">in uso</span>}
+                    {isUsed && <span className="text-xs text-[#9095b8] shrink-0">in uso</span>}
                     {!isUsed && activeSlotId && isCompatible === true && <span className="text-green-400 text-lg shrink-0">+</span>}
-                    {!isUsed && activeSlotId && isCompatible === false && <span className="text-xs text-[#55556a] shrink-0">⚠</span>}
+                    {!isUsed && activeSlotId && isCompatible === false && <span className="text-xs text-[#9095b8] shrink-0">⚠</span>}
                   </div>
                 )
               })}
@@ -457,7 +457,7 @@ export function LineupBuilder({
                 Invia ⚽
               </Button>
             </div>
-            <a href={`/matchdays/${matchdayId}/lineup/history`} className="block text-center text-xs text-[#55556a] hover:text-indigo-400">
+            <a href={`/matchdays/${matchdayId}/lineup/history`} className="block text-center text-xs text-[#9095b8] hover:text-indigo-400">
               Storico invii →
             </a>
           </div>

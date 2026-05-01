@@ -48,7 +48,7 @@ export default async function LineupPage({
   // For now, always use the user's own team
   if (!team && ctx.role === 'manager') {
     return (
-      <div className="py-12 text-center text-sm text-[#55556a]">
+      <div className="py-12 text-center text-sm text-[#9095b8]">
         Nessuna squadra trovata per il tuo account. Contatta l&apos;admin.
       </div>
     )
@@ -65,7 +65,7 @@ export default async function LineupPage({
   if (!formations || formations.length === 0) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
         <p className="text-sm text-amber-400">
@@ -143,11 +143,24 @@ export default async function LineupPage({
   return (
     <div className="space-y-4">
       <div>
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
           ← {matchday.name}
         </a>
-        <h1 className="mt-1 text-xl font-bold text-white">
-          {ctx.role === 'manager' ? 'La tua formazione' : `Formazione — ${team?.name ?? ''}`}
+        <h1
+          className="mt-2 flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+          style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
+        >
+          {ctx.role === 'manager' ? (
+            <>
+              <span className="font-semibold">Formazione</span>
+              <span className="serif font-normal text-[#b8bcdc]">— la tua</span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold">Formazione</span>
+              <span className="serif font-normal text-[#b8bcdc]">— {team?.name ?? ''}</span>
+            </>
+          )}
         </h1>
         {/* Team switcher — shown when user manages multiple teams */}
         {(teams ?? []).length > 1 && (
@@ -159,8 +172,8 @@ export default async function LineupPage({
                 className={[
                   'rounded-full px-3 py-1 text-xs font-semibold border transition-colors',
                   team?.id === t.id
-                    ? 'bg-indigo-600 border-indigo-500 text-white'
-                    : 'border-[#2e2e42] text-[#8888aa] hover:border-indigo-500 hover:text-white',
+                    ? 'border-indigo-400/40 bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-[0_4px_14px_-4px_rgba(99,102,241,0.5)]'
+                    : 'border-white/10 bg-white/[0.03] text-[#9095b8] hover:border-indigo-400/40 hover:text-white',
                 ].join(' ')}
               >
                 {t.name}

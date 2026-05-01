@@ -58,14 +58,14 @@ export function TeamEnrollmentForm({
           Squadre iscritte ({enrolledTeams.length})
         </h3>
         {enrolledTeams.length === 0 ? (
-          <p className="text-sm text-[#55556a]">Nessuna squadra iscritta.</p>
+          <p className="text-sm text-[#9095b8]">Nessuna squadra iscritta.</p>
         ) : (
           <div className="space-y-2">
             {enrolledTeams.map((et) => {
               const name = (et.fantasy_teams as unknown as { name: string } | null)?.name ?? et.team_id.slice(0, 8)
               return (
                 <div key={et.id}
-                  className="flex items-center justify-between rounded-lg border border-[#2e2e42] bg-[#0f0f1a] px-4 py-2.5">
+                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5">
                   <span className="text-sm text-white">{name}</span>
                   {!isLocked && (
                     <form action={unenrollFormAction}>
@@ -104,7 +104,7 @@ export function TeamEnrollmentForm({
             <div className="grid gap-2 sm:grid-cols-2">
               {availableTeams.map((t) => (
                 <label key={t.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2.5 hover:border-indigo-500/30 transition-colors">
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-transparent px-3 py-2.5 hover:border-indigo-500/30 transition-colors">
                   <input type="checkbox" name="team_ids" value={t.id} className="accent-indigo-500" />
                   <span className="text-sm text-white">{t.name}</span>
                 </label>
@@ -116,7 +116,7 @@ export function TeamEnrollmentForm({
       )}
 
       {availableTeams.length === 0 && !isLocked && (
-        <p className="text-sm text-[#55556a]">Tutte le squadre della lega sono già iscritte.</p>
+        <p className="text-sm text-[#9095b8]">Tutte le squadre della lega sono già iscritte.</p>
       )}
     </div>
   )

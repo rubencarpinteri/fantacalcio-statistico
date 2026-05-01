@@ -169,7 +169,12 @@ export default async function MatchdaysPage() {
     <div className="space-y-4">
       {/* ── Page header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-white">Giornate</h1>
+        <h1
+          className="flex items-baseline gap-2 font-light tracking-tight text-[#f5f7ff]"
+          style={{ fontSize: 'clamp(22px, 2.4vw, 28px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
+        >
+          <span className="font-semibold">Giornate</span>
+        </h1>
         <a href="/campionato" className="text-xs text-indigo-400 hover:text-indigo-300">
           Classifica →
         </a>
@@ -204,9 +209,9 @@ export default async function MatchdaysPage() {
       {/* ── Ultima + Prossima grid ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Ultima Giornata */}
-        <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-[#2e2e42]">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-white/10">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
               Ultima Giornata
             </p>
             <p className="text-sm font-semibold text-white leading-tight">
@@ -224,13 +229,13 @@ export default async function MatchdaysPage() {
                 const awayWins = hasGoals
                   ? (m.awayGoals as number) > (m.homeGoals as number)
                   : m.homeFantavoto !== null && m.awayFantavoto !== null && m.awayFantavoto > m.homeFantavoto
-                const homeTone = awayWins ? 'text-[#3a3a52]' : 'text-white'
-                const awayTone = homeWins ? 'text-[#3a3a52]' : 'text-white'
+                const homeTone = awayWins ? 'text-[#6a6f8e]' : 'text-white'
+                const awayTone = homeWins ? 'text-[#6a6f8e]' : 'text-white'
                 return (
                   <a
                     key={i}
                     href={prevMatchday ? `/matchdays/${prevMatchday.id}/all-lineups` : '#'}
-                    className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 hover:bg-[#11111e] transition-colors"
+                    className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 hover:bg-white/[0.05] transition-colors"
                   >
                     <span className={`truncate text-right text-[13px] font-medium tracking-tight ${homeTone}`}>
                       {m.homeTeamName}
@@ -240,13 +245,13 @@ export default async function MatchdaysPage() {
                         <>
                           <div className="flex items-baseline">
                             <span className={`w-5 text-right text-lg font-light leading-none ${homeTone}`}>{m.homeGoals}</span>
-                            <span className="px-1.5 text-base font-thin text-[#2a2a3e] leading-none">–</span>
+                            <span className="px-1.5 text-base font-thin text-[#6a6f8e] leading-none">–</span>
                             <span className={`w-5 text-left text-lg font-light leading-none ${awayTone}`}>{m.awayGoals}</span>
                           </div>
                           {m.homeFantavoto !== null && m.awayFantavoto !== null && (
-                            <div className="mt-0.5 flex items-center gap-1 text-[9px] text-[#55556a]">
+                            <div className="mt-0.5 flex items-center gap-1 text-[9px] text-[#9095b8]">
                               <span>{m.homeFantavoto.toFixed(1)}</span>
-                              <span className="text-[#2a2a3e]">–</span>
+                              <span className="text-[#6a6f8e]">–</span>
                               <span>{m.awayFantavoto.toFixed(1)}</span>
                             </div>
                           )}
@@ -254,7 +259,7 @@ export default async function MatchdaysPage() {
                       ) : (
                         <div className="flex items-baseline">
                           <span className={`w-9 text-right text-[13px] font-medium ${homeTone}`}>{m.homeFantavoto !== null ? m.homeFantavoto.toFixed(1) : '—'}</span>
-                          <span className="px-1.5 text-xs font-thin text-[#2a2a3e]">–</span>
+                          <span className="px-1.5 text-xs font-thin text-[#6a6f8e]">–</span>
                           <span className={`w-9 text-left text-[13px] font-medium ${awayTone}`}>{m.awayFantavoto !== null ? m.awayFantavoto.toFixed(1) : '—'}</span>
                         </div>
                       )}
@@ -267,13 +272,13 @@ export default async function MatchdaysPage() {
               })}
             </div>
           ) : (
-            <p className="px-4 py-6 text-center text-xs text-[#55556a]">
+            <p className="px-4 py-6 text-center text-xs text-[#9095b8]">
               {prevMatchday ? 'Nessun incontro configurato.' : 'Nessuna giornata conclusa.'}
             </p>
           )}
 
           {prevMatchday && (
-            <div className="border-t border-[#1e1e2e] px-4 py-2">
+            <div className="border-t border-white/8 px-4 py-2">
               <a href={`/matchdays/${prevMatchday.id}/results`} className="text-[11px] text-indigo-400 hover:text-indigo-300">
                 Dettaglio giornata →
               </a>
@@ -282,28 +287,28 @@ export default async function MatchdaysPage() {
         </div>
 
         {/* Prossima Giornata */}
-        <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-[#2e2e42]">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#55556a]">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-white/10">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
               Prossima Giornata
             </p>
             <p className="text-sm font-semibold text-white leading-tight">
               {nextMatchday?.name ?? '—'}
             </p>
             {nextMatchday?.locks_at && (
-              <p className="text-[10px] text-[#55556a] mt-0.5">Scadenza: {fmt(nextMatchday.locks_at)}</p>
+              <p className="text-[10px] text-[#9095b8] mt-0.5">Scadenza: {fmt(nextMatchday.locks_at)}</p>
             )}
           </div>
 
           {nextMatchups.length > 0 ? (
-            <div className="divide-y divide-[#1e1e2e]">
+            <div className="divide-y divide-white/8">
               {nextMatchups.map((m, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1 min-w-0 overflow-hidden text-right">
                     <span className="block truncate text-sm font-semibold text-[#c0c0d8]">{m.homeTeamName}</span>
                   </div>
                   <div className="shrink-0 w-28 flex items-center justify-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#3a3a52]">vs</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a6f8e]">vs</span>
                   </div>
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <span className="block truncate text-sm font-semibold text-[#c0c0d8]">{m.awayTeamName}</span>
@@ -312,13 +317,13 @@ export default async function MatchdaysPage() {
               ))}
             </div>
           ) : (
-            <p className="px-4 py-6 text-center text-xs text-[#55556a]">
+            <p className="px-4 py-6 text-center text-xs text-[#9095b8]">
               {nextMatchday ? 'Nessun incontro configurato.' : 'Nessuna prossima giornata.'}
             </p>
           )}
 
           {nextMatchday && isAdmin && (
-            <div className="border-t border-[#1e1e2e] px-4 py-2 flex items-center justify-between">
+            <div className="border-t border-white/8 px-4 py-2 flex items-center justify-between">
               <a href={`/matchdays/${nextMatchday.id}`} className="text-[11px] text-indigo-400 hover:text-indigo-300">
                 Gestione →
               </a>
@@ -334,13 +339,13 @@ export default async function MatchdaysPage() {
       </div>
 
       {/* ── All matchdays list ───────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] overflow-hidden">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
         {matchdays.length === 0 ? (
-          <p className="px-4 py-8 text-center text-xs text-[#55556a]">
+          <p className="px-4 py-8 text-center text-xs text-[#9095b8]">
             Nessuna giornata configurata.
           </p>
         ) : (
-          <div className="divide-y divide-[#1e1e2e]">
+          <div className="divide-y divide-white/8">
             {matchdays.map((m) => {
               const isCurrent = m.id === current?.id
               const isOpen = m.status === 'open'
@@ -351,7 +356,7 @@ export default async function MatchdaysPage() {
                 <div key={m.id} className={`px-4 py-2.5 ${isCurrent ? 'bg-indigo-500/5' : ''}`}>
                   <div className="flex items-center gap-2">
                     {m.matchday_number !== null && (
-                      <span className="w-5 shrink-0 text-right text-[10px] text-[#3a3a52] tabular-nums">
+                      <span className="w-5 shrink-0 text-right text-[10px] text-[#6a6f8e] tabular-nums">
                         {m.matchday_number}
                       </span>
                     )}
@@ -380,7 +385,7 @@ export default async function MatchdaysPage() {
                   </div>
 
                   {m.locks_at && (
-                    <p className="mt-0.5 pl-7 text-[10px] text-[#3a3a52]">{fmt(m.locks_at)}</p>
+                    <p className="mt-0.5 pl-7 text-[10px] text-[#6a6f8e]">{fmt(m.locks_at)}</p>
                   )}
 
                   {/* Admin quick links — only for the current matchday */}
@@ -397,7 +402,7 @@ export default async function MatchdaysPage() {
                       <QuickFetchAndCalculateButton matchdayId={m.id} compact />
                       <a
                         href={`/matchdays/${m.id}`}
-                        className="rounded px-1.5 py-0.5 text-[10px] bg-[#1a1a2e] text-[#8888aa] hover:text-white transition-colors"
+                        className="rounded px-1.5 py-0.5 text-[10px] bg-white/[0.06] text-[#9095b8] hover:text-white transition-colors"
                       >
                         Gestione →
                       </a>

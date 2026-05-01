@@ -109,15 +109,22 @@ export default async function CompetitionStandingsPage({
       <div>
         <a
           href={ctx.role === 'league_admin' ? `/competitions/${id}` : '/standings'}
-          className="text-sm text-[#55556a] hover:text-indigo-400"
+          className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300"
         >
           ← {ctx.role === 'league_admin' ? comp.name : 'Classifiche'}
         </a>
-        <h1 className="mt-1 text-xl font-bold text-white">Classifica</h1>
-        <p className="text-sm text-[#8888aa]">
-          {TYPE_LABEL[comp.type] ?? comp.type}
-          {afterRound ? ` · aggiornata al turno ${afterRound.round_number} (${afterRound.name})` : ''}
-        </p>
+        <h1
+          className="mt-2 flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+          style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
+        >
+          <span className="font-semibold">Classifica</span>
+          <span className="serif font-normal text-[#b8bcdc]">— {TYPE_LABEL[comp.type] ?? comp.type}</span>
+        </h1>
+        {afterRound && (
+          <p className="mt-1.5 text-[12.5px] text-[#9095b8]">
+            Aggiornata al turno {afterRound.round_number} ({afterRound.name})
+          </p>
+        )}
       </div>
 
       {isStaleSnapshot && (
@@ -130,7 +137,7 @@ export default async function CompetitionStandingsPage({
       {standingRows.length === 0 ? (
         <Card>
           <CardContent>
-            <p className="py-8 text-center text-sm text-[#55556a]">
+            <p className="py-8 text-center text-sm text-[#9095b8]">
               Nessun dato disponibile. Calcola almeno un turno per vedere la classifica.
             </p>
           </CardContent>
@@ -156,7 +163,7 @@ export default async function CompetitionStandingsPage({
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e1e2e]">
+                <tr className="border-b border-white/8">
                   {[
                     'Pos', 'Squadra', 'G', 'V', 'N', 'P',
                     ...(hasGoals ? ['GF', 'GS', 'DR'] : []),
@@ -164,7 +171,7 @@ export default async function CompetitionStandingsPage({
                   ].map((h, i) => (
                     <th
                       key={`${h}-${i}`}
-                      className={`px-4 py-2.5 text-xs font-medium text-[#55556a] ${
+                      className={`px-4 py-2.5 text-xs font-medium text-[#9095b8] ${
                         i < 2 ? 'text-left' : 'text-center'
                       }`}
                     >
@@ -173,9 +180,9 @@ export default async function CompetitionStandingsPage({
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
+              <tbody className="divide-y divide-white/8">
                 {standingRows.map((row, idx) => (
-                  <tr key={row.team_id} className="hover:bg-[#0f0f1a]">
+                  <tr key={row.team_id} className="hover:bg-white/[0.04]">
                     <td className="w-12 px-4 py-3 text-left">
                       <span
                         className={`text-sm font-semibold ${
@@ -183,7 +190,7 @@ export default async function CompetitionStandingsPage({
                             ? 'text-amber-400'
                             : idx <= 2
                               ? 'text-indigo-300'
-                              : 'text-[#55556a]'
+                              : 'text-[#9095b8]'
                         }`}
                       >
                         {idx + 1}
@@ -192,21 +199,21 @@ export default async function CompetitionStandingsPage({
                     <td className="px-4 py-3 text-left font-medium text-white">
                       {teamNameMap.get(row.team_id) ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-center text-[#8888aa]">{row.played}</td>
-                    <td className="px-4 py-3 text-center text-[#8888aa]">{row.wins}</td>
-                    <td className="px-4 py-3 text-center text-[#8888aa]">{row.draws}</td>
-                    <td className="px-4 py-3 text-center text-[#8888aa]">{row.losses}</td>
+                    <td className="px-4 py-3 text-center text-[#9095b8]">{row.played}</td>
+                    <td className="px-4 py-3 text-center text-[#9095b8]">{row.wins}</td>
+                    <td className="px-4 py-3 text-center text-[#9095b8]">{row.draws}</td>
+                    <td className="px-4 py-3 text-center text-[#9095b8]">{row.losses}</td>
                     {hasGoals && (
                       <>
-                        <td className="px-4 py-3 text-center text-[#8888aa]">{row.goals_for}</td>
-                        <td className="px-4 py-3 text-center text-[#8888aa]">{row.goals_against}</td>
+                        <td className="px-4 py-3 text-center text-[#9095b8]">{row.goals_for}</td>
+                        <td className="px-4 py-3 text-center text-[#9095b8]">{row.goals_against}</td>
                         <td
                           className={`px-4 py-3 text-center ${
                             row.goal_difference > 0
                               ? 'text-emerald-400'
                               : row.goal_difference < 0
                                 ? 'text-red-400'
-                                : 'text-[#8888aa]'
+                                : 'text-[#9095b8]'
                           }`}
                         >
                           {row.goal_difference > 0 ? '+' : ''}
@@ -215,7 +222,7 @@ export default async function CompetitionStandingsPage({
                       </>
                     )}
                     <td className="px-4 py-3 text-center font-bold text-white">{row.points}</td>
-                    <td className="px-4 py-3 text-center text-[#55556a]">
+                    <td className="px-4 py-3 text-center text-[#9095b8]">
                       {row.total_fantavoto.toFixed(1)}
                     </td>
                   </tr>
@@ -229,7 +236,7 @@ export default async function CompetitionStandingsPage({
       <div className="text-right">
         <a
           href={ctx.role === 'league_admin' ? `/competitions/${id}` : '/standings'}
-          className="text-sm text-[#55556a] hover:text-indigo-400"
+          className="text-sm text-[#9095b8] hover:text-indigo-400"
         >
           {ctx.role === 'league_admin' ? '← Torna alla competizione' : '← Classifiche'}
         </a>

@@ -54,37 +54,37 @@ export function AddSlotForm({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+        <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
           Ruoli nativi (nessuna penalità)
         </label>
         <input
           name="allowed_mantra_roles"
           required
           placeholder="es. Dc, Dd o Por o A, Pc, T"
-          className="w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
         />
-        <p className="text-xs text-[#55556a]">
+        <p className="text-xs text-[#9095b8]">
           Separati da virgola. Ruoli compatibili senza penalità. Tutti i ruoli: {ALL_MANTRA_ROLES.join(', ')}
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+        <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
           Ruoli fuori posizione (−1)
         </label>
         <input
           name="extended_mantra_roles"
           placeholder="es. M, C (opzionale)"
-          className="w-full rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
         />
-        <p className="text-xs text-[#55556a]">
+        <p className="text-xs text-[#9095b8]">
           Ruoli che possono coprire questo slot con penalità −1 al fantavoto (sostituzione fuori posizione).
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <input type="hidden" name="is_bench" value={isBench ? 'true' : 'false'} />
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-[#f0f0fa]">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-[#f5f7ff]">
           <input
             type="checkbox"
             checked={isBench}

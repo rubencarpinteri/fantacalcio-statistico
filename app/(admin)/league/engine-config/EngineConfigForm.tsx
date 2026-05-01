@@ -26,7 +26,7 @@ function SubmitButton() {
 function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#55556a]">{title}</p>
+      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#9095b8]">{title}</p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </div>
   )
@@ -51,7 +51,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs text-[#8888aa]" htmlFor={name}>
+      <label className="text-xs text-[#b8bcdc]" htmlFor={name}>
         {label}
       </label>
       <input
@@ -62,9 +62,9 @@ function Field({
         min={min}
         max={max}
         defaultValue={defaultValue}
-        className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+        className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
       />
-      {hint && <p className="text-xs text-[#55556a]">{hint}</p>}
+      {hint && <p className="text-xs text-[#9095b8]">{hint}</p>}
     </div>
   )
 }
@@ -79,7 +79,7 @@ function WeightSlider({ defaultValue }: { defaultValue: number }) {
 
   return (
     <div className="col-span-full flex flex-col gap-2">
-      <p className="text-xs text-[#8888aa]">Peso fonti (FotMob / SofaScore)</p>
+      <p className="text-xs text-[#b8bcdc]">Peso fonti (FotMob / SofaScore)</p>
 
       {/* Labels + percentages */}
       <div className="flex items-center justify-between text-xs font-medium">
@@ -103,7 +103,7 @@ function WeightSlider({ defaultValue }: { defaultValue: number }) {
         <input type="hidden" name="fotmob_weight" value={weight} />
       </div>
 
-      <p className="text-xs text-[#55556a]">
+      <p className="text-xs text-[#9095b8]">
         z_combinato = {fmPct}% × z_FotMob + {ssPct}% × z_SofaScore
       </p>
     </div>
@@ -144,7 +144,7 @@ function TargetDistributionSection({
       {/* Section header */}
       <div>
         <p className="text-sm font-semibold text-indigo-300">Scala voto finale</p>
-        <p className="mt-1 text-xs text-[#8888aa] leading-relaxed">
+        <p className="mt-1 text-xs text-[#b8bcdc] leading-relaxed">
           Definisce la distribuzione dei voti base nella nostra lega. È il secondo passo della
           calibrazione, applicato dopo la normalizzazione z-score delle fonti esterne.
         </p>
@@ -152,14 +152,14 @@ function TargetDistributionSection({
 
       {/* Two-step explanation */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-3 space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+        <div className="rounded-lg border border-white/10 bg-transparent p-3 space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-[#9095b8]">
             Passo 1 — Normalizzazione fonti
           </p>
-          <p className="font-mono text-xs text-[#8888aa]">
+          <p className="font-mono text-xs text-[#b8bcdc]">
             z = (voto_fonte − media_fonte) / std_fonte
           </p>
-          <p className="text-xs text-[#55556a]">
+          <p className="text-xs text-[#9095b8]">
             Converte i voti FotMob e SofaScore in z-score comparabili tramite le
             impostazioni &ldquo;Normalizzazione voti&rdquo; qui sopra.
           </p>
@@ -171,7 +171,7 @@ function TargetDistributionSection({
           <p className="font-mono text-xs text-indigo-200">
             voto = media_finale + z × std_finale
           </p>
-          <p className="text-xs text-[#8888aa]">
+          <p className="text-xs text-[#b8bcdc]">
             Proietta lo z-score combinato sulla nostra scala fantacalcio, con centro e
             dispersione configurabili indipendentemente dalle fonti.
           </p>
@@ -181,7 +181,7 @@ function TargetDistributionSection({
       {/* Fields */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8888aa]" htmlFor="target_mean_vote">
+          <label className="text-xs text-[#b8bcdc]" htmlFor="target_mean_vote">
             Media voto finale
           </label>
           <input
@@ -193,14 +193,14 @@ function TargetDistributionSection({
             max="8"
             value={mean}
             onChange={(e) => setMean(Number(e.target.value))}
-            className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
           />
-          <p className="text-xs text-[#55556a]">
+          <p className="text-xs text-[#9095b8]">
             Definisce il centro della nostra scala voto finale (z = 0 → questo voto)
           </p>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8888aa]" htmlFor="target_vote_std">
+          <label className="text-xs text-[#b8bcdc]" htmlFor="target_vote_std">
             Deviazione standard voto finale
           </label>
           <input
@@ -212,9 +212,9 @@ function TargetDistributionSection({
             max="3"
             value={std}
             onChange={(e) => setStd(Number(e.target.value))}
-            className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-[#55556a] focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
           />
-          <p className="text-xs text-[#55556a]">
+          <p className="text-xs text-[#9095b8]">
             Definisce quanto i voti finali saranno compressi o dispersi (±1σ = ±{std.toFixed(2)} pt)
           </p>
         </div>
@@ -222,12 +222,12 @@ function TargetDistributionSection({
 
       {/* Cap fields */}
       <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#55556a]">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#9095b8]">
           Limiti voto base (clamp)
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[#8888aa]" htmlFor="voto_base_cap_min">
+            <label className="text-xs text-[#b8bcdc]" htmlFor="voto_base_cap_min">
               Minimo voto base
             </label>
             <input
@@ -239,14 +239,14 @@ function TargetDistributionSection({
               max="6"
               value={capMin}
               onChange={(e) => setCapMin(Number(e.target.value))}
-              className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+              className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
             />
-            <p className="text-xs text-[#55556a]">
+            <p className="text-xs text-[#9095b8]">
               Un giocatore con NV prende 6.00 (exception path), non il minimo.
             </p>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[#8888aa]" htmlFor="voto_base_cap_max">
+            <label className="text-xs text-[#b8bcdc]" htmlFor="voto_base_cap_max">
               Massimo voto base
             </label>
             <input
@@ -258,9 +258,9 @@ function TargetDistributionSection({
               max="10"
               value={capMax}
               onChange={(e) => setCapMax(Number(e.target.value))}
-              className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+              className="rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
             />
-            <p className="text-xs text-[#55556a]">
+            <p className="text-xs text-[#9095b8]">
               Default 10.0. Il fantavoto finale può comunque superare questo valore via bonus.
             </p>
           </div>
@@ -268,8 +268,8 @@ function TargetDistributionSection({
       </div>
 
       {/* Live formula preview */}
-      <div className="rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-4 space-y-3">
-        <p className="text-xs font-medium uppercase tracking-wider text-[#55556a]">
+      <div className="rounded-lg border border-white/10 bg-transparent p-4 space-y-3">
+        <p className="text-xs font-medium uppercase tracking-wider text-[#9095b8]">
           Anteprima formula live
         </p>
 
@@ -277,34 +277,34 @@ function TargetDistributionSection({
           <p className="font-mono text-xs text-indigo-200">
             b0 = {mean.toFixed(2)} + z_combinato × {std.toFixed(2)}
           </p>
-          <p className="font-mono text-xs text-[#8888aa]">
+          <p className="font-mono text-xs text-[#b8bcdc]">
             b1 = {mean.toFixed(2)} + moltiplicatore_ruolo × (b0 − {mean.toFixed(2)})
           </p>
-          <p className="font-mono text-xs text-[#8888aa]">
+          <p className="font-mono text-xs text-[#b8bcdc]">
             voto_base = clamp(b1, <span className="text-amber-300">{capMin.toFixed(2)}</span>, <span className="text-amber-300">{capMax.toFixed(2)}</span>)
           </p>
         </div>
 
         {/* Worked example */}
-        <div className="border-t border-[#2e2e42] pt-3 space-y-1">
-          <p className="text-xs font-medium text-[#55556a]">
+        <div className="border-t border-white/10 pt-3 space-y-1">
+          <p className="text-xs font-medium text-[#9095b8]">
             Esempio pratico (MID, minuti pieni, moltiplicatore 1.00):
           </p>
           <div className="grid grid-cols-3 gap-2 text-xs font-mono">
             <div className="rounded bg-green-500/10 px-2 py-1 text-center">
-              <p className="text-[#55556a]">z = +1.00</p>
+              <p className="text-[#9095b8]">z = +1.00</p>
               <p className="text-green-300 font-semibold">{votoPlus}</p>
             </div>
-            <div className="rounded bg-[#1a1a24] px-2 py-1 text-center">
-              <p className="text-[#55556a]">z = 0.00</p>
+            <div className="rounded bg-white/[0.05] px-2 py-1 text-center">
+              <p className="text-[#9095b8]">z = 0.00</p>
               <p className="text-white font-semibold">{votoNeutral}</p>
             </div>
             <div className="rounded bg-red-500/10 px-2 py-1 text-center">
-              <p className="text-[#55556a]">z = −1.00</p>
+              <p className="text-[#9095b8]">z = −1.00</p>
               <p className="text-red-300 font-semibold">{votoMinus}</p>
             </div>
           </div>
-          <p className="text-xs text-[#55556a] pt-1">
+          <p className="text-xs text-[#9095b8] pt-1">
             Range teorico ±2σ (prima del moltiplicatore ruolo e del clamp):{' '}
             <span className="font-mono text-white">{rangeLow} – {rangeHigh}</span>
           </p>
@@ -584,7 +584,7 @@ export function EngineConfigForm({ current }: Props) {
         <button
           type="button"
           onClick={() => { setUseDefaults(true); setResetKey(k => k + 1) }}
-          className="rounded-lg border border-[#2e2e42] px-5 py-2 text-sm font-medium text-[#8888aa] transition-colors hover:border-white/30 hover:text-white"
+          className="rounded-lg border border-white/10 px-5 py-2 text-sm font-medium text-[#b8bcdc] transition-colors hover:border-white/30 hover:text-white"
         >
           Ripristina valori standard
         </button>

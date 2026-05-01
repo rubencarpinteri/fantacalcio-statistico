@@ -4,63 +4,118 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
-   Design tokens — dark-first palette
+   Design tokens — premium glass-on-dark
    ============================================================ */
 @theme {
-  /* Neutral grays */
-  --color-surface-0: #0a0a0f;
-  --color-surface-1: #111118;
-  --color-surface-2: #1a1a24;
-  --color-surface-3: #252532;
-  --color-surface-4: #32324a;
-  --color-border:    #2e2e42;
-  --color-border-subtle: #1e1e2e;
+  /* Neutral grays (legacy — kept for backward-compat with hardcoded refs) */
+  --color-surface-0: #0a0c1a;
+  --color-surface-1: #11142a;
+  --color-surface-2: #1a1d34;
+  --color-surface-3: #252840;
+  --color-surface-4: #32365a;
+  --color-border:    #2e3252;
+  --color-border-subtle: #1e2138;
 
-  /* Text */
+  /* Hairline borders — semi-transparent so they sit cleanly on glass */
+  --color-hairline:        rgba(255, 255, 255, 0.10);
+  --color-hairline-strong: rgba(255, 255, 255, 0.20);
+
+  /* Translucent glass surfaces (used with backdrop-blur) */
+  --color-glass-1: rgba(46, 50, 88, 0.55);
+  --color-glass-2: rgba(54, 58, 98, 0.72);
+  --color-glass-3: rgba(64, 68, 110, 0.85);
+  --color-glass-soft: rgba(38, 42, 74, 0.45);
+
+  /* Ink scale — text from primary → quaternary */
+  --color-ink-1: #f5f7ff;   /* near-white */
+  --color-ink-2: #e4e7fa;   /* primary text */
+  --color-ink-3: #b8bcdc;   /* secondary */
+  --color-ink-4: #9095b8;   /* tertiary */
+  --color-ink-5: #6a6f8e;   /* quaternary */
+
+  /* Text (legacy aliases — point to new ink scale) */
   --color-text-primary:   #f0f0fa;
   --color-text-secondary: #8888aa;
   --color-text-muted:     #55556a;
 
-  /* Accent — electric indigo */
+  /* Accent — soft indigo (calmer than electric variant) */
   --color-accent:       #6366f1;
   --color-accent-hover: #4f46e5;
-  --color-accent-muted: #6366f120;
+  --color-accent-soft:  #6b76e8;
+  --color-accent-muted: rgba(99, 102, 241, 0.12);
 
-  /* Status colors */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger:  #ef4444;
-  --color-info:    #3b82f6;
+  /* Status colors — kept; see status-soft variants below for tinted bg */
+  --color-success: #5fc28e;
+  --color-warning: #d99a4a;
+  --color-danger:  #e07686;
+  --color-info:    #4cb6e3;
 
-  /* Typography — Geist Sans for UI/body, Geist Mono for tabular data */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* Role tints (Mantra) — soft, calm */
+  --color-role-por: #d6a93b;
+  --color-role-def: #5a8fd6;
+  --color-role-mid: #4ea88a;
+  --color-role-tre: #e08a52;
+  --color-role-att: #d96b6b;
 
-  /* Tracking scale (negative = tighter) */
-  --tracking-display: -0.03em;  /* headings 24px+ */
-  --tracking-body:    -0.015em; /* default UI / body */
-  --tracking-tabular: 0;        /* numbers in tables */
+  /* Rating ramp — calm, no neons */
+  --color-rate-bad:  #c8504a;
+  --color-rate-low:  #d9874a;
+  --color-rate-mid:  #c79d3a;
+  --color-rate-ok:   #4ea66e;
+  --color-rate-good: #3ea0c4;
+  --color-rate-top:  #5a6df0;
+
+  /* Layered shadows */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 26px rgba(0, 0, 0, 0.30), 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 8px 30px rgba(0, 0, 0, 0.35);
+
+  /* Typography */
+  --font-sans:  var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:  var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-instrument-serif), 'Times New Roman', serif;
+
+  /* Tracking scale */
+  --tracking-display: -0.035em;
+  --tracking-body:    -0.015em;
+  --tracking-tabular: 0;
+
+  /* Radii */
+  --radius-sm:  10px;
+  --radius-md:  14px;
+  --radius-lg:  22px;
+  --radius-xl:  28px;
+  --radius-2xl: 36px;
 }
 
 /* ============================================================
-   Base styles
+   Base styles — soft luminous dark background
    ============================================================ */
 html {
   color-scheme: dark;
   font-family: var(--font-sans);
   letter-spacing: var(--tracking-body);
   background-color: var(--color-surface-0);
-  color: var(--color-text-primary);
+  color: var(--color-ink-2);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tighter tracking on display-sized text */
-h1, h2, h3, .display {
-  letter-spacing: var(--tracking-display);
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(120% 80% at 0% 0%,   rgba(79, 91, 213, 0.22), transparent 55%),
+    radial-gradient(100% 80% at 100% 10%, rgba(139, 111, 225, 0.18), transparent 55%),
+    radial-gradient(120% 80% at 50% 110%, rgba(60, 130, 200, 0.16), transparent 55%),
+    var(--color-surface-0);
+  background-attachment: fixed;
 }
 
-/* Reset tracking + enable tabular figures wherever numbers align in columns */
+h1, h2, h3, .display {
+  letter-spacing: var(--tracking-display);
+  color: var(--color-ink-1);
+}
+
 .tabular-nums,
 table.tabular,
 [data-tabular] {
@@ -69,38 +124,99 @@ table.tabular,
   letter-spacing: var(--tracking-tabular);
 }
 
-body {
-  min-height: 100dvh;
-}
-
-/* Focus ring */
 *:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
-/* Scrollbar styling */
+/* Scrollbars — slim, near-invisible until hover */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-1);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-4);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-/* Table base — tabular figures + reset tracking so number columns align */
 table {
   border-collapse: collapse;
   width: 100%;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum", "cnum";
   letter-spacing: var(--tracking-tabular);
+}
+
+/* ============================================================
+   Reusable visual primitives — glass surfaces + accents
+   ============================================================ */
+.glass {
+  background: var(--color-glass-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  box-shadow: var(--shadow-2);
+}
+.glass-strong {
+  background: var(--color-glass-2);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: var(--shadow-2);
+}
+.glass-soft {
+  background: var(--color-glass-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Eyebrow label — small uppercase tracking */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-ink-4);
+  line-height: 1;
+}
+
+/* Serif italic accent (for editorial display headings) */
+.serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Hairline divider */
+.hairline {
+  background: var(--color-hairline);
+  height: 1px;
+  width: 100%;
+}
+
+/* Calm fade-up for content swaps */
+.fade-in {
+  animation: fadeUp 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

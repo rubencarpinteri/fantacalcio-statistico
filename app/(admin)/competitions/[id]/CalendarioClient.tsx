@@ -53,7 +53,7 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
 
   if (!round) {
     return (
-      <div className="rounded-xl border border-[#2e2e42] bg-[#0d0d1a] px-6 py-12 text-center text-sm text-[#55556a]">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl px-6 py-12 text-center text-sm text-[#9095b8]">
         Nessun turno disponibile.
       </div>
     )
@@ -64,14 +64,14 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
       <style>{FADE_SLIDE_CSS}</style>
       {/* Round selector */}
       <div className="flex items-center gap-3">
-        <label className="text-xs font-medium uppercase tracking-widest text-[#55556a]">
+        <label className="text-xs font-medium uppercase tracking-widest text-[#9095b8]">
           Turno
         </label>
         <div className="relative">
           <select
             value={selectedRound}
             onChange={(e) => setSelectedRound(Number(e.target.value))}
-            className="appearance-none rounded-lg border border-[#2e2e42] bg-[#111120] pl-3 pr-8 py-1.5 text-sm text-white focus:border-indigo-500/60 focus:outline-none cursor-pointer hover:border-[#3e3e52] transition-colors"
+            className="appearance-none rounded-lg border border-white/10 bg-white/[0.06] pl-3 pr-8 py-1.5 text-sm text-white focus:border-indigo-400/60/60 focus:outline-none cursor-pointer hover:border-white/20 transition-colors"
           >
             {rounds.map((r) => (
               <option key={r.roundNumber} value={r.roundNumber}>
@@ -80,7 +80,7 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#55556a] text-xs">
+          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9095b8] text-xs">
             ▾
           </span>
         </div>
@@ -100,9 +100,9 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
 
       {/* Matchups for selected round */}
       <div key={selectedRound} style={{ animation: 'calRoundIn 200ms ease' }}>
-        <div className="rounded-xl border border-[#1e1e2e] bg-[#0b0b14] overflow-hidden">
+        <div className="rounded-xl border border-white/8 bg-white/[0.04] overflow-hidden">
           {round.matchups.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm text-[#55556a]">
+            <div className="px-6 py-12 text-center text-sm text-[#9095b8]">
               Nessun incontro per questo turno.
             </div>
           ) : (
@@ -121,7 +121,7 @@ export function CalendarioClient({ rounds, defaultRound, myTeamId, competitionId
 
           {/* Draft footnote */}
           {round.matchups.some((m) => !m.result && m.isDraftScore && m.partialHomeScore !== null) && (
-            <div className="border-t border-[#1a1a26] px-4 py-2.5">
+            <div className="border-t border-white/8 px-4 py-2.5">
               <p className="text-[10px] text-amber-500/50">
                 ~ punteggi parziali (calcolo non ancora pubblicato)
               </p>
@@ -168,11 +168,11 @@ function MatchupRow({
     : false
 
   const homeTone =
-    awayWins ? 'text-[#3a3a52]' : isHomeMyTeam ? 'text-indigo-200' : 'text-white'
+    awayWins ? 'text-[#6a6f8e]' : isHomeMyTeam ? 'text-indigo-200' : 'text-white'
   const awayTone =
-    homeWins ? 'text-[#3a3a52]' : isAwayMyTeam ? 'text-indigo-200' : 'text-white'
-  const homeNum = awayWins ? 'text-[#3a3a52]' : 'text-white'
-  const awayNum = homeWins ? 'text-[#3a3a52]' : 'text-white'
+    homeWins ? 'text-[#6a6f8e]' : isAwayMyTeam ? 'text-indigo-200' : 'text-white'
+  const homeNum = awayWins ? 'text-[#6a6f8e]' : 'text-white'
+  const awayNum = homeWins ? 'text-[#6a6f8e]' : 'text-white'
 
   const href = m.matchdayId
     ? `/matchdays/${m.matchdayId}/all-lineups`
@@ -181,8 +181,8 @@ function MatchupRow({
   return (
     <a
       href={href}
-      className={`grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 hover:bg-[#11111e] transition-colors ${
-        isLast ? '' : 'border-b border-[#1a1a26]'
+      className={`grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 hover:bg-white/[0.05] transition-colors ${
+        isLast ? '' : 'border-b border-white/8'
       }`}
     >
       <span className={`truncate text-right text-[14px] font-medium tracking-tight ${homeTone}`}>
@@ -194,13 +194,13 @@ function MatchupRow({
           <>
             <div className="flex items-baseline">
               <span className={`w-7 text-right text-2xl font-light leading-none ${homeNum}`}>{m.homeGoals}</span>
-              <span className="px-2 text-xl font-thin text-[#2a2a3e] leading-none select-none">–</span>
+              <span className="px-2 text-xl font-thin text-[#6a6f8e] leading-none select-none">–</span>
               <span className={`w-7 text-left text-2xl font-light leading-none ${awayNum}`}>{m.awayGoals}</span>
             </div>
             {m.publishedHomeScore !== null && m.publishedAwayScore !== null && (
-              <div className="mt-1 flex items-center gap-1 text-[10px] text-[#55556a]">
+              <div className="mt-1 flex items-center gap-1 text-[10px] text-[#9095b8]">
                 <span>{m.publishedHomeScore.toFixed(1)}</span>
-                <span className="text-[#2a2a3e]">–</span>
+                <span className="text-[#6a6f8e]">–</span>
                 <span>{m.publishedAwayScore.toFixed(1)}</span>
               </div>
             )}
@@ -210,7 +210,7 @@ function MatchupRow({
             <span className={`w-10 text-right text-[15px] font-medium ${homeNum}`}>
               {m.publishedHomeScore !== null ? m.publishedHomeScore.toFixed(1) : '—'}
             </span>
-            <span className="px-1.5 text-sm font-thin text-[#2a2a3e]">–</span>
+            <span className="px-1.5 text-sm font-thin text-[#6a6f8e]">–</span>
             <span className={`w-10 text-left text-[15px] font-medium ${awayNum}`}>
               {m.publishedAwayScore !== null ? m.publishedAwayScore.toFixed(1) : '—'}
             </span>
@@ -220,14 +220,14 @@ function MatchupRow({
             <span className={`w-10 text-right text-[15px] font-medium ${homeNum}`}>
               {m.partialHomeScore !== null ? m.partialHomeScore.toFixed(1) : '—'}
             </span>
-            <span className="px-1.5 text-sm font-thin text-[#2a2a3e]">–</span>
+            <span className="px-1.5 text-sm font-thin text-[#6a6f8e]">–</span>
             <span className={`w-10 text-left text-[15px] font-medium ${awayNum}`}>
               {m.partialAwayScore !== null ? m.partialAwayScore.toFixed(1) : '—'}
             </span>
             {m.isDraftScore && <span className="ml-1 text-[9px] text-amber-500/50">~</span>}
           </div>
         ) : (
-          <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#3a3a52]">vs</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#6a6f8e]">vs</span>
         )}
       </div>
 

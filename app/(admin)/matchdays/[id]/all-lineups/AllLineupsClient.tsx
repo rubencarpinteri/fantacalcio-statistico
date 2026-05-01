@@ -102,24 +102,64 @@ interface Props {
 }
 
 // ---- Role colours ----------------------------------------------------------
+//
+// Soft, calm role tints — calibrated for dark glass surfaces.
 
-const ROLE_COLOR: Record<string, string> = {
-  Por: 'border-yellow-500/50 text-yellow-300',
-  Dc: 'border-blue-500/40 text-blue-300',
-  B: 'border-blue-500/40 text-blue-300',
-  Dd: 'border-blue-500/40 text-blue-300',
-  Ds: 'border-blue-500/40 text-blue-300',
-  M: 'border-green-500/40 text-green-300',
-  C: 'border-green-500/40 text-green-300',
-  E: 'border-teal-500/40 text-teal-300',
-  T: 'border-orange-500/40 text-orange-300',
-  W: 'border-orange-500/40 text-orange-300',
-  A: 'border-red-500/40 text-red-300',
-  Pc: 'border-red-500/40 text-red-300',
+const ROLE_TINT: Record<string, string> = {
+  Por: '#d6a93b',
+  Dc: '#5a8fd6', B: '#5a8fd6', Dd: '#5a8fd6', Ds: '#5a8fd6',
+  M: '#4ea88a',  C: '#4ea88a',
+  E: '#e08a52',  T: '#e08a52', W: '#e08a52',
+  A: '#d96b6b',  Pc: '#d96b6b',
 }
 
-function roleColor(roles: string[]): string {
-  return ROLE_COLOR[roles[0] ?? ''] ?? 'border-[#2e2e42] text-[#8888aa]'
+function roleTint(role: string | undefined): string {
+  return ROLE_TINT[role ?? ''] ?? '#9095b8'
+}
+
+// Initials avatar — soft pastel gradient deterministic from name
+function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+  const initials = (name || '?').split(/\s+/).map((s) => s[0]).slice(0, 2).join('').toUpperCase()
+  const hue = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 360
+  return (
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-full font-semibold"
+      style={{
+        width: size,
+        height: size,
+        background: `linear-gradient(135deg, hsl(${hue} 55% 38%), hsl(${(hue + 40) % 360} 60% 28%))`,
+        color: `hsl(${hue} 70% 88%)`,
+        fontSize: Math.round(size * 0.38),
+        border: '1px solid rgba(255,255,255,0.10)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 1px 2px rgba(0,0,0,0.3)',
+      }}
+    >
+      {initials}
+    </span>
+  )
+}
+
+// Single-letter role chip with role-tinted hairline
+function RoleTag({ role }: { role: string | undefined }) {
+  if (!role) return <span className="inline-block w-[22px]" />
+  const color = roleTint(role)
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-md font-bold uppercase"
+      style={{
+        minWidth: 22,
+        height: 22,
+        padding: '0 6px',
+        fontSize: 10,
+        letterSpacing: '0.02em',
+        color,
+        border: `1px solid ${color}66`,
+        background: `${color}1A`,
+      }}
+    >
+      {role}
+    </span>
+  )
 }
 
 function fmtFv(n: number | null): string {
@@ -168,11 +208,11 @@ function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
   if (visible.length === 0) return null
   return (
     <div>
-      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#55556a]">{title}</p>
+      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#9095b8]">{title}</p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-0">
         {visible.map((s) => (
           <div key={s.label} className="flex items-center justify-between gap-1 py-px">
-            <span className="text-[10px] text-[#8888aa] truncate">{s.label}</span>
+            <span className="text-[10px] text-[#b8bcdc] truncate">{s.label}</span>
             <span className="font-mono text-[10px] font-semibold text-white shrink-0">{fmtVal(s)}</span>
           </div>
         ))}
@@ -210,7 +250,7 @@ function fvColor(fv: number | null): string {
 function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => void }) {
   const vbFm = calcSourceVotoBase(slot.zFotmob, slot.minutesFactor, slot.roleMultiplier)
   const vbSs = calcSourceVotoBase(slot.zSofascore, slot.minutesFactor, slot.roleMultiplier)
-  const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-[#8888aa]'
+  const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-[#b8bcdc]'
   const fv = slot.fantavoto
 
   const hasFm = slot.rawFotmobRating !== null
@@ -234,11 +274,11 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-[#2e2e42] bg-[#111118] shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
+        className="w-full max-w-md rounded-xl border border-white/10 bg-white/[0.04] shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Compact header: name + RC + FV + minutes */}
-        <div className="flex items-center gap-3 px-3 py-2 border-b border-[#1e1e2e] shrink-0">
+        <div className="flex items-center gap-3 px-3 py-2 border-b border-white/8 shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <p className="text-sm font-bold text-white truncate">{slot.playerName ?? '—'}</p>
@@ -246,24 +286,24 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 <span className={`text-[10px] font-bold shrink-0 ${rcColor}`}>{slot.playerRatingClass}</span>
               )}
             </div>
-            <p className="text-[11px] text-[#55556a] truncate">{slot.playerClub ?? ''}</p>
+            <p className="text-[11px] text-[#9095b8] truncate">{slot.playerClub ?? ''}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className={`text-2xl font-black font-mono ${fvColor(fv)}`}>{fmtFv(fv)}</span>
             {slot.minutesPlayed !== null && (
-              <span className="rounded border border-[#2e2e42] px-1.5 py-0.5 text-[10px] font-mono text-[#8888aa]">
+              <span className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-mono text-[#b8bcdc]">
                 {slot.minutesPlayed}&apos;
               </span>
             )}
-            <button onClick={onClose} className="text-[#55556a] hover:text-white text-xl leading-none">×</button>
+            <button onClick={onClose} className="text-[#9095b8] hover:text-white text-xl leading-none">×</button>
           </div>
         </div>
 
         <div className="p-3 space-y-2.5 overflow-y-auto">
           {/* Voto base */}
           {slot.votoBase !== null && (
-            <div className="text-[11px] text-[#55556a]">
-              voto base <span className="font-mono text-[#8888aa]">{slot.votoBase.toFixed(2)}</span>
+            <div className="text-[11px] text-[#9095b8]">
+              voto base <span className="font-mono text-[#b8bcdc]">{slot.votoBase.toFixed(2)}</span>
             </div>
           )}
 
@@ -276,7 +316,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-black font-mono text-white">{slot.rawFotmobRating!.toFixed(1)}</span>
                     {vbFm !== null && (
-                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-400' : 'text-[#b8bcdc]'}`}>
                         → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
                       </span>
                     )}
@@ -289,7 +329,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-black font-mono text-white">{slot.rawSofascoreRating!.toFixed(1)}</span>
                     {vbSs !== null && (
-                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-400' : 'text-[#8888aa]'}`}>
+                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-400' : 'text-[#b8bcdc]'}`}>
                         → {vbSs.value.toFixed(2)}{vbSs.clamped ? ' ↑' : ''}
                       </span>
                     )}
@@ -297,7 +337,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 </div>
               )}
               {deltaRaw !== null && deltaConverted !== null && (
-                <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-[#55556a]">
+                <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-[#9095b8]">
                   <span>Δ FM−SS</span>
                   <span className={`font-mono ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : ''}`}>
                     {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)} orig
@@ -341,12 +381,12 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               {(slot.marketValue !== null || slot.height !== null) && (
                 <div className="flex gap-1.5">
                   {slot.marketValue !== null && (
-                    <span className="rounded-full border border-[#2e2e42] px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
+                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
                       {fmtMarketValue(slot.marketValue)}
                     </span>
                   )}
                   {slot.height !== null && (
-                    <span className="rounded-full border border-[#2e2e42] px-2 py-0.5 text-[10px] text-[#55556a] font-mono">
+                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-[#9095b8] font-mono">
                       {slot.height} cm
                     </span>
                   )}
@@ -394,13 +434,13 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               ]} />
 
               {!hasSs && (
-                <p className="text-[10px] text-[#55556a] italic">Nessuna statistica SofaScore disponibile</p>
+                <p className="text-[10px] text-[#9095b8] italic">Nessuna statistica SofaScore disponibile</p>
               )}
             </div>
           )}
 
           {fv === null && !hasAnyRaw && !hasStats && (
-            <p className="text-xs text-[#55556a] italic">Nessun voto disponibile (NV)</p>
+            <p className="text-xs text-[#9095b8] italic">Nessun voto disponibile (NV)</p>
           )}
         </div>
       </div>
@@ -416,69 +456,96 @@ function PlayerChip({
   onDragStart,
   onDrop,
   onPlayerClick,
+  dense,
 }: {
   slot: SlotData
   isEditable: boolean
   onDragStart: () => void
   onDrop: () => void
   onPlayerClick?: (slot: SlotData) => void
+  dense?: boolean
 }) {
   const [isDragOver, setIsDragOver] = useState(false)
-  const color = roleColor(slot.playerRoles)
   const fv = slot.fantavoto
   const bm = slot.bonusMalus
+  const role = slot.playerRoles[0]
+  const isEmpty = slot.playerId === null
 
   return (
     <div
-      draggable={isEditable && slot.playerId !== null}
+      draggable={isEditable && !isEmpty}
       onDragStart={onDragStart}
       onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={(e) => { e.preventDefault(); setIsDragOver(false); onDrop() }}
-      onClick={() => slot.playerId && onPlayerClick?.(slot)}
+      onClick={() => !isEmpty && onPlayerClick?.(slot)}
       className={[
-        'flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors',
-        isDragOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-[#2e2e42] bg-[#0a0a0f]',
-        slot.playerId ? 'cursor-pointer hover:border-[#3e3e52]' : '',
-        isEditable && slot.playerId ? 'cursor-grab active:cursor-grabbing' : '',
-        slot.isBench ? 'opacity-75' : '',
+        'grid items-center transition-all',
+        dense ? 'px-2.5 py-1.5' : 'px-3 py-2',
+        isDragOver
+          ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_0_0_4px_rgba(99,102,241,0.06)_inset]'
+          : isEmpty
+            ? 'border-white/5 bg-white/[0.02]'
+            : slot.isBench
+              ? 'border-white/8 bg-white/[0.04] hover:bg-white/[0.07]'
+              : 'border-white/8 bg-white/[0.06] hover:bg-white/[0.10]',
+        'rounded-xl border',
+        isEmpty ? 'cursor-default' : isEditable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+        slot.isBench && !isEmpty ? 'opacity-95' : '',
       ].join(' ')}
+      style={{
+        gridTemplateColumns: 'auto minmax(0,1fr) auto 48px',
+        columnGap: 10,
+      }}
     >
-      {/* Position label */}
-      <span className="shrink-0 w-10 text-[#55556a] font-mono text-[10px]">
-        {slot.isBench ? `P${slot.benchOrder ?? ''}` : slot.positionName}
-      </span>
+      {/* Single role tag */}
+      <RoleTag role={role} />
 
-      {slot.playerId ? (
-        <>
-          <span className={`shrink-0 font-bold text-[10px] ${color.split(' ')[1]}`}>
-            {slot.playerRoles[0] ?? '?'}
-          </span>
-          {/* Name: last-name only on small screens, full on sm+ */}
-          <span className="min-w-0 truncate text-white shrink">
+      {/* Name + club stacked */}
+      {isEmpty ? (
+        <span className="text-[12.5px] italic text-[#9095b8]">vuoto</span>
+      ) : (
+        <span className="flex min-w-0 flex-col gap-px">
+          <span className="truncate text-[13px] font-medium leading-tight text-[#f5f7ff] tracking-tight">
             <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
             <span className="hidden sm:inline">{slot.playerName}</span>
           </span>
-          {/* Club: desktop only */}
-          <span className="shrink-0 text-[#3a3a52] text-[10px] hidden sm:inline">{slot.playerClub}</span>
+          <span className="truncate text-[10.5px] font-medium leading-none text-[#b8bcdc]">
+            {slot.playerClub}
+          </span>
+        </span>
+      )}
 
-          {/* Right group: B/M badges + FV — pushed right with ml-auto */}
-          <div className="ml-auto flex items-center gap-1 shrink-0">
-            {bm && bm.length > 0 && bm.map((b, i) => (
-              <span
-                key={i}
-                className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
-                  b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                }`}
-              >
-                {b.label} {b.total > 0 ? '+' : ''}{b.total}
-              </span>
-            ))}
-            <span className={`font-mono font-bold text-[11px] ${fvColor(fv)}`}>{fmtFv(fv)}</span>
-          </div>
-        </>
+      {/* Bonus/malus chips — left of rating, right-aligned */}
+      {!isEmpty && bm && bm.length > 0 ? (
+        <span className="flex shrink-0 justify-end gap-1">
+          {bm.slice(0, 2).map((b, i) => (
+            <span
+              key={i}
+              className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap"
+              style={{
+                background: b.total > 0 ? 'rgba(78,166,110,0.16)' : 'rgba(200,80,74,0.16)',
+                color: b.total > 0 ? '#5fc28e' : '#e07686',
+              }}
+            >
+              {b.label} {b.total > 0 ? '+' : ''}{b.total}
+            </span>
+          ))}
+        </span>
       ) : (
-        <span className="text-[#3e3e52] italic flex-1">vuoto</span>
+        <span />
+      )}
+
+      {/* Fantavoto — fixed-width column so all numbers align */}
+      {!isEmpty ? (
+        <span
+          className={`text-right font-mono font-bold tabular-nums ${fvColor(fv)}`}
+          style={{ fontSize: 14, letterSpacing: '-0.02em' }}
+        >
+          {fmtFv(fv)}
+        </span>
+      ) : (
+        <span />
       )}
     </div>
   )
@@ -589,32 +656,69 @@ function TeamCard({
     setSaveMsg(null)
   }
 
+  const eyebrow =
+    'text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]'
+
   const inner = (
     <>
-      {/* Team header (only shown in bare/standalone mode when name isn't in matchup header) */}
+      {/* Team header (only shown in standalone / non-paired mode) */}
       {!bare && (
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-white">{team.teamName}</p>
-            <p className="text-xs text-[#55556a]">
+        <header className="mb-3.5 flex items-center gap-3">
+          <Avatar name={team.teamName} size={36} />
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-[15px] font-semibold leading-tight text-[#f5f7ff] tracking-tight">
+              {team.teamName}
+            </h3>
+            <p className="mt-0.5 text-[11.5px] font-medium leading-none text-[#b8bcdc]">
               {team.formationName}
               {team.submissionNumber !== null && ` · v#${team.submissionNumber}`}
-              {isDirty && <span className="ml-2 text-indigo-400">modificato</span>}
             </p>
           </div>
-          {isEditable && isDirty && (
-            <div className="flex gap-2">
+        </header>
+      )}
+
+      {/* Save / dirty indicator strip */}
+      {isEditable && (isDirty || saveMsg) && (
+        <div
+          className="mb-2.5 flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5"
+          style={{
+            background: saveMsg?.ok
+              ? 'rgba(34,197,94,0.08)'
+              : !saveMsg
+                ? 'rgba(99,102,241,0.07)'
+                : 'rgba(239,68,68,0.08)',
+            borderColor: saveMsg?.ok
+              ? 'rgba(34,197,94,0.22)'
+              : !saveMsg
+                ? 'rgba(99,102,241,0.22)'
+                : 'rgba(239,68,68,0.22)',
+          }}
+        >
+          <span
+            className="text-[11.5px] font-medium"
+            style={{
+              color: saveMsg?.ok
+                ? '#5fc28e'
+                : !saveMsg
+                  ? '#a5acff'
+                  : '#e07686',
+            }}
+          >
+            {saveMsg ? saveMsg.text : 'Modifiche non salvate'}
+          </span>
+          {!saveMsg && (
+            <div className="flex gap-1.5">
               <button
                 onClick={handleReset}
                 disabled={isPending}
-                className="rounded-lg border border-[#2e2e42] px-2.5 py-1 text-xs text-[#8888aa] hover:text-white transition-colors"
+                className="rounded-md border border-white/10 px-2 py-0.5 text-[10.5px] font-medium text-[#b8bcdc] transition-colors hover:bg-white/5 hover:text-white"
               >
                 Ripristina
               </button>
               <button
                 onClick={handleSave}
                 disabled={isPending}
-                className="rounded-lg bg-indigo-500 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
+                className="rounded-md bg-indigo-500 px-2.5 py-0.5 text-[10.5px] font-medium text-white shadow-[0_4px_12px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-indigo-400 disabled:opacity-50"
               >
                 {isPending ? 'Salvo…' : 'Salva'}
               </button>
@@ -623,45 +727,16 @@ function TeamCard({
         </div>
       )}
 
-      {/* In bare mode: dirty indicator + save button in compact row */}
-      {bare && isDirty && isEditable && (
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs text-indigo-400">modificato</span>
-          <div className="flex gap-1.5">
-            <button
-              onClick={handleReset}
-              disabled={isPending}
-              className="rounded border border-[#2e2e42] px-2 py-0.5 text-[10px] text-[#8888aa] hover:text-white transition-colors"
-            >
-              Ripristina
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isPending}
-              className="rounded bg-indigo-500 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
-            >
-              {isPending ? 'Salvo…' : 'Salva'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {saveMsg && (
-        <p className={`mb-2 text-xs ${saveMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
-          {saveMsg.text}
-        </p>
-      )}
-
       {team.slots.length === 0 ? (
-        <p className="py-4 text-center text-xs text-[#55556a]">Nessuna formazione inserita</p>
+        <p className="py-4 text-center text-xs text-[#9095b8]">Nessuna formazione inserita</p>
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3.5">
           {/* Titolari */}
           <div>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]">
-              Titolari ({titolari.length})
-            </p>
-            <div className="grid grid-cols-1 gap-1">
+            <div className="mb-2 flex items-center justify-between">
+              <span className={eyebrow}>Titolari</span>
+            </div>
+            <div className="grid gap-1.5">
               {titolari.map((slot) => (
                 <PlayerChip
                   key={slot.slotId}
@@ -678,10 +753,10 @@ function TeamCard({
           {/* Panchina */}
           {panchina.length > 0 && (
             <div>
-              <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]">
-                Panchina ({panchina.length})
-              </p>
-              <div className="grid grid-cols-1 gap-1">
+              <div className="mb-2 flex items-center justify-between">
+                <span className={eyebrow}>Panchina · {panchina.length}</span>
+              </div>
+              <div className="grid gap-1.5">
                 {panchina.map((slot) => (
                   <PlayerChip
                     key={slot.slotId}
@@ -690,6 +765,7 @@ function TeamCard({
                     onDragStart={() => handleDragStart(slot.slotId)}
                     onDrop={() => handleDrop(slot.slotId)}
                     onPlayerClick={onPlayerClick}
+                    dense
                   />
                 ))}
               </div>
@@ -703,7 +779,15 @@ function TeamCard({
   if (bare) return <div>{inner}</div>
 
   return (
-    <div className={`rounded-xl border bg-[#0f0f1a] p-4 ${isDirty ? 'border-indigo-500/40' : 'border-[#2e2e42]'}`}>
+    <div
+      className="rounded-2xl border border-white/10 p-4 backdrop-blur-2xl"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(46,50,88,0.40), rgba(30,32,56,0.55))',
+        boxShadow:
+          '0 1px 2px rgba(0,0,0,0.35), 0 8px 26px rgba(0,0,0,0.30)',
+      }}
+    >
       {inner}
     </div>
   )
@@ -752,34 +836,76 @@ function MatchupRow({
     ? (awayGoals as number) > (homeGoals as number)
     : homeFv !== null && awayFv !== null && awayFv > homeFv
 
-  const homeTone = awayWins ? 'text-[#3a3a52]' : 'text-white'
-  const awayTone = homeWins ? 'text-[#3a3a52]' : 'text-white'
+  const homeTone = awayWins ? 'text-[#6a6f8e]' : 'text-[#f5f7ff]'
+  const awayTone = homeWins ? 'text-[#6a6f8e]' : 'text-[#f5f7ff]'
 
-  // Score block — goals as primary (large, light), fantavoto as small caption
+  function fvBg(fv: number | null): string {
+    if (fv === null) return '#9095b8'
+    if (fv < 5) return '#c8504a'
+    if (fv < 6) return '#d9874a'
+    if (fv < 7) return '#c79d3a'
+    if (fv < 8) return '#4ea66e'
+    if (fv < 9) return '#3ea0c4'
+    return '#5a6df0'
+  }
+
+  // Score block — goals as primary (large, light), fantavoto as small pill caption
   function ScoreBlock({ size }: { size: 'sm' | 'lg' }) {
     if (!hasGoals && !hasFv) {
-      return <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#3a3a52] px-4">vs</span>
+      return (
+        <span
+          className="px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]"
+        >
+          vs
+        </span>
+      )
     }
-    const big   = size === 'lg' ? 'text-5xl' : 'text-3xl'
-    const cell  = size === 'lg' ? 'w-16' : 'w-12'
-    const sep   = size === 'lg' ? 'text-4xl px-3' : 'text-2xl px-2'
-    const small = size === 'lg' ? 'text-[11px]'  : 'text-[10px]'
     return (
-      <div className="flex flex-col items-center">
-        <div className="flex items-baseline">
-          <span className={`${cell} text-right ${big} font-light tabular-nums leading-none ${homeTone}`}>
-            {hasGoals ? homeGoals : '·'}
+      <div className="flex flex-col items-center gap-2">
+        {hasGoals ? (
+          <div className="flex items-baseline gap-3">
+            <span
+              className={`font-light tabular-nums leading-none ${homeTone}`}
+              style={{
+                fontSize: size === 'lg' ? 'clamp(34px, 4vw, 52px)' : 'clamp(28px, 3vw, 36px)',
+                letterSpacing: '-0.04em',
+              }}
+            >
+              {homeGoals}
+            </span>
+            <span
+              className="font-thin leading-none text-[#6a6f8e] select-none"
+              style={{ fontSize: size === 'lg' ? 'clamp(28px, 3vw, 40px)' : '24px' }}
+            >
+              –
+            </span>
+            <span
+              className={`font-light tabular-nums leading-none ${awayTone}`}
+              style={{
+                fontSize: size === 'lg' ? 'clamp(34px, 4vw, 52px)' : 'clamp(28px, 3vw, 36px)',
+                letterSpacing: '-0.04em',
+              }}
+            >
+              {awayGoals}
+            </span>
+          </div>
+        ) : (
+          <span className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]">
+            vs
           </span>
-          <span className={`${sep} font-thin text-[#2a2a3e] leading-none select-none`}>–</span>
-          <span className={`${cell} text-left ${big} font-light tabular-nums leading-none ${awayTone}`}>
-            {hasGoals ? awayGoals : '·'}
-          </span>
-        </div>
+        )}
         {hasFv && (
-          <div className={`mt-1.5 flex items-center gap-1.5 ${small} text-[#55556a] tabular-nums`}>
-            <span>{homeFv !== null ? homeFv.toFixed(2) : 'NV'}</span>
-            <span className="text-[#2a2a3e]">–</span>
-            <span>{awayFv !== null ? awayFv.toFixed(2) : 'NV'}</span>
+          <div
+            className="flex items-center gap-2 rounded-full border border-white/10 px-2.5 py-1 font-mono text-[11px] tabular-nums"
+            style={{ background: 'rgba(255,255,255,0.04)' }}
+          >
+            <span style={{ color: fvBg(homeFv !== null ? homeFv / 11 : null) }}>
+              {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
+            </span>
+            <span className="text-[#6a6f8e]">·</span>
+            <span style={{ color: fvBg(awayFv !== null ? awayFv / 11 : null) }}>
+              {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
+            </span>
           </div>
         )}
       </div>
@@ -787,54 +913,94 @@ function MatchupRow({
   }
 
   return (
-    <div className="rounded-2xl border border-[#1e1e2e] bg-[#0b0b14] overflow-hidden">
-      {/* ── Mobile header ── */}
-      <div className="md:hidden px-5 pt-5 pb-4">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
-          <p className={`text-sm font-medium tracking-tight text-right truncate min-w-0 ${homeTone}`}>{home?.teamName ?? '?'}</p>
-          <span className="text-[9px] font-medium uppercase tracking-[0.25em] text-[#2e2e42] select-none">vs</span>
-          <p className={`text-sm font-medium tracking-tight text-left truncate min-w-0 ${awayTone}`}>{away?.teamName ?? '?'}</p>
-        </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-3 mt-0.5">
-          <p className="text-[10px] text-[#3a3a52] text-right truncate">{home?.formationName ?? '—'}</p>
-          <span className="invisible text-[9px]">vs</span>
-          <p className="text-[10px] text-[#3a3a52] text-left truncate">{away?.formationName ?? '—'}</p>
-        </div>
-        <div className="mt-4 flex justify-center">
-          <ScoreBlock size="sm" />
+    <div
+      className="relative overflow-hidden rounded-3xl border border-white/10 backdrop-blur-2xl"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(46,50,88,0.55), rgba(28,30,56,0.65))',
+        boxShadow:
+          '0 1px 2px rgba(0,0,0,0.35), 0 8px 26px rgba(0,0,0,0.30), 0 24px 60px -20px rgba(0,0,0,0.5)',
+      }}
+    >
+      {/* Soft halo */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          top: -40,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 360,
+          height: 80,
+          background:
+            'radial-gradient(60% 100% at 50% 50%, rgba(99,102,241,0.30), rgba(99,102,241,0))',
+          filter: 'blur(20px)',
+        }}
+      />
+
+      {/* Header */}
+      <div
+        className="relative border-b border-white/8 px-6 py-6 md:px-8 md:py-7"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0))',
+        }}
+      >
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-6">
+          {/* Home */}
+          <div className="flex min-w-0 items-center justify-end gap-3 text-right">
+            <div className="flex min-w-0 flex-col items-end">
+              <span
+                className={`truncate font-medium leading-tight tracking-tight ${homeTone}`}
+                style={{ fontSize: 'clamp(15px, 1.6vw, 22px)' }}
+              >
+                {home?.teamName ?? '?'}
+              </span>
+              <span className="mt-1 text-[11.5px] font-medium leading-tight text-[#b8bcdc]">
+                {home?.formationName ?? '—'}
+              </span>
+            </div>
+            {home && <Avatar name={home.teamName} size={42} />}
+          </div>
+
+          {/* Score */}
+          <div className="shrink-0">
+            <ScoreBlock size="lg" />
+          </div>
+
+          {/* Away */}
+          <div className="flex min-w-0 items-center gap-3 text-left">
+            {away && <Avatar name={away.teamName} size={42} />}
+            <div className="flex min-w-0 flex-col">
+              <span
+                className={`truncate font-medium leading-tight tracking-tight ${awayTone}`}
+                style={{ fontSize: 'clamp(15px, 1.6vw, 22px)' }}
+              >
+                {away?.teamName ?? '?'}
+              </span>
+              <span className="mt-1 text-[11.5px] font-medium leading-tight text-[#b8bcdc]">
+                {away?.formationName ?? '—'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── Desktop header ── */}
-      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center gap-8 px-10 py-8">
-        <div className="min-w-0 overflow-hidden text-right">
-          <p className={`block truncate text-2xl font-semibold tracking-tight leading-tight ${homeTone}`}>{home?.teamName ?? '?'}</p>
-          <p className="block truncate text-[11px] text-[#3a3a52] mt-1.5 tracking-wide">{home?.formationName ?? '—'}</p>
+      {/* Lineups grid */}
+      <div className="grid grid-cols-1 divide-y divide-white/8 md:grid-cols-2 md:divide-x md:divide-y-0">
+        <div className="p-5">
+          {home ? (
+            <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
+          ) : (
+            <p className="py-10 text-center text-xs text-[#9095b8]">Nessuna formazione</p>
+          )}
         </div>
-        <div className="shrink-0 flex items-center">
-          <ScoreBlock size="lg" />
-        </div>
-        <div className="min-w-0 overflow-hidden">
-          <p className={`block truncate text-2xl font-semibold tracking-tight leading-tight ${awayTone}`}>{away?.teamName ?? '?'}</p>
-          <p className="block truncate text-[11px] text-[#3a3a52] mt-1.5 tracking-wide">{away?.formationName ?? '—'}</p>
-        </div>
-      </div>
-
-      {/* Hairline divider before formation grid */}
-      <div className="h-px bg-[#1a1a26]" />
-
-      <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-y-0 md:divide-x divide-[#1a1a26]">
-        <div className="p-4">
-          {home
-            ? <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
-            : <p className="py-10 text-center text-xs text-[#55556a]">Nessuna formazione</p>
-          }
-        </div>
-        <div className="p-4">
-          {away
-            ? <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
-            : <p className="py-10 text-center text-xs text-[#55556a]">Nessuna formazione</p>
-          }
+        <div className="p-5">
+          {away ? (
+            <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
+          ) : (
+            <p className="py-10 text-center text-xs text-[#9095b8]">Nessuna formazione</p>
+          )}
         </div>
       </div>
     </div>
@@ -857,69 +1023,53 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
 
     return (
       <>
-        {/* Match nav — desktop: tabs + button inline; mobile: button above, vertical list below */}
-        <div>
-          {/* ── Desktop (sm+): horizontal pills + button ── */}
-          <div className="hidden sm:flex items-center gap-2">
-            {matchups.length > 1 && (
-              <div className="flex gap-1.5 overflow-x-auto flex-1 pb-0.5">
-                {matchups.map((m, i) => {
-                  const home = teamMap.get(m.homeTeamId)
-                  const away = teamMap.get(m.awayTeamId)
-                  const isActive = activeMatchIndex === i
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setActiveMatchIndex(i)}
-                      className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium border transition-colors ${
-                        isActive
-                          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                          : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
+        {/* Match selector — eyebrow + team names per pill */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {matchups.length > 1 && (
+            <div
+              className="flex flex-1 gap-1.5 overflow-x-auto rounded-2xl border border-white/10 p-1.5 backdrop-blur-xl"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(46,50,88,0.45), rgba(28,30,56,0.55))',
+              }}
+            >
+              {matchups.map((m, i) => {
+                const home = teamMap.get(m.homeTeamId)
+                const away = teamMap.get(m.awayTeamId)
+                const isActive = activeMatchIndex === i
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setActiveMatchIndex(i)}
+                    className={`shrink-0 rounded-xl border px-3.5 py-2 text-left transition-all ${
+                      isActive
+                        ? 'border-indigo-400/40 bg-white/[0.10] shadow-[0_2px_8px_rgba(0,0,0,0.3)]'
+                        : 'border-transparent text-[#b8bcdc] hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <span className="block text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#b8bcdc]">
+                      Sfida {i + 1}
+                    </span>
+                    <span
+                      className={`mt-0.5 block text-[12px] font-medium leading-tight ${
+                        isActive ? 'text-[#f5f7ff]' : 'text-[#b8bcdc]'
                       }`}
                     >
-                      {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-            <div className="shrink-0 ml-auto">
-              <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
+                      {home?.teamName ?? '?'}{' '}
+                      <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
-          </div>
-
-          {/* ── Mobile (< sm): button row + vertical list ── */}
-          <div className="sm:hidden flex flex-col gap-2">
-            <div className="flex items-center justify-end">
-              <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
-            </div>
-            {matchups.length > 1 && (
-              <div className="flex flex-col gap-1">
-                {matchups.map((m, i) => {
-                  const home = teamMap.get(m.homeTeamId)
-                  const away = teamMap.get(m.awayTeamId)
-                  const isActive = activeMatchIndex === i
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setActiveMatchIndex(i)}
-                      className={`w-full text-left rounded-lg px-3 py-2 text-[11px] font-medium border transition-colors ${
-                        isActive
-                          ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                          : 'bg-[#0f0f1a] text-[#8888aa] border-[#2e2e42] hover:text-white hover:border-[#3e3e52]'
-                      }`}
-                    >
-                      {home?.teamName ?? '?'} <span className="opacity-40">vs</span> {away?.teamName ?? '?'}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+          )}
+          <div className="shrink-0 sm:ml-auto">
+            <QuickFetchAndCalculateButton matchdayId={matchdayId} compact />
           </div>
         </div>
 
         {/* Carousel: one match at a time with slide animation */}
-        <div className="overflow-hidden rounded-2xl">
+        <div className="mt-4 overflow-hidden rounded-3xl">
           <div
             className="flex transition-transform duration-300 ease-in-out"
             style={{ transform: `translateX(-${activeMatchIndex * 100}%)` }}
@@ -940,32 +1090,37 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
           </div>
         </div>
 
-        {/* Dot indicators */}
+        {/* Dot indicators — pill-shaped active dot */}
         {matchups.length > 1 && (
-          <div className="flex justify-center gap-1.5 pt-1">
+          <div className="mt-4 flex justify-center gap-1.5">
             {matchups.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setActiveMatchIndex(i)}
-                className={`rounded-full transition-all duration-200 ${
-                  activeMatchIndex === i
-                    ? 'w-4 h-1.5 bg-indigo-400'
-                    : 'w-1.5 h-1.5 bg-[#2e2e42] hover:bg-[#4e4e62]'
-                }`}
+                aria-label={`Sfida ${i + 1}`}
+                className="rounded-full transition-all duration-200"
+                style={{
+                  width: activeMatchIndex === i ? 22 : 7,
+                  height: 7,
+                  background:
+                    activeMatchIndex === i ? '#6366f1' : 'rgba(255,255,255,0.18)',
+                }}
               />
             ))}
           </div>
         )}
 
         {unpaired.length > 0 && (
-          <div className="space-y-3 pt-2">
-            <p className="text-xs uppercase tracking-widest text-[#55556a]">Senza incontro</p>
+          <section className="mt-6 space-y-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]">
+              Senza incontro
+            </p>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {unpaired.map((t) => (
                 <TeamCard key={t.teamId} team={t} matchdayId={matchdayId} isEditable={isEditable} onPlayerClick={setSelectedSlot} />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {selectedSlot && (

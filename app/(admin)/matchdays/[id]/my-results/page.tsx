@@ -46,10 +46,10 @@ export default async function MyResultsPage({
   if (!myTeam) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
-        <p className="text-sm text-[#55556a]">Non sei associato a nessuna squadra in questa lega.</p>
+        <p className="text-sm text-[#9095b8]">Non sei associato a nessuna squadra in questa lega.</p>
       </div>
     )
   }
@@ -57,10 +57,10 @@ export default async function MyResultsPage({
   if (!['published', 'archived'].includes(matchday.status)) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
-        <p className="text-sm text-[#55556a]">
+        <p className="text-sm text-[#9095b8]">
           I risultati non sono ancora disponibili — la giornata non è ancora pubblicata.
         </p>
       </div>
@@ -76,10 +76,10 @@ export default async function MyResultsPage({
   if (!ptr?.run_id) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
-        <p className="text-sm text-[#55556a]">Nessun calcolo pubblicato per questa giornata.</p>
+        <p className="text-sm text-[#9095b8]">Nessun calcolo pubblicato per questa giornata.</p>
       </div>
     )
   }
@@ -112,10 +112,10 @@ export default async function MyResultsPage({
   if (!myScore) {
     return (
       <div className="space-y-4">
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
-        <p className="text-sm text-[#55556a]">
+        <p className="text-sm text-[#9095b8]">
           Nessun punteggio pubblicato per la tua squadra in questa giornata.
         </p>
       </div>
@@ -221,33 +221,33 @@ export default async function MyResultsPage({
       <tr key={player_id} className={`${dimCls} ${isNV && !isBench ? 'opacity-60' : ''}`}>
         <td colSpan={5} className="p-0">
           <details className="group">
-            <summary className="grid cursor-pointer grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-6 py-2.5 hover:bg-[#0f0f1a] list-none [&::-webkit-details-marker]:hidden">
+            <summary className="grid cursor-pointer grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 px-6 py-2.5 hover:bg-white/[0.04] list-none [&::-webkit-details-marker]:hidden">
               {/* Player name + club */}
               <div>
-                <div className={`font-medium ${isBench ? 'text-[#8888aa]' : 'text-white'}`}>
+                <div className={`font-medium ${isBench ? 'text-[#b8bcdc]' : 'text-white'}`}>
                   {player?.full_name ?? '—'}
                 </div>
-                <div className="text-xs text-[#55556a]">{player?.club ?? ''}</div>
+                <div className="text-xs text-[#9095b8]">{player?.club ?? ''}</div>
               </div>
               {/* Role */}
               <div className="w-10 text-right">
-                <span className={`font-mono text-xs font-bold ${rcColors[player?.rating_class ?? ''] ?? 'text-[#8888aa]'}`}>
+                <span className={`font-mono text-xs font-bold ${rcColors[player?.rating_class ?? ''] ?? 'text-[#b8bcdc]'}`}>
                   {player?.rating_class ?? '—'}
                 </span>
               </div>
               {/* Voto base */}
-              <div className="w-16 text-right font-mono text-sm text-[#8888aa]">
+              <div className="w-16 text-right font-mono text-sm text-[#b8bcdc]">
                 {c?.voto_base != null ? c.voto_base.toFixed(1) : '—'}
               </div>
               {/* B/M */}
-              <div className="w-12 text-right font-mono text-sm text-[#8888aa]">
+              <div className="w-12 text-right font-mono text-sm text-[#b8bcdc]">
                 {c?.total_bonus_malus != null
                   ? (c.total_bonus_malus >= 0 ? '+' : '') + c.total_bonus_malus.toFixed(1)
                   : '—'}
               </div>
               {/* Fantavoto */}
               <div className="w-20 text-right">
-                <span className={`font-mono font-bold text-sm ${isBench ? 'text-[#55556a]' : isNV ? 'text-[#55556a]' : 'text-white'}`}>
+                <span className={`font-mono font-bold text-sm ${isBench ? 'text-[#9095b8]' : isNV ? 'text-[#9095b8]' : 'text-white'}`}>
                   {c?.fantavoto != null ? c.fantavoto.toFixed(2) : 'NV'}
                 </span>
                 {c?.is_provisional && (
@@ -256,27 +256,27 @@ export default async function MyResultsPage({
                 {c?.is_override && (
                   <span className="ml-1 text-xs text-orange-400" title="Override manuale">★</span>
                 )}
-                <span className="ml-1.5 text-xs text-[#3a3a52] group-open:text-indigo-400">▾</span>
+                <span className="ml-1.5 text-xs text-[#6a6f8e] group-open:text-indigo-400">▾</span>
               </div>
             </summary>
 
             {/* Breakdown panel */}
             <tr className="hidden group-open:table-row">
-              <td colSpan={5} className="border-b border-[#1e1e2e] bg-[#080810] px-6 py-3">
+              <td colSpan={5} className="border-b border-white/8 bg-[#080810] px-6 py-3">
                 {isNV && c == null ? (
-                  <p className="text-xs text-[#55556a]">Nessun calcolo disponibile per questo giocatore.</p>
+                  <p className="text-xs text-[#9095b8]">Nessun calcolo disponibile per questo giocatore.</p>
                 ) : isNV ? (
-                  <p className="text-xs text-[#55556a]">Giocatore NV — non ha partecipato o nessun voto disponibile.</p>
+                  <p className="text-xs text-[#9095b8]">Giocatore NV — non ha partecipato o nessun voto disponibile.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                     {/* Z-score pipeline */}
                     <div>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#55556a]">Pipeline z-score</p>
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Pipeline z-score</p>
                       <div className="space-y-1 font-mono text-xs">
                         <BreakdownRow label="z SofaScore" value={n3(c?.z_sofascore ?? null)} dim={c?.z_sofascore == null} suffix={c?.z_sofascore != null && weights['sofascore'] != null ? `× ${Math.round(weights['sofascore'] * 100)}%` : undefined} />
                         <BreakdownRow label="z FotMob"    value={n3(c?.z_fotmob ?? null)}    dim={c?.z_fotmob == null}    suffix={c?.z_fotmob    != null && weights['fotmob']    != null ? `× ${Math.round(weights['fotmob']    * 100)}%` : undefined} />
-                        <div className="my-1 border-t border-[#1e1e2e]" />
+                        <div className="my-1 border-t border-white/8" />
                         <BreakdownRow label="z combinato"  value={n3(c?.z_combined    ?? null)} />
                         <BreakdownRow label="fattore min."  value={c?.minutes_factor != null ? `× ${c.minutes_factor.toFixed(1)}` : '—'} />
                         <BreakdownRow label="z rettificato" value={n3(c?.z_adjusted   ?? null)} />
@@ -285,7 +285,7 @@ export default async function MyResultsPage({
 
                     {/* Score pipeline */}
                     <div>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#55556a]">Calcolo punteggio</p>
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Calcolo punteggio</p>
                       <div className="space-y-1 font-mono text-xs">
                         <BreakdownRow label="b₀"             value={n2(c?.b0 ?? null)} />
                         <BreakdownRow label="molt. ruolo"    value={c?.role_multiplier != null ? `× ${c.role_multiplier.toFixed(2)}` : '—'} />
@@ -294,7 +294,7 @@ export default async function MyResultsPage({
                           <BreakdownRow label="corr. difensiva" value={sign(c!.defensive_correction!)} color={c!.defensive_correction! >= 0 ? 'text-emerald-400' : 'text-red-400'} />
                         )}
                         <BreakdownRow label="voto base" value={c?.voto_base != null ? c.voto_base.toFixed(1) : '—'} highlight />
-                        <div className="my-1 border-t border-[#1e1e2e]" />
+                        <div className="my-1 border-t border-white/8" />
                         {bmItems.length > 0 ? (
                           bmItems.map((bm, i) => (
                             <BreakdownRow
@@ -307,7 +307,7 @@ export default async function MyResultsPage({
                         ) : (
                           <BreakdownRow label="bonus/malus" value="—" dim />
                         )}
-                        <div className="my-1 border-t border-[#1e1e2e]" />
+                        <div className="my-1 border-t border-white/8" />
                         <BreakdownRow label="fantavoto" value={c?.fantavoto != null ? c.fantavoto.toFixed(2) : 'NV'} highlight />
                         {c?.is_override && (
                           <p className="mt-1 text-[10px] text-orange-400">★ Override manuale applicato</p>
@@ -329,12 +329,12 @@ export default async function MyResultsPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
           ← {matchday.name}
         </a>
         <h1 className="mt-1 text-xl font-bold text-white">I miei risultati</h1>
         {run && (
-          <p className="mt-0.5 text-xs text-[#55556a]">
+          <p className="mt-0.5 text-xs text-[#9095b8]">
             Run #{run.run_number}
             {fmtDate(run.published_at) ? ` · Pubblicato il ${fmtDate(run.published_at)}` : ''}
           </p>
@@ -355,7 +355,7 @@ export default async function MyResultsPage({
         <CardContent className="p-0">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#2e2e42] text-left text-xs text-[#55556a]">
+              <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
                 <th className="px-6 py-2">Giocatore</th>
                 <th className="px-2 py-2 text-right w-10">Ruolo</th>
                 <th className="px-2 py-2 text-right w-16">V. base</th>
@@ -363,7 +363,7 @@ export default async function MyResultsPage({
                 <th className="px-2 py-2 text-right w-20 pr-6">Fantavoto</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e1e2e]">
+            <tbody className="divide-y divide-white/8">
               {starters.map(({ player_id }) => (
                 <PlayerRow key={player_id} player_id={player_id} isBench={false} />
               ))}
@@ -372,7 +372,7 @@ export default async function MyResultsPage({
                 <tr>
                   <td
                     colSpan={5}
-                    className="bg-[#0e0e1a] px-6 py-1.5 text-xs font-medium uppercase tracking-wider text-[#55556a]"
+                    className="bg-white/[0.03] px-6 py-1.5 text-xs font-medium uppercase tracking-wider text-[#9095b8]"
                   >
                     Panchina
                   </td>
@@ -385,15 +385,15 @@ export default async function MyResultsPage({
 
               {lineupPlayers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-3 text-sm text-[#55556a]">
+                  <td colSpan={5} className="px-6 py-3 text-sm text-[#9095b8]">
                     Nessuna formazione registrata per questa giornata.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-          <div className="border-t border-[#1e1e2e] px-6 py-2.5">
-            <p className="text-xs text-[#55556a]">
+          <div className="border-t border-white/8 px-6 py-2.5">
+            <p className="text-xs text-[#9095b8]">
               Clicca su un giocatore per vedere il dettaglio del calcolo z-score e bonus/malus.
             </p>
           </div>
@@ -422,10 +422,10 @@ function BreakdownRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-[#55556a]">{label}</span>
+      <span className="text-[#9095b8]">{label}</span>
       <span className="flex items-center gap-1.5">
-        {suffix && <span className="text-[#3a3a52]">{suffix}</span>}
-        <span className={color ?? (highlight ? 'text-white font-semibold' : dim ? 'text-[#3a3a52]' : 'text-[#c8c8e8]')}>
+        {suffix && <span className="text-[#6a6f8e]">{suffix}</span>}
+        <span className={color ?? (highlight ? 'text-white font-semibold' : dim ? 'text-[#6a6f8e]' : 'text-[#c8c8e8]')}>
           {value}
         </span>
       </span>

@@ -26,7 +26,7 @@ export default async function RoleRulesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-white">Regole Ruoli Ambigui</h1>
-        <p className="mt-0.5 text-sm text-[#8888aa]">
+        <p className="mt-0.5 text-sm text-[#b8bcdc]">
           Configura la classificazione statistica dei ruoli Mantra che non hanno un mapping univoco.
           Queste regole vengono applicate durante l&apos;importazione delle rose come valore di default.
           Puoi sempre sovrascrivere il rating class per ogni singolo giocatore.
@@ -60,7 +60,7 @@ export default async function RoleRulesPage() {
 
       {/* Ambiguous roles requiring configuration */}
       <div className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#8888aa]">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#b8bcdc]">
           Ruoli che richiedono configurazione
         </h2>
 
@@ -88,7 +88,7 @@ export default async function RoleRulesPage() {
                   <div className="flex-1">
                     {existing ? (
                       <div className="flex items-center gap-3">
-                        <p className="text-sm text-[#8888aa]">Classificazione corrente:</p>
+                        <p className="text-sm text-[#b8bcdc]">Classificazione corrente:</p>
                         <Badge variant="accent">{existing.default_rating_class}</Badge>
                         <DeleteRuleButton ruleId={existing.id} mantraRole={role} />
                       </div>
@@ -123,10 +123,10 @@ export default async function RoleRulesPage() {
             {ALL_MANTRA_ROLES.filter((r) => !AMBIGUOUS_ROLES.has(r)).map((role) => (
               <div
                 key={role}
-                className="flex items-center gap-1.5 rounded-lg border border-[#2e2e42] bg-[#1a1a24] px-3 py-1.5"
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5"
               >
                 <span className="text-sm font-medium text-white">{role}</span>
-                <span className="text-xs text-[#55556a]">→</span>
+                <span className="text-xs text-[#9095b8]">→</span>
                 <span className="text-xs font-medium text-indigo-400">
                   {DEFAULT_ROLE_MAP[role]}
                 </span>
@@ -142,8 +142,8 @@ export default async function RoleRulesPage() {
 function InfoRow({ label, detail }: { label: string; detail: string }) {
   return (
     <div>
-      <p className="text-xs font-medium text-[#f0f0fa]">{label}</p>
-      <p className="mt-0.5 font-mono text-xs text-[#55556a]">{detail}</p>
+      <p className="text-xs font-medium text-[#f5f7ff]">{label}</p>
+      <p className="mt-0.5 font-mono text-xs text-[#9095b8]">{detail}</p>
     </div>
   )
 }

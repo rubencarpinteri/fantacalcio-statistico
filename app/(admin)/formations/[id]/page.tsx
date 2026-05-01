@@ -47,13 +47,13 @@ export default async function FormationDetailPage({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <a href="/formations" className="text-sm text-[#55556a] hover:text-indigo-400">
+            <a href="/formations" className="text-sm text-[#9095b8] hover:text-indigo-400">
               ← Formazioni
             </a>
           </div>
           <h1 className="mt-1 text-xl font-bold text-white">{formation.name}</h1>
           {formation.description && (
-            <p className="mt-0.5 text-sm text-[#8888aa]">{formation.description}</p>
+            <p className="mt-0.5 text-sm text-[#b8bcdc]">{formation.description}</p>
           )}
         </div>
         <Badge variant={formation.is_active ? 'success' : 'muted'}>
@@ -62,8 +62,8 @@ export default async function FormationDetailPage({
       </div>
 
       {/* Slot compatibility model explanation */}
-      <div className="rounded-lg border border-[#2e2e42] bg-[#111118] px-4 py-3 text-sm text-[#8888aa] space-y-1">
-        <p className="font-medium text-[#f0f0fa]">Come funzionano gli slot</p>
+      <div className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#b8bcdc] space-y-1">
+        <p className="font-medium text-[#f5f7ff]">Come funzionano gli slot</p>
         <p>
           <span className="text-indigo-400">Ruoli nativi</span> — un giocatore di panchina con uno di questi ruoli può coprire lo slot senza penalità.
         </p>
@@ -83,20 +83,20 @@ export default async function FormationDetailPage({
         />
         <CardContent className="p-0">
           {starterSlots.length === 0 ? (
-            <p className="px-6 py-4 text-sm text-[#55556a]">
+            <p className="px-6 py-4 text-sm text-[#9095b8]">
               Nessuno slot titolare. Aggiungi uno slot qui sotto.
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2e2e42]">
+                <tr className="border-b border-white/10">
                   <Th>Ord.</Th>
                   <Th>Nome slot</Th>
                   <Th>Ruoli Mantra accettati</Th>
                   <Th>Azioni</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
+              <tbody className="divide-y divide-white/8">
                 {starterSlots.map((slot) => (
                   <SlotRow key={slot.id} slot={slot} formationId={id} />
                 ))}
@@ -114,13 +114,13 @@ export default async function FormationDetailPage({
         />
         <CardContent className="p-0">
           {benchSlots.length === 0 ? (
-            <p className="px-6 py-4 text-sm text-[#55556a]">
+            <p className="px-6 py-4 text-sm text-[#9095b8]">
               Nessuno slot panchina configurato.
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#2e2e42]">
+                <tr className="border-b border-white/10">
                   <Th>Ord.</Th>
                   <Th>Nome slot</Th>
                   <Th>Ordine panchina</Th>
@@ -128,7 +128,7 @@ export default async function FormationDetailPage({
                   <Th>Azioni</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e1e2e]">
+              <tbody className="divide-y divide-white/8">
                 {benchSlots.map((slot) => (
                   <SlotRow key={slot.id} slot={slot} formationId={id} isBenchTable />
                 ))}
@@ -151,7 +151,7 @@ export default async function FormationDetailPage({
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#8888aa]">
+    <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
       {children}
     </th>
   )

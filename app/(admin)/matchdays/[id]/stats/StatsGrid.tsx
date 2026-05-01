@@ -212,25 +212,25 @@ export function StatsGrid({
         </Button>
         <a
           href={`/matchdays/${matchdayId}/stats/import`}
-          className="rounded-lg border border-[#2e2e42] px-3 py-1.5 text-sm text-[#8888aa] hover:border-indigo-500/50 hover:text-white transition-colors"
+          className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-[#b8bcdc] hover:border-indigo-500/50 hover:text-white transition-colors"
         >
           Importa CSV
         </a>
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#8888aa] select-none">
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#b8bcdc] select-none">
           <input
             type="checkbox"
             checked={showOnlyLineup}
             onChange={(e) => setShowOnlyLineup(e.target.checked)}
-            className="rounded border-[#2e2e42] bg-[#1a1a24] accent-indigo-500"
+            className="rounded border-white/10 bg-white/[0.05] accent-indigo-500"
           />
           Solo in formazione
         </label>
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#8888aa] select-none">
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-[#b8bcdc] select-none">
           <input
             type="checkbox"
             checked={showOnlyDirty}
             onChange={(e) => setShowOnlyDirty(e.target.checked)}
-            className="rounded border-[#2e2e42] bg-[#1a1a24] accent-indigo-500"
+            className="rounded border-white/10 bg-white/[0.05] accent-indigo-500"
           />
           Solo modificati
         </label>
@@ -243,7 +243,7 @@ export function StatsGrid({
       )}
 
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-lg border border-[#2e2e42] bg-[#0a0a0f] p-1 w-fit">
+      <div className="flex gap-1 rounded-lg border border-white/10 bg-transparent p-1 w-fit">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -252,7 +252,7 @@ export function StatsGrid({
               'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
               activeTab === tab.key
                 ? 'bg-indigo-500/15 text-indigo-300'
-                : 'text-[#8888aa] hover:text-white',
+                : 'text-[#b8bcdc] hover:text-white',
             ].join(' ')}
           >
             {tab.label}
@@ -266,18 +266,18 @@ export function StatsGrid({
         if (group.length === 0) return null
         return (
           <div key={rc}>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#8888aa]">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#b8bcdc]">
               {RATING_CLASS_LABELS[rc]} ({group.length})
             </p>
-            <div className="overflow-x-auto rounded-xl border border-[#2e2e42]">
+            <div className="overflow-x-auto rounded-xl border border-white/10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#2e2e42]">
-                    <th className="sticky left-0 z-10 bg-[#0a0a0f] px-3 py-2 text-left text-xs font-medium text-[#8888aa] min-w-[160px]">
+                  <tr className="border-b border-white/10">
+                    <th className="sticky left-0 z-10 bg-transparent px-3 py-2 text-left text-xs font-medium text-[#b8bcdc] min-w-[160px]">
                       Giocatore
                     </th>
-                    <th className="px-2 py-2 text-center text-xs font-medium text-[#8888aa] w-12">Min</th>
-                    <th className="px-2 py-2 text-center text-xs font-medium text-[#8888aa] w-10">Prov</th>
+                    <th className="px-2 py-2 text-center text-xs font-medium text-[#b8bcdc] w-12">Min</th>
+                    <th className="px-2 py-2 text-center text-xs font-medium text-[#b8bcdc] w-10">Prov</th>
                     <TabHeaders tab={activeTab} />
                   </tr>
                 </thead>
@@ -302,7 +302,7 @@ export function StatsGrid({
       })}
 
       {filteredPlayers.length === 0 && (
-        <p className="py-8 text-center text-sm text-[#55556a]">Nessun giocatore trovato con i filtri attivi.</p>
+        <p className="py-8 text-center text-sm text-[#9095b8]">Nessun giocatore trovato con i filtri attivi.</p>
       )}
     </div>
   )
@@ -343,7 +343,7 @@ function TabHeaders({ tab }: { tab: TabKey }) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-1.5 py-2 text-center text-xs font-medium text-[#8888aa] min-w-[46px]">
+    <th className="px-1.5 py-2 text-center text-xs font-medium text-[#b8bcdc] min-w-[46px]">
       {children}
     </th>
   )
@@ -395,12 +395,12 @@ function StatRow({
       ].join(' ')}
     >
       {/* Sticky name cell */}
-      <td className="sticky left-0 z-10 bg-[#0a0a0f] px-3 py-2">
+      <td className="sticky left-0 z-10 bg-transparent px-3 py-2">
         <div className="flex items-center gap-2">
           {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />}
           <div className="min-w-0">
             <p className="truncate text-sm text-white max-w-[140px]">{player.full_name}</p>
-            <p className="text-xs text-[#55556a]">{player.club} · {player.mantra_roles.join('/')}</p>
+            <p className="text-xs text-[#9095b8]">{player.club} · {player.mantra_roles.join('/')}</p>
           </div>
           {isInLineup && (
             <Badge variant="muted" className="text-xs shrink-0">In campo</Badge>
@@ -518,10 +518,10 @@ function NumCell({
         onKeyDown={(e) => { if (e.key === 'Enter') commit() }}
         className={[
           'w-full min-w-[40px] rounded border bg-transparent px-1.5 py-0.5 text-center text-sm',
-          'focus:border-indigo-500 focus:outline-none',
+          'focus:border-indigo-400/60 focus:outline-none',
           disabled
-            ? 'border-transparent text-[#8888aa] cursor-default'
-            : 'border-[#2e2e42] text-white hover:border-[#3e3e52]',
+            ? 'border-transparent text-[#b8bcdc] cursor-default'
+            : 'border-white/10 text-white hover:border-[#3e3e52]',
         ].join(' ')}
         max={max}
       />
@@ -551,7 +551,7 @@ function BoolCell({
         className={[
           'text-sm font-medium transition-colors',
           disabled ? 'cursor-default' : 'cursor-pointer',
-          value ? trueClass : 'text-[#55556a] hover:text-[#8888aa]',
+          value ? trueClass : 'text-[#9095b8] hover:text-[#b8bcdc]',
         ].join(' ')}
       >
         {label ?? (value ? '✓' : '—')}

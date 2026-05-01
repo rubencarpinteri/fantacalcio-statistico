@@ -50,11 +50,17 @@ export default async function CompetitionRoundsPage({
   return (
     <div className="space-y-6">
       <div>
-        <a href={`/competitions/${id}`} className="text-sm text-[#55556a] hover:text-indigo-400">
+        <a href={`/competitions/${id}`} className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
           ← {comp.name}
         </a>
-        <h1 className="mt-1 text-xl font-bold text-white">Turni e incontri</h1>
-        <p className="text-sm text-[#8888aa]">
+        <h1
+          className="mt-2 flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+          style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
+        >
+          <span className="font-semibold">Turni</span>
+          <span className="serif font-normal text-[#b8bcdc]">— e incontri</span>
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-[12.5px] leading-[1.55] text-[#9095b8]">
           {comp.type === 'campionato' && 'Genera il calendario, collega le giornate e calcola ogni turno.'}
           {comp.type === 'battle_royale' && 'Aggiungi ogni giornata pubblicata per calcolare il Battle Royale.'}
           {comp.type === 'coppa' && 'Gestisci i turni di Coppa (gironi e fase ad eliminazione).'}

@@ -43,18 +43,18 @@ export default async function MatchdayFixturesPage({
       <div>
         <a
           href={`/matchdays/${matchdayId}`}
-          className="text-sm text-[#55556a] hover:text-indigo-400"
+          className="text-sm text-[#9095b8] hover:text-indigo-400"
         >
           ← {matchday.name}
         </a>
         <h1 className="mt-1 text-xl font-bold text-white">Fixture API</h1>
-        <p className="mt-0.5 text-sm text-[#8888aa]">
+        <p className="mt-0.5 text-sm text-[#b8bcdc]">
           Configura gli ID di partita per il fetch automatico di voti e statistiche.
         </p>
       </div>
 
-      <div className="rounded-lg border border-[#2e2e42] bg-[#111118] px-4 py-3 text-sm text-[#8888aa] space-y-1">
-        <p className="font-medium text-[#f0f0fa]">Come funziona</p>
+      <div className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#b8bcdc] space-y-1">
+        <p className="font-medium text-[#f5f7ff]">Come funziona</p>
         <p>
           Inserisci gli ID di partita da{' '}
           <span className="text-indigo-400">FotMob</span> e{' '}

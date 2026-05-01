@@ -11,19 +11,23 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    'bg-indigo-500 text-white hover:bg-indigo-400 disabled:bg-indigo-500/50',
+    'border border-indigo-400/30 bg-gradient-to-b from-indigo-500 to-indigo-600 text-white ' +
+    'shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_18px_-4px_rgba(99,102,241,0.45),0_1px_2px_rgba(0,0,0,0.4)] ' +
+    'hover:from-indigo-400 hover:to-indigo-500 disabled:opacity-55',
   secondary:
-    'border border-[#2e2e42] bg-[#1a1a24] text-[#f0f0fa] hover:bg-[#252532] disabled:opacity-50',
+    'border border-white/10 bg-white/[0.06] text-[#e4e7fa] backdrop-blur-xl ' +
+    'shadow-[0_1px_2px_rgba(0,0,0,0.25)] hover:bg-white/[0.10] hover:border-white/20 disabled:opacity-55',
   ghost:
-    'text-[#8888aa] hover:text-[#f0f0fa] hover:bg-[#1a1a24] disabled:opacity-50',
+    'border border-transparent text-[#b8bcdc] hover:text-[#f5f7ff] hover:bg-white/[0.05] disabled:opacity-55',
   danger:
-    'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 disabled:opacity-50',
+    'border border-rose-400/30 bg-rose-500/10 text-rose-300 backdrop-blur-xl ' +
+    'hover:bg-rose-500/20 hover:border-rose-400/50 disabled:opacity-55',
 }
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-xs',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  sm: 'px-2.5 py-1.5 text-[12px] rounded-lg',
+  md: 'px-3.5 py-2 text-[13px] rounded-xl',
+  lg: 'px-5 py-2.5 text-[14px] rounded-xl',
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -44,9 +48,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={[
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium',
-          'transition-colors cursor-pointer',
+          'inline-flex items-center justify-center gap-2 font-medium tracking-tight',
+          'transition-all duration-150 cursor-pointer',
           'disabled:cursor-not-allowed',
+          'active:translate-y-px',
           variantClasses[variant],
           sizeClasses[size],
           className,
@@ -54,11 +59,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading && (
-          <svg
-            className="h-4 w-4 animate-spin"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
+          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle
               className="opacity-25"
               cx="12"
