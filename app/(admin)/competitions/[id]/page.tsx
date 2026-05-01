@@ -116,6 +116,35 @@ export default async function CompetitionDetailPage({
 
   const rounds = roundsRaw ?? []
 
+  // Goal-converted scores per round/team-pair (from competition_fixtures)
+  const { data: fixturesRaw } = await supabase
+    .from('competition_fixtures')
+    .select('round_id, home_team_id, away_team_id, home_score, away_score')
+    .eq('competition_id', id)
+
+  const roundIdToNumber = new Map(rounds.map((r) => [r.id as string, r.round_number as number]))
+  // round_number → pair-key (sorted) → per-team-id goals
+  const goalsByRound = new Map<number, Map<string, Map<string, number>>>()
+  for (const f of fixturesRaw ?? []) {
+    if (f.home_score == null || f.away_score == null) continue
+    const rn = roundIdToNumber.get(f.round_id)
+    if (rn == null) continue
+    const pairKey = [f.home_team_id, f.away_team_id].sort().join('|')
+    if (!goalsByRound.has(rn)) goalsByRound.set(rn, new Map())
+    goalsByRound.get(rn)!.set(pairKey, new Map([
+      [f.home_team_id, f.home_score],
+      [f.away_team_id, f.away_score],
+    ]))
+  }
+  const lookupGoals = (roundNumber: number, homeTeamId: string, awayTeamId: string) => {
+    const pairKey = [homeTeamId, awayTeamId].sort().join('|')
+    const byTeam = goalsByRound.get(roundNumber)?.get(pairKey)
+    return {
+      homeGoals: byTeam?.get(homeTeamId) ?? null,
+      awayGoals: byTeam?.get(awayTeamId) ?? null,
+    }
+  }
+
   // Matchday statuses + round_number info for rounds with linked matchdays
   const matchdayIds = rounds
     .map((r) => r.matchday_id)
@@ -304,24 +333,29 @@ export default async function CompetitionDetailPage({
     const rMatchdayStatus = rMatchdayId ? (matchdayStatusMap.get(rMatchdayId) ?? null) : null
     const isCurrentRound = roundNum === currentRound
 
-    const matchupDataList: MatchupData[] = rMatchups.map((m) => ({
-      id: m.id,
-      homeTeamId: m.home_team_id,
-      homeTeamName: teamNameMap.get(m.home_team_id) ?? '—',
-      awayTeamId: m.away_team_id,
-      awayTeamName: teamNameMap.get(m.away_team_id) ?? '—',
-      result: m.result as '1' | 'X' | '2' | null,
-      publishedHomeScore: m.home_fantavoto !== null ? Number(m.home_fantavoto) : null,
-      publishedAwayScore: m.away_fantavoto !== null ? Number(m.away_fantavoto) : null,
-      partialHomeScore: isCurrentRound && hasPartialData
-        ? (partialTeamScores.has(m.home_team_id) ? +(partialTeamScores.get(m.home_team_id)!.toFixed(1)) : null)
-        : null,
-      partialAwayScore: isCurrentRound && hasPartialData
-        ? (partialTeamScores.has(m.away_team_id) ? +(partialTeamScores.get(m.away_team_id)!.toFixed(1)) : null)
-        : null,
-      isDraftScore,
-      matchdayId: rMatchdayId,
-    }))
+    const matchupDataList: MatchupData[] = rMatchups.map((m) => {
+      const goals = lookupGoals(roundNum, m.home_team_id, m.away_team_id)
+      return {
+        id: m.id,
+        homeTeamId: m.home_team_id,
+        homeTeamName: teamNameMap.get(m.home_team_id) ?? '—',
+        awayTeamId: m.away_team_id,
+        awayTeamName: teamNameMap.get(m.away_team_id) ?? '—',
+        result: m.result as '1' | 'X' | '2' | null,
+        homeGoals: goals.homeGoals,
+        awayGoals: goals.awayGoals,
+        publishedHomeScore: m.home_fantavoto !== null ? Number(m.home_fantavoto) : null,
+        publishedAwayScore: m.away_fantavoto !== null ? Number(m.away_fantavoto) : null,
+        partialHomeScore: isCurrentRound && hasPartialData
+          ? (partialTeamScores.has(m.home_team_id) ? +(partialTeamScores.get(m.home_team_id)!.toFixed(1)) : null)
+          : null,
+        partialAwayScore: isCurrentRound && hasPartialData
+          ? (partialTeamScores.has(m.away_team_id) ? +(partialTeamScores.get(m.away_team_id)!.toFixed(1)) : null)
+          : null,
+        isDraftScore,
+        matchdayId: rMatchdayId,
+      }
+    })
 
     return {
       roundNumber: roundNum,
@@ -376,14 +410,14 @@ export default async function CompetitionDetailPage({
 
       {/* ── Giornata corrente — hero matchup block ──────────────────────────── */}
       {currentRoundData && currentRoundData.matchups.length > 0 && (
-        <div className="rounded-xl border border-indigo-500/30 bg-[#0d0d1a] overflow-hidden">
+        <div className="rounded-xl border border-[#1e1e2e] bg-[#0b0b14] overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#2e2e42]">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-semibold uppercase tracking-widest text-indigo-500">
+          <div className="flex items-center justify-between gap-3 px-5 py-3.5">
+            <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-indigo-400/70">
                 Giornata corrente
               </span>
-              <span className="font-semibold text-white">{currentRoundData.roundName}</span>
+              <span className="text-sm font-medium text-white truncate">{currentRoundData.roundName}</span>
               {currentRoundData.matchdayStatus && (
                 <MatchdayStatusBadge status={currentRoundData.matchdayStatus} />
               )}
@@ -393,26 +427,46 @@ export default async function CompetitionDetailPage({
                 <QuickFetchAndCalculateButton matchdayId={currentRoundData.matchdayId} compact />
                 <a
                   href={`/matchdays/${currentRoundData.matchdayId}/all-lineups`}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
                 >
-                  Tutte le formazioni →
+                  Formazioni →
                 </a>
               </div>
             )}
           </div>
 
+          <div className="h-px bg-[#1a1a26]" />
+
           {/* Matchup rows */}
-          <div className="divide-y divide-[#1e1e2e]">
-            {currentRoundData.matchups.map((m) => {
+          <div>
+            {currentRoundData.matchups.map((m, idx) => {
               const isHomeMyTeam = m.homeTeamId === myTeamId
               const isAwayMyTeam = m.awayTeamId === myTeamId
               const hasPublished = m.result !== null
+              const hasGoals = hasPublished && m.homeGoals !== null && m.awayGoals !== null
               const hasPartial = !hasPublished && (m.partialHomeScore !== null || m.partialAwayScore !== null)
 
-              const homeScore = hasPublished ? m.publishedHomeScore : hasPartial ? m.partialHomeScore : null
-              const awayScore = hasPublished ? m.publishedAwayScore : hasPartial ? m.partialAwayScore : null
-              const homeWins = homeScore !== null && awayScore !== null && homeScore > awayScore
-              const awayWins = homeScore !== null && awayScore !== null && awayScore > homeScore
+              const homeWins = hasGoals
+                ? (m.homeGoals as number) > (m.awayGoals as number)
+                : hasPublished
+                ? m.publishedHomeScore !== null && m.publishedAwayScore !== null && m.publishedHomeScore > m.publishedAwayScore
+                : hasPartial
+                ? m.partialHomeScore !== null && m.partialAwayScore !== null && m.partialHomeScore > m.partialAwayScore
+                : false
+              const awayWins = hasGoals
+                ? (m.awayGoals as number) > (m.homeGoals as number)
+                : hasPublished
+                ? m.publishedHomeScore !== null && m.publishedAwayScore !== null && m.publishedAwayScore > m.publishedHomeScore
+                : hasPartial
+                ? m.partialHomeScore !== null && m.partialAwayScore !== null && m.partialAwayScore > m.partialHomeScore
+                : false
+
+              const homeTone =
+                awayWins ? 'text-[#3a3a52]' : isHomeMyTeam ? 'text-indigo-200' : 'text-white'
+              const awayTone =
+                homeWins ? 'text-[#3a3a52]' : isAwayMyTeam ? 'text-indigo-200' : 'text-white'
+              const homeNum = awayWins ? 'text-[#3a3a52]' : 'text-white'
+              const awayNum = homeWins ? 'text-[#3a3a52]' : 'text-white'
 
               const href = m.matchdayId
                 ? `/matchdays/${m.matchdayId}/all-lineups`
@@ -422,53 +476,59 @@ export default async function CompetitionDetailPage({
                 <a
                   key={m.id}
                   href={href}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#131320] transition-colors"
+                  className={`grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 hover:bg-[#11111e] transition-colors ${
+                    idx === currentRoundData.matchups.length - 1 ? '' : 'border-b border-[#1a1a26]'
+                  }`}
                 >
-                  {/* Home */}
-                  <div className={`flex-1 min-w-0 overflow-hidden text-right ${isHomeMyTeam ? 'pr-0' : ''}`}>
-                    <span className={`block truncate text-sm font-semibold ${
-                      homeWins ? 'text-white'
-                        : awayWins ? 'text-[#3a3a52]'
-                        : isHomeMyTeam ? 'text-indigo-200'
-                        : 'text-[#c0c0d8]'
-                    }`}>
-                      {m.homeTeamName}
-                    </span>
-                  </div>
+                  <span className={`truncate text-right text-[14px] font-medium tracking-tight ${homeTone}`}>
+                    {m.homeTeamName}
+                  </span>
 
-                  {/* Score */}
-                  <div className="shrink-0 w-44 flex items-center justify-center gap-2 tabular-nums">
-                    <span className={`text-base font-bold ${
-                      homeWins ? 'text-white' : 'text-[#55556a]'
-                    }`}>
-                      {homeScore !== null ? homeScore.toFixed(1) : hasPartialData ? '0.0' : '—'}
-                    </span>
-                    {hasPublished && m.result ? (
-                      <HeroResultBadge result={m.result as '1' | 'X' | '2'} />
+                  <div className="flex flex-col items-center min-w-[6rem] tabular-nums">
+                    {hasGoals ? (
+                      <>
+                        <div className="flex items-baseline">
+                          <span className={`w-7 text-right text-2xl font-light leading-none ${homeNum}`}>{m.homeGoals}</span>
+                          <span className="px-2 text-xl font-thin text-[#2a2a3e] leading-none select-none">–</span>
+                          <span className={`w-7 text-left text-2xl font-light leading-none ${awayNum}`}>{m.awayGoals}</span>
+                        </div>
+                        {m.publishedHomeScore !== null && m.publishedAwayScore !== null && (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] text-[#55556a]">
+                            <span>{m.publishedHomeScore.toFixed(1)}</span>
+                            <span className="text-[#2a2a3e]">–</span>
+                            <span>{m.publishedAwayScore.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : hasPublished ? (
+                      <div className="flex items-baseline">
+                        <span className={`w-10 text-right text-[15px] font-medium ${homeNum}`}>
+                          {m.publishedHomeScore !== null ? m.publishedHomeScore.toFixed(1) : '—'}
+                        </span>
+                        <span className="px-1.5 text-sm font-thin text-[#2a2a3e]">–</span>
+                        <span className={`w-10 text-left text-[15px] font-medium ${awayNum}`}>
+                          {m.publishedAwayScore !== null ? m.publishedAwayScore.toFixed(1) : '—'}
+                        </span>
+                      </div>
+                    ) : hasPartial ? (
+                      <div className="flex items-baseline">
+                        <span className={`w-10 text-right text-[15px] font-medium ${homeNum}`}>
+                          {m.partialHomeScore !== null ? m.partialHomeScore.toFixed(1) : '—'}
+                        </span>
+                        <span className="px-1.5 text-sm font-thin text-[#2a2a3e]">–</span>
+                        <span className={`w-10 text-left text-[15px] font-medium ${awayNum}`}>
+                          {m.partialAwayScore !== null ? m.partialAwayScore.toFixed(1) : '—'}
+                        </span>
+                        {m.isDraftScore && <span className="ml-1 text-[9px] text-amber-500/50">~</span>}
+                      </div>
                     ) : (
-                      <span className="text-[#3a3a52] text-sm font-normal">–</span>
-                    )}
-                    <span className={`text-base font-bold ${
-                      awayWins ? 'text-white' : 'text-[#55556a]'
-                    }`}>
-                      {awayScore !== null ? awayScore.toFixed(1) : hasPartialData ? '0.0' : '—'}
-                    </span>
-                    {hasPartial && m.isDraftScore && (
-                      <span className="text-[9px] text-amber-500/50">~</span>
+                      <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#3a3a52]">vs</span>
                     )}
                   </div>
 
-                  {/* Away */}
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <span className={`block truncate text-sm font-semibold ${
-                      awayWins ? 'text-white'
-                        : homeWins ? 'text-[#3a3a52]'
-                        : isAwayMyTeam ? 'text-indigo-200'
-                        : 'text-[#c0c0d8]'
-                    }`}>
-                      {m.awayTeamName}
-                    </span>
-                  </div>
+                  <span className={`truncate text-left text-[14px] font-medium tracking-tight ${awayTone}`}>
+                    {m.awayTeamName}
+                  </span>
                 </a>
               )
             })}
@@ -476,8 +536,8 @@ export default async function CompetitionDetailPage({
 
           {/* Draft footnote */}
           {isDraftScore && hasPartialData && currentRoundData.matchups.some((m) => m.result === null) && (
-            <div className="border-t border-[#1e1e2e] px-4 py-2">
-              <p className="text-[11px] text-amber-500/60">
+            <div className="border-t border-[#1a1a26] px-5 py-2.5">
+              <p className="text-[10px] text-amber-500/50">
                 ~ punteggi parziali (calcolo non ancora pubblicato)
               </p>
             </div>
@@ -517,14 +577,3 @@ export default async function CompetitionDetailPage({
   )
 }
 
-function HeroResultBadge({ result }: { result: '1' | 'X' | '2' }) {
-  const color =
-    result === '1' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
-      : result === 'X' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-      : 'text-purple-400 bg-purple-500/10 border-purple-500/20'
-  return (
-    <span className={`rounded border px-1.5 py-0.5 text-xs font-bold ${color}`}>
-      {result}
-    </span>
-  )
-}
