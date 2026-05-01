@@ -52,10 +52,13 @@ export default async function MatchdaysPage() {
   // ── Teams & competitions ───────────────────────────────────────────────────
   const [teamsResult, compsResult] = await Promise.all([
     supabase.from('fantasy_teams').select('id, name').eq('league_id', ctx.league.id),
-    supabase.from('competitions').select('id').eq('league_id', ctx.league.id),
+    supabase.from('competitions').select('id, type').eq('league_id', ctx.league.id),
   ])
   const teamNameMap = new Map((teamsResult.data ?? []).map((t) => [t.id, t.name]))
   const compIds = (compsResult.data ?? []).map((c) => c.id)
+  const campionatoCompIds = new Set(
+    (compsResult.data ?? []).filter((c) => c.type === 'campionato').map((c) => c.id)
+  )
 
   async function getMatchupPairs(roundNumber: number) {
     if (compIds.length === 0) return []
@@ -74,20 +77,52 @@ export default async function MatchdaysPage() {
   }
 
   // ── Prev matchday matchups ─────────────────────────────────────────────────
-  type ResultRow = { homeTeamName: string; awayTeamName: string; homeScore: number | null; awayScore: number | null }
+  type ResultRow = {
+    homeTeamName: string
+    awayTeamName: string
+    homeFantavoto: number | null
+    awayFantavoto: number | null
+    homeGoals: number | null
+    awayGoals: number | null
+  }
   let prevMatchups: ResultRow[] = []
   if (prevMatchday?.round_number != null) {
-    const [pairs, scoresResult] = await Promise.all([
+    const [pairs, scoresResult, campionatoFixturesResult] = await Promise.all([
       getMatchupPairs(prevMatchday.round_number),
       supabase.from('published_team_scores').select('team_id, total_fantavoto').eq('matchday_id', prevMatchday.id),
+      campionatoCompIds.size > 0
+        ? supabase
+            .from('competition_fixtures')
+            .select('home_team_id, away_team_id, home_score, away_score, competition_rounds!inner(matchday_id)')
+            .in('competition_id', Array.from(campionatoCompIds))
+            .eq('competition_rounds.matchday_id', prevMatchday.id)
+        : Promise.resolve({ data: [] as Array<{ home_team_id: string; away_team_id: string; home_score: number | null; away_score: number | null }> }),
     ])
     const scoreMap = new Map((scoresResult.data ?? []).map((s) => [s.team_id, Number(s.total_fantavoto)]))
-    prevMatchups = pairs.map((p) => ({
-      homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
-      awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
-      homeScore: scoreMap.get(p.homeTeamId) ?? null,
-      awayScore: scoreMap.get(p.awayTeamId) ?? null,
-    }))
+    // Key by team-id pair (unordered) so we tolerate home/away orientation
+    // differences between competition_matchups and competition_fixtures.
+    const goalMap = new Map<string, { goalsByTeamId: Map<string, number> }>()
+    for (const f of campionatoFixturesResult.data ?? []) {
+      if (f.home_score == null || f.away_score == null) continue
+      const key = [f.home_team_id, f.away_team_id].sort().join('|')
+      const byTeam = new Map<string, number>([
+        [f.home_team_id, f.home_score],
+        [f.away_team_id, f.away_score],
+      ])
+      goalMap.set(key, { goalsByTeamId: byTeam })
+    }
+    prevMatchups = pairs.map((p) => {
+      const pairKey = [p.homeTeamId, p.awayTeamId].sort().join('|')
+      const goals = goalMap.get(pairKey)
+      return {
+        homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
+        awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
+        homeFantavoto: scoreMap.get(p.homeTeamId) ?? null,
+        awayFantavoto: scoreMap.get(p.awayTeamId) ?? null,
+        homeGoals: goals?.goalsByTeamId.get(p.homeTeamId) ?? null,
+        awayGoals: goals?.goalsByTeamId.get(p.awayTeamId) ?? null,
+      }
+    })
   }
 
   // ── Next matchday fixtures ─────────────────────────────────────────────────
@@ -182,8 +217,13 @@ export default async function MatchdaysPage() {
           {prevMatchups.length > 0 ? (
             <div className="divide-y divide-[#1e1e2e]">
               {prevMatchups.map((m, i) => {
-                const homeWins = m.homeScore !== null && m.awayScore !== null && m.homeScore > m.awayScore
-                const awayWins = m.homeScore !== null && m.awayScore !== null && m.awayScore > m.homeScore
+                const hasGoals = m.homeGoals !== null && m.awayGoals !== null
+                const homeWins = hasGoals
+                  ? (m.homeGoals as number) > (m.awayGoals as number)
+                  : m.homeFantavoto !== null && m.awayFantavoto !== null && m.homeFantavoto > m.awayFantavoto
+                const awayWins = hasGoals
+                  ? (m.awayGoals as number) > (m.homeGoals as number)
+                  : m.homeFantavoto !== null && m.awayFantavoto !== null && m.awayFantavoto > m.homeFantavoto
                 return (
                   <a
                     key={i}
@@ -195,14 +235,37 @@ export default async function MatchdaysPage() {
                         {m.homeTeamName}
                       </span>
                     </div>
-                    <div className="shrink-0 w-28 flex items-center justify-center gap-1.5 tabular-nums">
-                      <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
-                        {m.homeScore !== null ? m.homeScore.toFixed(1) : '—'}
-                      </span>
-                      <span className="text-[#3a3a52] text-sm font-normal">–</span>
-                      <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
-                        {m.awayScore !== null ? m.awayScore.toFixed(1) : '—'}
-                      </span>
+                    <div className="shrink-0 w-28 flex flex-col items-center justify-center tabular-nums">
+                      {hasGoals ? (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
+                              {m.homeGoals}
+                            </span>
+                            <span className="text-[#3a3a52] text-sm font-normal">–</span>
+                            <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
+                              {m.awayGoals}
+                            </span>
+                          </div>
+                          {m.homeFantavoto !== null && m.awayFantavoto !== null && (
+                            <div className="flex items-center gap-1 text-[10px] text-[#3a3a52]">
+                              <span>{m.homeFantavoto.toFixed(1)}</span>
+                              <span>–</span>
+                              <span>{m.awayFantavoto.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
+                            {m.homeFantavoto !== null ? m.homeFantavoto.toFixed(1) : '—'}
+                          </span>
+                          <span className="text-[#3a3a52] text-sm font-normal">–</span>
+                          <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
+                            {m.awayFantavoto !== null ? m.awayFantavoto.toFixed(1) : '—'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <span className={`block truncate text-sm font-semibold ${awayWins ? 'text-white' : homeWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'}`}>

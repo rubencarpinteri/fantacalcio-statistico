@@ -68,8 +68,20 @@ export default async function MatchdayDetailPage({
   let teamNameMap = new Map<string, string>()
   let publishedRunNumber: number | null = null
   let publishedAt: string | null = null
-  type LinkedRound = { id: string; name: string; round_number: number; status: string; competition_id: string; competition_name: string }
+  type LinkedRound = { id: string; name: string; round_number: number; status: string; competition_id: string; competition_name: string; competition_type: string }
   let linkedRounds: LinkedRound[] = []
+  type H2HFixture = {
+    home_team_id: string
+    away_team_id: string
+    home_team_name: string
+    away_team_name: string
+    home_score: number | null
+    away_score: number | null
+    home_fantavoto: number | null
+    away_fantavoto: number | null
+    competition_name: string
+  }
+  let headToHead: H2HFixture[] = []
 
   if (isAdmin && ['closed', 'archived'].includes(matchday.status)) {
     const { data: scores } = await supabase
@@ -110,17 +122,58 @@ export default async function MatchdayDetailPage({
     // Linked competition rounds
     const { data: rounds } = await supabase
       .from('competition_rounds')
-      .select('id, name, round_number, status, competition_id, competitions(id, name)')
+      .select('id, name, round_number, status, competition_id, competitions(id, name, type)')
       .eq('matchday_id', id)
 
-    linkedRounds = (rounds ?? []).map((r) => ({
-      id: r.id,
-      name: r.name,
-      round_number: r.round_number,
-      status: r.status,
-      competition_id: r.competition_id,
-      competition_name: (r.competitions as unknown as { name: string } | null)?.name ?? '—',
-    }))
+    linkedRounds = (rounds ?? []).map((r) => {
+      const comp = r.competitions as unknown as { name: string; type: string } | null
+      return {
+        id: r.id,
+        name: r.name,
+        round_number: r.round_number,
+        status: r.status,
+        competition_id: r.competition_id,
+        competition_name: comp?.name ?? '—',
+        competition_type: comp?.type ?? '',
+      }
+    })
+
+    // Head-to-head fixtures — prefer Campionato, fall back to first computed round
+    const campionatoRound = linkedRounds.find((r) => r.competition_type === 'campionato' && r.status === 'computed')
+    const h2hRound = campionatoRound ?? linkedRounds.find((r) => r.status === 'computed') ?? null
+
+    if (h2hRound) {
+      const { data: fixtures } = await supabase
+        .from('competition_fixtures')
+        .select('home_team_id, away_team_id, home_score, away_score, home_fantavoto, away_fantavoto')
+        .eq('round_id', h2hRound.id)
+
+      const fxRows = fixtures ?? []
+      // Make sure team names exist for any team referenced by fixtures (might
+      // include teams without published_team_scores rows in edge cases)
+      const fxTeamIds = new Set<string>()
+      for (const f of fxRows) { fxTeamIds.add(f.home_team_id); fxTeamIds.add(f.away_team_id) }
+      const missingIds = [...fxTeamIds].filter((tid) => !teamNameMap.has(tid))
+      if (missingIds.length > 0) {
+        const { data: extraTeams } = await supabase
+          .from('fantasy_teams')
+          .select('id, name')
+          .in('id', missingIds)
+        for (const t of extraTeams ?? []) teamNameMap.set(t.id, t.name)
+      }
+
+      headToHead = fxRows.map((f) => ({
+        home_team_id: f.home_team_id,
+        away_team_id: f.away_team_id,
+        home_team_name: teamNameMap.get(f.home_team_id) ?? '—',
+        away_team_name: teamNameMap.get(f.away_team_id) ?? '—',
+        home_score: f.home_score,
+        away_score: f.away_score,
+        home_fantavoto: f.home_fantavoto,
+        away_fantavoto: f.away_fantavoto,
+        competition_name: h2hRound.competition_name,
+      }))
+    }
   }
 
   // ── Count existing lineup submissions (to show all-lineups hero card) ────
@@ -387,6 +440,56 @@ export default async function MatchdayDetailPage({
           </Card>
         )}
       </div>
+
+      {/* Head-to-head fixtures (goal-converted from Campionato round) */}
+      {isAdmin && headToHead.length > 0 && (
+        <Card>
+          <CardHeader
+            title="Testa a testa"
+            description={headToHead[0]?.competition_name ?? undefined}
+          />
+          <CardContent className="p-0">
+            <div className="divide-y divide-[#1e1e2e]">
+              {headToHead.map((m, i) => {
+                const homeWins = m.home_score !== null && m.away_score !== null && m.home_score > m.away_score
+                const awayWins = m.home_score !== null && m.away_score !== null && m.away_score > m.home_score
+                return (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0 overflow-hidden text-right">
+                      <span className={`block truncate text-sm font-semibold ${homeWins ? 'text-white' : awayWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'}`}>
+                        {m.home_team_name}
+                      </span>
+                    </div>
+                    <div className="shrink-0 w-28 flex flex-col items-center justify-center tabular-nums">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
+                          {m.home_score ?? '—'}
+                        </span>
+                        <span className="text-[#3a3a52] text-sm font-normal">–</span>
+                        <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
+                          {m.away_score ?? '—'}
+                        </span>
+                      </div>
+                      {m.home_fantavoto !== null && m.away_fantavoto !== null && (
+                        <div className="flex items-center gap-1 text-[10px] text-[#3a3a52]">
+                          <span>{Number(m.home_fantavoto).toFixed(1)}</span>
+                          <span>–</span>
+                          <span>{Number(m.away_fantavoto).toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <span className={`block truncate text-sm font-semibold ${awayWins ? 'text-white' : homeWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'}`}>
+                        {m.away_team_name}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Published results — shown for admin when matchday is published or archived */}
       {isAdmin && publishedScores.length > 0 && (
