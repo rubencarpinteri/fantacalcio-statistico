@@ -44,15 +44,15 @@ function PlayerSearch({
   if (selected) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-sm text-white">{selected.full_name}</span>
-        <span className="text-xs text-[#9095b8]">{selected.club}</span>
+        <span className="text-sm text-ink-1">{selected.full_name}</span>
+        <span className="text-xs text-ink-4">{selected.club}</span>
         {selected.fotmob_player_id != null && (
           <span className="text-xs text-amber-400">ha già ID {selected.fotmob_player_id}</span>
         )}
         <button
           type="button"
           onClick={() => { setSelected(null); setQuery(''); onSelect(''); }}
-          className="text-xs text-[#9095b8] hover:text-white ml-1"
+          className="text-xs text-ink-4 hover:text-ink-1 ml-1"
         >
           ✕
         </button>
@@ -67,10 +67,10 @@ function PlayerSearch({
         value={query}
         onChange={e => setQuery(e.target.value)}
         placeholder="Cerca giocatore…"
-        className="w-full rounded border border-white/15 bg-white/[0.06] px-2 py-1 text-sm text-white placeholder-[#9095b8] focus:outline-none focus:border-indigo-400/60"
+        className="w-full rounded border border-hairline-strong bg-glass-2 px-2 py-1 text-sm text-ink-1 placeholder-ink-4 focus:outline-none focus:border-indigo-400/60"
       />
       {filtered.length > 0 && (
-        <ul className="absolute z-10 mt-1 w-full rounded border border-white/15 bg-white/[0.06] shadow-lg">
+        <ul className="absolute z-10 mt-1 w-full rounded border border-hairline-strong bg-glass-2 shadow-lg">
           {filtered.map(o => (
             <li key={o.id}>
               <button
@@ -78,9 +78,9 @@ function PlayerSearch({
                 onClick={() => { setSelected(o); setQuery(o.full_name); onSelect(o.id); }}
                 className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-[#2a2a42]"
               >
-                <span className="text-white">{o.full_name}</span>
-                <span className="text-xs text-[#9095b8]">{o.club}</span>
-                <span className="text-xs text-[#9095b8] ml-auto">{o.rating_class}</span>
+                <span className="text-ink-1">{o.full_name}</span>
+                <span className="text-xs text-ink-4">{o.club}</span>
+                <span className="text-xs text-ink-4 ml-auto">{o.rating_class}</span>
                 {o.fotmob_player_id != null && (
                   <span className="text-xs text-amber-400">ID{o.fotmob_player_id}</span>
                 )}
@@ -129,17 +129,17 @@ function UnmatchedRow({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded border border-white/15 bg-[#16162a] p-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-2 rounded border border-hairline-strong bg-[#16162a] p-3 sm:flex-row sm:items-center">
       {/* FotMob info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-medium text-white">{entry.fotmob_name}</span>
+          <span className="font-mono text-sm font-medium text-ink-1">{entry.fotmob_name}</span>
           {entry.fotmob_team && (
-            <span className="text-xs text-[#9095b8]">{entry.fotmob_team}</span>
+            <span className="text-xs text-ink-4">{entry.fotmob_team}</span>
           )}
-          <span className="text-xs text-[#9095b8]">ID {entry.fotmob_player_id}</span>
+          <span className="text-xs text-ink-4">ID {entry.fotmob_player_id}</span>
         </div>
-        <div className="mt-0.5 text-xs text-[#9095b8]">{entry.matchday_name}</div>
+        <div className="mt-0.5 text-xs text-ink-4">{entry.matchday_name}</div>
       </div>
 
       {/* Search + link */}
@@ -164,7 +164,7 @@ function UnmatchedRow({
                 type="button"
                 disabled={isPending}
                 onClick={handleIgnoreForever}
-                className="rounded border border-white/15 px-3 py-1 text-xs text-[#9095b8] hover:text-white disabled:opacity-40"
+                className="rounded border border-hairline-strong px-3 py-1 text-xs text-ink-4 hover:text-ink-1 disabled:opacity-40"
                 title="Non è un tuo giocatore — ignora per sempre in tutte le giornate future"
               >
                 Ignora sempre
@@ -190,7 +190,7 @@ export function LinkFotmobClient({
 
   if (unmatched.length === 0 || ignored) {
     return (
-      <p className="text-sm text-[#9095b8]">
+      <p className="text-sm text-ink-4">
         Nessun giocatore FotMob da collegare. Ottimo!
       </p>
     )
@@ -213,7 +213,7 @@ export function LinkFotmobClient({
           type="button"
           disabled={isPending}
           onClick={handleIgnoreAll}
-          className="rounded border border-white/15 px-3 py-1.5 text-xs text-[#9095b8] hover:text-white disabled:opacity-40"
+          className="rounded border border-hairline-strong px-3 py-1.5 text-xs text-ink-4 hover:text-ink-1 disabled:opacity-40"
         >
           {isPending ? '…' : `Ignora sempre tutti (${unmatched.length})`}
         </button>

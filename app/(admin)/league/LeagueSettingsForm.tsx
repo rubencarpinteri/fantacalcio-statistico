@@ -104,9 +104,9 @@ export function LeagueSettingsForm({ league }: { league: League }) {
             name="advanced_bonuses_enabled"
             value="true"
             defaultChecked={league.advanced_bonuses_enabled}
-            className="h-4 w-4 rounded border-white/10 bg-white/[0.05] accent-indigo-500"
+            className="h-4 w-4 rounded border-hairline bg-glass-1 accent-indigo-500"
           />
-          <span className="text-sm text-[#f5f7ff]">Abilita bonus avanzati</span>
+          <span className="text-sm text-ink-1">Abilita bonus avanzati</span>
         </label>
       </div>
 

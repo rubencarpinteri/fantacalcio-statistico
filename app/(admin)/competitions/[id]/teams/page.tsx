@@ -44,17 +44,17 @@ export default async function CompetitionTeamsPage({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <a href={`/competitions/${id}`} className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
+        <a href={`/competitions/${id}`} className="text-[12.5px] text-ink-4 transition-colors hover:text-indigo-300">
           ← {comp.name}
         </a>
         <h1
-          className="mt-2 flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+          className="mt-2 flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
           style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
         >
           <span className="font-semibold">Squadre</span>
-          <span className="serif font-normal text-[#b8bcdc]">— iscritte</span>
+          <span className="serif font-normal text-ink-3">— iscritte</span>
         </h1>
-        <p className="mt-1.5 text-[12.5px] text-[#9095b8]">
+        <p className="mt-1.5 text-[12.5px] text-ink-4">
           Gestisci le squadre partecipanti a questa competizione.
         </p>
       </div>

@@ -15,10 +15,10 @@ const variantClasses: Record<Variant, string> = {
     'shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_18px_-4px_rgba(99,102,241,0.45),0_1px_2px_rgba(0,0,0,0.4)] ' +
     'hover:from-indigo-400 hover:to-indigo-500 disabled:opacity-55',
   secondary:
-    'border border-white/10 bg-white/[0.06] text-[#e4e7fa] backdrop-blur-xl ' +
-    'shadow-[0_1px_2px_rgba(0,0,0,0.25)] hover:bg-white/[0.10] hover:border-white/20 disabled:opacity-55',
+    'border border-hairline bg-glass-2 text-ink-2 backdrop-blur-xl ' +
+    'shadow-[0_1px_2px_rgba(0,0,0,0.25)] hover:bg-glass-3 hover:border-hairline-strong disabled:opacity-55',
   ghost:
-    'border border-transparent text-[#b8bcdc] hover:text-[#f5f7ff] hover:bg-white/[0.05] disabled:opacity-55',
+    'border border-transparent text-ink-3 hover:text-ink-1 hover:bg-glass-1 disabled:opacity-55',
   danger:
     'border border-rose-400/30 bg-rose-500/10 text-rose-300 backdrop-blur-xl ' +
     'hover:bg-rose-500/20 hover:border-rose-400/50 disabled:opacity-55',

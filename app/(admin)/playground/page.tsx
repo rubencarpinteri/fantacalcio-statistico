@@ -51,8 +51,8 @@ export default async function PlaygroundPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-white">Playground</h1>
-        <p className="mt-0.5 text-sm text-[#b8bcdc]">
+        <h1 className="text-xl font-bold text-ink-1">Playground</h1>
+        <p className="mt-0.5 text-sm text-ink-3">
           Simula come una giornata si comporterebbe con regole diverse, senza modificare nulla in produzione.
         </p>
       </div>

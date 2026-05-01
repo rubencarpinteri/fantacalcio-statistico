@@ -32,10 +32,10 @@ export default async function AdminLayout({
     // User exists in auth but has no league membership yet
     // Show a holding page rather than a hard redirect
     return (
-      <div className="flex min-h-screen items-center justify-center text-[#9095b8]">
+      <div className="flex min-h-screen items-center justify-center text-ink-4">
         <div className="glass max-w-sm px-8 py-7 text-center">
-          <p className="text-[15px] font-semibold tracking-tight text-[#f5f7ff]">Accesso in attesa</p>
-          <p className="mt-2 text-[13px] leading-[1.55] text-[#b8bcdc]">
+          <p className="text-[15px] font-semibold tracking-tight text-ink-1">Accesso in attesa</p>
+          <p className="mt-2 text-[13px] leading-[1.55] text-ink-3">
             Il tuo account non è ancora stato associato a una lega. Contatta l&apos;admin.
           </p>
         </div>

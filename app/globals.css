@@ -1,63 +1,52 @@
 @import "tailwindcss";
 
-/* Dark mode: class-based (.dark on <html>) */
+/* Dark mode opt-in via .dark class on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
-   Design tokens — premium glass-on-dark
+   Theme tokens — CSS variables that flip between light & dark
+   Light is the default; .dark on <html> swaps in the dark palette.
    ============================================================ */
+
+/* Map Tailwind color/utility tokens onto our CSS variables so
+   classes like `text-ink-1`, `bg-glass-1`, `border-hairline`
+   auto-flip with the active theme. */
 @theme {
-  /* Neutral grays (legacy — kept for backward-compat with hardcoded refs) */
-  --color-surface-0: #0a0c1a;
-  --color-surface-1: #11142a;
-  --color-surface-2: #1a1d34;
-  --color-surface-3: #252840;
-  --color-surface-4: #32365a;
-  --color-border:    #2e3252;
-  --color-border-subtle: #1e2138;
+  --color-surface-0:  var(--surface-0);
+  --color-surface-1:  var(--surface-1);
+  --color-surface-2:  var(--surface-2);
+  --color-surface-3:  var(--surface-3);
 
-  /* Hairline borders — semi-transparent so they sit cleanly on glass */
-  --color-hairline:        rgba(255, 255, 255, 0.10);
-  --color-hairline-strong: rgba(255, 255, 255, 0.20);
+  --color-ink-1:      var(--ink-1);
+  --color-ink-2:      var(--ink-2);
+  --color-ink-3:      var(--ink-3);
+  --color-ink-4:      var(--ink-4);
+  --color-ink-5:      var(--ink-5);
 
-  /* Translucent glass surfaces (used with backdrop-blur) */
-  --color-glass-1: rgba(46, 50, 88, 0.55);
-  --color-glass-2: rgba(54, 58, 98, 0.72);
-  --color-glass-3: rgba(64, 68, 110, 0.85);
-  --color-glass-soft: rgba(38, 42, 74, 0.45);
+  --color-glass-1:        var(--glass-1);
+  --color-glass-2:        var(--glass-2);
+  --color-glass-3:        var(--glass-3);
+  --color-glass-soft:     var(--glass-soft);
 
-  /* Ink scale — text from primary → quaternary */
-  --color-ink-1: #f5f7ff;   /* near-white */
-  --color-ink-2: #e4e7fa;   /* primary text */
-  --color-ink-3: #b8bcdc;   /* secondary */
-  --color-ink-4: #9095b8;   /* tertiary */
-  --color-ink-5: #6a6f8e;   /* quaternary */
+  --color-hairline:        var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
 
-  /* Text (legacy aliases — point to new ink scale) */
-  --color-text-primary:   #f0f0fa;
-  --color-text-secondary: #8888aa;
-  --color-text-muted:     #55556a;
-
-  /* Accent — soft indigo (calmer than electric variant) */
   --color-accent:       #6366f1;
   --color-accent-hover: #4f46e5;
-  --color-accent-soft:  #6b76e8;
+  --color-accent-soft:  #818cf8;
   --color-accent-muted: rgba(99, 102, 241, 0.12);
 
-  /* Status colors — kept; see status-soft variants below for tinted bg */
-  --color-success: #5fc28e;
-  --color-warning: #d99a4a;
-  --color-danger:  #e07686;
-  --color-info:    #4cb6e3;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger:  #dc2626;
+  --color-info:    #0ea5e9;
 
-  /* Role tints (Mantra) — soft, calm */
   --color-role-por: #d6a93b;
   --color-role-def: #5a8fd6;
   --color-role-mid: #4ea88a;
   --color-role-tre: #e08a52;
   --color-role-att: #d96b6b;
 
-  /* Rating ramp — calm, no neons */
   --color-rate-bad:  #c8504a;
   --color-rate-low:  #d9874a;
   --color-rate-mid:  #c79d3a;
@@ -65,38 +54,91 @@
   --color-rate-good: #3ea0c4;
   --color-rate-top:  #5a6df0;
 
-  /* Layered shadows */
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
-  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 26px rgba(0, 0, 0, 0.30), 0 24px 60px -20px rgba(0, 0, 0, 0.5);
-  --shadow-3: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 8px 30px rgba(0, 0, 0, 0.35);
+  --shadow-1: var(--elev-1);
+  --shadow-2: var(--elev-2);
+  --shadow-3: var(--elev-3);
 
-  /* Typography */
   --font-sans:  var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono:  var(--font-geist-mono), ui-monospace, monospace;
   --font-serif: var(--font-instrument-serif), 'Times New Roman', serif;
 
-  /* Tracking scale */
-  --tracking-display: -0.035em;
-  --tracking-body:    -0.015em;
+  --tracking-display: -0.025em;
+  --tracking-body:    -0.012em;
   --tracking-tabular: 0;
 
-  /* Radii */
-  --radius-sm:  10px;
-  --radius-md:  14px;
-  --radius-lg:  22px;
-  --radius-xl:  28px;
-  --radius-2xl: 36px;
+  /* Squarer radii — calmer, more architectural */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+}
+
+/* ---------- LIGHT THEME (default) ---------- */
+:root {
+  color-scheme: light;
+
+  --surface-0: #f6f7fb;   /* page bg base */
+  --surface-1: #ffffff;   /* card bg */
+  --surface-2: #f1f3f9;   /* subtle panel */
+  --surface-3: #e6e9f2;   /* hover/active */
+
+  --ink-1: #0f1226;       /* near-black, headlines */
+  --ink-2: #1c1f3a;       /* primary body */
+  --ink-3: #4a4f6e;       /* secondary */
+  --ink-4: #6e7393;       /* tertiary / labels */
+  --ink-5: #9094b0;       /* quaternary / muted */
+
+  --glass-1:    rgba(15, 18, 38, 0.04);
+  --glass-2:    rgba(15, 18, 38, 0.06);
+  --glass-3:    rgba(15, 18, 38, 0.09);
+  --glass-soft: rgba(15, 18, 38, 0.025);
+
+  --hairline:        rgba(15, 18, 38, 0.10);
+  --hairline-strong: rgba(15, 18, 38, 0.18);
+
+  --elev-1: 0 1px 2px rgba(15, 18, 38, 0.05), 0 4px 14px rgba(15, 18, 38, 0.06);
+  --elev-2: 0 1px 2px rgba(15, 18, 38, 0.06), 0 8px 26px rgba(15, 18, 38, 0.08), 0 24px 60px -20px rgba(15, 18, 38, 0.14);
+  --elev-3: 0 30px 80px -20px rgba(15, 18, 38, 0.20), 0 8px 30px rgba(15, 18, 38, 0.10);
+}
+
+/* ---------- DARK THEME ---------- */
+.dark {
+  color-scheme: dark;
+
+  --surface-0: #0a0c1a;
+  --surface-1: #11142a;
+  --surface-2: #1a1d34;
+  --surface-3: #252840;
+
+  --ink-1: #f5f7ff;
+  --ink-2: #e4e7fa;
+  --ink-3: #b8bcdc;
+  --ink-4: #9095b8;
+  --ink-5: #6a6f8e;
+
+  --glass-1:    rgba(255, 255, 255, 0.04);
+  --glass-2:    rgba(255, 255, 255, 0.06);
+  --glass-3:    rgba(255, 255, 255, 0.09);
+  --glass-soft: rgba(255, 255, 255, 0.03);
+
+  --hairline:        rgba(255, 255, 255, 0.10);
+  --hairline-strong: rgba(255, 255, 255, 0.18);
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+  --elev-2: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 26px rgba(0, 0, 0, 0.30), 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+  --elev-3: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* ============================================================
-   Base styles — soft luminous dark background
+   Base styles
    ============================================================ */
 html {
-  color-scheme: dark;
   font-family: var(--font-sans);
   letter-spacing: var(--tracking-body);
-  background-color: var(--color-surface-0);
-  color: var(--color-ink-2);
+  background-color: var(--surface-0);
+  color: var(--ink-2);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -104,16 +146,24 @@ html {
 body {
   min-height: 100dvh;
   background:
+    radial-gradient(120% 80% at 0% 0%,   rgba(99, 102, 241, 0.08), transparent 55%),
+    radial-gradient(100% 80% at 100% 10%, rgba(139, 92, 246, 0.06), transparent 55%),
+    radial-gradient(120% 80% at 50% 110%, rgba(56, 189, 248, 0.05), transparent 55%),
+    var(--surface-0);
+  background-attachment: fixed;
+}
+.dark body {
+  background:
     radial-gradient(120% 80% at 0% 0%,   rgba(79, 91, 213, 0.22), transparent 55%),
     radial-gradient(100% 80% at 100% 10%, rgba(139, 111, 225, 0.18), transparent 55%),
     radial-gradient(120% 80% at 50% 110%, rgba(60, 130, 200, 0.16), transparent 55%),
-    var(--color-surface-0);
+    var(--surface-0);
   background-attachment: fixed;
 }
 
 h1, h2, h3, .display {
   letter-spacing: var(--tracking-display);
-  color: var(--color-ink-1);
+  color: var(--ink-1);
 }
 
 .tabular-nums,
@@ -127,10 +177,10 @@ table.tabular,
 *:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
-/* Scrollbars — slim, near-invisible until hover */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -139,11 +189,11 @@ table.tabular,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  background: var(--hairline);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--hairline-strong);
 }
 
 table {
@@ -155,57 +205,65 @@ table {
 }
 
 /* ============================================================
-   Reusable visual primitives — glass surfaces + accents
+   Visual primitives — glass surfaces + accents
    ============================================================ */
 .glass {
-  background: var(--color-glass-1);
-  border: 1px solid var(--color-hairline);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
+  box-shadow: var(--elev-1);
+}
+.dark .glass {
+  background: rgba(46, 50, 88, 0.55);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--elev-2);
 }
+
 .glass-strong {
-  background: var(--color-glass-2);
-  border: 1px solid var(--color-hairline);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+}
+.dark .glass-strong {
+  background: rgba(54, 58, 98, 0.72);
   backdrop-filter: blur(36px) saturate(180%);
   -webkit-backdrop-filter: blur(36px) saturate(180%);
-  box-shadow: var(--shadow-2);
 }
+
 .glass-soft {
-  background: var(--color-glass-soft);
-  border: 1px solid var(--color-hairline);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
+}
+.dark .glass-soft {
+  background: rgba(38, 42, 74, 0.45);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
 }
 
-/* Eyebrow label — small uppercase tracking */
 .eyebrow {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--color-ink-4);
+  color: var(--ink-4);
   line-height: 1;
 }
 
-/* Serif italic accent (for editorial display headings) */
 .serif {
   font-family: var(--font-serif);
   font-style: italic;
   font-weight: 400;
 }
 
-/* Hairline divider */
 .hairline {
-  background: var(--color-hairline);
+  background: var(--hairline);
   height: 1px;
   width: 100%;
 }
 
-/* Calm fade-up for content swaps */
 .fade-in {
   animation: fadeUp 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
 }

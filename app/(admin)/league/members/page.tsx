@@ -58,7 +58,7 @@ export default async function LeagueMembersPage() {
   const roleBadge = (role: string) =>
     role === 'league_admin'
       ? 'text-indigo-300 bg-indigo-500/10'
-      : 'text-[#b8bcdc] bg-white/[0.05]'
+      : 'text-ink-3 bg-glass-1'
 
   const roleLabel = (role: string) =>
     role === 'league_admin' ? 'Admin' : 'Manager'
@@ -66,11 +66,11 @@ export default async function LeagueMembersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <a href="/league" className="text-sm text-[#9095b8] hover:text-indigo-400">
+        <a href="/league" className="text-sm text-ink-4 hover:text-indigo-400">
           ← Impostazioni lega
         </a>
-        <h1 className="mt-1 text-xl font-bold text-white">Membri lega</h1>
-        <p className="mt-0.5 text-sm text-[#b8bcdc]">
+        <h1 className="mt-1 text-xl font-bold text-ink-1">Membri lega</h1>
+        <p className="mt-0.5 text-sm text-ink-3">
           {memberList.length} {memberList.length === 1 ? 'membro' : 'membri'} · {teamList.length} squadre · {ctx.league.name}
         </p>
       </div>
@@ -80,35 +80,35 @@ export default async function LeagueMembersPage() {
         <CardHeader title="Membri attuali" />
         <CardContent className="p-0">
           {memberList.length === 0 ? (
-            <p className="px-6 py-8 text-center text-sm text-[#9095b8]">
+            <p className="px-6 py-8 text-center text-sm text-ink-4">
               Nessun membro. Invita il primo manager qui sotto.
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="px-6 py-2.5 text-left text-xs font-medium text-[#9095b8]">Utente</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Squadre</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Ruolo</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Iscritto</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[#9095b8]">Azioni</th>
+                <tr className="border-b border-hairline">
+                  <th className="px-6 py-2.5 text-left text-xs font-medium text-ink-4">Utente</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-4">Squadre</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-4">Ruolo</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-4">Iscritto</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-ink-4">Azioni</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {memberList.map((m) => {
                   const isSelf = m.user_id === ctx.userId
                   const teams  = teamsByManager.get(m.user_id) ?? []
                   return (
-                    <tr key={m.user_id} className="hover:bg-white/[0.04]">
+                    <tr key={m.user_id} className="hover:bg-glass-1">
                       <td className="px-6 py-3">
-                        <div className="font-medium text-white">
+                        <div className="font-medium text-ink-1">
                           {m.profiles?.full_name || m.profiles?.username || '—'}
                         </div>
-                        <div className="text-xs text-[#9095b8]">@{m.profiles?.username ?? '—'}</div>
+                        <div className="text-xs text-ink-4">@{m.profiles?.username ?? '—'}</div>
                       </td>
-                      <td className="px-4 py-3 text-[#b8bcdc] text-xs">
+                      <td className="px-4 py-3 text-ink-3 text-xs">
                         {teams.length === 0
-                          ? <span className="text-[#6a6f8e]">—</span>
+                          ? <span className="text-ink-5">—</span>
                           : teams.join(', ')}
                       </td>
                       <td className="px-4 py-3">
@@ -120,10 +120,10 @@ export default async function LeagueMembersPage() {
                           <ChangeRoleForm memberId={m.user_id} currentRole={m.role} />
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-[#9095b8]">{fmt(m.joined_at)}</td>
+                      <td className="px-4 py-3 text-xs text-ink-4">{fmt(m.joined_at)}</td>
                       <td className="px-4 py-3 text-right">
                         {isSelf ? (
-                          <span className="text-xs text-[#6a6f8e]">Tu</span>
+                          <span className="text-xs text-ink-5">Tu</span>
                         ) : (
                           <RemoveMemberButton
                             memberId={m.user_id}
@@ -150,12 +150,12 @@ export default async function LeagueMembersPage() {
           <CreateTeamForm />
           {adminOwnedTeams.length > 0 && (
             <div className="mt-3 space-y-1">
-              <p className="text-xs text-[#9095b8]">Squadre placeholder (non ancora assegnate a un manager):</p>
+              <p className="text-xs text-ink-4">Squadre placeholder (non ancora assegnate a un manager):</p>
               <div className="flex flex-wrap gap-1.5">
                 {adminOwnedTeams.map((t) => (
                   <span
                     key={t.id}
-                    className="rounded border border-white/10 bg-white/[0.05] px-2 py-0.5 text-xs text-[#b8bcdc]"
+                    className="rounded border border-hairline bg-glass-1 px-2 py-0.5 text-xs text-ink-3"
                   >
                     {t.name}
                   </span>
@@ -178,15 +178,15 @@ export default async function LeagueMembersPage() {
       </Card>
 
       {/* Info box */}
-      <div className="rounded-lg border border-white/10 bg-[#080810] px-4 py-3 text-xs text-[#9095b8] space-y-1">
+      <div className="rounded-lg border border-hairline bg-[#080810] px-4 py-3 text-xs text-ink-4 space-y-1">
         <p>
-          <span className="text-[#b8bcdc]">Invito:</span> il manager riceve un link valido 24h. Cliccando il link, imposta la password e accede direttamente al proprio pannello.
+          <span className="text-ink-3">Invito:</span> il manager riceve un link valido 24h. Cliccando il link, imposta la password e accede direttamente al proprio pannello.
         </p>
         <p>
-          <span className="text-[#b8bcdc]">Assegnazione:</span> puoi creare le squadre in anticipo e assegnarle ai manager al momento dell&apos;invito.
+          <span className="text-ink-3">Assegnazione:</span> puoi creare le squadre in anticipo e assegnarle ai manager al momento dell&apos;invito.
         </p>
         <p>
-          <span className="text-[#b8bcdc]">Rimozione:</span> rimuovere un membro elimina la sua squadra ma non cancella il suo account Supabase. Può essere reinvitato in futuro.
+          <span className="text-ink-3">Rimozione:</span> rimuovere un membro elimina la sua squadra ma non cancella il suo account Supabase. Può essere reinvitato in futuro.
         </p>
       </div>
     </div>

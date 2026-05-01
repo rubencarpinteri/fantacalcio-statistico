@@ -20,14 +20,14 @@ export default async function EngineConfigPage() {
       <div className="flex items-center gap-3">
         <a
           href="/league"
-          className="flex items-center gap-1.5 text-sm text-[#b8bcdc] hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink-1 transition-colors"
         >
           ← Impostazioni lega
         </a>
       </div>
       <div>
-        <h1 className="text-xl font-bold text-white">Configurazione motore di calcolo</h1>
-        <p className="mt-0.5 text-sm text-[#b8bcdc]">
+        <h1 className="text-xl font-bold text-ink-1">Configurazione motore di calcolo</h1>
+        <p className="mt-0.5 text-sm text-ink-3">
           Personalizza bonus, malus e fattore minuti per la tua lega.
           I valori predefiniti corrispondono alla configurazione standard Mantra.
         </p>

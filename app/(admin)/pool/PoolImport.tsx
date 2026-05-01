@@ -20,7 +20,7 @@ function RCBadge({ rc }: { rc: string }) {
     <span
       className={[
         'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-mono font-bold',
-        RC_COLORS[rc] ?? 'bg-[#2e2e42] text-[#b8bcdc] border-white/15',
+        RC_COLORS[rc] ?? 'bg-[#2e2e42] text-ink-3 border-hairline-strong',
       ].join(' ')}
     >
       {rc}
@@ -51,7 +51,7 @@ function StepIndicator({ current }: { current: number }) {
                 ? 'bg-indigo-500 text-white'
                 : i === current
                 ? 'border-2 border-indigo-500 bg-indigo-500/10 text-indigo-300'
-                : 'border border-white/10 bg-white/[0.05] text-[#9095b8]',
+                : 'border border-hairline bg-glass-1 text-ink-4',
             ].join(' ')}
           >
             {i < current ? '✓' : i + 1}
@@ -59,7 +59,7 @@ function StepIndicator({ current }: { current: number }) {
           <span
             className={[
               'ml-2 text-xs',
-              i === current ? 'text-[#f5f7ff]' : 'text-[#9095b8]',
+              i === current ? 'text-ink-1' : 'text-ink-4',
             ].join(' ')}
           >
             {s.label}
@@ -116,7 +116,7 @@ export function PoolImport() {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-6">
+    <div className="rounded-xl border border-hairline bg-glass-1 p-6">
       <div className="mb-6">
         <StepIndicator current={step} />
       </div>
@@ -125,10 +125,10 @@ export function PoolImport() {
       {step === 0 && (
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#f5f7ff]">
+            <label className="mb-1.5 block text-sm font-medium text-ink-1">
               Incolla la tabella da SofaScore (Serie A stats)
             </label>
-            <p className="mb-2 text-xs text-[#9095b8]">
+            <p className="mb-2 text-xs text-ink-4">
               Vai su SofaScore → Serie A → Statistiche, seleziona tutto il contenuto della pagina e incolla qui. Il parser cercherà i link ai profili giocatore.
             </p>
             <textarea
@@ -136,7 +136,7 @@ export function PoolImport() {
               value={ssRaw}
               onChange={(e) => setSsRaw(e.target.value)}
               placeholder="https://www.sofascore.com/football/player/name/123456 ..."
-              className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 font-mono text-xs text-[#f5f7ff] placeholder-[#9095b8] outline-none focus:border-indigo-400/60/60 focus:ring-1 focus:ring-indigo-500/30"
+              className="w-full resize-y rounded-lg border border-hairline bg-glass-1 px-3 py-2 font-mono text-xs text-ink-1 placeholder-ink-4 outline-none focus:border-indigo-400/60/60 focus:ring-1 focus:ring-indigo-500/30"
             />
           </div>
           <div className="flex justify-end">
@@ -155,10 +155,10 @@ export function PoolImport() {
       {step === 1 && (
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#f5f7ff]">
+            <label className="mb-1.5 block text-sm font-medium text-ink-1">
               Incolla la tabella da FotMob (Serie A stats)
             </label>
-            <p className="mb-2 text-xs text-[#9095b8]">
+            <p className="mb-2 text-xs text-ink-4">
               Vai su FotMob → Serie A → Stats, seleziona tutto il contenuto della pagina e incolla qui. Il parser cercherà i link ai profili giocatore.
             </p>
             <textarea
@@ -166,14 +166,14 @@ export function PoolImport() {
               value={fmRaw}
               onChange={(e) => setFmRaw(e.target.value)}
               placeholder="https://www.fotmob.com/en-GB/players/605224/name ..."
-              className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 font-mono text-xs text-[#f5f7ff] placeholder-[#9095b8] outline-none focus:border-indigo-400/60/60 focus:ring-1 focus:ring-indigo-500/30"
+              className="w-full resize-y rounded-lg border border-hairline bg-glass-1 px-3 py-2 font-mono text-xs text-ink-1 placeholder-ink-4 outline-none focus:border-indigo-400/60/60 focus:ring-1 focus:ring-indigo-500/30"
             />
           </div>
           <div className="flex justify-between">
             <button
               type="button"
               onClick={() => setStep(0)}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-[#b8bcdc] hover:bg-white/[0.05] hover:text-[#f5f7ff] transition-colors"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:bg-glass-1 hover:text-ink-1 transition-colors"
             >
               ← Indietro
             </button>
@@ -192,10 +192,10 @@ export function PoolImport() {
       {step === 2 && (
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#f5f7ff]">
+            <label className="mb-1.5 block text-sm font-medium text-ink-1">
               Incolla il CSV da Leghe Fantacalcio
             </label>
-            <p className="mb-2 text-xs text-[#9095b8]">
+            <p className="mb-2 text-xs text-ink-4">
               Esporta i giocatori dalla tua piattaforma (formato: <span className="font-mono">Nome;Squadra;Ruolo</span> oppure <span className="font-mono">Id;Nome;Squadra;Ruolo;Quota</span>). I ruoli Mantra supportati: P, Dc, Dd, Ds, E, M, C, T, W, A, Pc.
             </p>
             <textarea
@@ -203,7 +203,7 @@ export function PoolImport() {
               value={legheCSV}
               onChange={(e) => setLegheCSV(e.target.value)}
               placeholder={'Id;Nome;Squadra;Ruolo;Quota\n1;Locatelli Manuel;Juventus;C;12\n2;Dimarco Federico;Inter;Ds/E;28'}
-              className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 font-mono text-xs text-[#f5f7ff] placeholder-[#9095b8] outline-none focus:border-indigo-400/60/60 focus:ring-1 focus:ring-indigo-500/30"
+              className="w-full resize-y rounded-lg border border-hairline bg-glass-1 px-3 py-2 font-mono text-xs text-ink-1 placeholder-ink-4 outline-none focus:border-indigo-400/60/60 focus:ring-1 focus:ring-indigo-500/30"
             />
           </div>
 
@@ -217,7 +217,7 @@ export function PoolImport() {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-[#b8bcdc] hover:bg-white/[0.05] hover:text-[#f5f7ff] transition-colors"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:bg-glass-1 hover:text-ink-1 transition-colors"
             >
               ← Indietro
             </button>
@@ -239,22 +239,22 @@ export function PoolImport() {
           {/* Stats summary */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
-              { label: 'Totale', value: parseResult.stats.total, color: 'text-white' },
+              { label: 'Totale', value: parseResult.stats.total, color: 'text-ink-1' },
               { label: 'Con SS ID', value: parseResult.stats.matched_ss, color: 'text-green-400' },
               { label: 'Con FM ID', value: parseResult.stats.matched_fm, color: 'text-green-400' },
               { label: 'Entrambi', value: parseResult.stats.matched_both, color: 'text-indigo-400' },
               {
                 label: 'Da completare',
                 value: parseResult.stats.needs_roles,
-                color: parseResult.stats.needs_roles > 0 ? 'text-amber-400' : 'text-[#9095b8]',
+                color: parseResult.stats.needs_roles > 0 ? 'text-amber-400' : 'text-ink-4',
               },
             ].map((s) => (
               <div
                 key={s.label}
-                className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-center"
+                className="rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-center"
               >
                 <div className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</div>
-                <div className="mt-0.5 text-xs text-[#9095b8]">{s.label}</div>
+                <div className="mt-0.5 text-xs text-ink-4">{s.label}</div>
               </div>
             ))}
           </div>
@@ -268,17 +268,17 @@ export function PoolImport() {
 
           {/* Preview table */}
           <div>
-            <p className="mb-2 text-xs text-[#9095b8]">
+            <p className="mb-2 text-xs text-ink-4">
               Anteprima dei primi 20 giocatori su {parseResult.preview.length}
             </p>
-            <div className="overflow-x-auto rounded-lg border border-white/10">
+            <div className="overflow-x-auto rounded-lg border border-hairline">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10 text-left">
+                  <tr className="border-b border-hairline text-left">
                     {['Nome', 'Squadra', 'Ruoli', 'Classe', 'SS', 'FM'].map((h) => (
                       <th
                         key={h}
-                        className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]"
+                        className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-ink-3"
                       >
                         {h}
                       </th>
@@ -287,14 +287,14 @@ export function PoolImport() {
                 </thead>
                 <tbody className="divide-y divide-[#1e1e2a]">
                   {parseResult.preview.slice(0, 20).map((p, idx) => (
-                    <tr key={idx} className="hover:bg-white/[0.05]">
-                      <td className="px-3 py-2 font-medium text-white">{p.full_name}</td>
-                      <td className="px-3 py-2 text-[#b8bcdc]">{p.club || '—'}</td>
+                    <tr key={idx} className="hover:bg-glass-1">
+                      <td className="px-3 py-2 font-medium text-ink-1">{p.full_name}</td>
+                      <td className="px-3 py-2 text-ink-3">{p.club || '—'}</td>
                       <td className="px-3 py-2">
                         {p.mantra_roles.length > 0 ? (
-                          <span className="text-xs text-[#f5f7ff]">{p.mantra_roles.join('/')}</span>
+                          <span className="text-xs text-ink-1">{p.mantra_roles.join('/')}</span>
                         ) : (
-                          <span className="text-xs text-[#9095b8]">—</span>
+                          <span className="text-xs text-ink-4">—</span>
                         )}
                       </td>
                       <td className="px-3 py-2">
@@ -304,14 +304,14 @@ export function PoolImport() {
                         {p.sofascore_id ? (
                           <span className="text-xs text-green-400">✓ {p.sofascore_id}</span>
                         ) : (
-                          <span className="text-xs text-[#9095b8]">—</span>
+                          <span className="text-xs text-ink-4">—</span>
                         )}
                       </td>
                       <td className="px-3 py-2">
                         {p.fotmob_id ? (
                           <span className="text-xs text-green-400">✓ {p.fotmob_id}</span>
                         ) : (
-                          <span className="text-xs text-[#9095b8]">—</span>
+                          <span className="text-xs text-ink-4">—</span>
                         )}
                       </td>
                     </tr>
@@ -341,7 +341,7 @@ export function PoolImport() {
             <button
               type="button"
               onClick={() => { setStep(2); setParseResult(null); setImportResult(null) }}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-[#b8bcdc] hover:bg-white/[0.05] hover:text-[#f5f7ff] transition-colors"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:bg-glass-1 hover:text-ink-1 transition-colors"
             >
               ← Modifica dati
             </button>
@@ -365,7 +365,7 @@ export function PoolImport() {
                   setParseResult(null)
                   setImportResult(null)
                 }}
-                className="rounded-lg bg-white/[0.05] border border-white/10 px-4 py-2 text-sm text-[#f5f7ff] hover:bg-[#22222e] transition-colors"
+                className="rounded-lg bg-glass-1 border border-hairline px-4 py-2 text-sm text-ink-1 hover:bg-[#22222e] transition-colors"
               >
                 Nuova importazione
               </button>

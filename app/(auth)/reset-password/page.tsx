@@ -20,10 +20,10 @@ function SubmitButton() {
 const initialState: ResetPasswordState = { error: null, success: false }
 
 const fieldClass =
-  'w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[13.5px] text-[#f5f7ff] placeholder:text-[#6a6f8e] backdrop-blur-xl transition-all focus:border-indigo-400/60 focus:bg-white/[0.07] focus:outline-none'
+  'w-full rounded-xl border border-hairline bg-glass-1 px-3.5 py-2.5 text-[13.5px] text-ink-1 placeholder:text-ink-5 backdrop-blur-xl transition-all focus:border-indigo-400/60 focus:bg-glass-2 focus:outline-none'
 
 const labelClass =
-  'mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9095b8]'
+  'mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-4'
 
 export default function ResetPasswordPage() {
   const [state, formAction] = useActionState(resetPasswordAction, initialState)
@@ -33,13 +33,13 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-sm">
         <div className="mb-7 text-center">
           <h1
-            className="flex flex-wrap items-baseline justify-center gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            className="flex flex-wrap items-baseline justify-center gap-x-2 font-light tracking-tight text-ink-1"
             style={{ fontSize: 'clamp(22px, 2.4vw, 28px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
           >
             <span className="font-semibold">Reset</span>
-            <span className="serif font-normal text-[#b8bcdc]">password</span>
+            <span className="serif font-normal text-ink-3">password</span>
           </h1>
-          <p className="mt-1.5 text-[12px] text-[#9095b8]">
+          <p className="mt-1.5 text-[12px] text-ink-4">
             Inserisci la tua email per ricevere il link di reset.
           </p>
         </div>
@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
           <div className="mt-4 text-center">
             <a
               href="/login"
-              className="text-[11.5px] text-[#9095b8] transition-colors hover:text-indigo-300"
+              className="text-[11.5px] text-ink-4 transition-colors hover:text-indigo-300"
             >
               ← Torna al login
             </a>

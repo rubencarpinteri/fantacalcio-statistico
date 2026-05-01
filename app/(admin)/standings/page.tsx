@@ -16,7 +16,7 @@ const TYPE_ICON: Record<string, string> = {
   coppa:         '🏆',
 }
 const STATUS_BADGE: Record<string, string> = {
-  setup:     'text-[#b8bcdc] bg-white/[0.05]',
+  setup:     'text-ink-3 bg-glass-1',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
   cancelled: 'text-red-400 bg-red-500/10',
@@ -145,19 +145,19 @@ export default async function StandingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-bold text-white">Classifiche</h1>
-        <p className="text-xs text-[#b8bcdc]">{ctx.league.name} · {ctx.league.season_name}</p>
+        <h1 className="text-lg font-bold text-ink-1">Classifiche</h1>
+        <p className="text-xs text-ink-3">{ctx.league.name} · {ctx.league.season_name}</p>
       </div>
 
       {/* ── WIP notice ──────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-white/10 bg-[#0d0d1a] overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/10">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">Classifica</p>
-          <p className="text-sm font-semibold text-white leading-tight mt-0.5">{ctx.league.name}</p>
+      <div className="rounded-xl border border-hairline bg-[#0d0d1a] overflow-hidden">
+        <div className="px-4 py-3 border-b border-hairline">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">Classifica</p>
+          <p className="text-sm font-semibold text-ink-1 leading-tight mt-0.5">{ctx.league.name}</p>
         </div>
         <div className="px-4 py-10 text-center">
-          <p className="text-xs font-medium text-[#9095b8]">Work in progress</p>
-          <p className="mt-1 text-[11px] text-[#6a6f8e]">La classifica sarà disponibile prossimamente.</p>
+          <p className="text-xs font-medium text-ink-4">Work in progress</p>
+          <p className="mt-1 text-[11px] text-ink-5">La classifica sarà disponibile prossimamente.</p>
         </div>
       </div>
 

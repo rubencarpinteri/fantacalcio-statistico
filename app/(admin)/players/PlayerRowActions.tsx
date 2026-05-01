@@ -28,14 +28,14 @@ export function PlayerRowActions({ player }: { player: LeaguePlayer }) {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setEditOpen(true)}
-          className="text-xs text-[#b8bcdc] transition-colors hover:text-indigo-400"
+          className="text-xs text-ink-3 transition-colors hover:text-indigo-400"
         >
           Modifica
         </button>
         <button
           onClick={handleToggleActive}
           disabled={isPending}
-          className="text-xs text-[#b8bcdc] transition-colors hover:text-amber-400 disabled:opacity-50"
+          className="text-xs text-ink-3 transition-colors hover:text-amber-400 disabled:opacity-50"
         >
           {player.is_active ? 'Disattiva' : 'Riattiva'}
         </button>
@@ -50,7 +50,7 @@ export function PlayerRowActions({ player }: { player: LeaguePlayer }) {
                 action={
                   <button
                     onClick={() => setEditOpen(false)}
-                    className="text-sm text-[#9095b8] hover:text-white"
+                    className="text-sm text-ink-4 hover:text-ink-1"
                   >
                     ✕
                   </button>

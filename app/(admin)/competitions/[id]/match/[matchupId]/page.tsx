@@ -16,9 +16,9 @@ type BenchEntry = {
 }
 
 function BonusMalusCell({ bm }: { bm: BonusMalusItem[] | null }) {
-  if (!bm || bm.length === 0) return <span className="text-[#9095b8]">—</span>
+  if (!bm || bm.length === 0) return <span className="text-ink-4">—</span>
   const items = bm.filter(item => item.total !== 0)
-  if (items.length === 0) return <span className="text-[#9095b8]">—</span>
+  if (items.length === 0) return <span className="text-ink-4">—</span>
   return (
     <span className="flex flex-wrap gap-1">
       {items.map((item, i) => (
@@ -47,25 +47,25 @@ function TeamLineup({
   return (
     <div className="space-y-3">
       {/* Starters table */}
-      <div className="overflow-hidden rounded-lg border border-white/10">
+      <div className="overflow-hidden rounded-lg border border-hairline">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10 bg-transparent">
-              <th className="px-3 py-2 text-left text-xs font-medium text-[#9095b8]">Giocatore</th>
-              <th className="px-3 py-2 text-right text-xs font-medium text-[#9095b8]">Base</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-[#9095b8]">B/M</th>
-              <th className="px-3 py-2 text-right text-xs font-medium text-[#9095b8]">FV</th>
+            <tr className="border-b border-hairline bg-transparent">
+              <th className="px-3 py-2 text-left text-xs font-medium text-ink-4">Giocatore</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-ink-4">Base</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-ink-4">B/M</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-ink-4">FV</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/8">
+          <tbody className="divide-y divide-hairline">
             {starters.map((p, i) => {
               const sub = p.subbed_by ? benchByName.get(p.subbed_by.toLowerCase()) : null
               return (
-                <tr key={i} className={p.is_nv ? 'opacity-50' : 'hover:bg-white/[0.04]'}>
+                <tr key={i} className={p.is_nv ? 'opacity-50' : 'hover:bg-glass-1'}>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {p.is_nv && <span className="rounded bg-red-500/20 px-1 text-xs text-red-400">NV</span>}
-                      <span className={p.is_nv ? 'text-[#9095b8] line-through' : 'text-white'}>{p.name}</span>
+                      <span className={p.is_nv ? 'text-ink-4 line-through' : 'text-ink-1'}>{p.name}</span>
                       {p.subbed_by && (
                         <span className="text-xs text-emerald-400">
                           ↑ {p.subbed_by}
@@ -76,7 +76,7 @@ function TeamLineup({
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-right font-mono text-[#9095b8]">
+                  <td className="px-3 py-2 text-right font-mono text-ink-4">
                     {p.voto_base != null ? Number(p.voto_base).toFixed(2) : '—'}
                   </td>
                   <td className="px-3 py-2">
@@ -84,12 +84,12 @@ function TeamLineup({
                   </td>
                   <td className="px-3 py-2 text-right font-mono font-bold">
                     {p.fantavoto != null
-                      ? <span className={p.fantavoto >= 7 ? 'text-green-400' : p.fantavoto >= 6 ? 'text-white' : 'text-amber-400'}>
+                      ? <span className={p.fantavoto >= 7 ? 'text-green-400' : p.fantavoto >= 6 ? 'text-ink-1' : 'text-amber-400'}>
                           {Number(p.fantavoto).toFixed(2)}
                         </span>
                       : sub?.fantavoto != null
                       ? <span className="text-emerald-300">{Number(sub.fantavoto).toFixed(2)}</span>
-                      : <span className="text-[#9095b8]">—</span>
+                      : <span className="text-ink-4">—</span>
                     }
                   </td>
                 </tr>
@@ -102,14 +102,14 @@ function TeamLineup({
       {/* Bench (non-subbed) */}
       {bench.filter(b => !b.subbed_in_for).length > 0 && (
         <div>
-          <p className="mb-1 px-1 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Panchina</p>
-          <div className="overflow-hidden rounded-lg border border-white/8">
+          <p className="mb-1 px-1 text-xs font-medium uppercase tracking-wider text-ink-4">Panchina</p>
+          <div className="overflow-hidden rounded-lg border border-hairline">
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {bench.filter(b => !b.subbed_in_for).map((b, i) => (
                   <tr key={i} className="opacity-60 hover:opacity-100">
-                    <td className="px-3 py-1.5 text-[#9095b8]">{b.name}</td>
-                    <td className="px-3 py-1.5 text-right font-mono text-xs text-[#9095b8]">
+                    <td className="px-3 py-1.5 text-ink-4">{b.name}</td>
+                    <td className="px-3 py-1.5 text-right font-mono text-xs text-ink-4">
                       {b.fantavoto != null ? b.fantavoto.toFixed(2) : '—'}
                     </td>
                   </tr>
@@ -306,19 +306,19 @@ export default async function MatchDetailPage({
   const homeScoreColor =
     matchup.result === '1' ? 'text-green-400'
     : matchup.result === '2' ? 'text-red-400'
-    : 'text-white'
+    : 'text-ink-1'
   const awayScoreColor =
     matchup.result === '2' ? 'text-green-400'
     : matchup.result === '1' ? 'text-red-400'
-    : 'text-white'
+    : 'text-ink-1'
   const homeNameColor =
     matchup.result === '1' ? 'text-green-400'
-    : matchup.result === '2' ? 'text-[#9095b8]'
-    : 'text-white'
+    : matchup.result === '2' ? 'text-ink-4'
+    : 'text-ink-1'
   const awayNameColor =
     matchup.result === '2' ? 'text-green-400'
-    : matchup.result === '1' ? 'text-[#9095b8]'
-    : 'text-white'
+    : matchup.result === '1' ? 'text-ink-4'
+    : 'text-ink-1'
 
   const resultLabel =
     matchup.result === '1' ? `${homeTeam?.name ?? '?'} vince`
@@ -343,17 +343,17 @@ export default async function MatchDetailPage({
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div>
-        <a href={`/competitions/${competitionId}`} className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
+        <a href={`/competitions/${competitionId}`} className="text-[12.5px] text-ink-4 transition-colors hover:text-indigo-300">
           ← {comp?.name ?? 'Competizione'}
         </a>
-        <p className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#9095b8]">
+        <p className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-4">
           {round?.name ?? `Giornata ${matchup.round_number}`}
         </p>
       </div>
 
       {/* ── Matchup card ─────────────────────────────────────────────────── */}
       <div
-        className="relative overflow-hidden rounded-3xl border border-white/10 backdrop-blur-2xl"
+        className="relative overflow-hidden rounded-3xl border border-hairline backdrop-blur-2xl"
         style={{
           background:
             'linear-gradient(180deg, rgba(46,50,88,0.55), rgba(28,30,56,0.65))',
@@ -379,7 +379,7 @@ export default async function MatchDetailPage({
 
         {/* Header: home | score | away */}
         <div
-          className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-white/8 px-6 py-7 md:gap-6 md:px-8"
+          className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-hairline px-6 py-7 md:gap-6 md:px-8"
           style={{
             background:
               'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0))',
@@ -406,7 +406,7 @@ export default async function MatchDetailPage({
                   >
                     {homeFvStr ?? '—'}
                   </span>
-                  <span className="font-thin text-[#6a6f8e] select-none" style={{ fontSize: 'clamp(28px, 3vw, 40px)' }}>–</span>
+                  <span className="font-thin text-ink-5 select-none" style={{ fontSize: 'clamp(28px, 3vw, 40px)' }}>–</span>
                   <span
                     className={awayScoreColor}
                     style={{ fontSize: 'clamp(34px, 4vw, 52px)', lineHeight: 1 }}
@@ -415,20 +415,20 @@ export default async function MatchDetailPage({
                   </span>
                 </div>
                 {resultLabel && (
-                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#9095b8]">{resultLabel}</p>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-4">{resultLabel}</p>
                 )}
               </>
             ) : showLive ? (
               <>
-                <div className="flex items-baseline gap-3 font-light tabular-nums text-[#b8bcdc]" style={{ letterSpacing: '-0.04em' }}>
+                <div className="flex items-baseline gap-3 font-light tabular-nums text-ink-3" style={{ letterSpacing: '-0.04em' }}>
                   <span style={{ fontSize: 'clamp(28px, 3vw, 40px)', lineHeight: 1 }}>{homeLiveFv?.toFixed(2) ?? '—'}</span>
-                  <span className="font-thin text-[#6a6f8e]" style={{ fontSize: 'clamp(22px, 2.4vw, 32px)' }}>–</span>
+                  <span className="font-thin text-ink-5" style={{ fontSize: 'clamp(22px, 2.4vw, 32px)' }}>–</span>
                   <span style={{ fontSize: 'clamp(28px, 3vw, 40px)', lineHeight: 1 }}>{awayLiveFv?.toFixed(2) ?? '—'}</span>
                 </div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9095b8]">anteprima</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-4">anteprima</p>
               </>
             ) : (
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9095b8]">
+              <span className="rounded-full border border-hairline bg-glass-1 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-4">
                 vs
               </span>
             )}
@@ -451,18 +451,18 @@ export default async function MatchDetailPage({
             Nessuna formazione inserita per questa giornata. Importa le formazioni dalla pagina della giornata.
           </div>
         ) : (
-          <div className="grid grid-cols-1 divide-y divide-white/8 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-hairline lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             {/* Home */}
             <div className="space-y-2 p-5">
               <p className="eyebrow">
                 {homeTeam?.name ?? '?'}
                 {homeLiveFv !== null && !hasScore && (
-                  <span className="ml-2 font-mono normal-case tracking-normal text-[#b8bcdc]">Σ {homeLiveFv.toFixed(2)}</span>
+                  <span className="ml-2 font-mono normal-case tracking-normal text-ink-3">Σ {homeLiveFv.toFixed(2)}</span>
                 )}
               </p>
               {homeLineup
                 ? <TeamLineup starters={homeLineup.starters} bench={homeLineup.bench} />
-                : <p className="py-10 text-center text-[13px] text-[#9095b8]">Formazione non disponibile</p>
+                : <p className="py-10 text-center text-[13px] text-ink-4">Formazione non disponibile</p>
               }
             </div>
 
@@ -471,12 +471,12 @@ export default async function MatchDetailPage({
               <p className="eyebrow">
                 {awayTeam?.name ?? '?'}
                 {awayLiveFv !== null && !hasScore && (
-                  <span className="ml-2 font-mono normal-case tracking-normal text-[#b8bcdc]">Σ {awayLiveFv.toFixed(2)}</span>
+                  <span className="ml-2 font-mono normal-case tracking-normal text-ink-3">Σ {awayLiveFv.toFixed(2)}</span>
                 )}
               </p>
               {awayLineup
                 ? <TeamLineup starters={awayLineup.starters} bench={awayLineup.bench} />
-                : <p className="py-10 text-center text-sm text-[#9095b8]">Formazione non disponibile</p>
+                : <p className="py-10 text-center text-sm text-ink-4">Formazione non disponibile</p>
               }
             </div>
           </div>

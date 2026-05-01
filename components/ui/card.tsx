@@ -7,7 +7,7 @@ export function Card({ children, className = '' }: CardProps) {
   return (
     <div
       className={[
-        'rounded-2xl border border-white/10 backdrop-blur-2xl',
+        'rounded-2xl border border-hairline backdrop-blur-2xl',
         className,
       ].join(' ')}
       style={{
@@ -33,14 +33,14 @@ export function CardHeader({ title, description, action, className = '' }: CardH
   return (
     <div
       className={[
-        'flex items-start justify-between gap-4 border-b border-white/8 px-6 py-4',
+        'flex items-start justify-between gap-4 border-b border-hairline px-6 py-4',
         className,
       ].join(' ')}
     >
       <div>
-        <h2 className="text-[14px] font-semibold tracking-tight text-[#f5f7ff]">{title}</h2>
+        <h2 className="text-[14px] font-semibold tracking-tight text-ink-1">{title}</h2>
         {description && (
-          <p className="mt-1 text-[12px] text-[#9095b8]">{description}</p>
+          <p className="mt-1 text-[12px] text-ink-4">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -56,7 +56,7 @@ export function CardFooter({ children, className = '' }: CardProps) {
   return (
     <div
       className={[
-        'flex items-center gap-3 border-t border-white/8 px-6 py-3',
+        'flex items-center gap-3 border-t border-hairline px-6 py-3',
         className,
       ].join(' ')}
     >

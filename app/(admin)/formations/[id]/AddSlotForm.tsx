@@ -54,37 +54,37 @@ export function AddSlotForm({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+        <label className="text-xs font-medium uppercase tracking-wider text-ink-3">
           Ruoli nativi (nessuna penalità)
         </label>
         <input
           name="allowed_mantra_roles"
           required
           placeholder="es. Dc, Dd o Por o A, Pc, T"
-          className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+          className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
         />
-        <p className="text-xs text-[#9095b8]">
+        <p className="text-xs text-ink-4">
           Separati da virgola. Ruoli compatibili senza penalità. Tutti i ruoli: {ALL_MANTRA_ROLES.join(', ')}
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+        <label className="text-xs font-medium uppercase tracking-wider text-ink-3">
           Ruoli fuori posizione (−1)
         </label>
         <input
           name="extended_mantra_roles"
           placeholder="es. M, C (opzionale)"
-          className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+          className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
         />
-        <p className="text-xs text-[#9095b8]">
+        <p className="text-xs text-ink-4">
           Ruoli che possono coprire questo slot con penalità −1 al fantavoto (sostituzione fuori posizione).
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <input type="hidden" name="is_bench" value={isBench ? 'true' : 'false'} />
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-[#f5f7ff]">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-1">
           <input
             type="checkbox"
             checked={isBench}

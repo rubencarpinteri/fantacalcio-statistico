@@ -54,19 +54,19 @@ export function TeamEnrollmentForm({
     <div className="space-y-6">
       {/* Enrolled teams */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-white">
+        <h3 className="mb-3 text-sm font-semibold text-ink-1">
           Squadre iscritte ({enrolledTeams.length})
         </h3>
         {enrolledTeams.length === 0 ? (
-          <p className="text-sm text-[#9095b8]">Nessuna squadra iscritta.</p>
+          <p className="text-sm text-ink-4">Nessuna squadra iscritta.</p>
         ) : (
           <div className="space-y-2">
             {enrolledTeams.map((et) => {
               const name = (et.fantasy_teams as unknown as { name: string } | null)?.name ?? et.team_id.slice(0, 8)
               return (
                 <div key={et.id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5">
-                  <span className="text-sm text-white">{name}</span>
+                  className="flex items-center justify-between rounded-lg border border-hairline bg-glass-1 px-4 py-2.5">
+                  <span className="text-sm text-ink-1">{name}</span>
                   {!isLocked && (
                     <form action={unenrollFormAction}>
                       <input type="hidden" name="team_id" value={et.team_id} />
@@ -94,7 +94,7 @@ export function TeamEnrollmentForm({
       {/* Enroll new teams */}
       {availableTeams.length > 0 && !isLocked && (
         <div>
-          <h3 className="mb-3 text-sm font-semibold text-white">Iscrivi squadre</h3>
+          <h3 className="mb-3 text-sm font-semibold text-ink-1">Iscrivi squadre</h3>
           {enrollState.error && (
             <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-400">
               {enrollState.error}
@@ -104,9 +104,9 @@ export function TeamEnrollmentForm({
             <div className="grid gap-2 sm:grid-cols-2">
               {availableTeams.map((t) => (
                 <label key={t.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-transparent px-3 py-2.5 hover:border-indigo-500/30 transition-colors">
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-hairline bg-transparent px-3 py-2.5 hover:border-indigo-500/30 transition-colors">
                   <input type="checkbox" name="team_ids" value={t.id} className="accent-indigo-500" />
-                  <span className="text-sm text-white">{t.name}</span>
+                  <span className="text-sm text-ink-1">{t.name}</span>
                 </label>
               ))}
             </div>
@@ -116,7 +116,7 @@ export function TeamEnrollmentForm({
       )}
 
       {availableTeams.length === 0 && !isLocked && (
-        <p className="text-sm text-[#9095b8]">Tutte le squadre della lega sono già iscritte.</p>
+        <p className="text-sm text-ink-4">Tutte le squadre della lega sono già iscritte.</p>
       )}
     </div>
   )

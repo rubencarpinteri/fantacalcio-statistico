@@ -103,11 +103,11 @@ export default async function StatsPage({
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <a href={`/matchdays/${matchdayId}`} className="text-sm text-[#9095b8] hover:text-indigo-400">
+          <a href={`/matchdays/${matchdayId}`} className="text-sm text-ink-4 hover:text-indigo-400">
             ← {matchday.name}
           </a>
           <div className="mt-1 flex items-center gap-3">
-            <h1 className="text-xl font-bold text-white">Statistiche</h1>
+            <h1 className="text-xl font-bold text-ink-1">Statistiche</h1>
             <Badge variant={matchday.status === 'scoring' ? 'success' : 'muted'}>
               {matchday.status}
             </Badge>
@@ -116,14 +116,14 @@ export default async function StatsPage({
 
         {/* Completeness panel */}
         {lineupTotal > 0 && (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm min-w-[220px]">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+          <div className="rounded-xl border border-hairline bg-glass-1 p-4 text-sm min-w-[220px]">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-3">
               Completezza formazioni
             </p>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-6">
-                <span className="text-[#b8bcdc]">Inseriti</span>
-                <span className="font-mono text-white">
+                <span className="text-ink-3">Inseriti</span>
+                <span className="font-mono text-ink-1">
                   {enteredCount} / {lineupTotal}
                 </span>
               </div>
@@ -134,7 +134,7 @@ export default async function StatsPage({
                 />
               </div>
               <div className="flex items-center justify-between gap-6">
-                <span className="text-[#b8bcdc]">Definitivi</span>
+                <span className="text-ink-3">Definitivi</span>
                 <span className={`font-mono ${finalCount === lineupTotal ? 'text-green-400' : 'text-amber-400'}`}>
                   {finalCount} / {lineupTotal}
                 </span>

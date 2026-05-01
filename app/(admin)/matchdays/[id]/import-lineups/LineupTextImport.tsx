@@ -101,11 +101,11 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
     return (
       <div className="space-y-4">
         <div>
-          <p className="text-sm text-[#b8bcdc] mb-3">
+          <p className="text-sm text-ink-3 mb-3">
             Copia il testo delle formazioni da Leghe e incollalo qui sotto.
             Puoi incollare tutte le 5 sfide (10 squadre) in un unico blocco.
           </p>
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3 text-xs text-[#9095b8] font-mono mb-3">
+          <div className="rounded-lg border border-hairline bg-glass-1 p-3 text-xs text-ink-4 font-mono mb-3">
             Formato atteso: <span className="text-indigo-400">#SQUADRA# (3-4-2-1): P1; P2, P3; ... (panchina: B1, B2, ...)</span>
           </div>
         </div>
@@ -115,7 +115,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
           onChange={(e) => setText(e.target.value)}
           placeholder={`#OFF# (3-4-2-1):\tMaignan; Heggem; Buongiorno, Romagnoli; ...\t(panchina:\tPellegrino M., ...)\t\t---\t\t#Isamu Martire# (3-4-2-1):\t...`}
           rows={12}
-          className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#f5f7ff] placeholder-[#6a6f8e] font-mono resize-y focus:outline-none focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-500/30"
+          className="w-full rounded-lg border border-hairline bg-glass-1 px-4 py-3 text-sm text-ink-1 placeholder-ink-5 font-mono resize-y focus:outline-none focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-500/30"
           spellCheck={false}
         />
 
@@ -143,8 +143,8 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
         {/* Summary bar */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-[#b8bcdc]">
-              Trovate <span className="text-white font-semibold">{preview.length}</span> squadre
+            <span className="text-sm text-ink-3">
+              Trovate <span className="text-ink-1 font-semibold">{preview.length}</span> squadre
             </span>
             {readyCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-md border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400">
@@ -159,7 +159,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
           </div>
           <button
             onClick={() => { setStep('paste'); setPreview([]) }}
-            className="text-xs text-[#9095b8] hover:text-indigo-400"
+            className="text-xs text-ink-4 hover:text-indigo-400"
           >
             ← Modifica testo
           </button>
@@ -181,7 +181,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
 
         {/* Confirm button */}
         {readyCount > 0 && (
-          <div className="flex items-center gap-4 pt-2 border-t border-white/8">
+          <div className="flex items-center gap-4 pt-2 border-t border-hairline">
             <button
               onClick={handleConfirm}
               disabled={isConfirming}
@@ -192,7 +192,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
                 : `Conferma importazione (${readyCount} squadr${readyCount === 1 ? 'a' : 'e'})`}
             </button>
             {errorCount > 0 && (
-              <p className="text-xs text-[#b8bcdc]">
+              <p className="text-xs text-ink-3">
                 {errorCount} squadr{errorCount === 1 ? 'a' : 'e'} con errori verranno saltate.
               </p>
             )}
@@ -226,7 +226,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
             {result.details.map((d, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
                 <span className={d.ok ? 'text-green-400' : 'text-red-400'}>{d.ok ? '✓' : '✗'}</span>
-                <span className={d.ok ? 'text-white' : 'text-[#b8bcdc]'}>{d.teamName}</span>
+                <span className={d.ok ? 'text-ink-1' : 'text-ink-3'}>{d.teamName}</span>
                 {d.error && <span className="text-xs text-red-400">— {d.error}</span>}
               </div>
             ))}
@@ -241,7 +241,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
             </a>
             <button
               onClick={() => { setStep('paste'); setText(''); setPreview([]); setResult(null) }}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-[#b8bcdc] hover:text-white hover:border-[#3e3e52]"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:text-ink-1 hover:border-[#3e3e52]"
             >
               Nuova importazione
             </button>
@@ -302,17 +302,17 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
               : 'bg-red-400'
           }`} />
 
-          <span className="text-sm font-semibold text-white truncate">
+          <span className="text-sm font-semibold text-ink-1 truncate">
             {teamOverride
               ? availableTeams.find((t) => t.id === teamOverride)?.name ?? team.inputName
               : team.teamDbName ?? team.inputName}
           </span>
 
           {(team.teamDbName ?? teamOverride) && (team.teamDbName ?? teamOverride) !== team.inputName && (
-            <span className="text-xs text-[#9095b8] truncate">← "{team.inputName}"</span>
+            <span className="text-xs text-ink-4 truncate">← "{team.inputName}"</span>
           )}
 
-          <span className="text-xs text-[#b8bcdc] flex-shrink-0">{team.formationStr}</span>
+          <span className="text-xs text-ink-3 flex-shrink-0">{team.formationStr}</span>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -331,7 +331,7 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="border-t border-white/8 px-4 py-3 space-y-3">
+        <div className="border-t border-hairline px-4 py-3 space-y-3">
           {/* Manual team picker for unmatched teams */}
           {needsTeamPicker && (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 space-y-2">
@@ -351,7 +351,7 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
                   }
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full rounded border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-400/60"
+                className="w-full rounded border border-hairline bg-glass-1 px-2 py-1 text-xs text-ink-1 focus:outline-none focus:border-indigo-400/60"
               >
                 <option value="">— scegli squadra —</option>
                 {availableTeams.map((t) => (
@@ -388,7 +388,7 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
 
           {/* Starters table */}
           <div>
-            <p className="text-xs font-medium text-[#9095b8] uppercase tracking-wide mb-1.5">
+            <p className="text-xs font-medium text-ink-4 uppercase tracking-wide mb-1.5">
               Titolari ({starters.length})
             </p>
             <div className="space-y-0.5">
@@ -401,7 +401,7 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
           {/* Bench table */}
           {bench.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-[#9095b8] uppercase tracking-wide mb-1.5">
+              <p className="text-xs font-medium text-ink-4 uppercase tracking-wide mb-1.5">
                 Panchina ({bench.length})
               </p>
               <div className="space-y-0.5">
@@ -432,13 +432,13 @@ function PlayerRow({ player }: { player: import('./actions').PlayerPreview }) {
       {!player.isBench && (
         <span className={`w-8 flex-shrink-0 font-mono ${
           player.assignedRole
-            ? player.isExtendedSlot ? 'text-amber-400' : 'text-[#b8bcdc]'
+            ? player.isExtendedSlot ? 'text-amber-400' : 'text-ink-3'
             : 'text-red-400'
         }`}>
           {player.assignedRole ?? '—'}
         </span>
       )}
-      <span className={matched ? 'text-white' : 'text-red-400'}>
+      <span className={matched ? 'text-ink-1' : 'text-red-400'}>
         {player.dbName ?? player.inputName}
       </span>
       {player.dbName && player.dbName !== player.inputName && (

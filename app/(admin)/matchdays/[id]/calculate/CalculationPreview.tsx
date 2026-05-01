@@ -77,15 +77,15 @@ function rcBadge(rc: string) {
     MID: 'text-green-400',
     ATT: 'text-red-400',
   }
-  return <span className={`font-mono text-xs font-bold ${colors[rc] ?? 'text-[#b8bcdc]'}`}>{rc}</span>
+  return <span className={`font-mono text-xs font-bold ${colors[rc] ?? 'text-ink-3'}`}>{rc}</span>
 }
 
 // ---- Breakdown tooltip -------------------------------------
 
 function BMBreakdown({ breakdown }: { breakdown: BonusMalusItem[] }) {
-  if (!breakdown || breakdown.length === 0) return <span className="text-[#9095b8]">—</span>
+  if (!breakdown || breakdown.length === 0) return <span className="text-ink-4">—</span>
   return (
-    <span className="cursor-help border-b border-dotted border-[#55556a] text-white" title={
+    <span className="cursor-help border-b border-dotted border-[#55556a] text-ink-1" title={
       breakdown.map((b) => `${b.label}: ${b.quantity > 1 ? `${b.quantity}×` : ''}${b.points_each > 0 ? '+' : ''}${b.points_each} = ${b.total > 0 ? '+' : ''}${b.total}`).join('\n')
     }>
       {breakdown.reduce((acc, b) => acc + b.total, 0) >= 0 ? '+' : ''}
@@ -117,13 +117,13 @@ function EditStatsModal({
 
   const n = (field: keyof typeof form, label: string) => (
     <div className="flex flex-col gap-1">
-      <label className="text-xs text-[#b8bcdc]">{label}</label>
+      <label className="text-xs text-ink-3">{label}</label>
       <input
         type="number"
         min={0}
         value={form[field] as number}
         onChange={(e) => setForm((prev) => ({ ...prev, [field]: Number(e.target.value) || 0 }))}
-        className="w-full rounded border border-white/10 bg-white/[0.05] px-2 py-1.5 text-center text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+        className="w-full rounded border border-hairline bg-glass-1 px-2 py-1.5 text-center text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
       />
     </div>
   )
@@ -182,15 +182,15 @@ function EditStatsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl"
+        className="w-full max-w-sm rounded-xl border border-hairline bg-glass-1 p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-white">{playerName}</h3>
-            <p className="text-xs text-[#9095b8]">Modifica bonus/malus</p>
+            <h3 className="text-sm font-semibold text-ink-1">{playerName}</h3>
+            <p className="text-xs text-ink-4">Modifica bonus/malus</p>
           </div>
-          <button onClick={onClose} className="text-[#9095b8] hover:text-white text-lg leading-none">×</button>
+          <button onClick={onClose} className="text-ink-4 hover:text-ink-1 text-lg leading-none">×</button>
         </div>
 
         <div className="mb-4 grid grid-cols-3 gap-3">
@@ -207,21 +207,21 @@ function EditStatsModal({
         </div>
 
         <div className="mb-4 flex items-center gap-4">
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#b8bcdc]">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-3">
             <input
               type="checkbox"
               checked={form.clean_sheet}
               onChange={(e) => setForm((prev) => ({ ...prev, clean_sheet: e.target.checked }))}
-              className="rounded border-white/10 bg-white/[0.05] accent-indigo-500"
+              className="rounded border-hairline bg-glass-1 accent-indigo-500"
             />
             Clean sheet
           </label>
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-[#b8bcdc]">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-3">
             <input
               type="checkbox"
               checked={form.is_provisional}
               onChange={(e) => setForm((prev) => ({ ...prev, is_provisional: e.target.checked }))}
-              className="rounded border-white/10 bg-white/[0.05] accent-indigo-500"
+              className="rounded border-hairline bg-glass-1 accent-indigo-500"
             />
             Provvisorio
           </label>
@@ -239,7 +239,7 @@ function EditStatsModal({
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-[#b8bcdc] hover:text-white"
+            className="rounded-lg border border-hairline px-3 py-2 text-sm text-ink-3 hover:text-ink-1"
           >
             Annulla
           </button>
@@ -376,7 +376,7 @@ export function CalculationPreview({
                   <span className={cr.error ? 'text-red-400' : 'text-emerald-400'}>
                     {cr.error ? '✗' : '✓'}
                   </span>
-                  <span className="text-[#b8bcdc]">
+                  <span className="text-ink-3">
                     {cr.competition_name} — {cr.round_name}
                   </span>
                   {cr.error && (
@@ -396,7 +396,7 @@ export function CalculationPreview({
             title={
               <div className="flex items-center gap-4">
                 <span>Risultati run attivo</span>
-                <span className="text-sm font-normal text-[#b8bcdc]">
+                <span className="text-sm font-normal text-ink-3">
                   {scoredCount} calcolati · {nvCount} NV/senza voti
                 </span>
               </div>
@@ -404,13 +404,13 @@ export function CalculationPreview({
           />
           <CardContent className="p-0">
             {/* Filters */}
-            <div className="flex items-center gap-3 border-b border-white/10 px-6 py-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#b8bcdc]">
+            <div className="flex items-center gap-3 border-b border-hairline px-6 py-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-3">
                 <input
                   type="checkbox"
                   checked={filterNV}
                   onChange={(e) => setFilterNV(e.target.checked)}
-                  className="rounded border-white/10 bg-white/[0.04]"
+                  className="rounded border-hairline bg-glass-1"
                 />
                 Nascondi NV
               </label>
@@ -424,19 +424,19 @@ export function CalculationPreview({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
-                    <th className="px-6 py-2.5 sticky left-0 bg-white/[0.04]">Giocatore</th>
+                  <tr className="border-b border-hairline text-left text-xs text-ink-4">
+                    <th className="px-6 py-2.5 sticky left-0 bg-glass-1">Giocatore</th>
                     <th className="px-4 py-2.5">Classe</th>
                     <th className="px-4 py-2.5 text-right">Min·F</th>
                     <th className="px-4 py-2.5 text-right">z FM</th>
                     <th className="px-4 py-2.5 text-right">z SS</th>
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
-                    <th className="px-4 py-2.5 text-right font-bold text-white">Fantavoto</th>
+                    <th className="px-4 py-2.5 text-right font-bold text-ink-1">Fantavoto</th>
                     <th className="px-4 py-2.5 w-16"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/8">
+                <tbody className="divide-y divide-hairline">
                   {displayed.map((c) => {
                     const player = c.league_players
                     const isNV = c.fantavoto === null
@@ -453,32 +453,32 @@ export function CalculationPreview({
                           className={`${isNV ? 'opacity-50' : ''} ${wasEdited ? 'bg-amber-500/5' : ''} hover:bg-[#1a1a2a] cursor-pointer`}
                           onClick={() => setExpandedRow(isExpanded ? null : c.id)}
                         >
-                          <td className="px-6 py-2.5 sticky left-0 bg-white/[0.04]">
-                            <div className="font-medium text-white">{player?.full_name ?? '—'}</div>
-                            <div className="text-xs text-[#9095b8]">{player?.club ?? ''}</div>
+                          <td className="px-6 py-2.5 sticky left-0 bg-glass-1">
+                            <div className="font-medium text-ink-1">{player?.full_name ?? '—'}</div>
+                            <div className="text-xs text-ink-4">{player?.club ?? ''}</div>
                           </td>
                           <td className="px-4 py-2.5">
                             {rcBadge(player?.rating_class ?? '')}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
+                          <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {c.minutes_factor !== null ? `×${c.minutes_factor.toFixed(1)}` : '—'}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
+                          <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.z_fotmob)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono">
                             {c.z_sofascore !== null
                               ? <span className="text-indigo-300">{fmt(c.z_sofascore)}</span>
-                              : <span className="text-[#9095b8]">—</span>}
+                              : <span className="text-ink-4">—</span>}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
+                          <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.voto_base)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono">
-                            {breakdown ? <BMBreakdown breakdown={breakdown} /> : <span className="text-[#9095b8]">—</span>}
+                            {breakdown ? <BMBreakdown breakdown={breakdown} /> : <span className="text-ink-4">—</span>}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono font-bold">
-                            <span className={isNV ? 'text-[#9095b8]' : 'text-white'}>
+                            <span className={isNV ? 'text-ink-4' : 'text-ink-1'}>
                               {fmtFv(c.fantavoto)}
                             </span>
                             {c.is_provisional && (
@@ -499,12 +499,12 @@ export function CalculationPreview({
                                 <button
                                   title="Modifica statistiche"
                                   onClick={() => setEditingPlayer({ id: c.player_id, name: player?.full_name ?? '—' })}
-                                  className="rounded px-1.5 py-0.5 text-xs text-[#9095b8] hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors"
+                                  className="rounded px-1.5 py-0.5 text-xs text-ink-4 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors"
                                 >
                                   ✎
                                 </button>
                               )}
-                              <span className="text-xs text-[#9095b8]">{isExpanded ? '▲' : '▼'}</span>
+                              <span className="text-xs text-ink-4">{isExpanded ? '▲' : '▼'}</span>
                             </div>
                           </td>
                         </tr>
@@ -530,7 +530,7 @@ export function CalculationPreview({
                           const vbSs = calcVotoBase(c.z_sofascore)
 
                           return (
-                          <tr className="bg-white/[0.03]">
+                          <tr className="bg-glass-soft">
                             <td colSpan={9} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
@@ -546,20 +546,20 @@ export function CalculationPreview({
                                   ['fantavoto', fmtFv(c.fantavoto)],
                                 ].map(([label, value]) => (
                                   <div key={label} className="flex justify-between gap-2">
-                                    <span className={label?.startsWith('z Sofa') ? 'text-indigo-400/60' : label?.startsWith('z Fot') ? 'text-[#b8bcdc]' : 'text-[#9095b8]'}>{label}</span>
-                                    <span className={`font-mono ${label?.startsWith('z Sofa') ? 'text-indigo-300' : 'text-[#b8bcdc]'}`}>{value}</span>
+                                    <span className={label?.startsWith('z Sofa') ? 'text-indigo-400/60' : label?.startsWith('z Fot') ? 'text-ink-3' : 'text-ink-4'}>{label}</span>
+                                    <span className={`font-mono ${label?.startsWith('z Sofa') ? 'text-indigo-300' : 'text-ink-3'}`}>{value}</span>
                                   </div>
                                 ))}
                               </div>
 
                               {/* Per-source translated marks */}
                               {(vbFm !== null || vbSs !== null) && (
-                                <div className="mt-3 border-t border-white/10 pt-3">
-                                  <p className="mb-1.5 text-xs font-medium text-[#9095b8] uppercase tracking-wider">Voto base per fonte</p>
+                                <div className="mt-3 border-t border-hairline pt-3">
+                                  <p className="mb-1.5 text-xs font-medium text-ink-4 uppercase tracking-wider">Voto base per fonte</p>
                                   <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs">
                                     {vbFm !== null && (
                                       <div className="flex items-center gap-2">
-                                        <span className="text-[#b8bcdc]">Solo FotMob</span>
+                                        <span className="text-ink-3">Solo FotMob</span>
                                         <span className="font-mono font-bold text-[#c8c8f0]">{fmt(vbFm)}</span>
                                       </div>
                                     )}
@@ -571,8 +571,8 @@ export function CalculationPreview({
                                     )}
                                     {vbFm !== null && vbSs !== null && (
                                       <div className="flex items-center gap-2">
-                                        <span className="text-[#9095b8]">Δ FM−SS</span>
-                                        <span className={`font-mono ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-[#b8bcdc]'}`}>
+                                        <span className="text-ink-4">Δ FM−SS</span>
+                                        <span className={`font-mono ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-ink-3'}`}>
                                           {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
                                         </span>
                                       </div>
@@ -582,13 +582,13 @@ export function CalculationPreview({
                               )}
 
                               {breakdown && breakdown.length > 0 && (
-                                <div className="mt-3 border-t border-white/10 pt-3">
-                                  <p className="mb-1.5 text-xs font-medium text-[#9095b8] uppercase tracking-wider">Bonus/Malus</p>
+                                <div className="mt-3 border-t border-hairline pt-3">
+                                  <p className="mb-1.5 text-xs font-medium text-ink-4 uppercase tracking-wider">Bonus/Malus</p>
                                   <div className="flex flex-wrap gap-x-6 gap-y-1">
                                     {breakdown.map((b) => (
                                       <span key={b.label} className="text-xs">
-                                        <span className="text-[#b8bcdc]">{b.label}</span>{' '}
-                                        {b.quantity > 1 && <span className="font-mono text-[#9095b8]">{b.quantity}× </span>}
+                                        <span className="text-ink-3">{b.label}</span>{' '}
+                                        {b.quantity > 1 && <span className="font-mono text-ink-4">{b.quantity}× </span>}
                                         <span className={`font-mono font-bold ${b.total >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                           {b.total >= 0 ? '+' : ''}{b.total.toFixed(1)}
                                         </span>
@@ -612,7 +612,7 @@ export function CalculationPreview({
       )}
 
       {calcs.length === 0 && !canTrigger && (
-        <p className="text-sm text-[#9095b8]">
+        <p className="text-sm text-ink-4">
           Nessun calcolo disponibile. Porta la giornata in &quot;aperta&quot; per iniziare.
         </p>
       )}

@@ -26,7 +26,7 @@ export function FixturesManager({
   return (
     <div className="space-y-6">
       {/* Hint */}
-      <p className="text-xs text-[#9095b8]">
+      <p className="text-xs text-ink-4">
         Incolla gli ID numerici delle 10 partite di Serie A, uno per riga. L&apos;ordine non
         è importante.
       </p>
@@ -36,25 +36,25 @@ export function FixturesManager({
         <input type="hidden" name="matchdayId" value={matchdayId} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-medium text-[#b8bcdc] mb-1">
+            <label className="block text-xs font-medium text-ink-3 mb-1">
               ID FotMob (uno per riga)
             </label>
             <textarea
               name="fotmobIds"
               rows={11}
               placeholder={"4803335\n4803336\n..."}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-mono text-[#f5f7ff] placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm font-mono text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none resize-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#b8bcdc] mb-1">
+            <label className="block text-xs font-medium text-ink-3 mb-1">
               ID SofaScore (uno per riga)
             </label>
             <textarea
               name="sofascoreIds"
               rows={11}
               placeholder={"13981724\n13981725\n..."}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-mono text-[#f5f7ff] placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm font-mono text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none resize-none"
             />
           </div>
         </div>
@@ -77,24 +77,24 @@ export function FixturesManager({
       {/* Current fixtures table */}
       {fixtures.length > 0 ? (
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#9095b8]">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">
             Fixture salvate ({fixtures.length})
           </p>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
+              <tr className="border-b border-hairline text-left text-xs text-ink-4">
                 <th className="px-4 py-2">#</th>
                 <th className="px-4 py-2">FotMob ID</th>
                 <th className="px-4 py-2">SofaScore ID</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/8">
+            <tbody className="divide-y divide-hairline">
               {fixtures.map((fx, idx) => (
-                <tr key={fx.id} className="hover:bg-white/[0.05]">
-                  <td className="px-4 py-2 text-[#9095b8]">{idx + 1}</td>
-                  <td className="px-4 py-2 font-mono text-[#b8bcdc]">{fx.fotmob_match_id ?? '—'}</td>
-                  <td className="px-4 py-2 font-mono text-[#b8bcdc]">
+                <tr key={fx.id} className="hover:bg-glass-1">
+                  <td className="px-4 py-2 text-ink-4">{idx + 1}</td>
+                  <td className="px-4 py-2 font-mono text-ink-3">{fx.fotmob_match_id ?? '—'}</td>
+                  <td className="px-4 py-2 font-mono text-ink-3">
                     {fx.sofascore_event_id ? (
                       <a
                         href={`https://www.sofascore.com/api/v1/event/${fx.sofascore_event_id}/lineups`}
@@ -120,12 +120,12 @@ export function FixturesManager({
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-xs text-[#9095b8]">
+          <p className="mt-2 text-xs text-ink-4">
             Clicca su un ID SofaScore per aprire il JSON (il fetch automatico lo recupera direttamente).
           </p>
         </div>
       ) : (
-        <p className="text-sm text-[#9095b8]">Nessuna fixture configurata.</p>
+        <p className="text-sm text-ink-4">Nessuna fixture configurata.</p>
       )}
     </div>
   )
@@ -262,7 +262,7 @@ export function FetchPreview({
 
   if (!hasFixtures) {
     return (
-      <p className="text-sm text-[#9095b8]">
+      <p className="text-sm text-ink-4">
         Aggiungi almeno una fixture sopra per abilitare il fetch automatico.
       </p>
     )
@@ -280,11 +280,11 @@ export function FetchPreview({
       )}
 
       {state.phase === 'fetching-sofascore' && (
-        <p className="text-sm text-[#b8bcdc] animate-pulse">Recupero voti SofaScore…</p>
+        <p className="text-sm text-ink-3 animate-pulse">Recupero voti SofaScore…</p>
       )}
 
       {state.phase === 'fetching' && (
-        <p className="text-sm text-[#b8bcdc] animate-pulse">Caricamento FotMob in corso…</p>
+        <p className="text-sm text-ink-3 animate-pulse">Caricamento FotMob in corso…</p>
       )}
 
       {state.phase === 'error' && (
@@ -292,7 +292,7 @@ export function FetchPreview({
           <p className="text-sm text-red-400">{state.message}</p>
           <button
             onClick={() => setState({ phase: 'idle' })}
-            className="text-xs text-[#b8bcdc] hover:text-indigo-400"
+            className="text-xs text-ink-3 hover:text-indigo-400"
           >
             ← Riprova
           </button>
@@ -316,7 +316,7 @@ export function FetchPreview({
       )}
 
       {state.phase === 'importing' && (
-        <p className="text-sm text-[#b8bcdc] animate-pulse">Importazione in corso…</p>
+        <p className="text-sm text-ink-3 animate-pulse">Importazione in corso…</p>
       )}
     </div>
   )
@@ -339,8 +339,8 @@ function PreviewTable({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-[#f5f7ff]">
-            <span className="font-semibold text-white">{matched.length}</span> giocatori abbinati
+          <p className="text-sm text-ink-1">
+            <span className="font-semibold text-ink-1">{matched.length}</span> giocatori abbinati
             {unmatched.length > 0 && (
               <span className="ml-2 text-red-400">· {unmatched.length} non abbinati</span>
             )}
@@ -352,7 +352,7 @@ function PreviewTable({
         <div className="flex gap-3">
           <button
             onClick={onReset}
-            className="text-xs text-[#b8bcdc] hover:text-indigo-400"
+            className="text-xs text-ink-3 hover:text-indigo-400"
           >
             ← Annulla
           </button>
@@ -370,7 +370,7 @@ function PreviewTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-white/10 text-left text-[#9095b8]">
+            <tr className="border-b border-hairline text-left text-ink-4">
               <th className="px-3 py-2">Giocatore DB</th>
               <th className="px-3 py-2">Nome API</th>
               <th className="px-3 py-2 text-right">SS</th>
@@ -384,7 +384,7 @@ function PreviewTable({
               <th className="px-3 py-2 text-right">R</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/8">
+          <tbody className="divide-y divide-hairline">
             {matched.map((m) => (
               <MatchedRow key={m.league_player_id} m={m} />
             ))}
@@ -395,16 +395,16 @@ function PreviewTable({
       {/* Unmatched */}
       {unmatched.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#9095b8]">
+          <p className="text-xs font-medium uppercase tracking-wider text-ink-4">
             Non abbinati ({unmatched.length})
           </p>
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 space-y-1">
+          <div className="rounded-lg border border-hairline bg-glass-1 px-4 py-3 space-y-1">
             {unmatched.map((u, i) => (
               <div key={i} className="flex gap-4 text-xs">
                 <span className="text-red-400">{u.stat.name}</span>
-                <span className="text-[#9095b8]">{u.stat.team_label}</span>
+                <span className="text-ink-4">{u.stat.team_label}</span>
                 {u.closest_name && (
-                  <span className="text-[#9095b8]">→ più simile: {u.closest_name}</span>
+                  <span className="text-ink-4">→ più simile: {u.closest_name}</span>
                 )}
               </div>
             ))}
@@ -418,38 +418,38 @@ function PreviewTable({
 function MatchedRow({ m }: { m: FetchRatingsResponse['matched'][number] }) {
   const s = m.stat
   return (
-    <tr className="hover:bg-white/[0.05]">
+    <tr className="hover:bg-glass-1">
       <td className="px-3 py-1.5">
-        <span className="text-[#f5f7ff]">{m.league_player_name}</span>
-        <span className="ml-1 text-[#9095b8]">{m.club}</span>
+        <span className="text-ink-1">{m.league_player_name}</span>
+        <span className="ml-1 text-ink-4">{m.club}</span>
       </td>
-      <td className="px-3 py-1.5 text-[#b8bcdc]">{s.name}</td>
-      <td className="px-3 py-1.5 text-right font-mono text-[#b8bcdc]">
+      <td className="px-3 py-1.5 text-ink-3">{s.name}</td>
+      <td className="px-3 py-1.5 text-right font-mono text-ink-3">
         {s.sofascore_rating != null ? (
           <span className="text-indigo-300">{s.sofascore_rating.toFixed(1)}</span>
         ) : '—'}
       </td>
-      <td className="px-3 py-1.5 text-right font-mono text-[#b8bcdc]">
+      <td className="px-3 py-1.5 text-right font-mono text-ink-3">
         {s.fotmob_rating != null ? s.fotmob_rating.toFixed(2) : '—'}
       </td>
-      <td className="px-3 py-1.5 text-right font-mono text-[#b8bcdc]">{s.minutes_played}</td>
+      <td className="px-3 py-1.5 text-right font-mono text-ink-3">{s.minutes_played}</td>
       <td className="px-3 py-1.5 text-right font-mono">
-        <span className={s.goals_scored > 0 ? 'text-green-400' : 'text-[#9095b8]'}>{s.goals_scored}</span>
+        <span className={s.goals_scored > 0 ? 'text-green-400' : 'text-ink-4'}>{s.goals_scored}</span>
       </td>
       <td className="px-3 py-1.5 text-right font-mono">
-        <span className={s.assists > 0 ? 'text-blue-400' : 'text-[#9095b8]'}>{s.assists}</span>
+        <span className={s.assists > 0 ? 'text-blue-400' : 'text-ink-4'}>{s.assists}</span>
       </td>
       <td className="px-3 py-1.5 text-right font-mono">
-        <span className={s.goals_conceded > 0 ? 'text-red-400' : 'text-[#9095b8]'}>{s.goals_conceded}</span>
+        <span className={s.goals_conceded > 0 ? 'text-red-400' : 'text-ink-4'}>{s.goals_conceded}</span>
       </td>
       <td className="px-3 py-1.5 text-right font-mono">
-        <span className={s.own_goals > 0 ? 'text-red-400' : 'text-[#9095b8]'}>{s.own_goals}</span>
+        <span className={s.own_goals > 0 ? 'text-red-400' : 'text-ink-4'}>{s.own_goals}</span>
       </td>
       <td className="px-3 py-1.5 text-right font-mono">
-        <span className={s.yellow_cards > 0 ? 'text-yellow-400' : 'text-[#9095b8]'}>{s.yellow_cards}</span>
+        <span className={s.yellow_cards > 0 ? 'text-yellow-400' : 'text-ink-4'}>{s.yellow_cards}</span>
       </td>
       <td className="px-3 py-1.5 text-right font-mono">
-        <span className={s.red_cards > 0 ? 'text-red-400' : 'text-[#9095b8]'}>{s.red_cards}</span>
+        <span className={s.red_cards > 0 ? 'text-red-400' : 'text-ink-4'}>{s.red_cards}</span>
       </td>
     </tr>
   )

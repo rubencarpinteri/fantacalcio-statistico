@@ -27,7 +27,7 @@ interface TeamStandingRow {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  setup:     'text-[#9095b8] bg-white/[0.06]',
+  setup:     'text-ink-4 bg-glass-2',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
   cancelled: 'text-red-400 bg-red-500/10',
@@ -37,7 +37,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 const ROUND_STATUS_BADGE: Record<string, string> = {
-  pending:  'text-[#9095b8] bg-white/[0.06]',
+  pending:  'text-ink-4 bg-glass-2',
   computed: 'text-emerald-400 bg-emerald-500/10',
   locked:   'text-indigo-300 bg-indigo-500/10',
 }
@@ -120,16 +120,16 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <a href="/competitions" className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300">
+          <a href="/competitions" className="text-[12.5px] text-ink-4 transition-colors hover:text-indigo-300">
             ← Competizioni
           </a>
           <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-2">
             <h1
-              className="flex items-baseline gap-2 font-light tracking-tight text-[#f5f7ff]"
+              className="flex items-baseline gap-2 font-light tracking-tight text-ink-1"
               style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
             >
               <span className="font-semibold">{competition.name}</span>
-              <span className="serif font-normal text-[#b8bcdc]">— Battle Royale</span>
+              <span className="serif font-normal text-ink-3">— Battle Royale</span>
             </h1>
             <div className="flex items-center gap-2">
               {competition.season && <Badge variant="muted">{competition.season}</Badge>}
@@ -138,7 +138,7 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
               </span>
             </div>
           </div>
-          <p className="mt-1.5 text-[12.5px] text-[#9095b8]">Ogni squadra contro tutte le altre · l&apos;ultima viene eliminata</p>
+          <p className="mt-1.5 text-[12.5px] text-ink-4">Ogni squadra contro tutte le altre · l&apos;ultima viene eliminata</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
@@ -150,7 +150,7 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
           {isAdmin && (
             <a
               href={`/competitions/${competition.id}/rounds`}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-[#9095b8] hover:bg-white/[0.06] hover:text-white transition-colors"
+              className="rounded-lg border border-hairline px-3 py-1.5 text-sm text-ink-4 hover:bg-glass-2 hover:text-ink-1 transition-colors"
             >
               Gestisci turni →
             </a>
@@ -163,7 +163,7 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
         <Card>
           <CardContent>
             <div className="py-10 text-center">
-              <p className="text-sm text-[#9095b8]">Nessun turno generato.</p>
+              <p className="text-sm text-ink-4">Nessun turno generato.</p>
               {isAdmin && (
                 <a
                   href={`/competitions/${competition.id}/rounds`}
@@ -179,13 +179,13 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
 
       {/* Latest-round hero */}
       {latestRound && (
-        <div className="rounded-xl border border-indigo-500/30 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="rounded-xl border border-indigo-500/30 bg-glass-1 backdrop-blur-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-widest text-indigo-500">
                 Ultimo turno calcolato
               </span>
-              <span className="font-semibold text-white">{latestRound.name}</span>
+              <span className="font-semibold text-ink-1">{latestRound.name}</span>
             </div>
             <a
               href={`/competitions/${competition.id}/rounds/${latestRound.round_number}`}
@@ -194,22 +194,22 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
               Dettaglio →
             </a>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-white/8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-hairline">
             <div className="p-5">
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-500/70">
                 🏆 Vincitore di giornata
               </p>
               {dayWinner ? (
                 <>
-                  <p className={`text-base font-bold ${dayWinner.team_id === myTeamId ? 'text-indigo-300' : 'text-white'}`}>
+                  <p className={`text-base font-bold ${dayWinner.team_id === myTeamId ? 'text-indigo-300' : 'text-ink-1'}`}>
                     {teamNameMap.get(dayWinner.team_id) ?? '—'}
                   </p>
-                  <p className="mt-0.5 text-xs text-[#9095b8] tabular-nums">
+                  <p className="mt-0.5 text-xs text-ink-4 tabular-nums">
                     {dayWinner.total_fantavoto.toFixed(1)} fantavoto
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-[#9095b8]">—</p>
+                <p className="text-sm text-ink-4">—</p>
               )}
             </div>
             <div className="p-5">
@@ -218,15 +218,15 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
               </p>
               {dayLoser ? (
                 <>
-                  <p className={`text-base font-bold ${dayLoser.team_id === myTeamId ? 'text-indigo-300' : 'text-white'}`}>
+                  <p className={`text-base font-bold ${dayLoser.team_id === myTeamId ? 'text-indigo-300' : 'text-ink-1'}`}>
                     {teamNameMap.get(dayLoser.team_id) ?? '—'}
                   </p>
-                  <p className="mt-0.5 text-xs text-[#9095b8] tabular-nums">
+                  <p className="mt-0.5 text-xs text-ink-4 tabular-nums">
                     {dayLoser.total_fantavoto.toFixed(1)} fantavoto
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-[#9095b8]">—</p>
+                <p className="text-sm text-ink-4">—</p>
               )}
             </div>
           </div>
@@ -253,44 +253,44 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8">
+                <tr className="border-b border-hairline">
                   {['Pos', 'Squadra', 'G', 'V', 'N', 'P', 'DR', 'Pt'].map((h, i) => (
                     <th
                       key={`${h}-${i}`}
-                      className={`px-4 py-2.5 text-xs font-medium text-[#9095b8] ${i < 2 ? 'text-left' : 'text-center'}`}
+                      className={`px-4 py-2.5 text-xs font-medium text-ink-4 ${i < 2 ? 'text-left' : 'text-center'}`}
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {topStandings.map((row, idx) => (
-                  <tr key={row.team_id} className={`hover:bg-white/[0.04] ${row.team_id === myTeamId ? 'bg-indigo-500/5' : ''}`}>
+                  <tr key={row.team_id} className={`hover:bg-glass-1 ${row.team_id === myTeamId ? 'bg-indigo-500/5' : ''}`}>
                     <td className="px-4 py-3">
                       <span className={`text-sm font-semibold ${
                         idx === 0 ? 'text-amber-400'
                           : idx <= 2 ? 'text-indigo-300'
-                          : 'text-[#9095b8]'
+                          : 'text-ink-4'
                       }`}>
                         {idx + 1}
                       </span>
                     </td>
-                    <td className={`px-4 py-3 font-medium ${row.team_id === myTeamId ? 'text-indigo-200' : 'text-white'}`}>
+                    <td className={`px-4 py-3 font-medium ${row.team_id === myTeamId ? 'text-indigo-200' : 'text-ink-1'}`}>
                       {teamNameMap.get(row.team_id) ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-center text-[#9095b8] tabular-nums">{row.played}</td>
-                    <td className="px-4 py-3 text-center text-[#9095b8] tabular-nums">{row.wins}</td>
-                    <td className="px-4 py-3 text-center text-[#9095b8] tabular-nums">{row.draws}</td>
-                    <td className="px-4 py-3 text-center text-[#9095b8] tabular-nums">{row.losses}</td>
+                    <td className="px-4 py-3 text-center text-ink-4 tabular-nums">{row.played}</td>
+                    <td className="px-4 py-3 text-center text-ink-4 tabular-nums">{row.wins}</td>
+                    <td className="px-4 py-3 text-center text-ink-4 tabular-nums">{row.draws}</td>
+                    <td className="px-4 py-3 text-center text-ink-4 tabular-nums">{row.losses}</td>
                     <td className={`px-4 py-3 text-center tabular-nums ${
                       row.goal_difference > 0 ? 'text-emerald-400'
                         : row.goal_difference < 0 ? 'text-red-400'
-                        : 'text-[#9095b8]'
+                        : 'text-ink-4'
                     }`}>
                       {row.goal_difference > 0 ? '+' : ''}{row.goal_difference}
                     </td>
-                    <td className="px-4 py-3 text-center font-bold text-white tabular-nums">{row.points}</td>
+                    <td className="px-4 py-3 text-center font-bold text-ink-1 tabular-nums">{row.points}</td>
                   </tr>
                 ))}
               </tbody>
@@ -309,18 +309,18 @@ export async function BattleRoyaleDetailView({ competition, isAdmin, myTeamId, a
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">#</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Turno</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-[#9095b8]">Stato</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-[#9095b8]"></th>
+                <tr className="border-b border-hairline">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-4">#</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-4">Turno</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-4">Stato</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-ink-4"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {rounds.map((r) => (
-                  <tr key={r.id} className="hover:bg-white/[0.04]">
-                    <td className="px-4 py-2.5 w-12 text-[#9095b8] tabular-nums">{r.round_number}</td>
-                    <td className="px-4 py-2.5 text-white">{r.name}</td>
+                  <tr key={r.id} className="hover:bg-glass-1">
+                    <td className="px-4 py-2.5 w-12 text-ink-4 tabular-nums">{r.round_number}</td>
+                    <td className="px-4 py-2.5 text-ink-1">{r.name}</td>
                     <td className="px-4 py-2.5">
                       <span className={`rounded px-2 py-0.5 text-xs font-medium ${ROUND_STATUS_BADGE[r.status] ?? ''}`}>
                         {ROUND_STATUS_LABEL[r.status] ?? r.status}

@@ -173,17 +173,17 @@ export default async function CalculatePage({
         <div>
           <a
             href={`/matchdays/${matchdayId}`}
-            className="text-[12.5px] text-[#9095b8] transition-colors hover:text-indigo-300"
+            className="text-[12.5px] text-ink-4 transition-colors hover:text-indigo-300"
           >
             ← {matchday.name}
           </a>
           <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <h1
-              className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+              className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
               style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
             >
               <span className="font-semibold">Calcolo</span>
-              <span className="serif font-normal text-[#b8bcdc]">— punteggi</span>
+              <span className="serif font-normal text-ink-3">— punteggi</span>
             </h1>
             <Badge variant={['closed', 'published'].includes(matchday.status) ? 'success' : 'muted'}>
               {matchday.status}
@@ -192,17 +192,17 @@ export default async function CalculatePage({
         </div>
 
         {/* Stats readiness panel */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm min-w-[200px] backdrop-blur-xl">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+        <div className="rounded-2xl border border-hairline bg-glass-1 p-4 text-sm min-w-[200px] backdrop-blur-xl">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-3">
             Statistiche
           </p>
           <div className="space-y-1">
             <div className="flex justify-between gap-6">
-              <span className="text-[#b8bcdc]">Inserite</span>
-              <span className="font-mono text-white">{statsCount ?? 0}</span>
+              <span className="text-ink-3">Inserite</span>
+              <span className="font-mono text-ink-1">{statsCount ?? 0}</span>
             </div>
             <div className="flex justify-between gap-6">
-              <span className="text-[#b8bcdc]">Provvisorie</span>
+              <span className="text-ink-3">Provvisorie</span>
               <span className={`font-mono ${(provisionalCount ?? 0) > 0 ? 'text-amber-400' : 'text-green-400'}`}>
                 {provisionalCount ?? 0}
               </span>
@@ -240,14 +240,14 @@ export default async function CalculatePage({
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
+                <tr className="border-b border-hairline text-left text-xs text-ink-4">
                   <th className="px-6 py-2.5">Run</th>
                   <th className="px-6 py-2.5">Engine</th>
                   <th className="px-6 py-2.5">Stato</th>
                   <th className="px-6 py-2.5">Data</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {runs.map((r) => (
                   <tr
                     key={r.id}
@@ -255,7 +255,7 @@ export default async function CalculatePage({
                       r.id === previewRunId ? 'bg-indigo-500/5' : '',
                     ].join('')}
                   >
-                    <td className="px-6 py-2.5 font-mono text-white">
+                    <td className="px-6 py-2.5 font-mono text-ink-1">
                       #{r.run_number}
                       {r.id === previewRunId && (
                         <span className="ml-2 text-xs text-indigo-400">anteprima</span>
@@ -267,7 +267,7 @@ export default async function CalculatePage({
                         <span className="ml-2 text-xs text-green-400">pubblicato · anteprima</span>
                       )}
                     </td>
-                    <td className="px-6 py-2.5 text-[#b8bcdc]">{r.engine_version}</td>
+                    <td className="px-6 py-2.5 text-ink-3">{r.engine_version}</td>
                     <td className="px-6 py-2.5">
                       <Badge
                         variant={
@@ -279,7 +279,7 @@ export default async function CalculatePage({
                         {r.status}
                       </Badge>
                     </td>
-                    <td className="px-6 py-2.5 text-[#9095b8]">
+                    <td className="px-6 py-2.5 text-ink-4">
                       {new Intl.DateTimeFormat('it-IT', {
                         dateStyle: 'short',
                         timeStyle: 'short',

@@ -10,8 +10,8 @@ export default async function LeagueSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white">Impostazioni Lega</h1>
-        <p className="mt-0.5 text-sm text-[#b8bcdc]">
+        <h1 className="text-xl font-bold text-ink-1">Impostazioni Lega</h1>
+        <p className="mt-0.5 text-sm text-ink-3">
           Configura il comportamento della lega e della stagione corrente.
         </p>
       </div>
@@ -37,63 +37,63 @@ export default async function LeagueSettingsPage() {
               <nav className="space-y-1">
                 <a
                   href="/league/members"
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.05]"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
                 >
                   <div>
-                    <p className="font-medium text-white">Membri e inviti</p>
-                    <p className="text-xs text-[#b8bcdc]">
+                    <p className="font-medium text-ink-1">Membri e inviti</p>
+                    <p className="text-xs text-ink-3">
                       Invita manager, cambia ruoli, gestisci le squadre
                     </p>
                   </div>
-                  <span className="text-[#9095b8]">→</span>
+                  <span className="text-ink-4">→</span>
                 </a>
                 <a
                   href="/league/role-rules"
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.05]"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
                 >
                   <div>
-                    <p className="font-medium text-white">Regole ruoli ambigui</p>
-                    <p className="text-xs text-[#b8bcdc]">
+                    <p className="font-medium text-ink-1">Regole ruoli ambigui</p>
+                    <p className="text-xs text-ink-3">
                       Configura E → DEF o MID e altri ruoli ambigui
                     </p>
                   </div>
-                  <span className="text-[#9095b8]">→</span>
+                  <span className="text-ink-4">→</span>
                 </a>
                 <a
                   href="/league/engine-config"
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.05]"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
                 >
                   <div>
-                    <p className="font-medium text-white">Motore di calcolo</p>
-                    <p className="text-xs text-[#b8bcdc]">
+                    <p className="font-medium text-ink-1">Motore di calcolo</p>
+                    <p className="text-xs text-ink-3">
                       Bonus, malus e fattore minuti personalizzabili
                     </p>
                   </div>
-                  <span className="text-[#9095b8]">→</span>
+                  <span className="text-ink-4">→</span>
                 </a>
                 <a
                   href="/formations"
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.05]"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
                 >
                   <div>
-                    <p className="font-medium text-white">Formazioni valide</p>
-                    <p className="text-xs text-[#b8bcdc]">
+                    <p className="font-medium text-ink-1">Formazioni valide</p>
+                    <p className="text-xs text-ink-3">
                       Gestisci le formazioni e gli slot Mantra
                     </p>
                   </div>
-                  <span className="text-[#9095b8]">→</span>
+                  <span className="text-ink-4">→</span>
                 </a>
                 <a
                   href="/roster"
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.05]"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
                 >
                   <div>
-                    <p className="font-medium text-white">Gestione Rose</p>
-                    <p className="text-xs text-[#b8bcdc]">
+                    <p className="font-medium text-ink-1">Gestione Rose</p>
+                    <p className="text-xs text-ink-3">
                       Visualizza e modifica le rose delle squadre
                     </p>
                   </div>
-                  <span className="text-[#9095b8]">→</span>
+                  <span className="text-ink-4">→</span>
                 </a>
               </nav>
             </CardContent>

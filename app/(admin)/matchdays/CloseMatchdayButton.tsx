@@ -30,7 +30,7 @@ export function CloseMatchdayButton({ matchdayId, currentStatus }: Props) {
 
   if (isPending) {
     return (
-      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] bg-white/[0.06] text-[#9095b8]">
+      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] bg-glass-2 text-ink-4">
         <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-current border-t-transparent" />
         {confirming === 'close' ? 'Chiudendo…' : 'Aggiornando…'}
       </span>
@@ -55,7 +55,7 @@ export function CloseMatchdayButton({ matchdayId, currentStatus }: Props) {
           </button>
           <button
             onClick={() => setConfirming(null)}
-            className="rounded px-1.5 py-0.5 text-[10px] text-[#9095b8] hover:text-white transition-colors"
+            className="rounded px-1.5 py-0.5 text-[10px] text-ink-4 hover:text-ink-1 transition-colors"
           >
             ✕
           </button>
@@ -80,7 +80,7 @@ export function CloseMatchdayButton({ matchdayId, currentStatus }: Props) {
         )}
         <button
           onClick={() => setConfirming('draft')}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-white/[0.06] text-[#9095b8] hover:text-white transition-colors"
+          className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-glass-2 text-ink-4 hover:text-ink-1 transition-colors"
         >
           In Programma
         </button>

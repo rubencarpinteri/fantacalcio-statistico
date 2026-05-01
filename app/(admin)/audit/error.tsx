@@ -18,7 +18,7 @@ export default function AuditError({
       </div>
       <button
         onClick={reset}
-        className="rounded-lg border border-white/10 px-4 py-2 text-sm text-[#b8bcdc] hover:text-white"
+        className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:text-ink-1"
       >
         Riprova
       </button>

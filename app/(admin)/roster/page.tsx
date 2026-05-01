@@ -91,19 +91,19 @@ export default async function RosterPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1
-            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
             style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
           >
             <span className="font-semibold">Rose</span>
-            <span className="serif font-normal text-[#b8bcdc]">— gestione</span>
+            <span className="serif font-normal text-ink-3">— gestione</span>
           </h1>
-          <p className="mt-1.5 max-w-2xl text-[12.5px] leading-[1.55] text-[#9095b8]">
+          <p className="mt-1.5 max-w-2xl text-[12.5px] leading-[1.55] text-ink-4">
             Assegna giocatori dal pool Serie A alle rose delle squadre.
           </p>
         </div>
         <Link
           href={"/pool" as Route}
-          className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[12.5px] font-medium text-[#b8bcdc] backdrop-blur-xl transition-colors hover:border-white/20 hover:bg-white/[0.07] hover:text-[#f5f7ff]"
+          className="rounded-xl border border-hairline bg-glass-1 px-3.5 py-2 text-[12.5px] font-medium text-ink-3 backdrop-blur-xl transition-colors hover:border-hairline-strong hover:bg-glass-2 hover:text-ink-1"
         >
           Pool giocatori →
         </Link>
@@ -126,9 +126,9 @@ export default async function RosterPage() {
 
       {/* No teams callout */}
       {teams.length === 0 && (
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-10 text-center">
-          <p className="text-[#b8bcdc]">Nessuna squadra trovata in questa lega.</p>
-          <p className="mt-1 text-sm text-[#9095b8]">
+        <div className="rounded-xl border border-hairline bg-glass-1 px-6 py-10 text-center">
+          <p className="text-ink-3">Nessuna squadra trovata in questa lega.</p>
+          <p className="mt-1 text-sm text-ink-4">
             Crea le squadre prima di poter gestire le rose.
           </p>
         </div>

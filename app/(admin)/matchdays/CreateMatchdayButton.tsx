@@ -39,7 +39,7 @@ export function CreateMatchdayButton() {
           <CardHeader
             title="Nuova giornata"
             action={
-              <button onClick={() => setOpen(false)} className="text-sm text-[#9095b8] hover:text-white">
+              <button onClick={() => setOpen(false)} className="text-sm text-ink-4 hover:text-ink-1">
                 ✕
               </button>
             }

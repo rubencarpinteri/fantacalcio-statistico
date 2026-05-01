@@ -128,18 +128,18 @@ export function PlaygroundClient({ matchdays, baseEngineConfig, baseResultRules,
         <CardContent>
           <div className="flex flex-wrap items-end gap-3 py-1">
             <div>
-              <label className="block text-xs text-[#b8bcdc] mb-1">Giornata</label>
+              <label className="block text-xs text-ink-3 mb-1">Giornata</label>
               <select
                 value={matchdayId ?? ''}
                 onChange={(e) => setMatchdayId(e.target.value || null)}
-                className="rounded-md border border-white/10 bg-transparent px-3 py-1.5 text-sm text-white"
+                className="rounded-md border border-hairline bg-transparent px-3 py-1.5 text-sm text-ink-1"
               >
                 {matchdays.map((m) => (
                   <option key={m.id} value={m.id}>{m.label} · {m.status}</option>
                 ))}
               </select>
             </div>
-            <label className="flex items-center gap-2 text-sm text-[#b8bcdc] mb-1.5">
+            <label className="flex items-center gap-2 text-sm text-ink-3 mb-1.5">
               <input
                 type="checkbox"
                 checked={includeBR}
@@ -150,7 +150,7 @@ export function PlaygroundClient({ matchdays, baseEngineConfig, baseResultRules,
             <div className="flex-1" />
             <button
               onClick={resetToProduction}
-              className="rounded-md border border-white/10 bg-transparent px-3 py-1.5 text-sm text-[#b8bcdc] hover:text-white"
+              className="rounded-md border border-hairline bg-transparent px-3 py-1.5 text-sm text-ink-3 hover:text-ink-1"
             >
               Ripristina valori di produzione
             </button>
@@ -259,7 +259,7 @@ export function PlaygroundClient({ matchdays, baseEngineConfig, baseResultRules,
               description={loading ? 'Calcolo in corso…' : error ? `Errore: ${error}` : ' '}
             />
             <CardContent>
-              <div className="mb-3 flex gap-1 border-b border-white/10">
+              <div className="mb-3 flex gap-1 border-b border-hairline">
                 <Tab active={activeTab === 'team'} onClick={() => setActiveTab('team')}>Punteggi squadre</Tab>
                 <Tab active={activeTab === 'camp'} onClick={() => setActiveTab('camp')}>Campionato</Tab>
                 <Tab active={activeTab === 'br'} onClick={() => setActiveTab('br')} disabled={!includeBR}>Battle Royale</Tab>
@@ -298,30 +298,30 @@ function ResultRulesForm({ rules, onChange, base }: { rules: ResultRulesConfig; 
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-1.5 text-xs font-medium text-[#b8bcdc]">Soglie gol</p>
+        <p className="mb-1.5 text-xs font-medium text-ink-3">Soglie gol</p>
         <div className="space-y-1">
           {rules.thresholds.map((t, i) => {
             const baseT = base.thresholds[i]
             const changed = baseT && (baseT.min !== t.min || baseT.goals !== t.goals)
             return (
               <div key={i} className="flex items-center gap-2">
-                <span className="w-12 text-xs text-[#9095b8]">≥</span>
+                <span className="w-12 text-xs text-ink-4">≥</span>
                 <input
                   type="number"
                   step="0.1"
                   value={t.min}
                   onChange={(e) => updateThreshold(i, 'min', parseFloat(e.target.value) || 0)}
-                  className={`w-24 rounded border bg-transparent px-2 py-1 text-sm text-white ${changed ? 'border-amber-500/50' : 'border-white/10'}`}
+                  className={`w-24 rounded border bg-transparent px-2 py-1 text-sm text-ink-1 ${changed ? 'border-amber-500/50' : 'border-hairline'}`}
                 />
-                <span className="text-xs text-[#9095b8]">→</span>
+                <span className="text-xs text-ink-4">→</span>
                 <input
                   type="number"
                   step="1"
                   value={t.goals}
                   onChange={(e) => updateThreshold(i, 'goals', parseInt(e.target.value) || 0)}
-                  className={`w-16 rounded border bg-transparent px-2 py-1 text-sm text-white ${changed ? 'border-amber-500/50' : 'border-white/10'}`}
+                  className={`w-16 rounded border bg-transparent px-2 py-1 text-sm text-ink-1 ${changed ? 'border-amber-500/50' : 'border-hairline'}`}
                 />
-                <span className="text-xs text-[#9095b8]">gol</span>
+                <span className="text-xs text-ink-4">gol</span>
               </div>
             )
           })}
@@ -329,7 +329,7 @@ function ResultRulesForm({ rules, onChange, base }: { rules: ResultRulesConfig; 
       </div>
 
       <div>
-        <p className="mb-1.5 text-xs font-medium text-[#b8bcdc]">Smoothing (anti-fortuna)</p>
+        <p className="mb-1.5 text-xs font-medium text-ink-3">Smoothing (anti-fortuna)</p>
         <div className="grid grid-cols-2 gap-2">
           <NumberField
             label="Pareggio se Δ <"
@@ -349,7 +349,7 @@ function ResultRulesForm({ rules, onChange, base }: { rules: ResultRulesConfig; 
       </div>
 
       <div>
-        <p className="mb-1.5 text-xs font-medium text-[#b8bcdc]">Punti</p>
+        <p className="mb-1.5 text-xs font-medium text-ink-3">Punti</p>
         <div className="grid grid-cols-3 gap-2">
           <NumberField label="Vittoria" value={rules.points.win} base={base.points.win} step={1}
             onChange={(v) => onChange({ ...rules, points: { ...rules.points, win: v } })} />
@@ -395,7 +395,7 @@ function NumberField({ label, value, base, step, onChange }: {
   const changed = value !== base
   return (
     <label className="block">
-      <span className="block text-[11px] text-[#9095b8] mb-0.5">{label}</span>
+      <span className="block text-[11px] text-ink-4 mb-0.5">{label}</span>
       <input
         type="number"
         step={step}
@@ -404,7 +404,7 @@ function NumberField({ label, value, base, step, onChange }: {
           const v = parseFloat(e.target.value)
           if (!isNaN(v)) onChange(v)
         }}
-        className={`w-full rounded border bg-transparent px-2 py-1 text-sm text-white ${changed ? 'border-amber-500/50' : 'border-white/10'}`}
+        className={`w-full rounded border bg-transparent px-2 py-1 text-sm text-ink-1 ${changed ? 'border-amber-500/50' : 'border-hairline'}`}
       />
     </label>
   )
@@ -416,10 +416,10 @@ function CollapsibleCard({ title, defaultOpen = false, children }: { title: stri
     <Card>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between border-b border-white/10 px-6 py-4"
+        className="flex w-full items-center justify-between border-b border-hairline px-6 py-4"
       >
-        <h2 className="text-sm font-semibold text-[#f5f7ff]">{title}</h2>
-        <span className="text-[#9095b8]">{open ? '−' : '+'}</span>
+        <h2 className="text-sm font-semibold text-ink-1">{title}</h2>
+        <span className="text-ink-4">{open ? '−' : '+'}</span>
       </button>
       {open && <CardContent>{children}</CardContent>}
     </Card>
@@ -433,7 +433,7 @@ function Tab({ active, disabled, children, onClick }: { active: boolean; disable
       disabled={disabled}
       className={[
         'px-3 py-1.5 text-sm border-b-2 -mb-px transition-colors',
-        active ? 'border-indigo-400 text-indigo-300' : 'border-transparent text-[#b8bcdc] hover:text-white',
+        active ? 'border-indigo-400 text-indigo-300' : 'border-transparent text-ink-3 hover:text-ink-1',
         disabled ? 'opacity-40 cursor-not-allowed' : '',
       ].join(' ')}
     >
@@ -446,13 +446,13 @@ function TeamScoresPanel({ teams, teamNameById }: { teams: SimulationResponse['t
   if (teams.length === 0) return <Empty>Nessun punteggio simulato.</Empty>
   return (
     <table className="w-full text-sm">
-      <thead><tr className="text-left text-xs text-[#9095b8]"><th className="py-1">Team</th><th>Tot.</th><th className="text-right">NV</th></tr></thead>
+      <thead><tr className="text-left text-xs text-ink-4"><th className="py-1">Team</th><th>Tot.</th><th className="text-right">NV</th></tr></thead>
       <tbody>
         {teams.map((t, idx) => (
-          <tr key={t.team_id} className="border-t border-white/10">
-            <td className="py-1.5 text-white">{idx + 1}. {teamNameById.get(t.team_id) ?? t.team_id.slice(0, 6)}</td>
-            <td className="text-white font-mono">{t.total_fantavoto.toFixed(1)}</td>
-            <td className="text-right text-[#9095b8]">{t.nv_count}</td>
+          <tr key={t.team_id} className="border-t border-hairline">
+            <td className="py-1.5 text-ink-1">{idx + 1}. {teamNameById.get(t.team_id) ?? t.team_id.slice(0, 6)}</td>
+            <td className="text-ink-1 font-mono">{t.total_fantavoto.toFixed(1)}</td>
+            <td className="text-right text-ink-4">{t.nv_count}</td>
           </tr>
         ))}
       </tbody>
@@ -465,11 +465,11 @@ function FixturesPanel({ fixtures, teamNameById, emptyHint }: { fixtures: NonNul
   return (
     <div className="space-y-1">
       {fixtures.map((f) => (
-        <div key={f.fixture_id} className="flex items-center justify-between rounded border border-white/10 px-3 py-2 text-sm">
-          <span className="flex-1 text-right text-white truncate">{teamNameById.get(f.home_team_id) ?? f.home_team_id.slice(0,6)}</span>
-          <span className="mx-3 font-mono text-white">{f.home_score ?? '–'}–{f.away_score ?? '–'}</span>
-          <span className="flex-1 text-white truncate">{teamNameById.get(f.away_team_id) ?? f.away_team_id.slice(0,6)}</span>
-          <span className="ml-2 w-16 text-right text-xs text-[#9095b8] font-mono">{f.home_fantavoto.toFixed(1)}–{f.away_fantavoto.toFixed(1)}</span>
+        <div key={f.fixture_id} className="flex items-center justify-between rounded border border-hairline px-3 py-2 text-sm">
+          <span className="flex-1 text-right text-ink-1 truncate">{teamNameById.get(f.home_team_id) ?? f.home_team_id.slice(0,6)}</span>
+          <span className="mx-3 font-mono text-ink-1">{f.home_score ?? '–'}–{f.away_score ?? '–'}</span>
+          <span className="flex-1 text-ink-1 truncate">{teamNameById.get(f.away_team_id) ?? f.away_team_id.slice(0,6)}</span>
+          <span className="ml-2 w-16 text-right text-xs text-ink-4 font-mono">{f.home_fantavoto.toFixed(1)}–{f.away_fantavoto.toFixed(1)}</span>
         </div>
       ))}
     </div>
@@ -482,15 +482,15 @@ function BattleRoyalePanel({ fixtures, standings, teamNameById }: { fixtures: No
   return (
     <div className="space-y-3">
       <table className="w-full text-sm">
-        <thead><tr className="text-left text-xs text-[#9095b8]"><th className="py-1">Team</th><th>Pt</th><th>V/N/P</th><th>GF:GS</th><th className="text-right">DR</th></tr></thead>
+        <thead><tr className="text-left text-xs text-ink-4"><th className="py-1">Team</th><th>Pt</th><th>V/N/P</th><th>GF:GS</th><th className="text-right">DR</th></tr></thead>
         <tbody>
           {standings.map((s, idx) => (
-            <tr key={s.team_id} className="border-t border-white/10">
-              <td className="py-1.5 text-white">{idx + 1}. {teamNameById.get(s.team_id) ?? s.team_id.slice(0, 6)}</td>
-              <td className="text-white font-mono font-bold">{s.points}</td>
-              <td className="text-[#b8bcdc] font-mono">{s.wins}/{s.draws}/{s.losses}</td>
-              <td className="text-[#b8bcdc] font-mono">{s.goals_for}:{s.goals_against}</td>
-              <td className="text-right text-[#b8bcdc] font-mono">{s.goal_difference > 0 ? '+' : ''}{s.goal_difference}</td>
+            <tr key={s.team_id} className="border-t border-hairline">
+              <td className="py-1.5 text-ink-1">{idx + 1}. {teamNameById.get(s.team_id) ?? s.team_id.slice(0, 6)}</td>
+              <td className="text-ink-1 font-mono font-bold">{s.points}</td>
+              <td className="text-ink-3 font-mono">{s.wins}/{s.draws}/{s.losses}</td>
+              <td className="text-ink-3 font-mono">{s.goals_for}:{s.goals_against}</td>
+              <td className="text-right text-ink-3 font-mono">{s.goal_difference > 0 ? '+' : ''}{s.goal_difference}</td>
             </tr>
           ))}
         </tbody>
@@ -511,7 +511,7 @@ function BattleRoyalePanel({ fixtures, standings, teamNameById }: { fixtures: No
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="py-6 text-center text-sm text-[#9095b8]">{children}</div>
+  return <div className="py-6 text-center text-sm text-ink-4">{children}</div>
 }
 
 // ============================================================
@@ -537,13 +537,13 @@ function SaveDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-full max-w-md rounded-xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-xl border border-hairline bg-glass-1 p-6 shadow-2xl">
         {!done && !saving && (
           <>
-            <h2 className="mb-2 text-base font-semibold text-white">Salva configurazione e ricalcola</h2>
-            <p className="mb-4 text-sm text-[#b8bcdc]">
+            <h2 className="mb-2 text-base font-semibold text-ink-1">Salva configurazione e ricalcola</h2>
+            <p className="mb-4 text-sm text-ink-3">
               Questa operazione salva la nuova configurazione del motore e delle regole risultato,
-              poi ricalcola <span className="text-white font-medium">{matchdayCount} giornate</span> con
+              poi ricalcola <span className="text-ink-1 font-medium">{matchdayCount} giornate</span> con
               dati pubblicati e aggiorna tutte le competizioni attive. L&apos;operazione è irreversibile.
             </p>
             <div className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
@@ -553,7 +553,7 @@ function SaveDialog({
             <div className="flex gap-3 justify-end">
               <button
                 onClick={onClose}
-                className="rounded-md border border-white/10 px-4 py-1.5 text-sm text-[#b8bcdc] hover:text-white"
+                className="rounded-md border border-hairline px-4 py-1.5 text-sm text-ink-3 hover:text-ink-1"
               >
                 Annulla
               </button>
@@ -570,30 +570,30 @@ function SaveDialog({
         {saving && (
           <div className="py-6 text-center">
             <div className="mb-3 text-2xl animate-spin inline-block">⏳</div>
-            <p className="text-sm text-[#b8bcdc]">Ricalcolo in corso…</p>
-            <p className="mt-1 text-xs text-[#9095b8]">Non chiudere questa finestra.</p>
+            <p className="text-sm text-ink-3">Ricalcolo in corso…</p>
+            <p className="mt-1 text-xs text-ink-4">Non chiudere questa finestra.</p>
           </div>
         )}
 
         {done && result && (
           <>
-            <h2 className="mb-3 text-base font-semibold text-white">Ricalcolo completato</h2>
+            <h2 className="mb-3 text-base font-semibold text-ink-1">Ricalcolo completato</h2>
             <div className="mb-4 grid grid-cols-3 gap-2 text-center text-sm">
-              <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+              <div className="rounded-lg border border-hairline bg-glass-1 px-3 py-2">
                 <div className="text-lg font-bold text-green-400">{result.matchdays_ok}</div>
-                <div className="text-xs text-[#9095b8]">Giornate OK</div>
+                <div className="text-xs text-ink-4">Giornate OK</div>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
-                <div className="text-lg font-bold text-[#b8bcdc]">{result.matchdays_skipped}</div>
-                <div className="text-xs text-[#9095b8]">Saltate</div>
+              <div className="rounded-lg border border-hairline bg-glass-1 px-3 py-2">
+                <div className="text-lg font-bold text-ink-3">{result.matchdays_skipped}</div>
+                <div className="text-xs text-ink-4">Saltate</div>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+              <div className="rounded-lg border border-hairline bg-glass-1 px-3 py-2">
                 <div className="text-lg font-bold text-red-400">{result.matchdays_errored}</div>
-                <div className="text-xs text-[#9095b8]">Errori</div>
+                <div className="text-xs text-ink-4">Errori</div>
               </div>
             </div>
-            <p className="mb-4 text-xs text-[#9095b8]">
-              Turni competizioni aggiornati: <span className="text-white">{result.competitions_rounds_recomputed}</span>
+            <p className="mb-4 text-xs text-ink-4">
+              Turni competizioni aggiornati: <span className="text-ink-1">{result.competitions_rounds_recomputed}</span>
             </p>
             {result.matchdays_errored > 0 && (
               <div className="mb-4 max-h-40 overflow-auto rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300 space-y-1">
@@ -605,7 +605,7 @@ function SaveDialog({
             <div className="flex justify-end">
               <button
                 onClick={onClose}
-                className="rounded-md border border-white/10 px-4 py-1.5 text-sm text-[#b8bcdc] hover:text-white"
+                className="rounded-md border border-hairline px-4 py-1.5 text-sm text-ink-3 hover:text-ink-1"
               >
                 Chiudi
               </button>
@@ -615,14 +615,14 @@ function SaveDialog({
 
         {done && error && (
           <>
-            <h2 className="mb-3 text-base font-semibold text-white">Errore durante il ricalcolo</h2>
+            <h2 className="mb-3 text-base font-semibold text-ink-1">Errore durante il ricalcolo</h2>
             <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
             <div className="flex justify-end">
               <button
                 onClick={onClose}
-                className="rounded-md border border-white/10 px-4 py-1.5 text-sm text-[#b8bcdc] hover:text-white"
+                className="rounded-md border border-hairline px-4 py-1.5 text-sm text-ink-3 hover:text-ink-1"
               >
                 Chiudi
               </button>

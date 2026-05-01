@@ -24,14 +24,14 @@ export function FormationRowActions({ formation }: { formation: Formation }) {
     <div className="flex items-center gap-3">
       <a
         href={`/formations/${formation.id}`}
-        className="text-xs text-[#b8bcdc] transition-colors hover:text-indigo-400"
+        className="text-xs text-ink-3 transition-colors hover:text-indigo-400"
       >
         Configura slot
       </a>
       <button
         onClick={handleToggle}
         disabled={isPending}
-        className="text-xs text-[#b8bcdc] transition-colors hover:text-amber-400 disabled:opacity-50"
+        className="text-xs text-ink-3 transition-colors hover:text-amber-400 disabled:opacity-50"
       >
         {formation.is_active ? 'Disattiva' : 'Riattiva'}
       </button>

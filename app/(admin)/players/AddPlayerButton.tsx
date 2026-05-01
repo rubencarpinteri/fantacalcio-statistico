@@ -25,7 +25,7 @@ export function AddPlayerButton() {
             action={
               <button
                 onClick={() => setOpen(false)}
-                className="text-sm text-[#9095b8] hover:text-white"
+                className="text-sm text-ink-4 hover:text-ink-1"
               >
                 ✕
               </button>

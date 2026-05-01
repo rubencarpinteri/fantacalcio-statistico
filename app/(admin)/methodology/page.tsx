@@ -18,19 +18,19 @@ function sign(n: number) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-4 text-base font-semibold text-white">{children}</h2>
+    <h2 className="mb-4 text-base font-semibold text-ink-1">{children}</h2>
   )
 }
 
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-3 text-xs leading-relaxed text-[#9095b8]">{children}</p>
+    <p className="mt-3 text-xs leading-relaxed text-ink-4">{children}</p>
   )
 }
 
 function Pill({ children, color = 'gray' }: { children: React.ReactNode; color?: 'gray' | 'indigo' | 'amber' | 'emerald' | 'red' }) {
   const cls = {
-    gray:    'bg-white/[0.05] text-[#b8bcdc]',
+    gray:    'bg-glass-1 text-ink-3',
     indigo:  'bg-indigo-500/10 text-indigo-300',
     amber:   'bg-amber-500/10 text-amber-300',
     emerald: 'bg-emerald-500/10 text-emerald-400',
@@ -45,7 +45,7 @@ function Pill({ children, color = 'gray' }: { children: React.ReactNode; color?:
 
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
-    <th className={`px-4 py-2 text-xs font-medium text-[#9095b8] ${right ? 'text-right' : 'text-left'}`}>
+    <th className={`px-4 py-2 text-xs font-medium text-ink-4 ${right ? 'text-right' : 'text-left'}`}>
       {children}
     </th>
   )
@@ -53,7 +53,7 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
 
 function Td({ children, right, mono, dim }: { children: React.ReactNode; right?: boolean; mono?: boolean; dim?: boolean }) {
   return (
-    <td className={`px-4 py-2.5 text-sm ${right ? 'text-right' : ''} ${mono ? 'font-mono' : ''} ${dim ? 'text-[#9095b8]' : 'text-[#c8c8e8]'}`}>
+    <td className={`px-4 py-2.5 text-sm ${right ? 'text-right' : ''} ${mono ? 'font-mono' : ''} ${dim ? 'text-ink-4' : 'text-[#c8c8e8]'}`}>
       {children}
     </td>
   )
@@ -157,8 +157,8 @@ export default async function MethodologyPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-white">Metodologia di calcolo</h1>
-        <p className="mt-1 text-sm text-[#9095b8]">
+        <h1 className="text-xl font-bold text-ink-1">Metodologia di calcolo</h1>
+        <p className="mt-1 text-sm text-ink-4">
           Motore <span className="font-mono text-indigo-300">{cfg.engine_version}</span> — come viene calcolato il fantavoto di ogni giocatore.
         </p>
       </div>
@@ -176,8 +176,8 @@ export default async function MethodologyPage() {
             <Step n={6} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
             <Step n={7} label="Fantavoto finale = voto_base + bonus_malus" />
           </div>
-          <div className="mt-5 rounded-lg border border-white/10 bg-transparent px-4 py-3 font-mono text-xs text-[#b8bcdc]">
-            <span className="text-white">Fantavoto</span>
+          <div className="mt-5 rounded-lg border border-hairline bg-transparent px-4 py-3 font-mono text-xs text-ink-3">
+            <span className="text-ink-1">Fantavoto</span>
             {' = '}
             <span className="text-indigo-300">voto_base</span>
             {' + '}
@@ -191,18 +191,18 @@ export default async function MethodologyPage() {
         <CardHeader title="Fonte di voto: FotMob" description="L'unica piattaforma usata per il calcolo del voto base" />
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-transparent p-4">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Media storica</p>
-              <p className="font-mono text-2xl font-bold text-white">{cfg.source_normalization.mean.toFixed(2)}</p>
-              <p className="mt-1 text-xs text-[#9095b8]">
+            <div className="rounded-lg border border-hairline bg-transparent p-4">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-ink-4">Media storica</p>
+              <p className="font-mono text-2xl font-bold text-ink-1">{cfg.source_normalization.mean.toFixed(2)}</p>
+              <p className="mt-1 text-xs text-ink-4">
                 Corrisponde al voto &quot;sufficiente&quot; su FotMob (confermato dalle fasce cromatiche della piattaforma).
                 Un giocatore con voto {cfg.source_normalization.mean} riceve z = 0 → voto base 6.0.
               </p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-transparent p-4">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Deviazione standard (σ)</p>
-              <p className="font-mono text-2xl font-bold text-white">{cfg.source_normalization.std.toFixed(2)}</p>
-              <p className="mt-1 text-xs text-[#9095b8]">
+            <div className="rounded-lg border border-hairline bg-transparent p-4">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wider text-ink-4">Deviazione standard (σ)</p>
+              <p className="font-mono text-2xl font-bold text-ink-1">{cfg.source_normalization.std.toFixed(2)}</p>
+              <p className="mt-1 text-xs text-ink-4">
                 Controlla la &quot;sensibilità&quot; della formula: σ più grande → le differenze di voto pesano meno.
                 Con σ = {cfg.source_normalization.std}, un voto di {(cfg.source_normalization.mean + cfg.source_normalization.std).toFixed(1)} (+1σ) produce z ≈ +1 → voto base ≈ 7.15.
               </p>
@@ -219,14 +219,14 @@ export default async function MethodologyPage() {
       <Card>
         <CardHeader title="Normalizzazione z-score" description="Come viene convertito il voto FotMob in uno scostamento dalla media" />
         <CardContent>
-          <div className="rounded-lg border border-white/10 bg-transparent px-4 py-3 font-mono text-sm">
+          <div className="rounded-lg border border-hairline bg-transparent px-4 py-3 font-mono text-sm">
             <span className="text-indigo-300">z</span>
             {' = ( '}
-            <span className="text-white">voto_fotmob</span>
+            <span className="text-ink-1">voto_fotmob</span>
             {' − '}
-            <span className="text-[#b8bcdc]">{cfg.source_normalization.mean}</span>
+            <span className="text-ink-3">{cfg.source_normalization.mean}</span>
             {' ) / '}
-            <span className="text-[#b8bcdc]">{cfg.source_normalization.std}</span>
+            <span className="text-ink-3">{cfg.source_normalization.std}</span>
           </div>
           <Note>
             Uno z-score pari a 0 corrisponde esattamente al giocatore medio (voto {cfg.source_normalization.mean} su FotMob).
@@ -242,24 +242,24 @@ export default async function MethodologyPage() {
         <CardContent className="p-0">
           <TableWrap>
             <thead>
-              <tr className="border-b border-white/8">
+              <tr className="border-b border-hairline">
                 <Th>Minuti giocati</Th>
                 <Th right>Fattore</Th>
                 <Th right>Effetto</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/8">
-              <tr className="hover:bg-white/[0.04]">
+            <tbody className="divide-y divide-hairline">
+              <tr className="hover:bg-glass-1">
                 <Td>0 minuti</Td>
                 <Td right mono><Pill color="gray">NV</Pill></Td>
                 <Td right dim>Non valutato — non contribuisce al totale di squadra</Td>
               </tr>
-              <tr className="hover:bg-white/[0.04]">
+              <tr className="hover:bg-glass-1">
                 <Td>1 – {eff.minutes_factor_threshold - 1} minuti</Td>
                 <Td right mono><Pill color="indigo">× {eff.minutes_factor_partial}</Pill></Td>
                 <Td right dim>Partecipazione parziale — z ridotto</Td>
               </tr>
-              <tr className="hover:bg-white/[0.04]">
+              <tr className="hover:bg-glass-1">
                 <Td>≥ {eff.minutes_factor_threshold} minuti</Td>
                 <Td right mono><Pill color="emerald">× {eff.minutes_factor_full}</Pill></Td>
                 <Td right dim>Partecipazione piena — z invariato</Td>
@@ -273,50 +273,50 @@ export default async function MethodologyPage() {
       <Card>
         <CardHeader title="Voto base e moltiplicatore di ruolo" description="Il passaggio dallo z-score al voto su scala Mantra" />
         <CardContent>
-          <div className="mb-4 space-y-2 rounded-lg border border-white/10 bg-transparent px-4 py-3 font-mono text-sm">
+          <div className="mb-4 space-y-2 rounded-lg border border-hairline bg-transparent px-4 py-3 font-mono text-sm">
             <div>
               <span className="text-indigo-300">b₀</span>
               {' = '}
-              <span className="text-[#b8bcdc]">{eff.target_mean_vote}</span>
+              <span className="text-ink-3">{eff.target_mean_vote}</span>
               {' + '}
-              <span className="text-[#b8bcdc]">{eff.target_vote_std}</span>
+              <span className="text-ink-3">{eff.target_vote_std}</span>
               {' × '}
-              <span className="text-white">z_adjusted</span>
+              <span className="text-ink-1">z_adjusted</span>
             </div>
             <div>
               <span className="text-indigo-300">b₁</span>
               {' = '}
-              <span className="text-[#b8bcdc]">{eff.target_mean_vote}</span>
+              <span className="text-ink-3">{eff.target_mean_vote}</span>
               {' + '}
               <span className="text-amber-300">moltiplicatore</span>
               {' × ( '}
               <span className="text-indigo-300">b₀</span>
               {' − '}
-              <span className="text-[#b8bcdc]">{eff.target_mean_vote}</span>
+              <span className="text-ink-3">{eff.target_mean_vote}</span>
               {' )'}
             </div>
-            <div className="pt-1 text-xs text-[#9095b8]">
+            <div className="pt-1 text-xs text-ink-4">
               voto_base = b₁ cappato tra {cfg.voto_base_cap_min} e {cfg.voto_base_cap_max}
             </div>
           </div>
 
           <TableWrap>
             <thead>
-              <tr className="border-b border-white/8">
+              <tr className="border-b border-hairline">
                 <Th>Ruolo</Th>
                 <Th right>Moltiplicatore</Th>
                 <Th right>Interpretazione</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/8">
+            <tbody className="divide-y divide-hairline">
               {roleRows.map((r) => (
-                <tr key={r.rc} className="hover:bg-white/[0.04]">
+                <tr key={r.rc} className="hover:bg-glass-1">
                   <Td>
                     <span className={`font-mono text-xs font-bold ${rcColor[r.rc]}`}>{r.rc}</span>
-                    <span className="ml-2 text-[#b8bcdc]">{r.label}</span>
+                    <span className="ml-2 text-ink-3">{r.label}</span>
                   </Td>
                   <Td right mono>
-                    <span className={r.mult > 1 ? 'text-emerald-400' : r.mult < 1 ? 'text-amber-400' : 'text-white'}>
+                    <span className={r.mult > 1 ? 'text-emerald-400' : r.mult < 1 ? 'text-amber-400' : 'text-ink-1'}>
                       {r.mult.toFixed(2)}
                     </span>
                   </Td>
@@ -347,22 +347,22 @@ export default async function MethodologyPage() {
         <CardContent className="p-0">
 
           {/* Goals */}
-          <div className="border-b border-white/8 px-4 py-3">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Gol segnati</p>
+          <div className="border-b border-hairline px-4 py-3">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-ink-4">Gol segnati</p>
             <TableWrap>
               <thead>
-                <tr className="border-b border-white/8">
+                <tr className="border-b border-hairline">
                   <Th>Ruolo</Th>
                   <Th right>Gol normale</Th>
                   <Th right>Gol su rigore</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {goalRows.map((g) => (
-                  <tr key={g.rc} className="hover:bg-white/[0.04]">
+                  <tr key={g.rc} className="hover:bg-glass-1">
                     <Td>
                       <span className={`font-mono text-xs font-bold ${rcColor[g.rc]}`}>{g.rc}</span>
-                      <span className="ml-2 text-[#b8bcdc]">{g.label}</span>
+                      <span className="ml-2 text-ink-3">{g.label}</span>
                     </Td>
                     <Td right mono><span className="text-emerald-400">{sign(g.normal)}</span></Td>
                     <Td right mono><span className="text-emerald-400">{sign(g.penalty)}</span></Td>
@@ -370,7 +370,7 @@ export default async function MethodologyPage() {
                 ))}
               </tbody>
             </TableWrap>
-            <p className="mt-2 text-xs text-[#9095b8]">
+            <p className="mt-2 text-xs text-ink-4">
               Gol su rigore = bonus ruolo − {eff.penalty_scored_discount}.
               Doppietta: +{eff.brace_bonus} aggiuntivo.
               Tripletta: +{eff.hat_trick_bonus} aggiuntivo (sostituisce il bonus doppietta).
@@ -378,8 +378,8 @@ export default async function MethodologyPage() {
           </div>
 
           {/* Events */}
-          <div className="border-b border-white/8 px-4 py-3">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Altri eventi</p>
+          <div className="border-b border-hairline px-4 py-3">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-ink-4">Altri eventi</p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-3">
               {[
                 { label: 'Assist',            val: eff.assist,         cond: null },
@@ -392,7 +392,7 @@ export default async function MethodologyPage() {
                 <div key={label} className="flex items-center justify-between gap-2 rounded px-2 py-1.5">
                   <span className="text-sm text-[#c8c8e8]">{label}</span>
                   <div className="flex items-center gap-1.5">
-                    {cond && <span className="text-xs text-[#9095b8]">({cond})</span>}
+                    {cond && <span className="text-xs text-ink-4">({cond})</span>}
                     <span className={`font-mono text-sm font-semibold ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {sign(val)}
                     </span>
@@ -403,8 +403,8 @@ export default async function MethodologyPage() {
           </div>
 
           {/* Clean sheet */}
-          <div className="border-b border-white/8 px-4 py-3">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Clean sheet</p>
+          <div className="border-b border-hairline px-4 py-3">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-ink-4">Clean sheet</p>
             <div className="space-y-1.5">
               {[
                 { rc: 'GK',  val: eff.clean_sheet_gk },
@@ -413,7 +413,7 @@ export default async function MethodologyPage() {
                 <div key={rc} className="flex items-center gap-3">
                   <span className={`font-mono text-xs font-bold ${rcColor[rc]}`}>{rc}</span>
                   <span className="text-sm text-emerald-400 font-mono font-semibold">{sign(val)}</span>
-                  <span className="text-xs text-[#9095b8]">se ≥ {eff.clean_sheet_min_minutes}&apos; giocati</span>
+                  <span className="text-xs text-ink-4">se ≥ {eff.clean_sheet_min_minutes}&apos; giocati</span>
                 </div>
               ))}
             </div>
@@ -421,17 +421,17 @@ export default async function MethodologyPage() {
 
           {/* Goals conceded */}
           <div className="px-4 py-3">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#9095b8]">Goal subiti (per goal)</p>
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-ink-4">Goal subiti (per goal)</p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
                 <span className={`font-mono text-xs font-bold ${rcColor.GK}`}>GK</span>
                 <span className="text-sm text-red-400 font-mono font-semibold">{sign(eff.goals_conceded_gk)}</span>
-                <span className="text-xs text-[#9095b8]">sempre (nessun minimo)</span>
+                <span className="text-xs text-ink-4">sempre (nessun minimo)</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`font-mono text-xs font-bold ${rcColor.DEF}`}>DEF</span>
                 <span className="text-sm text-red-400 font-mono font-semibold">{sign(eff.goals_conceded_def)}</span>
-                <span className="text-xs text-[#9095b8]">se ≥ {eff.goals_conceded_def_min_minutes}&apos; giocati</span>
+                <span className="text-xs text-ink-4">se ≥ {eff.goals_conceded_def_min_minutes}&apos; giocati</span>
               </div>
             </div>
           </div>
@@ -442,7 +442,7 @@ export default async function MethodologyPage() {
       <Card>
         <CardHeader title="Note generali" />
         <CardContent>
-          <ul className="space-y-2 text-sm text-[#b8bcdc]">
+          <ul className="space-y-2 text-sm text-ink-3">
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>

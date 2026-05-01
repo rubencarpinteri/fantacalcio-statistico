@@ -100,15 +100,15 @@ export default async function OverridesPage({
       <div>
         <a
           href={`/matchdays/${matchdayId}`}
-          className="text-sm text-[#9095b8] hover:text-indigo-400"
+          className="text-sm text-ink-4 hover:text-indigo-400"
         >
           ← {matchday.name}
         </a>
         <div className="mt-1 flex items-center gap-3">
-          <h1 className="text-xl font-bold text-white">Override punteggi</h1>
+          <h1 className="text-xl font-bold text-ink-1">Override punteggi</h1>
           <MatchdayStatusBadge status={matchday.status} />
         </div>
-        <p className="mt-1 text-sm text-[#b8bcdc]">
+        <p className="mt-1 text-sm text-ink-3">
           Gli override sostituiscono il fantavoto calcolato dal motore per giocatori specifici.
           Dopo aver creato o rimosso un override, ricalcola i punteggi per applicare la modifica.
         </p>
@@ -151,27 +151,27 @@ export default async function OverridesPage({
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
+                <tr className="border-b border-hairline text-left text-xs text-ink-4">
                   <th className="px-6 py-2.5">Giocatore</th>
                   <th className="px-4 py-2.5 text-right">Override</th>
                   <th className="px-4 py-2.5">Motivazione</th>
                   <th className="px-4 py-2.5 text-right">Rimosso</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {removedOverrides.map((o) => {
                   const player = o.league_players as unknown as { full_name: string; club: string } | null
                   return (
                     <tr key={o.id} className="opacity-50">
                       <td className="px-6 py-2.5">
-                        <div className="text-white">{player?.full_name ?? '—'}</div>
-                        <div className="text-xs text-[#9095b8]">{player?.club ?? ''}</div>
+                        <div className="text-ink-1">{player?.full_name ?? '—'}</div>
+                        <div className="text-xs text-ink-4">{player?.club ?? ''}</div>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono text-[#b8bcdc]">
+                      <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                         {o.override_fantavoto.toFixed(2)}
                       </td>
-                      <td className="px-4 py-2.5 text-xs italic text-[#9095b8]">{o.reason}</td>
-                      <td className="px-4 py-2.5 text-right text-xs text-[#9095b8]">
+                      <td className="px-4 py-2.5 text-xs italic text-ink-4">{o.reason}</td>
+                      <td className="px-4 py-2.5 text-right text-xs text-ink-4">
                         {o.removed_at
                           ? new Intl.DateTimeFormat('it-IT', {
                               dateStyle: 'short',

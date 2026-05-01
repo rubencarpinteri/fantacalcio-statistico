@@ -32,7 +32,7 @@ export function DeleteRuleButton({
       type="button"
       onClick={handleDelete}
       disabled={isPending}
-      className="text-xs text-[#9095b8] transition-colors hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+      className="text-xs text-ink-4 transition-colors hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isPending ? 'Rimozione…' : 'Rimuovi'}
     </button>

@@ -62,13 +62,13 @@ export default async function PlayersPage({
       <div className="flex items-start justify-between">
         <div>
           <h1
-            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
             style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}
           >
             <span className="font-semibold">Giocatori</span>
-            <span className="serif font-normal text-[#b8bcdc]">— pool della lega</span>
+            <span className="serif font-normal text-ink-3">— pool della lega</span>
           </h1>
-          <p className="mt-1.5 text-[12.5px] text-[#9095b8]">
+          <p className="mt-1.5 text-[12.5px] text-ink-4">
             {players?.length ?? 0} risultati
           </p>
         </div>
@@ -82,13 +82,13 @@ export default async function PlayersPage({
           type="search"
           placeholder="Cerca per nome…"
           defaultValue={params.search ?? ''}
-          className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+          className="rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
         />
 
         <select
           name="club"
           defaultValue={params.club ?? ''}
-          className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+          className="rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
         >
           <option value="">Tutti i club</option>
           {uniqueClubs.map((club) => (
@@ -98,7 +98,7 @@ export default async function PlayersPage({
           ))}
         </select>
 
-        <label className="flex items-center gap-2 text-sm text-[#b8bcdc]">
+        <label className="flex items-center gap-2 text-sm text-ink-3">
           <input
             type="checkbox"
             name="inactive"
@@ -111,7 +111,7 @@ export default async function PlayersPage({
 
         <button
           type="submit"
-          className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm text-[#f5f7ff] hover:bg-white/[0.08]"
+          className="rounded-lg border border-hairline bg-glass-1 px-4 py-2 text-sm text-ink-1 hover:bg-glass-2"
         >
           Filtra
         </button>
@@ -121,14 +121,14 @@ export default async function PlayersPage({
       <Card>
         <CardContent className="p-0">
           {!players || players.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm text-[#9095b8]">
+            <div className="px-6 py-12 text-center text-sm text-ink-4">
               Nessun giocatore trovato. {isAdmin && 'Aggiungi giocatori o importa una rosa.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10">
+                  <tr className="border-b border-hairline">
                     <Th>Giocatore</Th>
                     <Th>Club</Th>
                     <Th>Ruoli Mantra</Th>
@@ -136,24 +136,24 @@ export default async function PlayersPage({
                     {isAdmin && <Th>Azioni</Th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/8">
+                <tbody className="divide-y divide-hairline">
                   {players.map((player) => (
                     <tr
                       key={player.id}
                       className={[
-                        'transition-colors hover:bg-white/[0.05]',
+                        'transition-colors hover:bg-glass-1',
                         !player.is_active ? 'opacity-50' : '',
                       ].join(' ')}
                     >
                       <td className="px-6 py-3">
-                        <span className="font-medium text-white">{player.full_name}</span>
+                        <span className="font-medium text-ink-1">{player.full_name}</span>
                         {!player.is_active && (
                           <Badge variant="muted" className="ml-2">
                             Inattivo
                           </Badge>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-[#b8bcdc]">{player.club}</td>
+                      <td className="px-6 py-3 text-ink-3">{player.club}</td>
                       <td className="px-6 py-3">
                         <div className="flex flex-wrap gap-1">
                           {player.mantra_roles.map((role) => (
@@ -192,7 +192,7 @@ export default async function PlayersPage({
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+    <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-ink-3">
       {children}
     </th>
   )

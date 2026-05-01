@@ -50,7 +50,7 @@ export function SlotRow({
 
   if (editing) {
     return (
-      <tr className="bg-white/[0.05]">
+      <tr className="bg-glass-1">
         <td colSpan={isBenchTable ? 5 : 4} className="px-6 py-4">
           <form action={formAction} className="space-y-3">
             <input type="hidden" name="slot_id" value={slot.id} />
@@ -75,29 +75,29 @@ export function SlotRow({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+              <label className="text-xs font-medium uppercase tracking-wider text-ink-3">
                 Ruoli nativi (nessuna penalità)
               </label>
               <input
                 name="allowed_mantra_roles"
                 defaultValue={slot.allowed_mantra_roles.join(', ')}
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+                className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
               />
-              <p className="text-xs text-[#9095b8]">
+              <p className="text-xs text-ink-4">
                 Tutti disponibili: {ALL_MANTRA_ROLES.join(', ')}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+              <label className="text-xs font-medium uppercase tracking-wider text-ink-3">
                 Ruoli fuori posizione (−1)
               </label>
               <input
                 name="extended_mantra_roles"
                 defaultValue={slot.extended_mantra_roles.join(', ')}
                 placeholder="Lascia vuoto se non applicabile"
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+                className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
               />
             </div>
 
@@ -132,11 +132,11 @@ export function SlotRow({
   }
 
   return (
-    <tr className="transition-colors hover:bg-white/[0.05]">
-      <td className="px-6 py-3 text-[#b8bcdc]">{slot.slot_order}</td>
-      <td className="px-6 py-3 font-medium text-white">{slot.slot_name}</td>
+    <tr className="transition-colors hover:bg-glass-1">
+      <td className="px-6 py-3 text-ink-3">{slot.slot_order}</td>
+      <td className="px-6 py-3 font-medium text-ink-1">{slot.slot_name}</td>
       {isBenchTable && (
-        <td className="px-6 py-3 text-[#b8bcdc]">{slot.bench_order ?? '—'}</td>
+        <td className="px-6 py-3 text-ink-3">{slot.bench_order ?? '—'}</td>
       )}
       <td className="px-6 py-3">
         <div className="space-y-1">
@@ -162,14 +162,14 @@ export function SlotRow({
         <div className="flex items-center gap-3">
           <button
             onClick={() => setEditing(true)}
-            className="text-xs text-[#b8bcdc] transition-colors hover:text-indigo-400"
+            className="text-xs text-ink-3 transition-colors hover:text-indigo-400"
           >
             Modifica
           </button>
           <button
             onClick={handleDelete}
             disabled={isPending}
-            className="text-xs text-[#b8bcdc] transition-colors hover:text-red-400 disabled:opacity-50"
+            className="text-xs text-ink-3 transition-colors hover:text-red-400 disabled:opacity-50"
           >
             Elimina
           </button>

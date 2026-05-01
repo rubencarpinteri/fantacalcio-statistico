@@ -30,7 +30,7 @@ export function FreezeButton({
         'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50',
         isFrozen
           ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
-          : 'bg-white/[0.06] border border-white/10 text-[#9095b8] hover:text-white hover:bg-white/[0.08]',
+          : 'bg-glass-2 border border-hairline text-ink-4 hover:text-ink-1 hover:bg-glass-2',
       ].join(' ')}
     >
       {isPending ? '…' : isFrozen ? 'Scongela' : 'Congela'}

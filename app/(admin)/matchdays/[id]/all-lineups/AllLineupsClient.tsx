@@ -208,12 +208,12 @@ function StatCategory({ title, stats }: { title: string; stats: StatEntry[] }) {
   if (visible.length === 0) return null
   return (
     <div>
-      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#9095b8]">{title}</p>
+      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-ink-4">{title}</p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-0">
         {visible.map((s) => (
           <div key={s.label} className="flex items-center justify-between gap-1 py-px">
-            <span className="text-[10px] text-[#b8bcdc] truncate">{s.label}</span>
-            <span className="font-mono text-[10px] font-semibold text-white shrink-0">{fmtVal(s)}</span>
+            <span className="text-[10px] text-ink-3 truncate">{s.label}</span>
+            <span className="font-mono text-[10px] font-semibold text-ink-1 shrink-0">{fmtVal(s)}</span>
           </div>
         ))}
       </div>
@@ -250,7 +250,7 @@ function fvColor(fv: number | null): string {
 function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => void }) {
   const vbFm = calcSourceVotoBase(slot.zFotmob, slot.minutesFactor, slot.roleMultiplier)
   const vbSs = calcSourceVotoBase(slot.zSofascore, slot.minutesFactor, slot.roleMultiplier)
-  const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-[#b8bcdc]'
+  const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-ink-3'
   const fv = slot.fantavoto
 
   const hasFm = slot.rawFotmobRating !== null
@@ -274,36 +274,36 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-white/10 bg-white/[0.04] shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
+        className="w-full max-w-md rounded-xl border border-hairline bg-glass-1 shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Compact header: name + RC + FV + minutes */}
-        <div className="flex items-center gap-3 px-3 py-2 border-b border-white/8 shrink-0">
+        <div className="flex items-center gap-3 px-3 py-2 border-b border-hairline shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-bold text-white truncate">{slot.playerName ?? '—'}</p>
+              <p className="text-sm font-bold text-ink-1 truncate">{slot.playerName ?? '—'}</p>
               {slot.playerRatingClass && (
                 <span className={`text-[10px] font-bold shrink-0 ${rcColor}`}>{slot.playerRatingClass}</span>
               )}
             </div>
-            <p className="text-[11px] text-[#9095b8] truncate">{slot.playerClub ?? ''}</p>
+            <p className="text-[11px] text-ink-4 truncate">{slot.playerClub ?? ''}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className={`text-2xl font-black font-mono ${fvColor(fv)}`}>{fmtFv(fv)}</span>
             {slot.minutesPlayed !== null && (
-              <span className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-mono text-[#b8bcdc]">
+              <span className="rounded border border-hairline px-1.5 py-0.5 text-[10px] font-mono text-ink-3">
                 {slot.minutesPlayed}&apos;
               </span>
             )}
-            <button onClick={onClose} className="text-[#9095b8] hover:text-white text-xl leading-none">×</button>
+            <button onClick={onClose} className="text-ink-4 hover:text-ink-1 text-xl leading-none">×</button>
           </div>
         </div>
 
         <div className="p-3 space-y-2.5 overflow-y-auto">
           {/* Voto base */}
           {slot.votoBase !== null && (
-            <div className="text-[11px] text-[#9095b8]">
-              voto base <span className="font-mono text-[#b8bcdc]">{slot.votoBase.toFixed(2)}</span>
+            <div className="text-[11px] text-ink-4">
+              voto base <span className="font-mono text-ink-3">{slot.votoBase.toFixed(2)}</span>
             </div>
           )}
 
@@ -314,9 +314,9 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 <div className="rounded-lg p-2" style={{ border: '1px solid rgba(4,156,100,0.3)', background: 'rgba(4,156,100,0.07)' }}>
                   <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>FotMob</p>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black font-mono text-white">{slot.rawFotmobRating!.toFixed(1)}</span>
+                    <span className="text-lg font-black font-mono text-ink-1">{slot.rawFotmobRating!.toFixed(1)}</span>
                     {vbFm !== null && (
-                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-400' : 'text-[#b8bcdc]'}`}>
+                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-400' : 'text-ink-3'}`}>
                         → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
                       </span>
                     )}
@@ -327,9 +327,9 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 <div className="rounded-lg p-2" style={{ border: '1px solid rgba(55,77,245,0.3)', background: 'rgba(55,77,245,0.07)' }}>
                   <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#374DF5' }}>SofaScore</p>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black font-mono text-white">{slot.rawSofascoreRating!.toFixed(1)}</span>
+                    <span className="text-lg font-black font-mono text-ink-1">{slot.rawSofascoreRating!.toFixed(1)}</span>
                     {vbSs !== null && (
-                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-400' : 'text-[#b8bcdc]'}`}>
+                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-400' : 'text-ink-3'}`}>
                         → {vbSs.value.toFixed(2)}{vbSs.clamped ? ' ↑' : ''}
                       </span>
                     )}
@@ -337,7 +337,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 </div>
               )}
               {deltaRaw !== null && deltaConverted !== null && (
-                <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-[#9095b8]">
+                <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-ink-4">
                   <span>Δ FM−SS</span>
                   <span className={`font-mono ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : ''}`}>
                     {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)} orig
@@ -381,12 +381,12 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               {(slot.marketValue !== null || slot.height !== null) && (
                 <div className="flex gap-1.5">
                   {slot.marketValue !== null && (
-                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
+                    <span className="rounded-full border border-hairline px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
                       {fmtMarketValue(slot.marketValue)}
                     </span>
                   )}
                   {slot.height !== null && (
-                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-[#9095b8] font-mono">
+                    <span className="rounded-full border border-hairline px-2 py-0.5 text-[10px] text-ink-4 font-mono">
                       {slot.height} cm
                     </span>
                   )}
@@ -434,13 +434,13 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               ]} />
 
               {!hasSs && (
-                <p className="text-[10px] text-[#9095b8] italic">Nessuna statistica SofaScore disponibile</p>
+                <p className="text-[10px] text-ink-4 italic">Nessuna statistica SofaScore disponibile</p>
               )}
             </div>
           )}
 
           {fv === null && !hasAnyRaw && !hasStats && (
-            <p className="text-xs text-[#9095b8] italic">Nessun voto disponibile (NV)</p>
+            <p className="text-xs text-ink-4 italic">Nessun voto disponibile (NV)</p>
           )}
         </div>
       </div>
@@ -485,10 +485,10 @@ function PlayerChip({
         isDragOver
           ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_0_0_4px_rgba(99,102,241,0.06)_inset]'
           : isEmpty
-            ? 'border-white/5 bg-white/[0.02]'
+            ? 'border-hairline bg-glass-soft'
             : slot.isBench
-              ? 'border-white/8 bg-white/[0.04] hover:bg-white/[0.07]'
-              : 'border-white/8 bg-white/[0.06] hover:bg-white/[0.10]',
+              ? 'border-hairline bg-glass-1 hover:bg-glass-2'
+              : 'border-hairline bg-glass-2 hover:bg-glass-3',
         'rounded-xl border',
         isEmpty ? 'cursor-default' : isEditable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         slot.isBench && !isEmpty ? 'opacity-95' : '',
@@ -503,14 +503,14 @@ function PlayerChip({
 
       {/* Name + club stacked */}
       {isEmpty ? (
-        <span className="text-[12.5px] italic text-[#9095b8]">vuoto</span>
+        <span className="text-[12.5px] italic text-ink-4">vuoto</span>
       ) : (
         <span className="flex min-w-0 flex-col gap-px">
-          <span className="truncate text-[13px] font-medium leading-tight text-[#f5f7ff] tracking-tight">
+          <span className="truncate text-[13px] font-medium leading-tight text-ink-1 tracking-tight">
             <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
             <span className="hidden sm:inline">{slot.playerName}</span>
           </span>
-          <span className="truncate text-[10.5px] font-medium leading-none text-[#b8bcdc]">
+          <span className="truncate text-[10.5px] font-medium leading-none text-ink-3">
             {slot.playerClub}
           </span>
         </span>
@@ -657,7 +657,7 @@ function TeamCard({
   }
 
   const eyebrow =
-    'text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]'
+    'text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3'
 
   const inner = (
     <>
@@ -666,10 +666,10 @@ function TeamCard({
         <header className="mb-3.5 flex items-center gap-3">
           <Avatar name={team.teamName} size={36} />
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-[15px] font-semibold leading-tight text-[#f5f7ff] tracking-tight">
+            <h3 className="truncate text-[15px] font-semibold leading-tight text-ink-1 tracking-tight">
               {team.teamName}
             </h3>
-            <p className="mt-0.5 text-[11.5px] font-medium leading-none text-[#b8bcdc]">
+            <p className="mt-0.5 text-[11.5px] font-medium leading-none text-ink-3">
               {team.formationName}
               {team.submissionNumber !== null && ` · v#${team.submissionNumber}`}
             </p>
@@ -711,7 +711,7 @@ function TeamCard({
               <button
                 onClick={handleReset}
                 disabled={isPending}
-                className="rounded-md border border-white/10 px-2 py-0.5 text-[10.5px] font-medium text-[#b8bcdc] transition-colors hover:bg-white/5 hover:text-white"
+                className="rounded-md border border-hairline px-2 py-0.5 text-[10.5px] font-medium text-ink-3 transition-colors hover:bg-white/5 hover:text-ink-1"
               >
                 Ripristina
               </button>
@@ -728,7 +728,7 @@ function TeamCard({
       )}
 
       {team.slots.length === 0 ? (
-        <p className="py-4 text-center text-xs text-[#9095b8]">Nessuna formazione inserita</p>
+        <p className="py-4 text-center text-xs text-ink-4">Nessuna formazione inserita</p>
       ) : (
         <div className="flex flex-col gap-3.5">
           {/* Titolari */}
@@ -780,7 +780,7 @@ function TeamCard({
 
   return (
     <div
-      className="rounded-2xl border border-white/10 p-4 backdrop-blur-2xl"
+      className="rounded-2xl border border-hairline p-4 backdrop-blur-2xl"
       style={{
         background:
           'linear-gradient(180deg, rgba(46,50,88,0.40), rgba(30,32,56,0.55))',
@@ -836,8 +836,8 @@ function MatchupRow({
     ? (awayGoals as number) > (homeGoals as number)
     : homeFv !== null && awayFv !== null && awayFv > homeFv
 
-  const homeTone = awayWins ? 'text-[#6a6f8e]' : 'text-[#f5f7ff]'
-  const awayTone = homeWins ? 'text-[#6a6f8e]' : 'text-[#f5f7ff]'
+  const homeTone = awayWins ? 'text-ink-5' : 'text-ink-1'
+  const awayTone = homeWins ? 'text-ink-5' : 'text-ink-1'
 
   function fvBg(fv: number | null): string {
     if (fv === null) return '#9095b8'
@@ -854,7 +854,7 @@ function MatchupRow({
     if (!hasGoals && !hasFv) {
       return (
         <span
-          className="px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]"
+          className="px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3"
         >
           vs
         </span>
@@ -874,7 +874,7 @@ function MatchupRow({
               {homeGoals}
             </span>
             <span
-              className="font-thin leading-none text-[#6a6f8e] select-none"
+              className="font-thin leading-none text-ink-5 select-none"
               style={{ fontSize: size === 'lg' ? 'clamp(28px, 3vw, 40px)' : '24px' }}
             >
               –
@@ -890,19 +890,19 @@ function MatchupRow({
             </span>
           </div>
         ) : (
-          <span className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]">
+          <span className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3">
             vs
           </span>
         )}
         {hasFv && (
           <div
-            className="flex items-center gap-2 rounded-full border border-white/10 px-2.5 py-1 font-mono text-[11px] tabular-nums"
+            className="flex items-center gap-2 rounded-full border border-hairline px-2.5 py-1 font-mono text-[11px] tabular-nums"
             style={{ background: 'rgba(255,255,255,0.04)' }}
           >
             <span style={{ color: fvBg(homeFv !== null ? homeFv / 11 : null) }}>
               {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
             </span>
-            <span className="text-[#6a6f8e]">·</span>
+            <span className="text-ink-5">·</span>
             <span style={{ color: fvBg(awayFv !== null ? awayFv / 11 : null) }}>
               {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
             </span>
@@ -914,7 +914,7 @@ function MatchupRow({
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl border border-white/10 backdrop-blur-2xl"
+      className="relative overflow-hidden rounded-3xl border border-hairline backdrop-blur-2xl"
       style={{
         background:
           'linear-gradient(180deg, rgba(46,50,88,0.55), rgba(28,30,56,0.65))',
@@ -940,7 +940,7 @@ function MatchupRow({
 
       {/* Header */}
       <div
-        className="relative border-b border-white/8 px-6 py-6 md:px-8 md:py-7"
+        className="relative border-b border-hairline px-6 py-6 md:px-8 md:py-7"
         style={{
           background:
             'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0))',
@@ -956,7 +956,7 @@ function MatchupRow({
               >
                 {home?.teamName ?? '?'}
               </span>
-              <span className="mt-1 text-[11.5px] font-medium leading-tight text-[#b8bcdc]">
+              <span className="mt-1 text-[11.5px] font-medium leading-tight text-ink-3">
                 {home?.formationName ?? '—'}
               </span>
             </div>
@@ -978,7 +978,7 @@ function MatchupRow({
               >
                 {away?.teamName ?? '?'}
               </span>
-              <span className="mt-1 text-[11.5px] font-medium leading-tight text-[#b8bcdc]">
+              <span className="mt-1 text-[11.5px] font-medium leading-tight text-ink-3">
                 {away?.formationName ?? '—'}
               </span>
             </div>
@@ -987,19 +987,19 @@ function MatchupRow({
       </div>
 
       {/* Lineups grid */}
-      <div className="grid grid-cols-1 divide-y divide-white/8 md:grid-cols-2 md:divide-x md:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-hairline md:grid-cols-2 md:divide-x md:divide-y-0">
         <div className="p-5">
           {home ? (
             <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
           ) : (
-            <p className="py-10 text-center text-xs text-[#9095b8]">Nessuna formazione</p>
+            <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
           )}
         </div>
         <div className="p-5">
           {away ? (
             <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
           ) : (
-            <p className="py-10 text-center text-xs text-[#9095b8]">Nessuna formazione</p>
+            <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
           )}
         </div>
       </div>
@@ -1027,7 +1027,7 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {matchups.length > 1 && (
             <div
-              className="flex flex-1 gap-1.5 overflow-x-auto rounded-2xl border border-white/10 p-1.5 backdrop-blur-xl"
+              className="flex flex-1 gap-1.5 overflow-x-auto rounded-2xl border border-hairline p-1.5 backdrop-blur-xl"
               style={{
                 background:
                   'linear-gradient(180deg, rgba(46,50,88,0.45), rgba(28,30,56,0.55))',
@@ -1043,16 +1043,16 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
                     onClick={() => setActiveMatchIndex(i)}
                     className={`shrink-0 rounded-xl border px-3.5 py-2 text-left transition-all ${
                       isActive
-                        ? 'border-indigo-400/40 bg-white/[0.10] shadow-[0_2px_8px_rgba(0,0,0,0.3)]'
-                        : 'border-transparent text-[#b8bcdc] hover:bg-white/[0.05]'
+                        ? 'border-indigo-400/40 bg-glass-3 shadow-[0_2px_8px_rgba(0,0,0,0.3)]'
+                        : 'border-transparent text-ink-3 hover:bg-glass-1'
                     }`}
                   >
-                    <span className="block text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#b8bcdc]">
+                    <span className="block text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-3">
                       Sfida {i + 1}
                     </span>
                     <span
                       className={`mt-0.5 block text-[12px] font-medium leading-tight ${
-                        isActive ? 'text-[#f5f7ff]' : 'text-[#b8bcdc]'
+                        isActive ? 'text-ink-1' : 'text-ink-3'
                       }`}
                     >
                       {home?.teamName ?? '?'}{' '}
@@ -1112,7 +1112,7 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
 
         {unpaired.length > 0 && (
           <section className="mt-6 space-y-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b8bcdc]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3">
               Senza incontro
             </p>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

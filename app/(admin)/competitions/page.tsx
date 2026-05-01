@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  setup:     'text-[#9095b8] bg-white/[0.06]',
+  setup:     'text-ink-4 bg-glass-2',
   active:    'text-emerald-400 bg-emerald-500/10',
   completed: 'text-indigo-300 bg-indigo-500/10',
   cancelled: 'text-red-400 bg-red-500/10',
@@ -61,11 +61,11 @@ export default async function CompetitionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+            className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
             style={{ fontSize: 'clamp(22px, 2.6vw, 30px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
           >
             <span className="font-semibold">Competizioni</span>
-            <span className="serif font-normal text-[#b8bcdc]">— Campionato · Battle Royale · Coppa</span>
+            <span className="serif font-normal text-ink-3">— Campionato · Battle Royale · Coppa</span>
           </h1>
         </div>
         <a
@@ -79,7 +79,7 @@ export default async function CompetitionsPage() {
       {list.length === 0 ? (
         <Card>
           <CardContent>
-            <p className="py-8 text-center text-sm text-[#9095b8]">
+            <p className="py-8 text-center text-sm text-ink-4">
               Nessuna competizione creata. Crea il Campionato, il Battle Royale e la Coppa.
             </p>
           </CardContent>
@@ -90,16 +90,16 @@ export default async function CompetitionsPage() {
             <a
               key={comp.id}
               href={`/competitions/${comp.id}`}
-              className="group rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-indigo-500/40 hover:bg-white/[0.07]"
+              className="group rounded-xl border border-hairline bg-glass-1 p-5 transition-colors hover:border-indigo-500/40 hover:bg-glass-2"
             >
               <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl">{TYPE_ICON[comp.type] ?? '🏆'}</span>
                   <div>
-                    <p className="font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                    <p className="font-semibold text-ink-1 group-hover:text-indigo-300 transition-colors">
                       {comp.name}
                     </p>
-                    <p className="text-xs text-[#9095b8]">
+                    <p className="text-xs text-ink-4">
                       {TYPE_LABEL[comp.type] ?? comp.type}
                       {comp.season ? ` · ${comp.season}` : ''}
                     </p>
@@ -111,7 +111,7 @@ export default async function CompetitionsPage() {
                   {STATUS_LABEL[comp.status] ?? comp.status}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-[#9095b8]">
+              <div className="flex items-center gap-4 text-xs text-ink-4">
                 <span>{teamCountMap.get(comp.id) ?? 0} squadre</span>
                 <span>→ Gestisci</span>
               </div>

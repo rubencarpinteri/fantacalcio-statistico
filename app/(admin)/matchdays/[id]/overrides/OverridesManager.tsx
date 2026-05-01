@@ -38,7 +38,7 @@ function rcLabel(rc: string) {
     MID: 'text-green-400', ATT: 'text-red-400',
   }
   return (
-    <span className={`font-mono text-xs font-bold ${colours[rc] ?? 'text-[#b8bcdc]'}`}>{rc}</span>
+    <span className={`font-mono text-xs font-bold ${colours[rc] ?? 'text-ink-3'}`}>{rc}</span>
   )
 }
 
@@ -110,12 +110,12 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
       {/* Active overrides table */}
       <div>
         {activeOverrides.length === 0 ? (
-          <p className="text-sm text-[#9095b8]">Nessun override attivo per questa giornata.</p>
+          <p className="text-sm text-ink-4">Nessun override attivo per questa giornata.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-white/10">
+          <div className="overflow-x-auto rounded-xl border border-hairline">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left text-xs text-[#9095b8]">
+                <tr className="border-b border-hairline text-left text-xs text-ink-4">
                   <th className="px-6 py-2.5">Giocatore</th>
                   <th className="px-4 py-2.5 text-right">Fantavoto orig.</th>
                   <th className="px-4 py-2.5 text-right">Override</th>
@@ -124,21 +124,21 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
                   {isEditable && <th className="px-4 py-2.5"></th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {activeOverrides.map((o) => (
                   <tr key={o.id}>
                     <td className="px-6 py-2.5">
-                      <div className="font-medium text-white">{o.player_name}</div>
-                      <div className="text-xs text-[#9095b8]">{o.player_club}</div>
+                      <div className="font-medium text-ink-1">{o.player_name}</div>
+                      <div className="text-xs text-ink-4">{o.player_club}</div>
                     </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-[#9095b8]">
+                    <td className="px-4 py-2.5 text-right font-mono text-ink-4">
                       {o.original_fantavoto !== null ? o.original_fantavoto.toFixed(2) : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono font-bold text-orange-400">
                       {o.override_fantavoto.toFixed(2)}
                     </td>
-                    <td className="px-4 py-2.5 text-sm italic text-[#b8bcdc]">{o.reason}</td>
-                    <td className="px-4 py-2.5 text-right text-xs text-[#9095b8]">
+                    <td className="px-4 py-2.5 text-sm italic text-ink-3">{o.reason}</td>
+                    <td className="px-4 py-2.5 text-right text-xs text-ink-4">
                       {new Intl.DateTimeFormat('it-IT', {
                         dateStyle: 'short',
                         timeStyle: 'short',
@@ -165,17 +165,17 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
 
       {/* Add override form */}
       {isEditable && (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-white">Nuovo override</h3>
+        <div className="rounded-xl border border-hairline bg-glass-soft p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-ink-1">Nuovo override</h3>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Player select */}
             <div>
-              <label className="mb-1.5 block text-xs text-[#b8bcdc]">Giocatore</label>
+              <label className="mb-1.5 block text-xs text-ink-3">Giocatore</label>
               <select
                 value={selectedPlayerId}
                 onChange={(e) => setSelectedPlayerId(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+                className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
               >
                 <option value="">— Seleziona —</option>
                 {availablePlayers.map((p) => (
@@ -185,13 +185,13 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
                 ))}
               </select>
               {availablePlayers.length === 0 && (
-                <p className="mt-1 text-xs text-[#9095b8]">Tutti i giocatori hanno già un override attivo.</p>
+                <p className="mt-1 text-xs text-ink-4">Tutti i giocatori hanno già un override attivo.</p>
               )}
             </div>
 
             {/* Override fantavoto */}
             <div>
-              <label className="mb-1.5 block text-xs text-[#b8bcdc]">Fantavoto override</label>
+              <label className="mb-1.5 block text-xs text-ink-3">Fantavoto override</label>
               <input
                 type="number"
                 step="0.1"
@@ -200,21 +200,21 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
                 value={overrideValue}
                 onChange={(e) => setOverrideValue(e.target.value)}
                 placeholder="es. 7.5"
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+                className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Reason */}
           <div>
-            <label className="mb-1.5 block text-xs text-[#b8bcdc]">Motivazione</label>
+            <label className="mb-1.5 block text-xs text-ink-3">Motivazione</label>
             <input
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="es. Correzione voto errato — fonte ufficiale"
               maxLength={500}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+              className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
             />
           </div>
 
@@ -226,7 +226,7 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
             >
               {isPending ? 'Salvataggio…' : 'Crea override'}
             </button>
-            <p className="text-xs text-[#9095b8]">
+            <p className="text-xs text-ink-4">
               L&apos;override si applica al prossimo run di calcolo.
             </p>
           </div>
@@ -256,8 +256,8 @@ export function OverridesManager({ matchdayId, matchdayStatus, activeOverrides, 
         const p = players.find((pl) => pl.id === selectedPlayerId)
         if (!p) return null
         return (
-          <p className="text-xs text-[#b8bcdc]">
-            Selezionato: <span className="text-white font-medium">{p.full_name}</span>{' '}
+          <p className="text-xs text-ink-3">
+            Selezionato: <span className="text-ink-1 font-medium">{p.full_name}</span>{' '}
             ({p.club}) {rcLabel(p.rating_class)}
           </p>
         )

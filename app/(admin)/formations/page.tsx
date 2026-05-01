@@ -22,8 +22,8 @@ export default async function FormationsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Formazioni</h1>
-          <p className="mt-0.5 text-sm text-[#b8bcdc]">
+          <h1 className="text-xl font-bold text-ink-1">Formazioni</h1>
+          <p className="mt-0.5 text-sm text-ink-3">
             Gestisci le formazioni valide e gli slot Mantra per la lega.
             Ogni slot dichiara i ruoli Mantra compatibili.
           </p>
@@ -35,7 +35,7 @@ export default async function FormationsPage() {
       </div>
 
       {/* Info callout */}
-      <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 text-sm text-[#b8bcdc]">
+      <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 text-sm text-ink-3">
         <span className="font-medium text-indigo-400">Nota:</span> Le formazioni sono
         completamente configurabili. Nessuna logica Mantra ufficiale è codificata nel sistema.
         Ogni slot definisce esplicitamente i ruoli Mantra accettati. Gli slot panchina sono
@@ -45,13 +45,13 @@ export default async function FormationsPage() {
       <Card>
         <CardContent className="p-0">
           {!formations || formations.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm text-[#9095b8]">
+            <div className="px-6 py-12 text-center text-sm text-ink-4">
               Nessuna formazione configurata. Crea la prima formazione per iniziare.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10">
+                <tr className="border-b border-hairline">
                   <Th>Nome</Th>
                   <Th>Descrizione</Th>
                   <Th>Slot configurati</Th>
@@ -59,23 +59,23 @@ export default async function FormationsPage() {
                   <Th>Azioni</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/8">
+              <tbody className="divide-y divide-hairline">
                 {formations.map((f) => {
                   const slotCount = Array.isArray(f.formation_slots) ? f.formation_slots.length : 0
                   return (
-                    <tr key={f.id} className="transition-colors hover:bg-white/[0.05]">
+                    <tr key={f.id} className="transition-colors hover:bg-glass-1">
                       <td className="px-6 py-3">
                         <a
                           href={`/formations/${f.id}`}
-                          className="font-medium text-white hover:text-indigo-400"
+                          className="font-medium text-ink-1 hover:text-indigo-400"
                         >
                           {f.name}
                         </a>
                       </td>
-                      <td className="px-6 py-3 text-[#b8bcdc]">
+                      <td className="px-6 py-3 text-ink-3">
                         {f.description ?? '—'}
                       </td>
-                      <td className="px-6 py-3 text-[#b8bcdc]">{slotCount}</td>
+                      <td className="px-6 py-3 text-ink-3">{slotCount}</td>
                       <td className="px-6 py-3">
                         <Badge variant={f.is_active ? 'success' : 'muted'}>
                           {f.is_active ? 'Attiva' : 'Inattiva'}
@@ -98,7 +98,7 @@ export default async function FormationsPage() {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+    <th className="px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-ink-3">
       {children}
     </th>
   )

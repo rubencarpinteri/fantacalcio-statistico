@@ -158,11 +158,11 @@ export default async function DashboardPage() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div>
         <h1
-          className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-[#f5f7ff]"
+          className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
           style={{ fontSize: 'clamp(22px, 2.6vw, 30px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
         >
           <span className="font-semibold">{ctx.league.name}</span>
-          <span className="serif font-normal text-[#b8bcdc]">— {ctx.league.season_name}</span>
+          <span className="serif font-normal text-ink-3">— {ctx.league.season_name}</span>
         </h1>
       </div>
 
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-4 py-2.5">
           <div className="min-w-0">
             <p className="text-xs font-medium text-indigo-300">{openMatchdayForLineup.name}</p>
-            <p className="text-[11px] text-[#9095b8]">
+            <p className="text-[11px] text-ink-4">
               {openMatchdayForLineup.hasSubmission ? 'Formazione inviata' : 'Formazione non inviata'}
             </p>
           </div>
@@ -187,18 +187,18 @@ export default async function DashboardPage() {
       {/* ── Giornate grid: Ultima + Prossima ────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Ultima Giornata */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-white/10">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
+        <div className="rounded-xl border border-hairline bg-glass-1 backdrop-blur-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-hairline">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">
               Ultima Giornata
             </p>
-            <p className="text-sm font-semibold text-white leading-tight">
+            <p className="text-sm font-semibold text-ink-1 leading-tight">
               {prevMatchday?.name ?? '—'}
             </p>
           </div>
 
           {prevMatchups.length > 0 ? (
-            <div className="divide-y divide-white/8">
+            <div className="divide-y divide-hairline">
               {prevMatchups.map((m, i) => {
                 const homeWins =
                   m.homeScore !== null && m.awayScore !== null && m.homeScore > m.awayScore
@@ -208,13 +208,13 @@ export default async function DashboardPage() {
                   <a
                     key={i}
                     href={`/matchdays/${m.matchdayId}/all-lineups`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.05] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-glass-1 transition-colors"
                   >
                     {/* Home team */}
                     <div className="flex-1 min-w-0 overflow-hidden text-right">
                       <span
                         className={`block truncate text-sm font-semibold ${
-                          homeWins ? 'text-white' : awayWins ? 'text-[#6a6f8e]' : 'text-[#c0c0d8]'
+                          homeWins ? 'text-ink-1' : awayWins ? 'text-ink-5' : 'text-[#c0c0d8]'
                         }`}
                       >
                         {m.homeTeamName}
@@ -223,13 +223,13 @@ export default async function DashboardPage() {
                     {/* Score */}
                     <div className="shrink-0 w-28 flex items-center justify-center gap-1.5 tabular-nums">
                       <span
-                        className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#9095b8]'}`}
+                        className={`text-base font-bold ${homeWins ? 'text-ink-1' : 'text-ink-4'}`}
                       >
                         {m.homeScore !== null ? m.homeScore.toFixed(1) : '—'}
                       </span>
-                      <span className="text-[#6a6f8e] text-sm font-normal">–</span>
+                      <span className="text-ink-5 text-sm font-normal">–</span>
                       <span
-                        className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#9095b8]'}`}
+                        className={`text-base font-bold ${awayWins ? 'text-ink-1' : 'text-ink-4'}`}
                       >
                         {m.awayScore !== null ? m.awayScore.toFixed(1) : '—'}
                       </span>
@@ -238,7 +238,7 @@ export default async function DashboardPage() {
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <span
                         className={`block truncate text-sm font-semibold ${
-                          awayWins ? 'text-white' : homeWins ? 'text-[#6a6f8e]' : 'text-[#c0c0d8]'
+                          awayWins ? 'text-ink-1' : homeWins ? 'text-ink-5' : 'text-[#c0c0d8]'
                         }`}
                       >
                         {m.awayTeamName}
@@ -249,7 +249,7 @@ export default async function DashboardPage() {
               })}
             </div>
           ) : (
-            <p className="px-4 py-6 text-center text-xs text-[#9095b8]">
+            <p className="px-4 py-6 text-center text-xs text-ink-4">
               {prevMatchday
                 ? 'Nessun incontro configurato.'
                 : 'Nessuna giornata conclusa.'}
@@ -257,7 +257,7 @@ export default async function DashboardPage() {
           )}
 
           {prevMatchday && (
-            <div className="border-t border-white/8 px-4 py-2">
+            <div className="border-t border-hairline px-4 py-2">
               <a
                 href={`/matchdays/${prevMatchday.id}/results`}
                 className="text-[11px] text-indigo-400 hover:text-indigo-300"
@@ -269,23 +269,23 @@ export default async function DashboardPage() {
         </div>
 
         {/* Prossima Giornata */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-white/10">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
+        <div className="rounded-xl border border-hairline bg-glass-1 backdrop-blur-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-hairline">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">
               Prossima Giornata
             </p>
-            <p className="text-sm font-semibold text-white leading-tight">
+            <p className="text-sm font-semibold text-ink-1 leading-tight">
               {nextMatchday?.name ?? '—'}
             </p>
             {nextMatchday?.locks_at && (
-              <p className="text-[10px] text-[#9095b8] mt-0.5">
+              <p className="text-[10px] text-ink-4 mt-0.5">
                 Scadenza: {fmt(nextMatchday.locks_at)}
               </p>
             )}
           </div>
 
           {nextMatchups.length > 0 ? (
-            <div className="divide-y divide-white/8">
+            <div className="divide-y divide-hairline">
               {nextMatchups.map((m, i) => (
                 <div
                   key={i}
@@ -299,7 +299,7 @@ export default async function DashboardPage() {
                   </div>
                   {/* VS */}
                   <div className="shrink-0 w-28 flex items-center justify-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a6f8e]">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-ink-5">
                       vs
                     </span>
                   </div>
@@ -313,7 +313,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="px-4 py-6 text-center text-xs text-[#9095b8]">
+            <p className="px-4 py-6 text-center text-xs text-ink-4">
               {nextMatchday
                 ? 'Nessun incontro configurato.'
                 : 'Nessuna prossima giornata.'}
@@ -321,7 +321,7 @@ export default async function DashboardPage() {
           )}
 
           {nextMatchday && (
-            <div className="border-t border-white/8 px-4 py-2">
+            <div className="border-t border-hairline px-4 py-2">
               <a
                 href="/matchdays"
                 className="text-[11px] text-indigo-400 hover:text-indigo-300"
@@ -334,13 +334,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Classifica (WIP) ────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+      <div className="rounded-xl border border-hairline bg-glass-1 backdrop-blur-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-hairline">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9095b8]">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">
               Classifica
             </p>
-            <p className="text-sm font-semibold text-white leading-tight">
+            <p className="text-sm font-semibold text-ink-1 leading-tight">
               {ctx.league.name}
             </p>
           </div>
@@ -352,8 +352,8 @@ export default async function DashboardPage() {
           </a>
         </div>
         <div className="px-4 py-8 text-center">
-          <p className="text-xs font-medium text-[#9095b8]">Work in progress</p>
-          <p className="mt-1 text-[11px] text-[#6a6f8e]">
+          <p className="text-xs font-medium text-ink-4">Work in progress</p>
+          <p className="mt-1 text-[11px] text-ink-5">
             La classifica sarà disponibile prossimamente.
           </p>
         </div>
@@ -372,7 +372,7 @@ export default async function DashboardPage() {
             <a
               key={href}
               href={href}
-              className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-[#9095b8] hover:border-indigo-500/40 hover:text-white transition-colors"
+              className="rounded-md border border-hairline bg-glass-1 px-3 py-1.5 text-xs text-ink-4 hover:border-indigo-500/40 hover:text-ink-1 transition-colors"
             >
               {label}
             </a>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import type { Route } from 'next'
 import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/app/(auth)/login/actions'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 type IconName = 'calendar' | 'trophy' | 'user' | 'beaker' | 'gear' | 'logout' | 'ball'
 
@@ -108,14 +109,10 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
     <>
       {/* ── Desktop sidebar (hidden on mobile) ──────────────────────────── */}
       <aside
-        className="hidden h-screen w-60 shrink-0 flex-col border-r border-white/8 backdrop-blur-2xl md:flex"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(46,50,88,0.55), rgba(20,22,44,0.65))',
-        }}
+        className="hidden h-screen w-60 shrink-0 flex-col border-r border-hairline bg-surface-1 backdrop-blur-2xl md:flex dark:bg-glass-2"
       >
         {/* Brand */}
-        <div className="border-b border-white/8 px-4 py-4">
+        <div className="border-b border-hairline px-4 py-4">
           <div className="flex items-center gap-3">
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-indigo-200"
@@ -129,10 +126,10 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
               <NavIcon name="ball" size={18} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold tracking-tight text-[#f5f7ff]">
+              <p className="truncate text-[13px] font-semibold tracking-tight text-ink-1">
                 {leagueName}
               </p>
-              <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-[#9095b8]">
+              <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-ink-4">
                 Fantacalcio Stat.
               </p>
             </div>
@@ -151,7 +148,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
                   'group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-all',
                   active
                     ? 'bg-indigo-500/15 text-indigo-200 border border-indigo-400/25 shadow-[0_2px_8px_-2px_rgba(99,102,241,0.4)]'
-                    : 'border border-transparent text-[#b8bcdc] hover:bg-white/[0.05] hover:text-[#f5f7ff]',
+                    : 'border border-transparent text-ink-3 hover:bg-glass-1 hover:text-ink-1',
                 ].join(' ')}
               >
                 <NavIcon name={item.icon} />
@@ -162,7 +159,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-white/8 px-3 py-3">
+        <div className="border-t border-hairline px-3 py-3">
           <div className="mb-2 flex items-center gap-2.5 px-1">
             <div
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase text-indigo-200"
@@ -175,34 +172,33 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
               {username.slice(0, 1)}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[12px] font-medium tracking-tight text-[#f5f7ff]">
+              <p className="truncate text-[12px] font-medium tracking-tight text-ink-1">
                 {username}
               </p>
-              <p className="text-[10.5px] font-medium text-[#9095b8]">
+              <p className="text-[10.5px] font-medium text-ink-4">
                 {isAdmin ? 'Admin' : 'Manager'}
               </p>
             </div>
           </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[12px] text-[#9095b8] transition-colors hover:bg-rose-500/10 hover:text-rose-300"
-            >
-              <NavIcon name="logout" size={13} />
-              Esci
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <form action={logoutAction} className="flex-1">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[12px] text-ink-4 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
+              >
+                <NavIcon name="logout" size={13} />
+                Esci
+              </button>
+            </form>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
       {/* ── Mobile bottom nav bar (hidden on desktop) ───────────────────── */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 backdrop-blur-2xl md:hidden"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(46,50,88,0.78), rgba(20,22,44,0.92))',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-surface-1 backdrop-blur-2xl md:hidden dark:bg-glass-2"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-stretch justify-around">
           {visibleItems.map((item) => {
@@ -213,7 +209,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
                 href={item.href as Route}
                 className={[
                   'flex flex-1 flex-col items-center gap-1 px-1 pt-2.5 pb-3 text-center transition-colors',
-                  active ? 'text-indigo-300' : 'text-[#9095b8] hover:text-[#f5f7ff]',
+                  active ? 'text-indigo-300' : 'text-ink-4 hover:text-ink-1',
                 ].join(' ')}
               >
                 <NavIcon name={item.icon} size={18} />
@@ -224,7 +220,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
           <form action={logoutAction} className="flex flex-1">
             <button
               type="submit"
-              className="flex flex-1 flex-col items-center gap-1 px-1 pt-2.5 pb-3 text-[#9095b8] transition-colors hover:text-rose-300"
+              className="flex flex-1 flex-col items-center gap-1 px-1 pt-2.5 pb-3 text-ink-4 transition-colors hover:text-rose-300"
             >
               <NavIcon name="logout" size={18} />
               <span className="text-[10px] font-medium leading-none tracking-tight">Esci</span>

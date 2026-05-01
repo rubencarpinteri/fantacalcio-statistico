@@ -66,7 +66,7 @@ export function PlayerForm({ player, onSuccess }: PlayerFormProps) {
       />
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium uppercase tracking-wider text-[#b8bcdc]">
+        <label className="text-xs font-medium uppercase tracking-wider text-ink-3">
           Ruoli Mantra
         </label>
         <input
@@ -74,9 +74,9 @@ export function PlayerForm({ player, onSuccess }: PlayerFormProps) {
           defaultValue={defaultRoles}
           required
           placeholder="es. A, Pc"
-          className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder-[#9095b8] focus:border-indigo-400/60 focus:outline-none"
+          className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
         />
-        <p className="text-xs text-[#9095b8]">
+        <p className="text-xs text-ink-4">
           Ruoli separati da virgola. Disponibili: {ALL_MANTRA_ROLES.join(', ')}
         </p>
         {state.fieldErrors?.['mantra_roles'] && (

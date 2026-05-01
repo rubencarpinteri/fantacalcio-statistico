@@ -11,7 +11,10 @@ Full-stack Italian Mantra-style fantasy football app. Private league, statistics
 ## Key Rules
 - Always write code in English (comments, variables, types). UI strings stay Italian.
 - No component libraries — custom Tailwind components only
-- Dark mode always on (`class="dark"` on `<html>`)
+- **Theming:** light by default, dark via `.dark` on `<html>` (toggled by `components/ui/ThemeToggle.tsx`, persisted in `localStorage.theme`, applied pre-paint by inline boot script in `app/layout.tsx`)
+- Use semantic CSS-var-driven utilities (`text-ink-1..5`, `bg-glass-1..3`, `bg-surface-0..3`, `border-hairline`, `border-hairline-strong`, `divide-hairline`) so colors auto-flip with the active theme. Avoid hardcoded hex (`text-[#f5f7ff]`) or `bg-white/[0.0x]` overlays.
+- Keep `text-white` only when text sits on a saturated colored background (indigo/emerald/rose CTA buttons); otherwise use `text-ink-1`.
+- Squarer radii: sm 4px, md 6px, lg 8px, xl 10px, 2xl 12px (defined in `app/globals.css` `@theme`).
 - Use `useActionState` from `react` (NOT `useFormState` from `react-dom`)
 - `cookies()` from `next/headers` must be awaited (returns Promise in Next.js 15)
 

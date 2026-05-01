@@ -27,14 +27,20 @@ export const metadata: Metadata = {
   description: 'Private Mantra-style fantasy football league with statistics-based scoring.',
 }
 
+// Inline boot script — runs before paint to honor saved theme without FOUC.
+// Light is the default; only flips to dark when the user has explicitly chosen it.
+const themeBootScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    // dark class ensures dark mode is always active
-    <html lang="it" className={`dark ${GeistSans.variable} ${GeistMono.variable} ${instrumentSerif.variable}`}>
+    <html lang="it" className={`${GeistSans.variable} ${GeistMono.variable} ${instrumentSerif.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body>{children}</body>
     </html>
   )
