@@ -32,9 +32,14 @@
   --color-danger:  #ef4444;
   --color-info:    #3b82f6;
 
-  /* Typography */
-  --font-sans: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
-  --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
+  /* Typography — Geist Sans for UI/body, Geist Mono for tabular data */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Tracking scale (negative = tighter) */
+  --tracking-display: -0.03em;  /* headings 24px+ */
+  --tracking-body:    -0.015em; /* default UI / body */
+  --tracking-tabular: 0;        /* numbers in tables */
 }
 
 /* ============================================================
@@ -43,10 +48,25 @@
 html {
   color-scheme: dark;
   font-family: var(--font-sans);
+  letter-spacing: var(--tracking-body);
   background-color: var(--color-surface-0);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tighter tracking on display-sized text */
+h1, h2, h3, .display {
+  letter-spacing: var(--tracking-display);
+}
+
+/* Reset tracking + enable tabular figures wherever numbers align in columns */
+.tabular-nums,
+table.tabular,
+[data-tabular] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "cnum";
+  letter-spacing: var(--tracking-tabular);
 }
 
 body {
@@ -76,8 +96,11 @@ body {
   background: var(--color-text-muted);
 }
 
-/* Table base */
+/* Table base — tabular figures + reset tracking so number columns align */
 table {
   border-collapse: collapse;
   width: 100%;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "cnum";
+  letter-spacing: var(--tracking-tabular);
 }

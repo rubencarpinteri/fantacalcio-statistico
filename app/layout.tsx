@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { JetBrains_Mono } from 'next/font/google'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -8,12 +9,6 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
 }
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: {
@@ -30,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     // dark class ensures dark mode is always active
-    <html lang="it" className={`dark ${jetbrainsMono.variable}`}>
+    <html lang="it" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
       <body>{children}</body>
     </html>
   )
