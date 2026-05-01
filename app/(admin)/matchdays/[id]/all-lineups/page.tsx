@@ -271,29 +271,63 @@ export default async function AllLineupsPage({
 
   // ── Fetch competition matchups for this round ──────────────────────────────
   // Used to pair teams in head-to-head layout instead of a plain grid.
-  let matchupPairs: Array<{ homeTeamId: string; awayTeamId: string }> = []
+  // Also pull goal-converted scores from the linked Campionato round (when
+  // already computed) so the matchup header can show the final result.
+  let matchupPairs: Array<{
+    homeTeamId: string
+    awayTeamId: string
+    homeGoals: number | null
+    awayGoals: number | null
+  }> = []
   if (matchday.round_number !== null) {
     const { data: comps } = await supabase
       .from('competitions')
-      .select('id')
+      .select('id, type')
       .eq('league_id', ctx.league.id)
 
     const compIds = (comps ?? []).map((c) => c.id)
+    const campionatoCompIds = (comps ?? []).filter((c) => c.type === 'campionato').map((c) => c.id)
 
     if (compIds.length > 0) {
-      const { data: rawMatchups } = await supabase
-        .from('competition_matchups')
-        .select('home_team_id, away_team_id')
-        .in('competition_id', compIds)
-        .eq('round_number', matchday.round_number)
+      const [rawMatchupsRes, fixturesRes] = await Promise.all([
+        supabase
+          .from('competition_matchups')
+          .select('home_team_id, away_team_id')
+          .in('competition_id', compIds)
+          .eq('round_number', matchday.round_number),
+        campionatoCompIds.length > 0
+          ? supabase
+              .from('competition_fixtures')
+              .select('home_team_id, away_team_id, home_score, away_score, competition_rounds!inner(matchday_id)')
+              .in('competition_id', campionatoCompIds)
+              .eq('competition_rounds.matchday_id', matchdayId)
+          : Promise.resolve({ data: [] as Array<{ home_team_id: string; away_team_id: string; home_score: number | null; away_score: number | null }> }),
+      ])
+
+      // Build pair-key → per-team goals map (orientation-tolerant)
+      const goalsByPairKey = new Map<string, Map<string, number>>()
+      for (const f of fixturesRes.data ?? []) {
+        if (f.home_score == null || f.away_score == null) continue
+        const key = [f.home_team_id, f.away_team_id].sort().join('|')
+        goalsByPairKey.set(key, new Map([
+          [f.home_team_id, f.home_score],
+          [f.away_team_id, f.away_score],
+        ]))
+      }
 
       // Deduplicate: same pair may appear in multiple competitions
       const seen = new Set<string>()
-      for (const m of rawMatchups ?? []) {
+      for (const m of rawMatchupsRes.data ?? []) {
         const key = [m.home_team_id, m.away_team_id].sort().join('|')
         if (!seen.has(key)) {
           seen.add(key)
-          matchupPairs.push({ homeTeamId: m.home_team_id, awayTeamId: m.away_team_id })
+          const goals = goalsByPairKey.get(key)
+          matchupPairs.push({
+            homeTeamId: m.home_team_id,
+            awayTeamId: m.away_team_id,
+            homeGoals: goals?.get(m.home_team_id) ?? null,
+            awayGoals: goals?.get(m.away_team_id) ?? null,
+          })
         }
       }
     }

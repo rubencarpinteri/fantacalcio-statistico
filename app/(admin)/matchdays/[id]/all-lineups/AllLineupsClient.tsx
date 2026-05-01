@@ -90,6 +90,8 @@ export interface TeamLineupData {
 export interface MatchupPair {
   homeTeamId: string
   awayTeamId: string
+  homeGoals: number | null
+  awayGoals: number | null
 }
 
 interface Props {
@@ -716,12 +718,16 @@ function TeamCard({
 function MatchupRow({
   home,
   away,
+  homeGoals,
+  awayGoals,
   matchdayId,
   isEditable,
   onPlayerClick,
 }: {
   home: TeamLineupData | undefined
   away: TeamLineupData | undefined
+  homeGoals: number | null
+  awayGoals: number | null
   matchdayId: string
   isEditable: boolean
   onPlayerClick?: (slot: SlotData) => void
@@ -735,75 +741,89 @@ function MatchupRow({
 
   const homeFv = teamFv(home)
   const awayFv = teamFv(away)
-  const hasScores = homeFv !== null || awayFv !== null
-  const homeWins = homeFv !== null && awayFv !== null && homeFv > awayFv
-  const awayWins = homeFv !== null && awayFv !== null && awayFv > homeFv
-  const homeFvClass = awayWins ? 'text-[#3a3a52]' : 'text-white'
-  const awayFvClass = homeWins ? 'text-[#3a3a52]' : 'text-white'
+  const hasFv = homeFv !== null || awayFv !== null
+  const hasGoals = homeGoals !== null && awayGoals !== null
 
-  return (
-    <div className="rounded-2xl border border-[#2e2e42] bg-[#0b0b14] overflow-hidden">
-      {/* Match header — responsive: stacked on mobile, side-by-side on md+ */}
+  // Decide winner: prefer goal result, fall back to fantavoto
+  const homeWins = hasGoals
+    ? (homeGoals as number) > (awayGoals as number)
+    : homeFv !== null && awayFv !== null && homeFv > awayFv
+  const awayWins = hasGoals
+    ? (awayGoals as number) > (homeGoals as number)
+    : homeFv !== null && awayFv !== null && awayFv > homeFv
 
-      {/* ── Mobile header (< md) ── */}
-      <div className="md:hidden px-4 pt-4 pb-3 bg-[#0f0f1a] border-b border-[#2e2e42]">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-2 mb-0.5">
-          <p className="text-sm font-bold text-white text-right truncate min-w-0 leading-tight">{home?.teamName ?? '?'}</p>
-          <span className="text-[9px] font-bold uppercase tracking-widest text-[#2e2e42] px-1 select-none">vs</span>
-          <p className="text-sm font-bold text-white text-left truncate min-w-0 leading-tight">{away?.teamName ?? '?'}</p>
+  const homeTone = awayWins ? 'text-[#3a3a52]' : 'text-white'
+  const awayTone = homeWins ? 'text-[#3a3a52]' : 'text-white'
+
+  // Score block — goals as primary (large, light), fantavoto as small caption
+  function ScoreBlock({ size }: { size: 'sm' | 'lg' }) {
+    if (!hasGoals && !hasFv) {
+      return <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#3a3a52] px-4">vs</span>
+    }
+    const big   = size === 'lg' ? 'text-5xl' : 'text-3xl'
+    const cell  = size === 'lg' ? 'w-16' : 'w-12'
+    const sep   = size === 'lg' ? 'text-4xl px-3' : 'text-2xl px-2'
+    const small = size === 'lg' ? 'text-[11px]'  : 'text-[10px]'
+    return (
+      <div className="flex flex-col items-center">
+        <div className="flex items-baseline">
+          <span className={`${cell} text-right ${big} font-light tabular-nums leading-none ${homeTone}`}>
+            {hasGoals ? homeGoals : '·'}
+          </span>
+          <span className={`${sep} font-thin text-[#2a2a3e] leading-none select-none`}>–</span>
+          <span className={`${cell} text-left ${big} font-light tabular-nums leading-none ${awayTone}`}>
+            {hasGoals ? awayGoals : '·'}
+          </span>
         </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 mb-2">
-          <p className="text-[10px] text-[#4a4a65] text-right truncate font-mono">{home?.formationName ?? '—'}</p>
-          <span className="invisible text-[9px] px-1">vs</span>
-          <p className="text-[10px] text-[#4a4a65] text-left truncate font-mono">{away?.formationName ?? '—'}</p>
-        </div>
-        {hasScores && (
-          <div className="flex items-center justify-center pt-2 border-t border-[#1a1a2a]">
-            <span className={`w-20 text-right text-xl font-black font-mono tabular-nums leading-none ${homeFvClass}`}>
-              {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
-            </span>
-            <span className="text-[#2a2a3e] text-xl font-thin px-2.5 leading-none select-none">–</span>
-            <span className={`w-20 text-left text-xl font-black font-mono tabular-nums leading-none ${awayFvClass}`}>
-              {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
-            </span>
+        {hasFv && (
+          <div className={`mt-1.5 flex items-center gap-1.5 ${small} text-[#55556a] tabular-nums`}>
+            <span>{homeFv !== null ? homeFv.toFixed(2) : 'NV'}</span>
+            <span className="text-[#2a2a3e]">–</span>
+            <span>{awayFv !== null ? awayFv.toFixed(2) : 'NV'}</span>
           </div>
         )}
       </div>
+    )
+  }
 
-      {/* ── Desktop header (≥ md) ── */}
-      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center px-8 py-5 bg-[#0f0f1a] border-b border-[#2e2e42]">
-        {/* Home — right-aligned */}
-        <div className="min-w-0 overflow-hidden text-right pr-6">
-          <p className="block truncate text-2xl font-bold text-white tracking-tight leading-tight">{home?.teamName ?? '?'}</p>
-          <p className="block truncate text-[11px] text-[#4a4a65] mt-1 font-mono">{home?.formationName ?? '—'}</p>
+  return (
+    <div className="rounded-2xl border border-[#1e1e2e] bg-[#0b0b14] overflow-hidden">
+      {/* ── Mobile header ── */}
+      <div className="md:hidden px-5 pt-5 pb-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3">
+          <p className={`text-sm font-medium tracking-tight text-right truncate min-w-0 ${homeTone}`}>{home?.teamName ?? '?'}</p>
+          <span className="text-[9px] font-medium uppercase tracking-[0.25em] text-[#2e2e42] select-none">vs</span>
+          <p className={`text-sm font-medium tracking-tight text-left truncate min-w-0 ${awayTone}`}>{away?.teamName ?? '?'}</p>
         </div>
-
-        {/* Score — fixed-width spans keep the separator at the geometric center */}
-        <div className="shrink-0 flex items-center">
-          {hasScores ? (
-            <>
-              <span className={`w-24 text-right text-3xl font-black font-mono tabular-nums leading-none ${homeFvClass}`}>
-                {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
-              </span>
-              <span className="text-[#2a2a3e] text-3xl font-thin px-3 leading-none select-none">–</span>
-              <span className={`w-24 text-left text-3xl font-black font-mono tabular-nums leading-none ${awayFvClass}`}>
-                {awayFv !== null ? awayFv.toFixed(2) : 'NV'}
-              </span>
-            </>
-          ) : (
-            <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#3a3a52] px-6">vs</span>
-          )}
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-3 mt-0.5">
+          <p className="text-[10px] text-[#3a3a52] text-right truncate">{home?.formationName ?? '—'}</p>
+          <span className="invisible text-[9px]">vs</span>
+          <p className="text-[10px] text-[#3a3a52] text-left truncate">{away?.formationName ?? '—'}</p>
         </div>
-
-        {/* Away — left-aligned */}
-        <div className="min-w-0 overflow-hidden pl-6">
-          <p className="block truncate text-2xl font-bold text-white tracking-tight leading-tight">{away?.teamName ?? '?'}</p>
-          <p className="block truncate text-[11px] text-[#4a4a65] mt-1 font-mono">{away?.formationName ?? '—'}</p>
+        <div className="mt-4 flex justify-center">
+          <ScoreBlock size="sm" />
         </div>
       </div>
 
-      {/* Side-by-side formations (stacks on mobile) */}
-      <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-y-0 md:divide-x divide-[#1e1e2e]">
+      {/* ── Desktop header ── */}
+      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center gap-8 px-10 py-8">
+        <div className="min-w-0 overflow-hidden text-right">
+          <p className={`block truncate text-2xl font-semibold tracking-tight leading-tight ${homeTone}`}>{home?.teamName ?? '?'}</p>
+          <p className="block truncate text-[11px] text-[#3a3a52] mt-1.5 tracking-wide">{home?.formationName ?? '—'}</p>
+        </div>
+        <div className="shrink-0 flex items-center">
+          <ScoreBlock size="lg" />
+        </div>
+        <div className="min-w-0 overflow-hidden">
+          <p className={`block truncate text-2xl font-semibold tracking-tight leading-tight ${awayTone}`}>{away?.teamName ?? '?'}</p>
+          <p className="block truncate text-[11px] text-[#3a3a52] mt-1.5 tracking-wide">{away?.formationName ?? '—'}</p>
+        </div>
+      </div>
+
+      {/* Hairline divider before formation grid */}
+      <div className="h-px bg-[#1a1a26]" />
+
+      <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-y-0 md:divide-x divide-[#1a1a26]">
         <div className="p-4">
           {home
             ? <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
@@ -909,6 +929,8 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
                 <MatchupRow
                   home={teamMap.get(m.homeTeamId)}
                   away={teamMap.get(m.awayTeamId)}
+                  homeGoals={m.homeGoals}
+                  awayGoals={m.awayGoals}
                   matchdayId={matchdayId}
                   isEditable={isEditable}
                   onPlayerClick={setSelectedSlot}

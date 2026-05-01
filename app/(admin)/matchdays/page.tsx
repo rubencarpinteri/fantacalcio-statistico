@@ -215,7 +215,7 @@ export default async function MatchdaysPage() {
           </div>
 
           {prevMatchups.length > 0 ? (
-            <div className="divide-y divide-[#1e1e2e]">
+            <div>
               {prevMatchups.map((m, i) => {
                 const hasGoals = m.homeGoals !== null && m.awayGoals !== null
                 const homeWins = hasGoals
@@ -224,54 +224,44 @@ export default async function MatchdaysPage() {
                 const awayWins = hasGoals
                   ? (m.awayGoals as number) > (m.homeGoals as number)
                   : m.homeFantavoto !== null && m.awayFantavoto !== null && m.awayFantavoto > m.homeFantavoto
+                const homeTone = awayWins ? 'text-[#3a3a52]' : 'text-white'
+                const awayTone = homeWins ? 'text-[#3a3a52]' : 'text-white'
                 return (
                   <a
                     key={i}
                     href={prevMatchday ? `/matchdays/${prevMatchday.id}/all-lineups` : '#'}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#1a1a26] transition-colors"
+                    className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 hover:bg-[#11111e] transition-colors"
                   >
-                    <div className="flex-1 min-w-0 overflow-hidden text-right">
-                      <span className={`block truncate text-sm font-semibold ${homeWins ? 'text-white' : awayWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'}`}>
-                        {m.homeTeamName}
-                      </span>
-                    </div>
-                    <div className="shrink-0 w-28 flex flex-col items-center justify-center tabular-nums">
+                    <span className={`truncate text-right text-[13px] font-medium tracking-tight ${homeTone}`}>
+                      {m.homeTeamName}
+                    </span>
+                    <div className="flex flex-col items-center min-w-[4.5rem] tabular-nums">
                       {hasGoals ? (
                         <>
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
-                              {m.homeGoals}
-                            </span>
-                            <span className="text-[#3a3a52] text-sm font-normal">–</span>
-                            <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
-                              {m.awayGoals}
-                            </span>
+                          <div className="flex items-baseline">
+                            <span className={`w-5 text-right text-lg font-light leading-none ${homeTone}`}>{m.homeGoals}</span>
+                            <span className="px-1.5 text-base font-thin text-[#2a2a3e] leading-none">–</span>
+                            <span className={`w-5 text-left text-lg font-light leading-none ${awayTone}`}>{m.awayGoals}</span>
                           </div>
                           {m.homeFantavoto !== null && m.awayFantavoto !== null && (
-                            <div className="flex items-center gap-1 text-[10px] text-[#3a3a52]">
+                            <div className="mt-0.5 flex items-center gap-1 text-[9px] text-[#55556a]">
                               <span>{m.homeFantavoto.toFixed(1)}</span>
-                              <span>–</span>
+                              <span className="text-[#2a2a3e]">–</span>
                               <span>{m.awayFantavoto.toFixed(1)}</span>
                             </div>
                           )}
                         </>
                       ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-base font-bold ${homeWins ? 'text-white' : 'text-[#55556a]'}`}>
-                            {m.homeFantavoto !== null ? m.homeFantavoto.toFixed(1) : '—'}
-                          </span>
-                          <span className="text-[#3a3a52] text-sm font-normal">–</span>
-                          <span className={`text-base font-bold ${awayWins ? 'text-white' : 'text-[#55556a]'}`}>
-                            {m.awayFantavoto !== null ? m.awayFantavoto.toFixed(1) : '—'}
-                          </span>
+                        <div className="flex items-baseline">
+                          <span className={`w-9 text-right text-[13px] font-medium ${homeTone}`}>{m.homeFantavoto !== null ? m.homeFantavoto.toFixed(1) : '—'}</span>
+                          <span className="px-1.5 text-xs font-thin text-[#2a2a3e]">–</span>
+                          <span className={`w-9 text-left text-[13px] font-medium ${awayTone}`}>{m.awayFantavoto !== null ? m.awayFantavoto.toFixed(1) : '—'}</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <span className={`block truncate text-sm font-semibold ${awayWins ? 'text-white' : homeWins ? 'text-[#3a3a52]' : 'text-[#c0c0d8]'}`}>
-                        {m.awayTeamName}
-                      </span>
-                    </div>
+                    <span className={`truncate text-left text-[13px] font-medium tracking-tight ${awayTone}`}>
+                      {m.awayTeamName}
+                    </span>
                   </a>
                 )
               })}
