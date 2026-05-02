@@ -508,8 +508,9 @@ function PlayerChip({
       {/* Single role tag */}
       <RoleTag role={role} />
 
-      {/* Name + club + bm chips stacked in the same column so they cannot
-          collide with the rating — chips wrap onto a new line if too wide. */}
+      {/* Name on row 1, club + bm chips inline on row 2. The chip row is
+          forced to a single line (no wrap) and truncates with overflow so
+          every chip stays the same compact height regardless of bm count. */}
       {isEmpty ? (
         <span className="flex-1 min-w-0 text-[12.5px] italic text-ink-4">vuoto</span>
       ) : (
@@ -518,25 +519,31 @@ function PlayerChip({
             <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
             <span className="hidden sm:inline">{slot.playerName}</span>
           </span>
-          <span className="truncate text-[10.5px] font-medium leading-none text-ink-3">
-            {slot.playerClub}
-          </span>
-          {bm && bm.length > 0 && (
-            <span className="mt-1 flex min-w-0 flex-wrap gap-1">
-              {bm.slice(0, 2).map((b, i) => (
-                <span
-                  key={i}
-                  className="min-w-0 max-w-full truncate rounded-md px-1.5 py-0.5 font-mono text-[9.5px] font-semibold sm:text-[10px]"
-                  style={{
-                    background: b.total > 0 ? 'rgba(78,166,110,0.16)' : 'rgba(200,80,74,0.16)',
-                    color: b.total > 0 ? '#5fc28e' : '#e07686',
-                  }}
-                >
-                  {b.label} {b.total > 0 ? '+' : ''}{b.total}
-                </span>
-              ))}
+          <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap leading-none">
+            <span className="truncate text-[10.5px] font-medium text-ink-3">
+              {slot.playerClub}
             </span>
-          )}
+            {bm && bm.length > 0 && (
+              <>
+                <span className="shrink-0 text-ink-5 text-[10px]">·</span>
+                <span className="flex min-w-0 shrink items-center gap-1 overflow-hidden">
+                  {bm.slice(0, 2).map((b, i) => (
+                    <span
+                      key={i}
+                      title={`${b.label} ${b.total > 0 ? '+' : ''}${b.total}`}
+                      className="shrink-0 rounded px-1 py-px font-mono text-[9.5px] font-semibold leading-none"
+                      style={{
+                        background: b.total > 0 ? 'rgba(78,166,110,0.16)' : 'rgba(200,80,74,0.16)',
+                        color: b.total > 0 ? '#5fc28e' : '#e07686',
+                      }}
+                    >
+                      {b.label} {b.total > 0 ? '+' : ''}{b.total}
+                    </span>
+                  ))}
+                </span>
+              </>
+            )}
+          </span>
         </span>
       )}
 
