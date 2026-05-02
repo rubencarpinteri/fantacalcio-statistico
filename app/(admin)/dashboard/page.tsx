@@ -46,10 +46,13 @@ export default async function DashboardPage() {
   // ── Teams & competitions ─────────────────────────────────────────────────
   const [teamsResult, compsResult] = await Promise.all([
     supabase.from('fantasy_teams').select('id, name').eq('league_id', ctx.league.id),
-    supabase.from('competitions').select('id').eq('league_id', ctx.league.id),
+    supabase.from('competitions').select('id, type').eq('league_id', ctx.league.id),
   ])
   const teamNameMap = new Map((teamsResult.data ?? []).map((t) => [t.id, t.name]))
   const compIds = (compsResult.data ?? []).map((c) => c.id)
+  const campionatoCompIds = new Set(
+    (compsResult.data ?? []).filter((c) => c.type === 'campionato').map((c) => c.id)
+  )
 
   // ── Helper: deduplicated matchup pairs for a round ───────────────────────
   async function getMatchupPairs(roundNumber: number) {
@@ -75,30 +78,63 @@ export default async function DashboardPage() {
   type ResultRow = {
     homeTeamName: string
     awayTeamName: string
-    homeScore: number | null
-    awayScore: number | null
+    homeFantavoto: number | null
+    awayFantavoto: number | null
+    homeGoals: number | null
+    awayGoals: number | null
     matchdayId: string
   }
   let prevMatchups: ResultRow[] = []
 
   if (prevMatchday?.round_number != null) {
-    const [pairs, scoresResult] = await Promise.all([
+    const [pairs, scoresResult, campionatoFixturesResult] = await Promise.all([
       getMatchupPairs(prevMatchday.round_number),
       supabase
         .from('published_team_scores')
         .select('team_id, total_fantavoto')
         .eq('matchday_id', prevMatchday.id),
+      campionatoCompIds.size > 0
+        ? supabase
+            .from('competition_fixtures')
+            .select('home_team_id, away_team_id, home_score, away_score, competition_rounds!inner(matchday_id)')
+            .in('competition_id', Array.from(campionatoCompIds))
+            .eq('competition_rounds.matchday_id', prevMatchday.id)
+        : Promise.resolve({
+            data: [] as Array<{
+              home_team_id: string
+              away_team_id: string
+              home_score: number | null
+              away_score: number | null
+            }>,
+          }),
     ])
     const scoreMap = new Map(
       (scoresResult.data ?? []).map((s) => [s.team_id, Number(s.total_fantavoto)])
     )
-    prevMatchups = pairs.map((p) => ({
-      homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
-      awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
-      homeScore: scoreMap.get(p.homeTeamId) ?? null,
-      awayScore: scoreMap.get(p.awayTeamId) ?? null,
-      matchdayId: prevMatchday.id,
-    }))
+    const goalMap = new Map<string, Map<string, number>>()
+    for (const f of campionatoFixturesResult.data ?? []) {
+      if (f.home_score == null || f.away_score == null) continue
+      const key = [f.home_team_id, f.away_team_id].sort().join('|')
+      goalMap.set(
+        key,
+        new Map<string, number>([
+          [f.home_team_id, f.home_score],
+          [f.away_team_id, f.away_score],
+        ])
+      )
+    }
+    prevMatchups = pairs.map((p) => {
+      const goals = goalMap.get([p.homeTeamId, p.awayTeamId].sort().join('|'))
+      return {
+        homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
+        awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
+        homeFantavoto: scoreMap.get(p.homeTeamId) ?? null,
+        awayFantavoto: scoreMap.get(p.awayTeamId) ?? null,
+        homeGoals: goals?.get(p.homeTeamId) ?? null,
+        awayGoals: goals?.get(p.awayTeamId) ?? null,
+        matchdayId: prevMatchday.id,
+      }
+    })
   }
 
   // ── Next matchday: upcoming fixtures ────────────────────────────────────
@@ -200,10 +236,15 @@ export default async function DashboardPage() {
           {prevMatchups.length > 0 ? (
             <div className="divide-y divide-hairline">
               {prevMatchups.map((m, i) => {
-                const homeWins =
-                  m.homeScore !== null && m.awayScore !== null && m.homeScore > m.awayScore
-                const awayWins =
-                  m.homeScore !== null && m.awayScore !== null && m.awayScore > m.homeScore
+                const hasGoals = m.homeGoals !== null && m.awayGoals !== null
+                const homeWins = hasGoals
+                  ? (m.homeGoals as number) > (m.awayGoals as number)
+                  : m.homeFantavoto !== null && m.awayFantavoto !== null && m.homeFantavoto > m.awayFantavoto
+                const awayWins = hasGoals
+                  ? (m.awayGoals as number) > (m.homeGoals as number)
+                  : m.homeFantavoto !== null && m.awayFantavoto !== null && m.awayFantavoto > m.homeFantavoto
+                const homeTone = awayWins ? 'text-ink-5' : 'text-ink-1'
+                const awayTone = homeWins ? 'text-ink-5' : 'text-ink-1'
                 return (
                   <a
                     key={i}
@@ -212,35 +253,46 @@ export default async function DashboardPage() {
                   >
                     {/* Home team */}
                     <div className="flex-1 min-w-0 overflow-hidden text-right">
-                      <span
-                        className={`block truncate text-sm font-semibold ${
-                          homeWins ? 'text-ink-1' : awayWins ? 'text-ink-5' : 'text-[#c0c0d8]'
-                        }`}
-                      >
+                      <span className={`block truncate text-sm font-semibold ${homeTone}`}>
                         {m.homeTeamName}
                       </span>
                     </div>
                     {/* Score */}
-                    <div className="shrink-0 w-28 flex items-center justify-center gap-1.5 tabular-nums">
-                      <span
-                        className={`text-base font-bold ${homeWins ? 'text-ink-1' : 'text-ink-4'}`}
-                      >
-                        {m.homeScore !== null ? m.homeScore.toFixed(1) : '—'}
-                      </span>
-                      <span className="text-ink-5 text-sm font-normal">–</span>
-                      <span
-                        className={`text-base font-bold ${awayWins ? 'text-ink-1' : 'text-ink-4'}`}
-                      >
-                        {m.awayScore !== null ? m.awayScore.toFixed(1) : '—'}
-                      </span>
+                    <div className="shrink-0 w-28 flex flex-col items-center tabular-nums">
+                      {hasGoals ? (
+                        <>
+                          <div className="flex items-baseline">
+                            <span className={`w-5 text-right text-lg font-light leading-none ${homeTone}`}>
+                              {m.homeGoals}
+                            </span>
+                            <span className="px-1.5 text-base font-thin text-ink-5 leading-none">–</span>
+                            <span className={`w-5 text-left text-lg font-light leading-none ${awayTone}`}>
+                              {m.awayGoals}
+                            </span>
+                          </div>
+                          {m.homeFantavoto !== null && m.awayFantavoto !== null && (
+                            <div className="mt-0.5 flex items-center gap-1 text-[9px] text-ink-4">
+                              <span>{m.homeFantavoto.toFixed(1)}</span>
+                              <span className="text-ink-5">–</span>
+                              <span>{m.awayFantavoto.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-baseline">
+                          <span className={`w-9 text-right text-[13px] font-medium ${homeTone}`}>
+                            {m.homeFantavoto !== null ? m.homeFantavoto.toFixed(1) : '—'}
+                          </span>
+                          <span className="px-1.5 text-xs font-thin text-ink-5">–</span>
+                          <span className={`w-9 text-left text-[13px] font-medium ${awayTone}`}>
+                            {m.awayFantavoto !== null ? m.awayFantavoto.toFixed(1) : '—'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     {/* Away team */}
                     <div className="flex-1 min-w-0 overflow-hidden">
-                      <span
-                        className={`block truncate text-sm font-semibold ${
-                          awayWins ? 'text-ink-1' : homeWins ? 'text-ink-5' : 'text-[#c0c0d8]'
-                        }`}
-                      >
+                      <span className={`block truncate text-sm font-semibold ${awayTone}`}>
                         {m.awayTeamName}
                       </span>
                     </div>

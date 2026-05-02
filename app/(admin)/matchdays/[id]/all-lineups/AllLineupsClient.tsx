@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { Fragment, useState, useTransition, useRef } from 'react'
 import { adminOverrideLineupAction } from './actions'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
 
@@ -461,6 +461,7 @@ function PlayerChip({
   onDrop,
   onPlayerClick,
   dense,
+  fillHeight,
 }: {
   slot: SlotData
   isEditable: boolean
@@ -468,6 +469,7 @@ function PlayerChip({
   onDrop: () => void
   onPlayerClick?: (slot: SlotData) => void
   dense?: boolean
+  fillHeight?: boolean
 }) {
   const [isDragOver, setIsDragOver] = useState(false)
   const fv = slot.fantavoto
@@ -485,6 +487,7 @@ function PlayerChip({
       onClick={() => !isEmpty && onPlayerClick?.(slot)}
       className={[
         'flex items-center gap-2 sm:grid sm:items-center transition-all',
+        fillHeight ? 'h-full' : '',
         dense ? 'px-2 py-1.5 sm:px-2.5' : 'px-2 py-1.5 sm:px-3 sm:py-2',
         isDragOver
           ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_0_0_4px_rgba(99,102,241,0.06)_inset]'
@@ -552,35 +555,23 @@ function PlayerChip({
   )
 }
 
-// ---- Single team card ------------------------------------------------------
-//
-// Pass bare=true when rendering inside a MatchupRow — the row provides the
-// outer container so we skip the standalone border/background wrapper.
+// ---- Shared lineup state hook ---------------------------------------------
+// Encapsulates the slots/drag/save state used by both the standalone TeamCard
+// and the paired matchup body, so the two views stay in lockstep.
 
-function TeamCard({
-  team,
-  matchdayId,
-  isEditable,
-  bare = false,
-  onPlayerClick,
-}: {
-  team: TeamLineupData
-  matchdayId: string
-  isEditable: boolean
-  bare?: boolean
-  onPlayerClick?: (slot: SlotData) => void
-}) {
+function useTeamLineupState(team: TeamLineupData, matchdayId: string) {
   const [slots, setSlots] = useState<SlotData[]>(() =>
     [...team.slots].sort((a, b) => a.slotOrder - b.slotOrder)
   )
   const [isDirty, setIsDirty] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null)
-
   const dragSlotId = useRef<string | null>(null)
 
   const titolari = slots.filter((s) => !s.isBench)
-  const panchina = slots.filter((s) => s.isBench).sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
+  const panchina = slots
+    .filter((s) => s.isBench)
+    .sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99))
 
   function handleDragStart(slotId: string) {
     dragSlotId.current = slotId
@@ -657,6 +648,110 @@ function TeamCard({
     setSaveMsg(null)
   }
 
+  return {
+    slots,
+    titolari,
+    panchina,
+    isDirty,
+    isPending,
+    saveMsg,
+    handleDragStart,
+    handleDrop,
+    handleSave,
+    handleReset,
+  }
+}
+
+// Save / dirty indicator strip — shared between the standalone TeamCard and
+// the paired matchup body.
+function SaveStrip({
+  saveMsg,
+  isPending,
+  onReset,
+  onSave,
+}: {
+  saveMsg: { text: string; ok: boolean } | null
+  isPending: boolean
+  onReset: () => void
+  onSave: () => void
+}) {
+  return (
+    <div
+      className="mb-2.5 flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5"
+      style={{
+        background: saveMsg?.ok
+          ? 'rgba(34,197,94,0.08)'
+          : !saveMsg
+            ? 'rgba(99,102,241,0.07)'
+            : 'rgba(239,68,68,0.08)',
+        borderColor: saveMsg?.ok
+          ? 'rgba(34,197,94,0.22)'
+          : !saveMsg
+            ? 'rgba(99,102,241,0.22)'
+            : 'rgba(239,68,68,0.22)',
+      }}
+    >
+      <span
+        className="text-[11.5px] font-medium"
+        style={{
+          color: saveMsg?.ok ? '#5fc28e' : !saveMsg ? '#a5acff' : '#e07686',
+        }}
+      >
+        {saveMsg ? saveMsg.text : 'Modifiche non salvate'}
+      </span>
+      {!saveMsg && (
+        <div className="flex gap-1.5">
+          <button
+            onClick={onReset}
+            disabled={isPending}
+            className="rounded-md border border-hairline px-2 py-0.5 text-[10.5px] font-medium text-ink-3 transition-colors hover:bg-white/5 hover:text-ink-1"
+          >
+            Ripristina
+          </button>
+          <button
+            onClick={onSave}
+            disabled={isPending}
+            className="rounded-md bg-indigo-500 px-2.5 py-0.5 text-[10.5px] font-medium text-white shadow-[0_4px_12px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-indigo-400 disabled:opacity-50"
+          >
+            {isPending ? 'Salvo…' : 'Salva'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---- Single team card ------------------------------------------------------
+//
+// Pass bare=true when rendering inside a MatchupRow — the row provides the
+// outer container so we skip the standalone border/background wrapper.
+
+function TeamCard({
+  team,
+  matchdayId,
+  isEditable,
+  bare = false,
+  onPlayerClick,
+}: {
+  team: TeamLineupData
+  matchdayId: string
+  isEditable: boolean
+  bare?: boolean
+  onPlayerClick?: (slot: SlotData) => void
+}) {
+  const {
+    slots,
+    titolari,
+    panchina,
+    isDirty,
+    isPending,
+    saveMsg,
+    handleDragStart,
+    handleDrop,
+    handleSave,
+    handleReset,
+  } = useTeamLineupState(team, matchdayId)
+
   const eyebrow =
     'text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3'
 
@@ -680,52 +775,12 @@ function TeamCard({
 
       {/* Save / dirty indicator strip */}
       {isEditable && (isDirty || saveMsg) && (
-        <div
-          className="mb-2.5 flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5"
-          style={{
-            background: saveMsg?.ok
-              ? 'rgba(34,197,94,0.08)'
-              : !saveMsg
-                ? 'rgba(99,102,241,0.07)'
-                : 'rgba(239,68,68,0.08)',
-            borderColor: saveMsg?.ok
-              ? 'rgba(34,197,94,0.22)'
-              : !saveMsg
-                ? 'rgba(99,102,241,0.22)'
-                : 'rgba(239,68,68,0.22)',
-          }}
-        >
-          <span
-            className="text-[11.5px] font-medium"
-            style={{
-              color: saveMsg?.ok
-                ? '#5fc28e'
-                : !saveMsg
-                  ? '#a5acff'
-                  : '#e07686',
-            }}
-          >
-            {saveMsg ? saveMsg.text : 'Modifiche non salvate'}
-          </span>
-          {!saveMsg && (
-            <div className="flex gap-1.5">
-              <button
-                onClick={handleReset}
-                disabled={isPending}
-                className="rounded-md border border-hairline px-2 py-0.5 text-[10.5px] font-medium text-ink-3 transition-colors hover:bg-white/5 hover:text-ink-1"
-              >
-                Ripristina
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isPending}
-                className="rounded-md bg-indigo-500 px-2.5 py-0.5 text-[10.5px] font-medium text-white shadow-[0_4px_12px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-indigo-400 disabled:opacity-50"
-              >
-                {isPending ? 'Salvo…' : 'Salva'}
-              </button>
-            </div>
-          )}
-        </div>
+        <SaveStrip
+          saveMsg={saveMsg}
+          isPending={isPending}
+          onReset={handleReset}
+          onSave={handleSave}
+        />
       )}
 
       {team.slots.length === 0 ? (
@@ -780,6 +835,155 @@ function TeamCard({
   if (bare) return <div>{inner}</div>
 
   return <div className="glass p-4">{inner}</div>
+}
+
+// ---- Matchup lineup body ---------------------------------------------------
+//
+// Renders the two teams' titolari and panchina in a single 2-column CSS grid
+// where each grid row pairs home[i] with away[i]. Because both cells share the
+// row, their heights are forced equal regardless of bonus/malus chips, so the
+// rows always align across the divider.
+
+function MatchupLineupBody({
+  home,
+  away,
+  matchdayId,
+  isEditable,
+  onPlayerClick,
+}: {
+  home: TeamLineupData | undefined
+  away: TeamLineupData | undefined
+  matchdayId: string
+  isEditable: boolean
+  onPlayerClick?: (slot: SlotData) => void
+}) {
+  // The hook needs a non-undefined team. Pass an empty stub when missing —
+  // its renders below are guarded so the stub never produces visible chips.
+  const emptyTeam: TeamLineupData = {
+    teamId: '',
+    teamName: '',
+    formationId: '',
+    formationName: '',
+    submissionId: null,
+    submissionNumber: null,
+    slots: [],
+  }
+  const h = useTeamLineupState(home ?? emptyTeam, matchdayId)
+  const a = useTeamLineupState(away ?? emptyTeam, matchdayId)
+
+  const eyebrow = 'text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3'
+
+  const showHomeSave = isEditable && home && (h.isDirty || h.saveMsg)
+  const showAwaySave = isEditable && away && (a.isDirty || a.saveMsg)
+  const showSaveRow = !!(showHomeSave || showAwaySave)
+
+  const tCount = Math.max(h.titolari.length, a.titolari.length)
+  const pCount = Math.max(h.panchina.length, a.panchina.length)
+  const hasPanchina = pCount > 0
+
+  // Per-cell padding gives spacing without breaking shared row heights.
+  const cell = 'min-w-0 px-2.5 md:px-5'
+  const rowGap = 'pb-1.5'
+
+  function renderChip(team: 'home' | 'away', slot: SlotData | undefined, dense: boolean) {
+    if (!slot) return null
+    const state = team === 'home' ? h : a
+    return (
+      <PlayerChip
+        slot={slot}
+        isEditable={isEditable}
+        onDragStart={() => state.handleDragStart(slot.slotId)}
+        onDrop={() => state.handleDrop(slot.slotId)}
+        onPlayerClick={onPlayerClick}
+        dense={dense}
+        fillHeight
+      />
+    )
+  }
+
+  if (!home && !away) {
+    return (
+      <div className="grid grid-cols-2 divide-x divide-hairline">
+        <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
+        <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 divide-x divide-hairline">
+      {/* Save strips */}
+      {showSaveRow && (
+        <>
+          <div className={`${cell} pt-2.5 md:pt-5`}>
+            {showHomeSave ? (
+              <SaveStrip
+                saveMsg={h.saveMsg}
+                isPending={h.isPending}
+                onReset={h.handleReset}
+                onSave={h.handleSave}
+              />
+            ) : null}
+          </div>
+          <div className={`${cell} pt-2.5 md:pt-5`}>
+            {showAwaySave ? (
+              <SaveStrip
+                saveMsg={a.saveMsg}
+                isPending={a.isPending}
+                onReset={a.handleReset}
+                onSave={a.handleSave}
+              />
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {/* Titolari label */}
+      <div className={`${cell} ${showSaveRow ? '' : 'pt-2.5 md:pt-5'} pb-2`}>
+        {home ? <span className={eyebrow}>Titolari</span> : null}
+      </div>
+      <div className={`${cell} ${showSaveRow ? '' : 'pt-2.5 md:pt-5'} pb-2`}>
+        {away ? <span className={eyebrow}>Titolari</span> : null}
+      </div>
+
+      {/* Titolari rows */}
+      {Array.from({ length: tCount }).map((_, i) => (
+        <Fragment key={`t-${i}`}>
+          <div className={`${cell} ${rowGap}`}>{renderChip('home', h.titolari[i], false)}</div>
+          <div className={`${cell} ${rowGap}`}>{renderChip('away', a.titolari[i], false)}</div>
+        </Fragment>
+      ))}
+
+      {/* Panchina label */}
+      {hasPanchina && (
+        <>
+          <div className={`${cell} pt-2 pb-2`}>
+            {home && h.panchina.length > 0 ? (
+              <span className={eyebrow}>Panchina · {h.panchina.length}</span>
+            ) : null}
+          </div>
+          <div className={`${cell} pt-2 pb-2`}>
+            {away && a.panchina.length > 0 ? (
+              <span className={eyebrow}>Panchina · {a.panchina.length}</span>
+            ) : null}
+          </div>
+        </>
+      )}
+
+      {/* Panchina rows */}
+      {hasPanchina &&
+        Array.from({ length: pCount }).map((_, i) => (
+          <Fragment key={`p-${i}`}>
+            <div className={`${cell} ${rowGap}`}>{renderChip('home', h.panchina[i], true)}</div>
+            <div className={`${cell} ${rowGap}`}>{renderChip('away', a.panchina[i], true)}</div>
+          </Fragment>
+        ))}
+
+      {/* Bottom padding */}
+      <div className="pb-2.5 md:pb-5" />
+      <div className="pb-2.5 md:pb-5" />
+    </div>
+  )
 }
 
 // ---- Matchup row -----------------------------------------------------------
@@ -973,23 +1177,15 @@ function MatchupRow({
         </div>
       </div>
 
-      {/* Lineups grid — always two columns so home/away sit side by side, even on mobile */}
-      <div className="grid grid-cols-2 divide-x divide-hairline">
-        <div className="min-w-0 p-2.5 md:p-5">
-          {home ? (
-            <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
-          ) : (
-            <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
-          )}
-        </div>
-        <div className="min-w-0 p-2.5 md:p-5">
-          {away ? (
-            <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
-          ) : (
-            <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
-          )}
-        </div>
-      </div>
+      {/* Paired lineup body — single 2-col grid where row N pairs home[N]
+          with away[N], so chips with bonus/malus chips don't break alignment. */}
+      <MatchupLineupBody
+        home={home}
+        away={away}
+        matchdayId={matchdayId}
+        isEditable={isEditable}
+        onPlayerClick={onPlayerClick}
+      />
     </div>
   )
 }
