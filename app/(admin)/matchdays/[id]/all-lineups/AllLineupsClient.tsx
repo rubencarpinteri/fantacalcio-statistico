@@ -904,8 +904,39 @@ function MatchupRow({
   return (
     <div className="hero relative overflow-hidden">
       {/* Header */}
-      <div className="relative border-b border-hairline px-6 py-6 md:px-8 md:py-7">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-6">
+      <div className="relative border-b border-hairline px-3 py-4 md:px-8 md:py-7">
+        {/* Mobile layout: score on top, full team names + formations on a row below.
+            Avoids squeezing team names into tiny side columns next to the big score. */}
+        <div className="flex flex-col items-center gap-3 md:hidden">
+          <ScoreBlock size="sm" />
+          <div className="grid w-full grid-cols-2 gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              {home && <Avatar name={home.teamName} size={30} />}
+              <div className="min-w-0 flex-1">
+                <span className={`block truncate text-[13px] font-semibold leading-tight tracking-tight ${homeTone}`}>
+                  {home?.teamName ?? '?'}
+                </span>
+                <span className="mt-0.5 block truncate whitespace-nowrap text-[10.5px] font-medium leading-tight tabular-nums text-ink-3">
+                  {home?.formationName ?? '—'}
+                </span>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center justify-end gap-2 text-right">
+              <div className="min-w-0 flex-1">
+                <span className={`block truncate text-[13px] font-semibold leading-tight tracking-tight ${awayTone}`}>
+                  {away?.teamName ?? '?'}
+                </span>
+                <span className="mt-0.5 block truncate whitespace-nowrap text-[10.5px] font-medium leading-tight tabular-nums text-ink-3">
+                  {away?.formationName ?? '—'}
+                </span>
+              </div>
+              {away && <Avatar name={away.teamName} size={30} />}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop layout: original three-column grid with score in the centre. */}
+        <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center gap-6">
           {/* Home */}
           <div className="flex min-w-0 items-center justify-end gap-3 text-right">
             <div className="flex min-w-0 flex-col items-end">
@@ -915,7 +946,7 @@ function MatchupRow({
               >
                 {home?.teamName ?? '?'}
               </span>
-              <span className="mt-1 text-[11.5px] font-medium leading-tight text-ink-3">
+              <span className="mt-1 whitespace-nowrap text-[11.5px] font-medium leading-tight tabular-nums text-ink-3">
                 {home?.formationName ?? '—'}
               </span>
             </div>
@@ -937,7 +968,7 @@ function MatchupRow({
               >
                 {away?.teamName ?? '?'}
               </span>
-              <span className="mt-1 text-[11.5px] font-medium leading-tight text-ink-3">
+              <span className="mt-1 whitespace-nowrap text-[11.5px] font-medium leading-tight tabular-nums text-ink-3">
                 {away?.formationName ?? '—'}
               </span>
             </div>
@@ -945,16 +976,16 @@ function MatchupRow({
         </div>
       </div>
 
-      {/* Lineups grid */}
-      <div className="grid grid-cols-1 divide-y divide-hairline md:grid-cols-2 md:divide-x md:divide-y-0">
-        <div className="p-5">
+      {/* Lineups grid — always two columns so home/away sit side by side, even on mobile */}
+      <div className="grid grid-cols-2 divide-x divide-hairline">
+        <div className="min-w-0 p-2.5 md:p-5">
           {home ? (
             <TeamCard team={home} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
           ) : (
             <p className="py-10 text-center text-xs text-ink-4">Nessuna formazione</p>
           )}
         </div>
-        <div className="p-5">
+        <div className="min-w-0 p-2.5 md:p-5">
           {away ? (
             <TeamCard team={away} matchdayId={matchdayId} isEditable={isEditable} bare onPlayerClick={onPlayerClick} />
           ) : (
