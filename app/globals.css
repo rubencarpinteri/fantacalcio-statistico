@@ -112,6 +112,12 @@
   --elev-1: 0 1px 2px rgba(20, 24, 60, 0.04), 0 4px 14px rgba(20, 24, 60, 0.04);
   --elev-2: 0 1px 2px rgba(20, 24, 60, 0.05), 0 8px 26px rgba(20, 24, 60, 0.06), 0 24px 60px -20px rgba(20, 24, 60, 0.10);
   --elev-3: 0 30px 80px -20px rgba(20, 24, 60, 0.18), 0 8px 30px rgba(20, 24, 60, 0.06);
+
+  /* Tinted-button text colors that flip per theme */
+  --btn-amber-color: #7c5821;
+  --btn-success-color: #2f8c5d;
+  --btn-danger-color: #b04d57;
+  --btn-info-color: #2c4cc7;
 }
 
 /* ---------- DARK THEME — deep navy ink, soft luminous surfaces ---------- */
@@ -138,6 +144,11 @@
   --elev-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
   --elev-2: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 26px rgba(0, 0, 0, 0.30), 0 24px 60px -20px rgba(0, 0, 0, 0.5);
   --elev-3: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 8px 30px rgba(0, 0, 0, 0.35);
+
+  --btn-amber-color: #f0b770;
+  --btn-success-color: #6ed4a0;
+  --btn-danger-color: #f29aa8;
+  --btn-info-color: #8da6ff;
 }
 
 /* ============================================================

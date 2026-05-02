@@ -140,7 +140,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   if (phase === 'done' && summary) {
     return (
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-emerald-400 font-medium">
+        <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
           ✓ {summary.imported} importati · {summary.scored} calcolati · pubblicato
         </span>
         {ssStatus && <span className="text-xs text-ink-4">{ssStatus}</span>}
@@ -152,8 +152,8 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   if (phase === 'error') {
     return (
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-red-400">{error}</span>
-        {ssStatus && <span className="text-xs text-amber-400">{ssStatus}</span>}
+        <span className="text-xs text-rose-700 dark:text-rose-400">{error}</span>
+        {ssStatus && <span className="text-xs text-amber-700 dark:text-amber-400">{ssStatus}</span>}
         <button onClick={() => { setPhase('idle'); setError(null) }} className="text-xs text-ink-4 hover:text-indigo-400">↺ Riprova</button>
       </div>
     )
@@ -174,11 +174,14 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
           onClick={run}
           title="Scarica voti da FotMob + SofaScore, calcola e pubblica"
           className={[
-            'flex items-center gap-1.5 rounded-lg border font-medium transition-colors px-2.5 py-1.5 text-xs whitespace-nowrap',
-            busy
-              ? 'cursor-wait border-hairline bg-[#0d0d1a] text-ink-4'
-              : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50',
+            'btn btn-sm whitespace-nowrap',
+            busy ? 'cursor-wait' : '',
           ].join(' ')}
+          style={busy ? undefined : {
+            background: 'rgba(217, 154, 74, 0.14)',
+            color: 'var(--btn-amber-color)',
+            borderColor: 'rgba(217, 154, 74, 0.30)',
+          }}
         >
           {busy && <span className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />}
           {label}
@@ -195,11 +198,14 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
         onClick={run}
         title="Scarica voti da FotMob + SofaScore, calcola e pubblica in un click"
         className={[
-          'flex w-full items-center justify-center gap-2 rounded-xl border-2 py-4 text-base font-bold transition-all',
-          busy
-            ? 'cursor-wait border-hairline bg-[#0d0d1a] text-ink-4'
-            : 'border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 active:scale-[0.98]',
+          'btn w-full justify-center text-[14px] font-semibold py-3.5',
+          busy ? 'cursor-wait' : '',
         ].join(' ')}
+        style={busy ? undefined : {
+          background: 'rgba(217, 154, 74, 0.14)',
+          color: 'var(--btn-amber-color)',
+          borderColor: 'rgba(217, 154, 74, 0.32)',
+        }}
       >
         {busy ? (
           <>

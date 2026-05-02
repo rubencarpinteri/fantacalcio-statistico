@@ -170,7 +170,7 @@ function fmtFv(n: number | null): string {
 // ---- Per-source voto_base helper -------------------------------------------
 
 const RC_COLORS: Record<string, string> = {
-  GK: 'text-yellow-400', DEF: 'text-blue-400', MID: 'text-green-400', ATT: 'text-red-400',
+  GK: 'text-yellow-400', DEF: 'text-blue-400', MID: 'text-green-400', ATT: 'text-rose-700 dark:text-rose-400',
 }
 
 // NOTE: uses league default target params — actual stored voto_base from engine is authoritative
@@ -270,11 +270,15 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(20,24,60,0.55)] p-3 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-hairline bg-glass-1 shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
+        className="w-full max-w-md rounded-xl border border-hairline overflow-hidden max-h-[92dvh] flex flex-col"
+        style={{
+          background: 'var(--bg-0)',
+          boxShadow: 'var(--elev-3)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Compact header: name + RC + FV + minutes */}
@@ -316,7 +320,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-black font-mono text-ink-1">{slot.rawFotmobRating!.toFixed(1)}</span>
                     {vbFm !== null && (
-                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-400' : 'text-ink-3'}`}>
+                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
                         → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
                       </span>
                     )}
@@ -329,7 +333,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-black font-mono text-ink-1">{slot.rawSofascoreRating!.toFixed(1)}</span>
                     {vbSs !== null && (
-                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-400' : 'text-ink-3'}`}>
+                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
                         → {vbSs.value.toFixed(2)}{vbSs.clamped ? ' ↑' : ''}
                       </span>
                     )}
@@ -339,16 +343,16 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               {deltaRaw !== null && deltaConverted !== null && (
                 <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-ink-4">
                   <span>Δ FM−SS</span>
-                  <span className={`font-mono ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-400' : ''}`}>
+                  <span className={`font-mono ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
                     {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)} orig
                   </span>
-                  <span className={`font-mono ${Math.abs(deltaConverted) > 0.5 ? 'text-amber-400' : ''}`}>
+                  <span className={`font-mono ${Math.abs(deltaConverted) > 0.5 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
                     {deltaConverted >= 0 ? '+' : ''}{deltaConverted.toFixed(2)} conv
                   </span>
                 </div>
               )}
               {((vbFm?.clamped ?? false) || (vbSs?.clamped ?? false)) && (
-                <div className="col-span-2 rounded px-2 py-1 bg-amber-500/8 text-[9px] text-amber-400/80">
+                <div className="col-span-2 rounded px-2 py-1 bg-amber-500/8 text-[9px] text-amber-700 dark:text-amber-400/80">
                   ↑ voto base supera il massimo (9.50) e viene limitato
                 </div>
               )}
@@ -362,7 +366,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 <span
                   key={i}
                   className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                    b.total > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                    b.total > 0 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-500/15 text-rose-700 dark:text-rose-400'
                   }`}
                 >
                   {b.label} {b.total > 0 ? '+' : ''}{b.total.toFixed(1)}
@@ -373,7 +377,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
 
           {/* SofaScore stats — compact */}
           {hasStats && (
-            <div className="space-y-2 rounded-lg p-2.5" style={{ border: '1px solid rgba(55,77,245,0.2)', background: '#0a0a0f' }}>
+            <div className="space-y-2 rounded-lg p-2.5 border border-hairline" style={{ background: 'var(--bg-1)' }}>
               <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#374DF5' }}>
                 Statistiche SofaScore
               </p>
@@ -381,7 +385,7 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
               {(slot.marketValue !== null || slot.height !== null) && (
                 <div className="flex gap-1.5">
                   {slot.marketValue !== null && (
-                    <span className="rounded-full border border-hairline px-2 py-0.5 text-[10px] text-emerald-400/80 font-mono">
+                    <span className="rounded-full border border-hairline px-2 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-400/80 font-mono">
                       {fmtMarketValue(slot.marketValue)}
                     </span>
                   )}
@@ -849,29 +853,29 @@ function MatchupRow({
       )
     }
     return (
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2.5">
         {hasGoals ? (
-          <div className="flex items-baseline gap-3">
+          <div className="flex items-baseline gap-4 md:gap-5">
             <span
               className={`font-light tabular-nums leading-none ${homeTone}`}
               style={{
-                fontSize: size === 'lg' ? 'clamp(34px, 4vw, 52px)' : 'clamp(28px, 3vw, 36px)',
-                letterSpacing: '-0.04em',
+                fontSize: size === 'lg' ? 'clamp(56px, 7vw, 88px)' : 'clamp(38px, 4.5vw, 52px)',
+                letterSpacing: '-0.045em',
               }}
             >
               {homeGoals}
             </span>
             <span
               className="font-thin leading-none text-ink-5 select-none"
-              style={{ fontSize: size === 'lg' ? 'clamp(28px, 3vw, 40px)' : '24px' }}
+              style={{ fontSize: size === 'lg' ? 'clamp(40px, 5vw, 60px)' : '30px' }}
             >
               –
             </span>
             <span
               className={`font-light tabular-nums leading-none ${awayTone}`}
               style={{
-                fontSize: size === 'lg' ? 'clamp(34px, 4vw, 52px)' : 'clamp(28px, 3vw, 36px)',
-                letterSpacing: '-0.04em',
+                fontSize: size === 'lg' ? 'clamp(56px, 7vw, 88px)' : 'clamp(38px, 4.5vw, 52px)',
+                letterSpacing: '-0.045em',
               }}
             >
               {awayGoals}
@@ -883,7 +887,7 @@ function MatchupRow({
           </span>
         )}
         {hasFv && (
-          <div className="flex items-center gap-2 rounded-full border border-hairline bg-glass-tint px-2.5 py-1 font-mono text-[11px] tabular-nums">
+          <div className="flex items-center gap-2.5 rounded-full border border-hairline bg-glass-tint px-3.5 py-1.5 font-mono text-[14px] font-semibold tabular-nums">
             <span style={{ color: fvBg(homeFv !== null ? homeFv / 11 : null) }}>
               {homeFv !== null ? homeFv.toFixed(2) : 'NV'}
             </span>

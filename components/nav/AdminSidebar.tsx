@@ -115,7 +115,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
         <div className="border-b border-hairline px-4 py-4">
           <div className="flex items-center gap-3">
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-indigo-200"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-indigo-700 dark:text-indigo-200"
               style={{
                 background:
                   'linear-gradient(135deg, rgba(99,102,241,0.30), rgba(139,111,225,0.20))',
@@ -147,7 +147,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
                 className={[
                   'group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-all',
                   active
-                    ? 'bg-indigo-500/15 text-indigo-200 border border-indigo-400/25 shadow-[0_2px_8px_-2px_rgba(99,102,241,0.4)]'
+                    ? 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-200 border border-indigo-500/25 dark:border-indigo-400/25 shadow-[0_2px_8px_-2px_rgba(99,102,241,0.25)]'
                     : 'border border-transparent text-ink-3 hover:bg-glass-1 hover:text-ink-1',
                 ].join(' ')}
               >
@@ -162,7 +162,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
         <div className="border-t border-hairline px-3 py-3">
           <div className="mb-2 flex items-center gap-2.5 px-1">
             <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase text-indigo-200"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase text-indigo-700 dark:text-indigo-200"
               style={{
                 background:
                   'linear-gradient(135deg, rgba(99,102,241,0.30), rgba(139,111,225,0.20))',
@@ -209,7 +209,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
                 href={item.href as Route}
                 className={[
                   'flex flex-1 flex-col items-center gap-1 px-1 pt-2.5 pb-3 text-center transition-colors',
-                  active ? 'text-indigo-300' : 'text-ink-4 hover:text-ink-1',
+                  active ? 'text-indigo-700 dark:text-indigo-300' : 'text-ink-4 hover:text-ink-1',
                 ].join(' ')}
               >
                 <NavIcon name={item.icon} size={18} />
