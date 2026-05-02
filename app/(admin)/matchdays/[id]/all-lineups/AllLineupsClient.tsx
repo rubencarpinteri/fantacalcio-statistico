@@ -141,16 +141,16 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
 
 // Single-letter role chip with role-tinted hairline
 function RoleTag({ role }: { role: string | undefined }) {
-  if (!role) return <span className="inline-block w-[22px]" />
+  if (!role) return <span className="inline-block w-[20px]" />
   const color = roleTint(role)
   return (
     <span
       className="inline-flex items-center justify-center rounded-md font-bold uppercase"
       style={{
-        minWidth: 22,
-        height: 22,
-        padding: '0 6px',
-        fontSize: 10,
+        minWidth: 20,
+        height: 20,
+        padding: '0 4px',
+        fontSize: 9.5,
         letterSpacing: '0.02em',
         color,
         border: `1px solid ${color}66`,
@@ -484,8 +484,8 @@ function PlayerChip({
       onDrop={(e) => { e.preventDefault(); setIsDragOver(false); onDrop() }}
       onClick={() => !isEmpty && onPlayerClick?.(slot)}
       className={[
-        'grid items-center transition-all',
-        dense ? 'px-2.5 py-1.5' : 'px-3 py-2',
+        'flex items-center gap-2 sm:grid sm:items-center transition-all',
+        dense ? 'px-2 py-1.5 sm:px-2.5' : 'px-2 py-1.5 sm:px-3 sm:py-2',
         isDragOver
           ? 'border-indigo-400/60 bg-indigo-500/10 shadow-[0_0_0_4px_rgba(99,102,241,0.06)_inset]'
           : isEmpty
@@ -508,10 +508,10 @@ function PlayerChip({
       {/* Name + club + bm chips stacked in the same column so they cannot
           collide with the rating — chips wrap onto a new line if too wide. */}
       {isEmpty ? (
-        <span className="text-[12.5px] italic text-ink-4">vuoto</span>
+        <span className="flex-1 min-w-0 text-[12.5px] italic text-ink-4">vuoto</span>
       ) : (
-        <span className="flex min-w-0 flex-col gap-px">
-          <span className="truncate text-[13px] font-medium leading-tight text-ink-1 tracking-tight">
+        <span className="flex min-w-0 flex-1 flex-col gap-px">
+          <span className="truncate text-[13.5px] font-medium leading-tight text-ink-1 tracking-tight">
             <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
             <span className="hidden sm:inline">{slot.playerName}</span>
           </span>
@@ -519,11 +519,11 @@ function PlayerChip({
             {slot.playerClub}
           </span>
           {bm && bm.length > 0 && (
-            <span className="mt-1 flex flex-wrap gap-1">
+            <span className="mt-1 flex min-w-0 flex-wrap gap-1">
               {bm.slice(0, 2).map((b, i) => (
                 <span
                   key={i}
-                  className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap"
+                  className="min-w-0 max-w-full truncate rounded-md px-1.5 py-0.5 font-mono text-[9.5px] font-semibold sm:text-[10px]"
                   style={{
                     background: b.total > 0 ? 'rgba(78,166,110,0.16)' : 'rgba(200,80,74,0.16)',
                     color: b.total > 0 ? '#5fc28e' : '#e07686',
@@ -540,8 +540,8 @@ function PlayerChip({
       {/* Fantavoto — fixed-width column so all numbers align */}
       {!isEmpty ? (
         <span
-          className={`text-right font-mono font-bold tabular-nums ${fvColor(fv)}`}
-          style={{ fontSize: 14, letterSpacing: '-0.02em' }}
+          className={`shrink-0 text-right font-mono font-bold tabular-nums ${fvColor(fv)}`}
+          style={{ fontSize: 14, letterSpacing: '-0.02em', minWidth: 38 }}
         >
           {fmtFv(fv)}
         </span>
@@ -850,13 +850,13 @@ function MatchupRow({
       )
     }
     return (
-      <div className="flex flex-col items-center gap-2.5">
+      <div className="flex flex-col items-center gap-1.5 md:gap-2.5">
         {hasGoals ? (
-          <div className="flex items-baseline gap-4 md:gap-5">
+          <div className="flex items-baseline gap-3 md:gap-5">
             <span
               className={`font-light tabular-nums leading-none ${homeTone}`}
               style={{
-                fontSize: size === 'lg' ? 'clamp(56px, 7vw, 88px)' : 'clamp(38px, 4.5vw, 52px)',
+                fontSize: size === 'lg' ? 'clamp(56px, 7vw, 88px)' : 'clamp(34px, 4.5vw, 48px)',
                 letterSpacing: '-0.045em',
               }}
             >
@@ -864,14 +864,14 @@ function MatchupRow({
             </span>
             <span
               className="font-thin leading-none text-ink-5 select-none"
-              style={{ fontSize: size === 'lg' ? 'clamp(40px, 5vw, 60px)' : '30px' }}
+              style={{ fontSize: size === 'lg' ? 'clamp(40px, 5vw, 60px)' : '26px' }}
             >
               –
             </span>
             <span
               className={`font-light tabular-nums leading-none ${awayTone}`}
               style={{
-                fontSize: size === 'lg' ? 'clamp(56px, 7vw, 88px)' : 'clamp(38px, 4.5vw, 52px)',
+                fontSize: size === 'lg' ? 'clamp(56px, 7vw, 88px)' : 'clamp(34px, 4.5vw, 48px)',
                 letterSpacing: '-0.045em',
               }}
             >
@@ -901,33 +901,33 @@ function MatchupRow({
   return (
     <div className="hero relative overflow-hidden">
       {/* Header */}
-      <div className="relative border-b border-hairline px-3 py-4 md:px-8 md:py-7">
+      <div className="relative border-b border-hairline px-3 py-3 md:px-8 md:py-7">
         {/* Mobile layout: score on top, full team names + formations on a row below.
             Avoids squeezing team names into tiny side columns next to the big score. */}
-        <div className="flex flex-col items-center gap-3 md:hidden">
+        <div className="flex flex-col items-center gap-2 md:hidden">
           <ScoreBlock size="sm" />
           <div className="grid w-full grid-cols-2 gap-2">
             <div className="flex min-w-0 items-center gap-2">
-              {home && <Avatar name={home.teamName} size={30} />}
+              {home && <Avatar name={home.teamName} size={28} />}
               <div className="min-w-0 flex-1">
-                <span className={`block truncate text-[13px] font-semibold leading-tight tracking-tight ${homeTone}`}>
+                <span className={`block truncate text-[14.5px] font-semibold leading-tight tracking-tight ${homeTone}`}>
                   {home?.teamName ?? '?'}
                 </span>
-                <span className="mt-0.5 block truncate whitespace-nowrap text-[10.5px] font-medium leading-tight tabular-nums text-ink-3">
+                <span className="mt-0.5 block truncate whitespace-nowrap text-[11.5px] font-medium leading-tight tabular-nums text-ink-3">
                   {home?.formationName ?? '—'}
                 </span>
               </div>
             </div>
             <div className="flex min-w-0 items-center justify-end gap-2 text-right">
               <div className="min-w-0 flex-1">
-                <span className={`block truncate text-[13px] font-semibold leading-tight tracking-tight ${awayTone}`}>
+                <span className={`block truncate text-[14.5px] font-semibold leading-tight tracking-tight ${awayTone}`}>
                   {away?.teamName ?? '?'}
                 </span>
-                <span className="mt-0.5 block truncate whitespace-nowrap text-[10.5px] font-medium leading-tight tabular-nums text-ink-3">
+                <span className="mt-0.5 block truncate whitespace-nowrap text-[11.5px] font-medium leading-tight tabular-nums text-ink-3">
                   {away?.formationName ?? '—'}
                 </span>
               </div>
-              {away && <Avatar name={away.teamName} size={30} />}
+              {away && <Avatar name={away.teamName} size={28} />}
             </div>
           </div>
         </div>
