@@ -498,14 +498,15 @@ function PlayerChip({
         slot.isBench && !isEmpty ? 'opacity-95' : '',
       ].join(' ')}
       style={{
-        gridTemplateColumns: 'auto minmax(0,1fr) auto 48px',
-        columnGap: 10,
+        gridTemplateColumns: 'auto minmax(0,1fr) 44px',
+        columnGap: 8,
       }}
     >
       {/* Single role tag */}
       <RoleTag role={role} />
 
-      {/* Name + club stacked */}
+      {/* Name + club + bm chips stacked in the same column so they cannot
+          collide with the rating — chips wrap onto a new line if too wide. */}
       {isEmpty ? (
         <span className="text-[12.5px] italic text-ink-4">vuoto</span>
       ) : (
@@ -517,27 +518,23 @@ function PlayerChip({
           <span className="truncate text-[10.5px] font-medium leading-none text-ink-3">
             {slot.playerClub}
           </span>
-        </span>
-      )}
-
-      {/* Bonus/malus chips — left of rating, right-aligned */}
-      {!isEmpty && bm && bm.length > 0 ? (
-        <span className="flex shrink-0 justify-end gap-1">
-          {bm.slice(0, 2).map((b, i) => (
-            <span
-              key={i}
-              className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap"
-              style={{
-                background: b.total > 0 ? 'rgba(78,166,110,0.16)' : 'rgba(200,80,74,0.16)',
-                color: b.total > 0 ? '#5fc28e' : '#e07686',
-              }}
-            >
-              {b.label} {b.total > 0 ? '+' : ''}{b.total}
+          {bm && bm.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-1">
+              {bm.slice(0, 2).map((b, i) => (
+                <span
+                  key={i}
+                  className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap"
+                  style={{
+                    background: b.total > 0 ? 'rgba(78,166,110,0.16)' : 'rgba(200,80,74,0.16)',
+                    color: b.total > 0 ? '#5fc28e' : '#e07686',
+                  }}
+                >
+                  {b.label} {b.total > 0 ? '+' : ''}{b.total}
+                </span>
+              ))}
             </span>
-          ))}
+          )}
         </span>
-      ) : (
-        <span />
       )}
 
       {/* Fantavoto — fixed-width column so all numbers align */}
