@@ -179,6 +179,11 @@ async function fetchAllFixtures(
         if (e.type === 'Card') {
           if (e.card === 'Yellow') yellows.set(pid, (yellows.get(pid) ?? 0) + 1)
           else if (e.card === 'Red') reds.set(pid, (reds.get(pid) ?? 0) + 1)
+          else if (e.card === 'YellowRed') {
+            // Second yellow → sent off: count as red and subsume the prior yellow.
+            reds.set(pid, (reds.get(pid) ?? 0) + 1)
+            yellows.set(pid, Math.max(0, (yellows.get(pid) ?? 0) - 1))
+          }
         } else if (e.type === 'Goal') {
           if (e.own_goal) ownGoals.set(pid, (ownGoals.get(pid) ?? 0) + 1)
           else if (e.goal_description?.toLowerCase() === 'penalty')

@@ -453,6 +453,11 @@ export function mergeFixtureStats(
     if (e.type === 'Card') {
       if (e.card === 'Yellow') yellowsByFotmobId.set(pid, (yellowsByFotmobId.get(pid) ?? 0) + 1)
       else if (e.card === 'Red') redsByFotmobId.set(pid, (redsByFotmobId.get(pid) ?? 0) + 1)
+      else if (e.card === 'YellowRed') {
+        // Second yellow → sent off: count as red and subsume the prior yellow.
+        redsByFotmobId.set(pid, (redsByFotmobId.get(pid) ?? 0) + 1)
+        yellowsByFotmobId.set(pid, Math.max(0, (yellowsByFotmobId.get(pid) ?? 0) - 1))
+      }
     } else if (e.type === 'Goal') {
       if (e.own_goal) ownGoalsByFotmobId.set(pid, (ownGoalsByFotmobId.get(pid) ?? 0) + 1)
       else if (e.goal_description?.toLowerCase() === 'penalty')
