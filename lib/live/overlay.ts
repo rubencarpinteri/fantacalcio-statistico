@@ -18,14 +18,16 @@ import type { Database } from '@/types/database.types'
 
 type Supabase = SupabaseClient<Database>
 
+export type LiveBonusMalusItem = { label: string; total: number }
+
 export type LiveCalcOverlay = {
   fantavoto: number | null
   voto_base: number | null
-  bonusMalus: null
-  z_fotmob: null
-  z_sofascore: null
-  minutes_factor: null
-  role_multiplier: null
+  bonusMalus: LiveBonusMalusItem[] | null
+  z_fotmob: number | null
+  z_sofascore: number | null
+  minutes_factor: number | null
+  role_multiplier: number | null
 }
 
 export type LiveStatsOverlay = {
@@ -94,7 +96,9 @@ export async function fetchLiveOverlay(
       `player_id, voto_base, fantavoto,
        fotmob_rating, sofascore_rating, minutes_played,
        goals_scored, assists, yellow_cards, red_cards,
-       saves, goals_conceded, refreshed_at`
+       saves, goals_conceded, refreshed_at,
+       bonus_malus_breakdown, z_fotmob, z_sofascore,
+       minutes_factor, role_multiplier`
     )
     .eq('matchday_id', matchdayId)
 
@@ -106,14 +110,16 @@ export async function fetchLiveOverlay(
     if (r.refreshed_at && (!refreshedAt || r.refreshed_at > refreshedAt)) {
       refreshedAt = r.refreshed_at
     }
+    const rawBm = r.bonus_malus_breakdown as Array<{ label: string; total: number }> | null
+    const bonusMalus = rawBm ? rawBm.filter((b) => b.total !== 0) : null
     calcOverlay.set(r.player_id, {
       fantavoto: r.fantavoto != null ? Number(r.fantavoto) : null,
       voto_base: r.voto_base != null ? Number(r.voto_base) : null,
-      bonusMalus: null,
-      z_fotmob: null,
-      z_sofascore: null,
-      minutes_factor: null,
-      role_multiplier: null,
+      bonusMalus: bonusMalus?.length ? bonusMalus : null,
+      z_fotmob:        r.z_fotmob        != null ? Number(r.z_fotmob)        : null,
+      z_sofascore:     r.z_sofascore     != null ? Number(r.z_sofascore)     : null,
+      minutes_factor:  r.minutes_factor  != null ? Number(r.minutes_factor)  : null,
+      role_multiplier: r.role_multiplier != null ? Number(r.role_multiplier) : null,
     })
     statsOverlay.set(r.player_id, {
       fotmobRating:    r.fotmob_rating    != null ? Number(r.fotmob_rating)    : null,

@@ -411,6 +411,30 @@ export async function refreshMatchdayLive(
     ])
   )
 
+  type EngineBreakdown = {
+    bonus_malus_breakdown: Array<{
+      label: string
+      total: number
+      quantity: number
+      points_each: number
+    }>
+    z_fotmob: number | null
+    z_sofascore: number | null
+    minutes_factor: number | null
+    role_multiplier: number | null
+  }
+  const breakdownMap = new Map<string, EngineBreakdown>()
+  for (const r of engineResult.player_results) {
+    if (r.kind === 'skipped') continue
+    breakdownMap.set(r.player_id, {
+      bonus_malus_breakdown: r.bonus_malus_breakdown,
+      z_fotmob: r.z_fotmob,
+      z_sofascore: r.z_sofascore,
+      minutes_factor: r.minutes_factor,
+      role_multiplier: r.role_multiplier,
+    })
+  }
+
   // 8. Load lineup data (same as publishCalculationAction)
   const { data: pointers } = await supabase
     .from('lineup_current_pointers')
@@ -499,6 +523,7 @@ export async function refreshMatchdayLive(
   // 11. Upsert live_player_scores
   const livePlayerRows = playerScores.map((ps) => {
     const stats = mergedStatsMap.get(ps.player_id)
+    const bd = breakdownMap.get(ps.player_id)
     return {
       matchday_id: matchdayId,
       team_id: ps.team_id,
@@ -523,6 +548,11 @@ export async function refreshMatchdayLive(
       penalties_missed: stats?.penalties_missed ?? 0,
       saves: stats?.saves ?? 0,
       goals_conceded: stats?.goals_conceded ?? 0,
+      bonus_malus_breakdown: bd?.bonus_malus_breakdown ?? null,
+      z_fotmob: bd?.z_fotmob ?? null,
+      z_sofascore: bd?.z_sofascore ?? null,
+      minutes_factor: bd?.minutes_factor ?? null,
+      role_multiplier: bd?.role_multiplier ?? null,
       refreshed_at: now,
     }
   })

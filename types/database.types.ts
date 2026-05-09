@@ -1142,6 +1142,7 @@ export type Database = {
           assigned_mantra_role: string | null
           assists: number
           bench_order: number | null
+          bonus_malus_breakdown: Json | null
           extended_penalty: number
           fantavoto: number | null
           fotmob_rating: number | null
@@ -1149,6 +1150,7 @@ export type Database = {
           goals_scored: number
           is_bench: boolean
           matchday_id: string
+          minutes_factor: number | null
           minutes_played: number
           own_goals: number
           penalties_missed: number
@@ -1157,17 +1159,21 @@ export type Database = {
           player_id: string
           red_cards: number
           refreshed_at: string
+          role_multiplier: number | null
           saves: number
           sofascore_rating: number | null
           sub_status: string
           team_id: string
           voto_base: number | null
           yellow_cards: number
+          z_fotmob: number | null
+          z_sofascore: number | null
         }
         Insert: {
           assigned_mantra_role?: string | null
           assists?: number
           bench_order?: number | null
+          bonus_malus_breakdown?: Json | null
           extended_penalty?: number
           fantavoto?: number | null
           fotmob_rating?: number | null
@@ -1175,6 +1181,7 @@ export type Database = {
           goals_scored?: number
           is_bench?: boolean
           matchday_id: string
+          minutes_factor?: number | null
           minutes_played?: number
           own_goals?: number
           penalties_missed?: number
@@ -1183,17 +1190,21 @@ export type Database = {
           player_id: string
           red_cards?: number
           refreshed_at?: string
+          role_multiplier?: number | null
           saves?: number
           sofascore_rating?: number | null
           sub_status?: string
           team_id: string
           voto_base?: number | null
           yellow_cards?: number
+          z_fotmob?: number | null
+          z_sofascore?: number | null
         }
         Update: {
           assigned_mantra_role?: string | null
           assists?: number
           bench_order?: number | null
+          bonus_malus_breakdown?: Json | null
           extended_penalty?: number
           fantavoto?: number | null
           fotmob_rating?: number | null
@@ -1201,6 +1212,7 @@ export type Database = {
           goals_scored?: number
           is_bench?: boolean
           matchday_id?: string
+          minutes_factor?: number | null
           minutes_played?: number
           own_goals?: number
           penalties_missed?: number
@@ -1209,12 +1221,15 @@ export type Database = {
           player_id?: string
           red_cards?: number
           refreshed_at?: string
+          role_multiplier?: number | null
           saves?: number
           sofascore_rating?: number | null
           sub_status?: string
           team_id?: string
           voto_base?: number | null
           yellow_cards?: number
+          z_fotmob?: number | null
+          z_sofascore?: number | null
         }
         Relationships: [
           {
