@@ -111,20 +111,36 @@ async function fetchFotMob(
 
 // ── Fetch all fixtures into a FetchedStat map ────────────────
 
+type FixtureFetchResult = {
+  match_id: number | null
+  status: 'ok' | 'null' | 'skipped'
+  stats_count?: number
+  events_count?: number
+}
+
 async function fetchAllFixtures(
   fixtures: Array<{ fotmob_match_id: number | null }>
-): Promise<Map<string, FetchedStat>> {
+): Promise<{ map: Map<string, FetchedStat>; fixtureResults: FixtureFetchResult[] }> {
   const map = new Map<string, FetchedStat>()
+  const fixtureResults: FixtureFetchResult[] = []
 
   await Promise.all(
     fixtures.map(async (fx) => {
-      if (!fx.fotmob_match_id) return
-      const fotmob = await fetchFotMob(fx.fotmob_match_id)
-      if (!fotmob) {
-        console.warn(`[live-refresh] FotMob fetch returned null for match ${fx.fotmob_match_id}`)
+      if (!fx.fotmob_match_id) {
+        fixtureResults.push({ match_id: null, status: 'skipped' })
         return
       }
-      console.log(`[live-refresh] match ${fx.fotmob_match_id}: ${fotmob.stats.length} player stats, ${fotmob.events.length} events`)
+      const fotmob = await fetchFotMob(fx.fotmob_match_id)
+      if (!fotmob) {
+        fixtureResults.push({ match_id: fx.fotmob_match_id, status: 'null' })
+        return
+      }
+      fixtureResults.push({
+        match_id: fx.fotmob_match_id,
+        status: 'ok',
+        stats_count: fotmob.stats.length,
+        events_count: fotmob.events.length,
+      })
 
       // Build event counters from FotMob
       const yellows    = new Map<number, number>()
@@ -177,7 +193,7 @@ async function fetchAllFixtures(
     })
   )
 
-  return map
+  return { map, fixtureResults }
 }
 
 // ── Public entry point ───────────────────────────────────────
@@ -186,6 +202,9 @@ export type LiveRefreshResult = {
   ok: boolean
   error?: string
   teams_updated?: number
+  fixtures?: FixtureFetchResult[]
+  api_players_total?: number
+  matched_players_total?: number
 }
 
 export async function refreshMatchdayLive(
@@ -204,7 +223,7 @@ export async function refreshMatchdayLive(
   }
 
   // 2. Fetch from FotMob
-  const apiStatsMap = await fetchAllFixtures(fixtures)
+  const { map: apiStatsMap, fixtureResults } = await fetchAllFixtures(fixtures)
 
   // 3. League engine config
   const { data: engineConfigRow } = await supabase
@@ -599,5 +618,11 @@ export async function refreshMatchdayLive(
     if (lpErr) return { ok: false, error: `Errore live_player_scores: ${lpErr.message}` }
   }
 
-  return { ok: true, teams_updated: teamScores.length }
+  return {
+    ok: true,
+    teams_updated: teamScores.length,
+    fixtures: fixtureResults,
+    api_players_total: apiStatsMap.size,
+    matched_players_total: mergedStatsMap.size,
+  }
 }
