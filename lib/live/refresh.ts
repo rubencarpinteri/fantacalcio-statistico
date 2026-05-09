@@ -21,6 +21,7 @@ import { computeMatchday } from '@/domain/engine/v1/engine'
 import { buildEngineConfig } from '@/domain/engine/v1/config'
 import { computeTeamScores } from '@/lib/engine/teamScores'
 import type { EnginePlayerInput } from '@/domain/engine/v1/types'
+import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 
 type Supabase = SupabaseClient<Database>
 
@@ -63,6 +64,11 @@ function normalizeName(name: string): string {
 }
 
 // ── FotMob fetch ─────────────────────────────────────────────
+// Delegates to the shared HTML-scraping fetcher in lib/ratings/fotmob.ts.
+// FotMob's authenticated /api/data/matchDetails JSON endpoint is no longer
+// reachable without a signed x-mas header, so the page-HTML __NEXT_DATA__
+// payload is the working source. It is server-rendered per request and
+// reflects live in-progress match state, enabling true live polling.
 
 type FotMobStat = {
   fotmob_id: number
@@ -87,70 +93,20 @@ type FotMobEvent = {
 async function fetchFotMob(
   matchId: number
 ): Promise<{ stats: FotMobStat[]; events: FotMobEvent[] } | null> {
-  try {
-    const res = await fetch(
-      `https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; fantacalcio-statistico/1.0)',
-          Accept: 'application/json',
-        },
-        next: { revalidate: 0 },
-      }
-    )
-    if (!res.ok) return null
-    const json = (await res.json()) as Record<string, unknown>
-    const content = json['content'] as Record<string, unknown> | undefined
-    if (!content) return null
-
-    const playerStats =
-      (content['playerStats'] as Record<string, unknown> | undefined) ?? {}
-    const rawEvents = (
-      (content['matchFacts'] as Record<string, unknown> | undefined)
-        ?.['events'] as Record<string, unknown> | undefined
-    )?.['events']
-    const eventsArr = Array.isArray(rawEvents)
-      ? (rawEvents as Record<string, unknown>[])
-      : []
-
-    const stats: FotMobStat[] = []
-    for (const [idStr, raw] of Object.entries(playerStats)) {
-      const p = raw as Record<string, unknown>
-      const statGroups = p['stats'] as Array<Record<string, unknown>> | undefined
-      if (!statGroups?.length) continue
-      const topGroup = statGroups[0]!['stats'] as
-        | Record<string, Record<string, unknown>>
-        | undefined
-      const getStat = (key: string): number => {
-        const v = topGroup?.[key]?.['stat'] as Record<string, unknown> | undefined
-        return Number(v?.['value'] ?? 0)
-      }
-      stats.push({
-        fotmob_id: Number(idStr),
-        name: String(p['name'] ?? ''),
-        team_name: String(p['teamName'] ?? ''),
-        rating: getStat('FotMob rating') || null,
-        minutes_played: getStat('Minutes played'),
-        goals_scored: getStat('Goals'),
-        assists: getStat('Assists'),
-        goals_conceded: getStat('Goals conceded'),
-        saves: getStat('Saves'),
-      })
-    }
-
-    const events: FotMobEvent[] = eventsArr.map((e) => ({
-      type: String(e['type'] ?? ''),
-      player_id: e['playerId'] != null ? Number(e['playerId']) : null,
-      card: e['card'] != null ? String(e['card']) : null,
-      own_goal: e['ownGoal'] === true,
-      goal_description:
-        e['goalDescription'] != null ? String(e['goalDescription']) : null,
-    }))
-
-    return { stats, events }
-  } catch {
-    return null
-  }
+  const { data } = await fetchFotMobMatch(matchId)
+  if (!data) return null
+  const stats: FotMobStat[] = data.stats.map((s) => ({
+    fotmob_id: s.fotmob_id,
+    name: s.name,
+    team_name: s.team_name,
+    rating: s.rating,
+    minutes_played: s.minutes_played,
+    goals_scored: s.goals_scored,
+    assists: s.assists,
+    goals_conceded: s.goals_conceded,
+    saves: s.saves,
+  }))
+  return { stats, events: data.events }
 }
 
 // ── Fetch all fixtures into a FetchedStat map ────────────────
