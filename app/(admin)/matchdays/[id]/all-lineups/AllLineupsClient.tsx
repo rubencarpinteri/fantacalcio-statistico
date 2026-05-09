@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, useTransition, useRef } from 'react'
+import { Fragment, useState, useTransition, useRef, useEffect, useMemo } from 'react'
 import { adminOverrideLineupAction } from './actions'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
 
@@ -567,13 +567,22 @@ function PlayerChip({
 // and the paired matchup body, so the two views stay in lockstep.
 
 function useTeamLineupState(team: TeamLineupData, matchdayId: string) {
-  const [slots, setSlots] = useState<SlotData[]>(() =>
-    [...team.slots].sort((a, b) => a.slotOrder - b.slotOrder)
+  const sortedFromProps = useMemo(
+    () => [...team.slots].sort((a, b) => a.slotOrder - b.slotOrder),
+    [team.slots]
   )
+  const [slots, setSlots] = useState<SlotData[]>(sortedFromProps)
   const [isDirty, setIsDirty] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const dragSlotId = useRef<string | null>(null)
+
+  // Pick up fresh fantavoto/voto/rating data from server (router.refresh in
+  // LiveAutoRefresh) without clobbering an in-progress drag rearrangement.
+  // When dirty, leave user state alone — the user is mid-edit.
+  useEffect(() => {
+    if (!isDirty) setSlots(sortedFromProps)
+  }, [sortedFromProps, isDirty])
 
   const titolari = slots.filter((s) => !s.isBench)
   const panchina = slots
