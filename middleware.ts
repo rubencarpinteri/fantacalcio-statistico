@@ -1,8 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes that do not require authentication
-const PUBLIC_PATHS = ['/login', '/reset-password']
+// Routes that do not require authentication.
+// /api/cron/* is reached by external cron callers (GitHub Actions) that
+// authenticate with a Bearer token validated inside each route handler.
+const PUBLIC_PATHS = ['/login', '/reset-password', '/api/cron']
 
 export async function middleware(request: NextRequest) {
   // Build a mutable response that we may modify for cookie forwarding
