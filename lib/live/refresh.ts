@@ -211,16 +211,42 @@ export async function refreshMatchdayLive(
 
   const engineConfig = buildEngineConfig(engineConfigRow ?? null)
 
-  // 4. Active league players (for rating_class + ID/name matching)
-  const { data: leaguePlayers } = await supabase
+  // 4. Active league players (for rating_class + ID/name matching).
+  // Coalesce two FotMob ID sources, same as /api/ratings/fetch:
+  //   1. league_players.fotmob_player_id — manual link via /pool/link-fotmob
+  //   2. serie_a_players.fotmob_id — auto-populated from pool import
+  // Without this fallback, players whose league row has no manual link
+  // (e.g. most of the Juventus / Lecce squads) silently miss the live ID
+  // match and fall through to name matching, which fails on diacritics.
+  const { data: leaguePlayersRaw } = await supabase
     .from('league_players')
-    .select('id, full_name, rating_class, fotmob_player_id')
+    .select('id, full_name, rating_class, fotmob_player_id, serie_a_players(fotmob_id)')
     .eq('league_id', leagueId)
     .eq('is_active', true)
 
-  if (!leaguePlayers?.length) {
+  if (!leaguePlayersRaw?.length) {
     return { ok: false, error: 'Nessun giocatore attivo in rosa.' }
   }
+
+  type LP = {
+    id: string
+    full_name: string
+    rating_class: string
+    fotmob_player_id: number | null
+  }
+  const leaguePlayers: LP[] = leaguePlayersRaw.map((p) => {
+    const sap = p.serie_a_players as unknown as { fotmob_id: number | null } | null
+    const coalescedFmId =
+      p.fotmob_player_id != null ? Number(p.fotmob_player_id)
+      : sap?.fotmob_id != null ? Number(sap.fotmob_id)
+      : null
+    return {
+      id: p.id,
+      full_name: p.full_name,
+      rating_class: p.rating_class,
+      fotmob_player_id: coalescedFmId,
+    }
+  })
 
   const playerNormMap = new Map(
     leaguePlayers.map((p) => [normalizeName(p.full_name), p])
