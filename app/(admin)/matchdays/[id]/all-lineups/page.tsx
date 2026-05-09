@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { AllLineupsClient } from './AllLineupsClient'
 import type { TeamLineupData, MatchupPair } from './AllLineupsClient'
+import { fetchLiveOverlay } from '@/lib/live/overlay'
+import { LiveAutoRefresh } from '@/components/live/LiveAutoRefresh'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -269,6 +271,21 @@ export default async function AllLineupsPage({
     }
   }
 
+  // ── Live overlay (when matchday is currently 'open' = being played) ────────
+  // Fills in missing entries in calcMap / statsMap from live_player_scores so
+  // lineups show provisional fantavoto and ratings while matches are in progress.
+  let liveRefreshedAt: string | null = null
+  if (matchday.status === 'open') {
+    const { calcOverlay, statsOverlay, refreshedAt } = await fetchLiveOverlay(supabase, matchdayId)
+    liveRefreshedAt = refreshedAt
+    for (const [pid, c] of calcOverlay) {
+      if (!calcMap.has(pid)) calcMap.set(pid, c)
+    }
+    for (const [pid, s] of statsOverlay) {
+      if (!statsMap.has(pid)) statsMap.set(pid, s)
+    }
+  }
+
   // ── Fetch competition matchups for this round ──────────────────────────────
   // Used to pair teams in head-to-head layout instead of a plain grid.
   // Also pull goal-converted scores from the linked Campionato round (when
@@ -454,8 +471,19 @@ export default async function AllLineupsPage({
           <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-3">
             Trascina i giocatori per correggere titolari e panchina, salva ogni squadra individualmente.
           </p>
+          {matchday.status === 'open' && liveRefreshedAt && (
+            <p className="mt-3 inline-flex items-center gap-2 text-[12px] text-ink-3">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              In tempo reale — voti provvisori, aggiornati ogni minuto
+            </p>
+          )}
         </div>
       </div>
+
+      {matchday.status === 'open' && <LiveAutoRefresh />}
 
       <AllLineupsClient
         matchdayId={matchdayId}
