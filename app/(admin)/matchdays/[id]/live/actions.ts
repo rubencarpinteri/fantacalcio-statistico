@@ -19,7 +19,7 @@ export async function triggerLiveRefreshAction(
 
   const supabase = await createClient()
 
-  // Verify matchday belongs to this league and is in scoring state
+  // Verify matchday belongs to this league and is currently live-eligible.
   const { data: matchday } = await supabase
     .from('matchdays')
     .select('id, status')
@@ -28,8 +28,8 @@ export async function triggerLiveRefreshAction(
     .single()
 
   if (!matchday) return { ok: false, error: 'Giornata non trovata.' }
-  if (matchday.status !== 'scoring') {
-    return { ok: false, error: 'Il calcolo live è disponibile solo per giornate in stato "scoring".' }
+  if (matchday.status !== 'open') {
+    return { ok: false, error: 'Il calcolo live è disponibile solo per giornate in stato "aperta".' }
   }
 
   const result = await refreshMatchdayLive(supabase, matchdayId, ctx.league.id)

@@ -8,8 +8,11 @@ import { refreshMatchdayLive } from '@/lib/live/refresh'
  * Called by an external cron service (e.g. cron-job.org) every N minutes.
  * Protected by Authorization: Bearer <CRON_SECRET>.
  *
- * Finds all matchdays in 'scoring' state that have fixtures configured,
- * and runs a live refresh for each one.
+ * Finds all matchdays in 'open' state that have fixtures configured,
+ * and runs a live refresh for each one. ('scoring' is a legacy status
+ * in this codebase — the simplified state machine is
+ * draft → open ↔ closed → archived; 'open' covers both the pre-kickoff
+ * lineup window and the in-progress match window.)
  *
  * Vercel Hobby plan: crons run at most once/day — use cron-job.org instead:
  *   URL:    https://<your-domain>/api/cron/live-ratings
@@ -25,18 +28,19 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  // Find all scoring matchdays
+  // Find all open matchdays (current "live or imminent" state in the
+  // simplified machine — 'scoring' is legacy and never set anymore).
   const { data: matchdays, error: mdErr } = await supabase
     .from('matchdays')
     .select('id, league_id')
-    .eq('status', 'scoring')
+    .eq('status', 'open')
 
   if (mdErr) {
     return NextResponse.json({ error: mdErr.message }, { status: 500 })
   }
 
   if (!matchdays?.length) {
-    return NextResponse.json({ message: 'No scoring matchdays', updated: 0 })
+    return NextResponse.json({ message: 'No open matchdays', updated: 0 })
   }
 
   // Filter to those with at least one fixture

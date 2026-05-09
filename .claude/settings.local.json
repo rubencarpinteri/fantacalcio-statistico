@@ -124,7 +124,13 @@
       "Bash(ls -la \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/\")",
       "Bash(find \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/app/\\(admin\\)/matchdays/[id]/\" -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.jsx\" -o -name \"*.js\" \\\\\\))",
       "mcp__claude_ai_Supabase__apply_migration",
-      "Bash(grep -v \",,$\" \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/_data/SerieAcalendar2526.csv\")"
+      "Bash(grep -v \",,$\" \"/Users/rubencarpinteri/Documents/Fantacalcio Statistico/_data/SerieAcalendar2526.csv\")",
+      "Bash(grep -oE \"\\(cloudflare|cf-ray|Just a moment|challenge|Attention Required|Access denied|incapsula|datadome\\)\" /tmp/ws_probe.json | sort -u | head -20)",
+      "Bash(curl -sS -o /tmp/fotmob_matches.json -w 'HTTP %{http_code} SIZE %{size_download}\\\\n' -H 'User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36' 'https://www.fotmob.com/api/matches?date=20260509')",
+      "Bash(curl -sS -o /tmp/fotmob_matches3.json -w 'HTTP %{http_code} SIZE %{size_download} TYPE %{content_type}\\\\n' -H 'User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36' -H 'x-mas: eyJib2R5Ijp7InVybCI6Ii9hcGkvbWF0Y2hlcz9kYXRlPTIwMjYwNTA5IiwiY29kZSI6MTczMTI0MjUwMDAsImZvbyI6IjAwNl85In19' 'https://www.fotmob.com/api/matches?date=20260509')",
+      "Bash(awk -F, 'NR>1 && $8!=\"\" {print $0}' \"_data/SerieAcalendar2526.csv\")",
+      "Bash(awk -F, 'NR>1 && $8!=\"\" && $6!=\"\" {print $0}' \"_data/SerieAcalendar2526.csv\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }
