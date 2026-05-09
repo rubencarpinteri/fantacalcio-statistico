@@ -120,7 +120,11 @@ async function fetchAllFixtures(
     fixtures.map(async (fx) => {
       if (!fx.fotmob_match_id) return
       const fotmob = await fetchFotMob(fx.fotmob_match_id)
-      if (!fotmob) return
+      if (!fotmob) {
+        console.warn(`[live-refresh] FotMob fetch returned null for match ${fx.fotmob_match_id}`)
+        return
+      }
+      console.log(`[live-refresh] match ${fx.fotmob_match_id}: ${fotmob.stats.length} player stats, ${fotmob.events.length} events`)
 
       // Build event counters from FotMob
       const yellows    = new Map<number, number>()
@@ -234,8 +238,12 @@ export async function refreshMatchdayLive(
     rating_class: string
     fotmob_player_id: number | null
   }
+  // PostgREST may return the forward FK as either an object or an array
+  // depending on schema introspection — same handling as /api/ratings/fetch.
+  type SapShape = { fotmob_id: number | null }
   const leaguePlayers: LP[] = leaguePlayersRaw.map((p) => {
-    const sap = p.serie_a_players as unknown as { fotmob_id: number | null } | null
+    const sapRaw = p.serie_a_players as unknown as SapShape | SapShape[] | null
+    const sap = Array.isArray(sapRaw) ? (sapRaw[0] ?? null) : sapRaw
     const coalescedFmId =
       p.fotmob_player_id != null ? Number(p.fotmob_player_id)
       : sap?.fotmob_id != null ? Number(sap.fotmob_id)
