@@ -31,8 +31,12 @@ jobs:
             echo "::error::CRON_SECRET secret is not set in this repository"
             exit 1
           fi
-          curl -fsS \
+          # Length is safe to print — exposes nothing useful.
+          echo "secret length: ${#CRON_SECRET}"
+          status=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "https://fantacalcio-statistico.vercel.app/api/cron/live-ratings" \
-            | tee response.json
+            "https://fantacalcio-statistico.vercel.app/api/cron/live-ratings")
+          echo "HTTP status: $status"
+          cat /tmp/resp.json
           echo
+          [ "$status" = "200" ] || exit 1
