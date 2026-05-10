@@ -476,7 +476,6 @@ export default async function AllLineupsPage({
           {matchday.status === 'open' && (
             <LiveAutoRefresh
               matchdayId={matchdayId}
-              hasLiveMatch={liveMatchPlayerIds.length > 0}
               refreshedAt={liveRefreshedAt}
             />
           )}

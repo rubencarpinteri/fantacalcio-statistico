@@ -19,14 +19,11 @@ const DEFAULT_PING_MS = 60_000
 
 export function LiveAutoRefresh({
   matchdayId,
-  hasLiveMatch,
   pageRefreshMs = DEFAULT_PAGE_REFRESH_MS,
   pingMs = DEFAULT_PING_MS,
   refreshedAt,
 }: {
   matchdayId: string
-  /** True iff at least one fixture is currently in progress. Gates self-ping. */
-  hasLiveMatch: boolean
   pageRefreshMs?: number
   pingMs?: number
   /** ISO timestamp of the last cron write — shown as "aggiornato Xm fa". */
@@ -54,11 +51,14 @@ export function LiveAutoRefresh({
     return () => clearInterval(id)
   }, [router, seconds])
 
-  // Cron self-ping — runs only when a match is live and the tab is visible.
-  // Fires once on mount so the user gets fresh data immediately, then on
-  // the configured interval.
+  // Cron self-ping — runs whenever the tab is visible. The matchday is
+  // already known to be 'open' (this component only mounts in that state).
+  // We deliberately don't gate on "any match currently in progress": that
+  // would skip the moment a kickoff happens between cron ticks, and the
+  // fixture-level fetch skip in lib/live/refresh.ts already prevents real
+  // FotMob load on finished games. Fires once on mount for instant data,
+  // then on the configured interval.
   useEffect(() => {
-    if (!hasLiveMatch) return
     let cancelled = false
 
     const ping = async () => {
@@ -80,7 +80,7 @@ export function LiveAutoRefresh({
       cancelled = true
       clearInterval(id)
     }
-  }, [matchdayId, hasLiveMatch, pingMs, router])
+  }, [matchdayId, pingMs, router])
 
   const mm = Math.floor(secondsLeft / 60)
   const ss = (secondsLeft % 60).toString().padStart(2, '0')
