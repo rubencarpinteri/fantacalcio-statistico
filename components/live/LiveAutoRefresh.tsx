@@ -24,9 +24,13 @@ export function LiveAutoRefresh({
   refreshedAt?: string | null
 }) {
   const router = useRouter()
-  const [now, setNow] = useState<number>(() => Date.now())
+  // Skip the countdown on the server / first hydration to avoid a mismatch
+  // between server `Date.now()` and client `Date.now()`. The pill appears
+  // immediately with a placeholder, then the countdown fills in on mount.
+  const [now, setNow] = useState<number | null>(null)
 
   useEffect(() => {
+    setNow(Date.now())
     const tickId = setInterval(() => setNow(Date.now()), 1000)
     const refreshId = setInterval(() => router.refresh(), pageRefreshMs)
     return () => {
@@ -35,14 +39,15 @@ export function LiveAutoRefresh({
     }
   }, [router, pageRefreshMs])
 
-  const anchor = refreshedAt ? new Date(refreshedAt).getTime() : now
-  // The cron may be a little late; if we're past the expected window, show
-  // "in arrivo" rather than negative seconds.
-  const msUntilNext = Math.max(0, anchor + cronIntervalMs - now)
-  const secondsLeft = Math.ceil(msUntilNext / 1000)
-  const mm = Math.floor(secondsLeft / 60)
-  const ss = (secondsLeft % 60).toString().padStart(2, '0')
-  const label = msUntilNext === 0 ? 'in arrivo…' : `prossimo aggiornamento tra ${mm}:${ss}`
+  let label = 'in arrivo…'
+  if (now !== null) {
+    const anchor = refreshedAt ? new Date(refreshedAt).getTime() : now
+    const msUntilNext = Math.max(0, anchor + cronIntervalMs - now)
+    const secondsLeft = Math.ceil(msUntilNext / 1000)
+    const mm = Math.floor(secondsLeft / 60)
+    const ss = (secondsLeft % 60).toString().padStart(2, '0')
+    label = msUntilNext === 0 ? 'in arrivo…' : `prossimo aggiornamento tra ${mm}:${ss}`
+  }
 
   return (
     <p className="mt-3 inline-flex items-center gap-2 text-[12px] text-ink-3">

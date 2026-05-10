@@ -473,7 +473,7 @@ export default async function AllLineupsPage({
           <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-3">
             Trascina i giocatori per correggere titolari e panchina, salva ogni squadra individualmente.
           </p>
-          {matchday.status === 'open' && liveRefreshedAt && (
+          {matchday.status === 'open' && (
             <LiveAutoRefresh refreshedAt={liveRefreshedAt} />
           )}
         </div>
