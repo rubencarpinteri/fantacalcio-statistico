@@ -474,7 +474,11 @@ export default async function AllLineupsPage({
             Trascina i giocatori per correggere titolari e panchina, salva ogni squadra individualmente.
           </p>
           {matchday.status === 'open' && (
-            <LiveAutoRefresh refreshedAt={liveRefreshedAt} />
+            <LiveAutoRefresh
+              matchdayId={matchdayId}
+              hasLiveMatch={liveMatchPlayerIds.length > 0}
+              refreshedAt={liveRefreshedAt}
+            />
           )}
         </div>
       </div>

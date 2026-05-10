@@ -3,31 +3,41 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-// Renders a small "live" pill that counts down to the next page poll.
-// When the timer hits 0, calls router.refresh() so the parent server
-// component re-runs and pulls any new rows the cron has written.
+// Renders the "live" pill and owns the polling loop for the all-lineups
+// page. Two timers run in parallel:
 //
-// The countdown is intentionally tied to the page-poll interval, not the
-// cron interval — that way it always reflects "when will the screen check
-// for new data," which is the thing the user actually sees change. The
-// last cron-write timestamp is shown as a separate "aggiornato Xm fa"
-// caption so freshness is transparent.
+//   1. Page poll — every `pageRefreshMs` we router.refresh() so the server
+//      component re-runs and pulls any new rows from live_player_scores.
+//   2. Cron self-ping — every `pingMs` we POST /api/live/refresh which runs
+//      the same refresh pipeline as the GitHub Actions cron. This is gated
+//      on `hasLiveMatch` (at least one fixture currently in progress) and
+//      on document.visibilityState — so we never hit FotMob when no game
+//      is on or when the tab is in the background.
 
-const DEFAULT_INTERVAL_MS = 30_000
+const DEFAULT_PAGE_REFRESH_MS = 60_000
+const DEFAULT_PING_MS = 60_000
 
 export function LiveAutoRefresh({
-  intervalMs = DEFAULT_INTERVAL_MS,
+  matchdayId,
+  hasLiveMatch,
+  pageRefreshMs = DEFAULT_PAGE_REFRESH_MS,
+  pingMs = DEFAULT_PING_MS,
   refreshedAt,
 }: {
-  intervalMs?: number
+  matchdayId: string
+  /** True iff at least one fixture is currently in progress. Gates self-ping. */
+  hasLiveMatch: boolean
+  pageRefreshMs?: number
+  pingMs?: number
   /** ISO timestamp of the last cron write — shown as "aggiornato Xm fa". */
   refreshedAt?: string | null
 }) {
   const router = useRouter()
-  const seconds = Math.max(1, Math.round(intervalMs / 1000))
+  const seconds = Math.max(1, Math.round(pageRefreshMs / 1000))
   const [secondsLeft, setSecondsLeft] = useState<number>(seconds)
   const [now, setNow] = useState<number | null>(null)
 
+  // Page poll — always running.
   useEffect(() => {
     setSecondsLeft(seconds)
     setNow(Date.now())
@@ -43,6 +53,34 @@ export function LiveAutoRefresh({
     }, 1000)
     return () => clearInterval(id)
   }, [router, seconds])
+
+  // Cron self-ping — runs only when a match is live and the tab is visible.
+  // Fires once on mount so the user gets fresh data immediately, then on
+  // the configured interval.
+  useEffect(() => {
+    if (!hasLiveMatch) return
+    let cancelled = false
+
+    const ping = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      try {
+        await fetch(`/api/live/refresh?matchday_id=${encodeURIComponent(matchdayId)}`, {
+          method: 'POST',
+          credentials: 'same-origin',
+        })
+        if (!cancelled) router.refresh()
+      } catch {
+        // Network blip — the next page poll will catch up.
+      }
+    }
+
+    ping()
+    const id = setInterval(ping, pingMs)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [matchdayId, hasLiveMatch, pingMs, router])
 
   const mm = Math.floor(secondsLeft / 60)
   const ss = (secondsLeft % 60).toString().padStart(2, '0')
