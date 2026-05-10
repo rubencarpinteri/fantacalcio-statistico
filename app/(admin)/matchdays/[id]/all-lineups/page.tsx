@@ -275,9 +275,11 @@ export default async function AllLineupsPage({
   // Fills in missing entries in calcMap / statsMap from live_player_scores so
   // lineups show provisional fantavoto and ratings while matches are in progress.
   let liveRefreshedAt: string | null = null
+  let liveMatchPlayerIds: string[] = []
   if (matchday.status === 'open') {
-    const { calcOverlay, statsOverlay, refreshedAt } = await fetchLiveOverlay(supabase, matchdayId)
+    const { calcOverlay, statsOverlay, refreshedAt, liveMatchPlayerIds: liveSet } = await fetchLiveOverlay(supabase, matchdayId)
     liveRefreshedAt = refreshedAt
+    liveMatchPlayerIds = [...liveSet]
     for (const [pid, c] of calcOverlay) {
       if (!calcMap.has(pid)) calcMap.set(pid, c)
     }
@@ -472,24 +474,17 @@ export default async function AllLineupsPage({
             Trascina i giocatori per correggere titolari e panchina, salva ogni squadra individualmente.
           </p>
           {matchday.status === 'open' && liveRefreshedAt && (
-            <p className="mt-3 inline-flex items-center gap-2 text-[12px] text-ink-3">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              In tempo reale — voti provvisori, aggiornati ogni minuto
-            </p>
+            <LiveAutoRefresh refreshedAt={liveRefreshedAt} />
           )}
         </div>
       </div>
-
-      {matchday.status === 'open' && <LiveAutoRefresh />}
 
       <AllLineupsClient
         matchdayId={matchdayId}
         matchdayStatus={matchday.status}
         teamLineups={teamLineups}
         matchups={matchupPairs}
+        liveMatchPlayerIds={liveMatchPlayerIds}
       />
     </div>
   )

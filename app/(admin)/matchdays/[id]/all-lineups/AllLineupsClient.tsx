@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, useTransition, useRef, useEffect, useMemo } from 'react'
+import { Fragment, createContext, useContext, useState, useTransition, useRef, useEffect, useMemo } from 'react'
 import { adminOverrideLineupAction } from './actions'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
 
@@ -99,7 +99,13 @@ interface Props {
   matchdayStatus: string
   teamLineups: TeamLineupData[]
   matchups: MatchupPair[]
+  /** Player IDs whose FotMob fixture is currently in progress. */
+  liveMatchPlayerIds?: string[]
 }
+
+// Set of player IDs whose match is live right now — read by PlayerChip to
+// render a "live" dot. Avoids prop-drilling through MatchupCard/TeamLineupCard.
+const LiveMatchPlayersContext = createContext<Set<string>>(new Set())
 
 // ---- Role colours ----------------------------------------------------------
 //
@@ -476,6 +482,8 @@ function PlayerChip({
   const bm = slot.bonusMalus
   const role = slot.playerRoles[0]
   const isEmpty = slot.playerId === null
+  const liveSet = useContext(LiveMatchPlayersContext)
+  const isPlayingLive = !isEmpty && slot.playerId != null && liveSet.has(slot.playerId)
 
   return (
     <div
@@ -515,9 +523,19 @@ function PlayerChip({
         <span className="flex-1 min-w-0 text-[12.5px] italic text-ink-4">vuoto</span>
       ) : (
         <span className="flex min-w-0 flex-1 flex-col gap-px">
-          <span className="truncate text-[13.5px] font-medium leading-tight text-ink-1 tracking-tight">
-            <span className="sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
-            <span className="hidden sm:inline">{slot.playerName}</span>
+          <span className="flex min-w-0 items-center gap-1.5 truncate text-[13.5px] font-medium leading-tight text-ink-1 tracking-tight">
+            {isPlayingLive && (
+              <span
+                title="Partita in corso"
+                aria-label="Partita in corso"
+                className="relative inline-flex h-1.5 w-1.5 shrink-0"
+              >
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-80" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-500" />
+              </span>
+            )}
+            <span className="truncate sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
+            <span className="hidden truncate sm:inline">{slot.playerName}</span>
           </span>
           <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap leading-none">
             <span className="truncate text-[10.5px] font-medium text-ink-3">
@@ -1208,12 +1226,13 @@ function MatchupRow({
 
 // ---- Main component --------------------------------------------------------
 
-export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matchups }: Props) {
+export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matchups, liveMatchPlayerIds }: Props) {
   const isEditable = matchdayStatus !== 'archived'
   const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null)
   const [activeMatchIndex, setActiveMatchIndex] = useState(0)
 
   const teamMap = new Map(teamLineups.map((t) => [t.teamId, t]))
+  const liveSet = useMemo(() => new Set(liveMatchPlayerIds ?? []), [liveMatchPlayerIds])
 
   // ── Matchup layout (when competition matchups are available) ──────────────
   if (matchups.length > 0) {
@@ -1221,7 +1240,7 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
     const unpaired = teamLineups.filter((t) => !pairedIds.has(t.teamId))
 
     return (
-      <>
+      <LiveMatchPlayersContext.Provider value={liveSet}>
         {/* Match selector — eyebrow + team names per pill */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {matchups.length > 1 && (
@@ -1319,13 +1338,13 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
         {selectedSlot && (
           <PlayerDetailModal slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
         )}
-      </>
+      </LiveMatchPlayersContext.Provider>
     )
   }
 
   // ── Fallback: plain grid (no matchup data configured) ────────────────────
   return (
-    <>
+    <LiveMatchPlayersContext.Provider value={liveSet}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {teamLineups.map((team) => (
           <TeamCard
@@ -1340,6 +1359,6 @@ export function AllLineupsClient({ matchdayId, matchdayStatus, teamLineups, matc
       {selectedSlot && (
         <PlayerDetailModal slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
       )}
-    </>
+    </LiveMatchPlayersContext.Provider>
   )
 }

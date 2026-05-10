@@ -1149,6 +1149,7 @@ export type Database = {
           goals_conceded: number
           goals_scored: number
           is_bench: boolean
+          is_match_live: boolean
           matchday_id: string
           minutes_factor: number | null
           minutes_played: number
@@ -1180,6 +1181,7 @@ export type Database = {
           goals_conceded?: number
           goals_scored?: number
           is_bench?: boolean
+          is_match_live?: boolean
           matchday_id: string
           minutes_factor?: number | null
           minutes_played?: number
@@ -1211,6 +1213,7 @@ export type Database = {
           goals_conceded?: number
           goals_scored?: number
           is_bench?: boolean
+          is_match_live?: boolean
           matchday_id?: string
           minutes_factor?: number | null
           minutes_played?: number

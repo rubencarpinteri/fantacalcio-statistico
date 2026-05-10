@@ -25,7 +25,12 @@ type FotMobEvent = {
   goal_description: string | null
 }
 
-export type FotMobMatchData = { stats: FotMobStat[]; events: FotMobEvent[] }
+export type FotMobMatchData = {
+  stats: FotMobStat[]
+  events: FotMobEvent[]
+  started: boolean
+  finished: boolean
+}
 
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
@@ -59,6 +64,10 @@ export async function fetchFotMobMatch(
   } catch {
     return { data: null, status: 200 }
   }
+
+  const general = pageProps['general'] as Record<string, unknown> | undefined
+  const started = general?.['started'] === true
+  const finished = general?.['finished'] === true
 
   const content = pageProps['content'] as Record<string, unknown> | undefined
   if (!content) return { data: null, status: 200 }
@@ -115,5 +124,5 @@ export async function fetchFotMobMatch(
   // squad members have neither.
   const playingStats = stats.filter((s) => s.minutes_played > 0 || s.rating != null)
 
-  return { data: { stats: playingStats, events }, status: 200 }
+  return { data: { stats: playingStats, events, started, finished }, status: 200 }
 }

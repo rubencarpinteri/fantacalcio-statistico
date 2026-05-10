@@ -88,6 +88,7 @@ export async function fetchLiveOverlay(
 ): Promise<{
   calcOverlay: Map<string, LiveCalcOverlay>
   statsOverlay: Map<string, LiveStatsOverlay>
+  liveMatchPlayerIds: Set<string>
   refreshedAt: string | null
 }> {
   const { data: rows } = await supabase
@@ -98,18 +99,20 @@ export async function fetchLiveOverlay(
        goals_scored, assists, yellow_cards, red_cards,
        saves, goals_conceded, refreshed_at,
        bonus_malus_breakdown, z_fotmob, z_sofascore,
-       minutes_factor, role_multiplier`
+       minutes_factor, role_multiplier, is_match_live`
     )
     .eq('matchday_id', matchdayId)
 
   const calcOverlay = new Map<string, LiveCalcOverlay>()
   const statsOverlay = new Map<string, LiveStatsOverlay>()
+  const liveMatchPlayerIds = new Set<string>()
   let refreshedAt: string | null = null
 
   for (const r of rows ?? []) {
     if (r.refreshed_at && (!refreshedAt || r.refreshed_at > refreshedAt)) {
       refreshedAt = r.refreshed_at
     }
+    if (r.is_match_live) liveMatchPlayerIds.add(r.player_id)
     const rawBm = r.bonus_malus_breakdown as Array<{ label: string; total: number }> | null
     const bonusMalus = rawBm ? rawBm.filter((b) => b.total !== 0) : null
     calcOverlay.set(r.player_id, {
@@ -147,5 +150,5 @@ export async function fetchLiveOverlay(
     })
   }
 
-  return { calcOverlay, statsOverlay, refreshedAt }
+  return { calcOverlay, statsOverlay, liveMatchPlayerIds, refreshedAt }
 }
