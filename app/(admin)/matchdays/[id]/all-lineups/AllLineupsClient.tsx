@@ -523,19 +523,19 @@ function PlayerChip({
         <span className="flex-1 min-w-0 text-[12.5px] italic text-ink-4">vuoto</span>
       ) : (
         <span className="flex min-w-0 flex-1 flex-col gap-px">
-          <span className="flex min-w-0 items-center gap-1.5 truncate text-[13.5px] font-medium leading-tight text-ink-1 tracking-tight">
+          <span className="flex min-w-0 items-center gap-1.5 text-[13.5px] font-medium leading-tight text-ink-1 tracking-tight">
             {isPlayingLive && (
               <span
                 title="Partita in corso"
                 aria-label="Partita in corso"
-                className="relative inline-flex h-1.5 w-1.5 shrink-0"
+                className="relative ml-0.5 inline-flex h-1.5 w-1.5 shrink-0"
               >
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-90" />
+                <span className="absolute -inset-1 inline-flex animate-ping rounded-full bg-emerald-400 opacity-80" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
               </span>
             )}
-            <span className="truncate sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
-            <span className="hidden truncate sm:inline">{slot.playerName}</span>
+            <span className="min-w-0 flex-1 truncate sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
+            <span className="hidden min-w-0 flex-1 truncate sm:inline">{slot.playerName}</span>
           </span>
           <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap leading-none">
             <span className="truncate text-[10.5px] font-medium text-ink-3">
