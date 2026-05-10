@@ -302,6 +302,15 @@ export async function refreshMatchdayLive(
 
   const dbStatsMap = new Map((dbStats ?? []).map((s) => [s.player_id, s]))
 
+  // FotMob omits `Minutes played` from its HTML payload during live matches
+  // (the field only appears once the game ends). A player on the pitch with
+  // a fresh rating but no minutes would be NV'd by the engine's <10min gate,
+  // so the live overlay would show nothing. Treat a rated-but-no-minutes
+  // entry as a full appearance for live scoring; the post-match refresh
+  // overwrites with real minutes.
+  const inferLiveMinutes = (apiMinutes: number, apiRating: number | null): number =>
+    apiMinutes === 0 && apiRating != null ? 90 : apiMinutes
+
   // 6. Build engine inputs — merge DB stats + fresh API data
   const engineInputs: EnginePlayerInput[] = []
   type MergedStat = {
@@ -331,9 +340,11 @@ export async function refreshMatchdayLive(
     const rc = (db.rating_class_override as RatingClass | null) ??
       (player.rating_class as RatingClass)
 
+    const apiRating = apiData?.fotmob_rating ?? null
+    const apiMinutes = apiData ? inferLiveMinutes(apiData.minutes_played, apiRating) : null
     const merged: MergedStat = {
-      fotmob_rating:    apiData?.fotmob_rating   ?? db.fotmob_rating,
-      minutes_played:   apiData?.minutes_played  ?? db.minutes_played,
+      fotmob_rating:    apiRating                ?? db.fotmob_rating,
+      minutes_played:   apiMinutes               ?? db.minutes_played,
       goals_scored:     apiData?.goals_scored    ?? db.goals_scored,
       assists:          apiData?.assists         ?? db.assists,
       own_goals:        apiData?.own_goals       ?? db.own_goals,
@@ -388,9 +399,10 @@ export async function refreshMatchdayLive(
     if (dbStatsMap.has(player.id)) continue
     if (apiData.fotmob_id != null) matchedFotmobIds.add(apiData.fotmob_id)
 
+    const liveMinutes = inferLiveMinutes(apiData.minutes_played, apiData.fotmob_rating)
     const merged: MergedStat = {
       fotmob_rating:    apiData.fotmob_rating,
-      minutes_played:   apiData.minutes_played,
+      minutes_played:   liveMinutes,
       goals_scored:     apiData.goals_scored,
       assists:          apiData.assists,
       own_goals:        apiData.own_goals,
@@ -408,7 +420,7 @@ export async function refreshMatchdayLive(
       player_id:        player.id,
       stats_id:         player.id,
       rating_class:     player.rating_class as RatingClass,
-      minutes_played:   apiData.minutes_played,
+      minutes_played:   liveMinutes,
       is_provisional:   true,
       fotmob_rating:    apiData.fotmob_rating,
       sofascore_rating: null, // live refresh has no SofaScore data
