@@ -3,61 +3,33 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-// Renders the "live" pill and owns the polling loop for the all-lineups
-// page. Two timers run in parallel:
+// Live pill + polling loop for the all-lineups page.
 //
-//   1. Page poll — every `pageRefreshMs` we router.refresh() so the server
-//      component re-runs and pulls any new rows from live_player_scores.
-//   2. Cron self-ping — every `pingMs` we POST /api/live/refresh which runs
-//      the same refresh pipeline as the GitHub Actions cron. This is gated
-//      on `hasLiveMatch` (at least one fixture currently in progress) and
-//      on document.visibilityState — so we never hit FotMob when no game
-//      is on or when the tab is in the background.
+// One timer drives everything: every `pingMs` we POST /api/live/refresh.
+// That endpoint runs the same refresh pipeline as the GitHub Actions cron
+// (fetch FotMob, run engine, upsert live_player_scores). When it returns
+// we call router.refresh() so the parent server component re-runs and
+// pulls the new rows. The visible countdown ticks down from `pingMs`
+// to zero between cycles. We only fire while the tab is visible — when
+// hidden we skip pings entirely.
 
-const DEFAULT_PAGE_REFRESH_MS = 60_000
 const DEFAULT_PING_MS = 60_000
 
 export function LiveAutoRefresh({
   matchdayId,
-  pageRefreshMs = DEFAULT_PAGE_REFRESH_MS,
   pingMs = DEFAULT_PING_MS,
   refreshedAt,
 }: {
   matchdayId: string
-  pageRefreshMs?: number
   pingMs?: number
-  /** ISO timestamp of the last cron write — shown as "aggiornato Xm fa". */
+  /** ISO timestamp of the last cron write — shown as "aggiornato Xs/m fa". */
   refreshedAt?: string | null
 }) {
   const router = useRouter()
-  const seconds = Math.max(1, Math.round(pageRefreshMs / 1000))
+  const seconds = Math.max(1, Math.round(pingMs / 1000))
   const [secondsLeft, setSecondsLeft] = useState<number>(seconds)
   const [now, setNow] = useState<number | null>(null)
 
-  // Page poll — always running.
-  useEffect(() => {
-    setSecondsLeft(seconds)
-    setNow(Date.now())
-    const id = setInterval(() => {
-      setNow(Date.now())
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          router.refresh()
-          return seconds
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => clearInterval(id)
-  }, [router, seconds])
-
-  // Cron self-ping — runs whenever the tab is visible. The matchday is
-  // already known to be 'open' (this component only mounts in that state).
-  // We deliberately don't gate on "any match currently in progress": that
-  // would skip the moment a kickoff happens between cron ticks, and the
-  // fixture-level fetch skip in lib/live/refresh.ts already prevents real
-  // FotMob load on finished games. Fires once on mount for instant data,
-  // then on the configured interval.
   useEffect(() => {
     let cancelled = false
 
@@ -70,17 +42,30 @@ export function LiveAutoRefresh({
         })
         if (!cancelled) router.refresh()
       } catch {
-        // Network blip — the next page poll will catch up.
+        // Network blip — next tick will catch up.
       }
     }
 
-    ping()
-    const id = setInterval(ping, pingMs)
+    setSecondsLeft(seconds)
+    setNow(Date.now())
+    void ping()
+
+    const id = setInterval(() => {
+      setNow(Date.now())
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          void ping()
+          return seconds
+        }
+        return s - 1
+      })
+    }, 1000)
+
     return () => {
       cancelled = true
       clearInterval(id)
     }
-  }, [matchdayId, pingMs, router])
+  }, [matchdayId, seconds, router])
 
   const mm = Math.floor(secondsLeft / 60)
   const ss = (secondsLeft % 60).toString().padStart(2, '0')
@@ -101,7 +86,7 @@ export function LiveAutoRefresh({
       </span>
       <span className="font-medium">In tempo reale</span>
       <span className="text-ink-4">·</span>
-      <span className="text-ink-2">prossimo controllo in</span>
+      <span className="text-ink-2">prossimo aggiornamento in</span>
       <span className="tabular-nums font-semibold text-ink-1">{countdownLabel}</span>
       {staleness && (
         <>

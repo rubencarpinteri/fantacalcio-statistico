@@ -92,7 +92,7 @@ type FotMobEvent = {
 
 async function fetchFotMob(
   matchId: number
-): Promise<{ stats: FotMobStat[]; events: FotMobEvent[]; started: boolean; finished: boolean } | null> {
+): Promise<{ stats: FotMobStat[]; events: FotMobEvent[]; started: boolean; finished: boolean; kickoffAt: string | null } | null> {
   const { data } = await fetchFotMobMatch(matchId)
   if (!data) return null
   const stats: FotMobStat[] = data.stats.map((s) => ({
@@ -106,7 +106,7 @@ async function fetchFotMob(
     goals_conceded: s.goals_conceded,
     saves: s.saves,
   }))
-  return { stats, events: data.events, started: data.started, finished: data.finished }
+  return { stats, events: data.events, started: data.started, finished: data.finished, kickoffAt: data.kickoffAt }
 }
 
 // ── Fetch all fixtures into a FetchedStat map ────────────────
@@ -124,12 +124,12 @@ async function fetchAllFixtures(
   map: Map<string, FetchedStat>
   fixtureResults: FixtureFetchResult[]
   liveFotmobIds: Set<number>
-  fixtureStatuses: Map<number, { started: boolean; finished: boolean }>
+  fixtureStatuses: Map<number, { started: boolean; finished: boolean; kickoffAt: string | null }>
 }> {
   const map = new Map<string, FetchedStat>()
   const fixtureResults: FixtureFetchResult[] = []
   const liveFotmobIds = new Set<number>()
-  const fixtureStatuses = new Map<number, { started: boolean; finished: boolean }>()
+  const fixtureStatuses = new Map<number, { started: boolean; finished: boolean; kickoffAt: string | null }>()
 
   await Promise.all(
     fixtures.map(async (fx) => {
@@ -152,6 +152,7 @@ async function fetchAllFixtures(
       fixtureStatuses.set(fx.fotmob_match_id, {
         started: fotmob.started,
         finished: fotmob.finished,
+        kickoffAt: fotmob.kickoffAt,
       })
 
       const isLive = fotmob.started && !fotmob.finished
@@ -232,26 +233,36 @@ export async function refreshMatchdayLive(
   // 1. Fixtures (incl. cached FotMob status — long-finished fixtures are skipped)
   const { data: fixtures } = await supabase
     .from('matchday_fixtures')
-    .select('id, fotmob_match_id, sofascore_event_id, fotmob_finished, fotmob_status_seen_at')
+    .select('id, fotmob_match_id, sofascore_event_id, fotmob_finished, fotmob_status_seen_at, kickoff_at')
     .eq('matchday_id', matchdayId)
 
   if (!fixtures?.length) {
     return { ok: false, error: 'Nessuna fixture configurata per questa giornata.' }
   }
 
-  // 2. Fetch from FotMob — for fixtures still live AND for fixtures that
-  // finished within the last 30 minutes. The grace window matters because
-  // FotMob's `general.finished` flips a beat before all per-player ratings
-  // are populated; if we mark a fixture finished on that very first
-  // post-final tick we can lock in an empty-stats snapshot. Continuing to
-  // re-fetch for 30 minutes after the final whistle gives FotMob time to
-  // settle and lets us capture the canonical post-match values.
+  // 2. Decide which fixtures to actually fetch from FotMob.
+  //
+  //  - skip if `fotmob_finished` was first seen more than 30 min ago — by
+  //    then FotMob has settled and there's nothing new to capture. The
+  //    30-minute grace window matters because `general.finished` flips a
+  //    beat before per-player ratings populate, and we want to refetch
+  //    once the canonical values land.
+  //  - skip if kickoff is more than 5 min in the future — pre-match
+  //    payloads have no useful data and we don't want to hammer FotMob.
+  //  - otherwise fetch.
   const POST_FINISH_FETCH_MS = 30 * 60_000
+  const PRE_KICKOFF_LEAD_MS = 5 * 60_000
   const nowMs = Date.now()
   const fixturesToFetch = fixtures.filter((f) => {
-    if (!f.fotmob_finished) return true
-    const seenMs = f.fotmob_status_seen_at ? new Date(f.fotmob_status_seen_at).getTime() : 0
-    return nowMs - seenMs < POST_FINISH_FETCH_MS
+    if (f.fotmob_finished) {
+      const seenMs = f.fotmob_status_seen_at ? new Date(f.fotmob_status_seen_at).getTime() : 0
+      return nowMs - seenMs < POST_FINISH_FETCH_MS
+    }
+    if (f.kickoff_at) {
+      const koMs = new Date(f.kickoff_at).getTime()
+      if (nowMs < koMs - PRE_KICKOFF_LEAD_MS) return false
+    }
+    return true
   })
   const { map: apiStatsMap, fixtureResults, liveFotmobIds, fixtureStatuses } =
     await fetchAllFixtures(fixturesToFetch)
@@ -275,6 +286,8 @@ export async function refreshMatchdayLive(
           fotmob_started: s.started,
           fotmob_finished: s.finished,
           fotmob_status_seen_at: alreadyFinished ? f.fotmob_status_seen_at : nowIso,
+          // Backfill kickoff from FotMob if the calendar didn't seed it.
+          kickoff_at: f.kickoff_at ?? s.kickoffAt,
         }
       })
     if (updates.length > 0) {

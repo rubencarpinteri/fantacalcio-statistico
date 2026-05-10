@@ -30,6 +30,8 @@ export type FotMobMatchData = {
   events: FotMobEvent[]
   started: boolean
   finished: boolean
+  /** ISO UTC kickoff time from general.matchTimeUTCDate, when present. */
+  kickoffAt: string | null
 }
 
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
@@ -68,6 +70,8 @@ export async function fetchFotMobMatch(
   const general = pageProps['general'] as Record<string, unknown> | undefined
   const started = general?.['started'] === true
   const finished = general?.['finished'] === true
+  const kickoffRaw = general?.['matchTimeUTCDate']
+  const kickoffAt = typeof kickoffRaw === 'string' ? kickoffRaw : null
 
   const content = pageProps['content'] as Record<string, unknown> | undefined
   if (!content) return { data: null, status: 200 }
@@ -124,5 +128,5 @@ export async function fetchFotMobMatch(
   // squad members have neither.
   const playingStats = stats.filter((s) => s.minutes_played > 0 || s.rating != null)
 
-  return { data: { stats: playingStats, events, started, finished }, status: 200 }
+  return { data: { stats: playingStats, events, started, finished, kickoffAt }, status: 200 }
 }

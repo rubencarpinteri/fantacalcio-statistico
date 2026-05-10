@@ -1351,6 +1351,7 @@ export type Database = {
           fotmob_started: boolean
           fotmob_status_seen_at: string | null
           id: string
+          kickoff_at: string | null
           label: string
           matchday_id: string
           sofascore_event_id: number | null
@@ -1362,6 +1363,7 @@ export type Database = {
           fotmob_started?: boolean
           fotmob_status_seen_at?: string | null
           id?: string
+          kickoff_at?: string | null
           label?: string
           matchday_id: string
           sofascore_event_id?: number | null
@@ -1373,6 +1375,7 @@ export type Database = {
           fotmob_started?: boolean
           fotmob_status_seen_at?: string | null
           id?: string
+          kickoff_at?: string | null
           label?: string
           matchday_id?: string
           sofascore_event_id?: number | null

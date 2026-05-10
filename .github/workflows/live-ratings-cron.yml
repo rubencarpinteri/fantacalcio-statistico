@@ -12,12 +12,16 @@ name: Live ratings cron
 
 on:
   schedule:
-    # Every 2 minutes. GitHub Actions cron is best-effort and can be
-    # delayed by a few minutes during platform load — acceptable for
-    # provisional live scoring. The endpoint short-circuits when no
-    # matchday is open and skips fixtures already marked finished, so
-    # off-window cost is one tiny no-op call per tick.
-    - cron: "*/2 * * * *"
+    # Every 2 minutes during typical Serie A live windows only:
+    # Friday → Monday (UTC days 5,6,0,1), 11:00–22:00 UTC.
+    # That spans Saturday lunchtime kickoffs (12:30 CET = 11:30 UTC) and
+    # late-night CEST kickoffs (20:45 CEST = 18:45 UTC, plus an hour or
+    # two of post-final wrap-up). Outside this window the page's
+    # self-pinger handles the rare "user watching off-schedule" case;
+    # GitHub Actions stops firing thousands of empty no-op calls.
+    # GitHub Actions cron is best-effort and can be delayed by a few
+    # minutes during platform load — acceptable for provisional scoring.
+    - cron: "*/2 11-22 * * 0,1,5,6"
   workflow_dispatch: {}
 
 jobs:

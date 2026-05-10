@@ -210,6 +210,7 @@ export async function autoImportFixturesFromCsvAction(
     fotmob_match_id: m.fotmobMatchId,
     sofascore_event_id: m.sofascoreMatchId,
     label: m.label,
+    kickoff_at: m.kickoffAt,
   }))
 
   const { error: insertError } = await supabase.from('matchday_fixtures').insert(rows)
