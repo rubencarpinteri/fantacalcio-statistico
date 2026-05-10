@@ -57,11 +57,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: 'No fixtures configured', updated: 0 })
   }
 
-  const results: Array<{ matchday_id: string; ok: boolean; error?: string }> = []
+  const results: Array<{
+    matchday_id: string
+    ok: boolean
+    error?: string
+    fixtures?: unknown
+    api_players_total?: number
+    matched_players_total?: number
+    teams_updated?: number
+  }> = []
 
   for (const matchday of toRefresh) {
     const result = await refreshMatchdayLive(supabase, matchday.id, matchday.league_id)
-    results.push({ matchday_id: matchday.id, ok: result.ok, error: result.error })
+    results.push({
+      matchday_id: matchday.id,
+      ok: result.ok,
+      error: result.error,
+      fixtures: result.fixtures,
+      api_players_total: result.api_players_total,
+      matched_players_total: result.matched_players_total,
+      teams_updated: result.teams_updated,
+    })
   }
 
   return NextResponse.json({
