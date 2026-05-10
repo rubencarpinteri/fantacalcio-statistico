@@ -250,7 +250,7 @@ export async function refreshMatchdayLive(
   //  - skip if kickoff is more than 5 min in the future — pre-match
   //    payloads have no useful data and we don't want to hammer FotMob.
   //  - otherwise fetch.
-  const POST_FINISH_FETCH_MS = 30 * 60_000
+  const POST_FINISH_FETCH_MS = 6 * 60 * 60_000
   const PRE_KICKOFF_LEAD_MS = 5 * 60_000
   const nowMs = Date.now()
   const fixturesToFetch = fixtures.filter((f) => {
@@ -372,6 +372,25 @@ export async function refreshMatchdayLive(
 
   const dbStatsMap = new Map((dbStats ?? []).map((s) => [s.player_id, s]))
 
+  // Existing live_player_scores rows — used as a third merge source so a
+  // rating once captured for a player whose fixture is now skipped (e.g.
+  // long-finished, kickoff still in the future) is not overwritten with
+  // null on the next upsert. Without this, the per-fixture skip
+  // optimisations would clobber post-match data captured during the
+  // grace window.
+  const { data: existingLiveRows } = await supabase
+    .from('live_player_scores')
+    .select(
+      `player_id, fotmob_rating, minutes_played,
+       goals_scored, assists, yellow_cards, red_cards, own_goals,
+       penalties_scored, penalties_missed, penalties_saved,
+       saves, goals_conceded`
+    )
+    .eq('matchday_id', matchdayId)
+  const existingLiveMap = new Map(
+    (existingLiveRows ?? []).map((r) => [r.player_id, r])
+  )
+
   // FotMob omits `Minutes played` from its HTML payload during live matches
   // (the field only appears once the game ends). A player on the pitch with
   // a fresh rating but no minutes would be NV'd by the engine's <10min gate,
@@ -412,19 +431,20 @@ export async function refreshMatchdayLive(
 
     const apiRating = apiData?.fotmob_rating ?? null
     const apiMinutes = apiData ? inferLiveMinutes(apiData.minutes_played, apiRating) : null
+    const prev = existingLiveMap.get(db.player_id)
     const merged: MergedStat = {
-      fotmob_rating:    apiRating                ?? db.fotmob_rating,
-      minutes_played:   apiMinutes               ?? db.minutes_played,
-      goals_scored:     apiData?.goals_scored    ?? db.goals_scored,
-      assists:          apiData?.assists         ?? db.assists,
-      own_goals:        apiData?.own_goals       ?? db.own_goals,
-      yellow_cards:     apiData?.yellow_cards    ?? db.yellow_cards,
-      red_cards:        apiData?.red_cards       ?? db.red_cards,
-      penalties_scored: apiData?.penalties_scored ?? db.penalties_scored,
-      penalties_saved:  apiData?.penalties_saved ?? db.penalties_saved,
-      penalties_missed: apiData?.penalties_missed ?? db.penalties_missed,
-      saves:            apiData?.saves           ?? db.saves,
-      goals_conceded:   apiData?.goals_conceded  ?? db.goals_conceded,
+      fotmob_rating:    apiRating                ?? db.fotmob_rating       ?? (prev?.fotmob_rating != null ? Number(prev.fotmob_rating) : null),
+      minutes_played:   apiMinutes               ?? db.minutes_played       ?? prev?.minutes_played   ?? 0,
+      goals_scored:     apiData?.goals_scored    ?? db.goals_scored         ?? prev?.goals_scored     ?? 0,
+      assists:          apiData?.assists         ?? db.assists              ?? prev?.assists          ?? 0,
+      own_goals:        apiData?.own_goals       ?? db.own_goals            ?? prev?.own_goals        ?? 0,
+      yellow_cards:     apiData?.yellow_cards    ?? db.yellow_cards         ?? prev?.yellow_cards     ?? 0,
+      red_cards:        apiData?.red_cards       ?? db.red_cards            ?? prev?.red_cards        ?? 0,
+      penalties_scored: apiData?.penalties_scored ?? db.penalties_scored    ?? prev?.penalties_scored ?? 0,
+      penalties_saved:  apiData?.penalties_saved  ?? db.penalties_saved     ?? prev?.penalties_saved  ?? 0,
+      penalties_missed: apiData?.penalties_missed ?? db.penalties_missed    ?? prev?.penalties_missed ?? 0,
+      saves:            apiData?.saves           ?? db.saves                ?? prev?.saves            ?? 0,
+      goals_conceded:   apiData?.goals_conceded  ?? db.goals_conceded       ?? prev?.goals_conceded   ?? 0,
     }
     mergedStatsMap.set(db.player_id, merged)
 
@@ -504,6 +524,55 @@ export async function refreshMatchdayLive(
       penalties_saved:  apiData.penalties_saved,
       clean_sheet:      false,
       goals_conceded:   apiData.goals_conceded,
+    })
+  }
+
+  // Players we have a previously-captured live row for, but no apiData
+  // and no dbStats this tick — typically a fixture we're now skipping
+  // (long-finished or pre-kickoff). Carry their last known values
+  // forward so the upsert doesn't overwrite the captured rating with
+  // null. Without this fallback, the per-fixture skip optimisations
+  // would silently erase ratings we already had.
+  for (const [playerId, prev] of existingLiveMap) {
+    if (mergedStatsMap.has(playerId)) continue
+    if (prev.fotmob_rating == null) continue
+    const player = leaguePlayers.find((p) => p.id === playerId)
+    if (!player) continue
+
+    const merged: MergedStat = {
+      fotmob_rating:    Number(prev.fotmob_rating),
+      minutes_played:   prev.minutes_played   ?? 0,
+      goals_scored:     prev.goals_scored     ?? 0,
+      assists:          prev.assists          ?? 0,
+      own_goals:        prev.own_goals        ?? 0,
+      yellow_cards:     prev.yellow_cards     ?? 0,
+      red_cards:        prev.red_cards        ?? 0,
+      penalties_scored: prev.penalties_scored ?? 0,
+      penalties_saved:  prev.penalties_saved  ?? 0,
+      penalties_missed: prev.penalties_missed ?? 0,
+      saves:            prev.saves            ?? 0,
+      goals_conceded:   prev.goals_conceded   ?? 0,
+    }
+    mergedStatsMap.set(playerId, merged)
+
+    engineInputs.push({
+      player_id:        playerId,
+      stats_id:         playerId,
+      rating_class:     player.rating_class as RatingClass,
+      minutes_played:   merged.minutes_played,
+      is_provisional:   true,
+      fotmob_rating:    merged.fotmob_rating,
+      sofascore_rating: null,
+      goals_scored:     merged.goals_scored,
+      assists:          merged.assists,
+      own_goals:        merged.own_goals,
+      yellow_cards:     merged.yellow_cards,
+      red_cards:        merged.red_cards,
+      penalties_scored: merged.penalties_scored,
+      penalties_missed: merged.penalties_missed,
+      penalties_saved:  merged.penalties_saved,
+      clean_sheet:      false,
+      goals_conceded:   merged.goals_conceded,
     })
   }
 
