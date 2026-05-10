@@ -229,39 +229,52 @@ export async function refreshMatchdayLive(
   matchdayId: string,
   leagueId: string
 ): Promise<LiveRefreshResult> {
-  // 1. Fixtures (incl. cached FotMob status — finished fixtures are skipped)
+  // 1. Fixtures (incl. cached FotMob status — long-finished fixtures are skipped)
   const { data: fixtures } = await supabase
     .from('matchday_fixtures')
-    .select('id, fotmob_match_id, sofascore_event_id, fotmob_finished')
+    .select('id, fotmob_match_id, sofascore_event_id, fotmob_finished, fotmob_status_seen_at')
     .eq('matchday_id', matchdayId)
 
   if (!fixtures?.length) {
     return { ok: false, error: 'Nessuna fixture configurata per questa giornata.' }
   }
 
-  // 2. Fetch from FotMob — but only for fixtures we believe are still live.
-  // Once FotMob has reported finished=true and we've persisted that, there's
-  // no value in hitting the page again; the post-match refresh path is what
-  // writes final stats.
-  const fixturesToFetch = fixtures.filter((f) => !f.fotmob_finished)
+  // 2. Fetch from FotMob — for fixtures still live AND for fixtures that
+  // finished within the last 30 minutes. The grace window matters because
+  // FotMob's `general.finished` flips a beat before all per-player ratings
+  // are populated; if we mark a fixture finished on that very first
+  // post-final tick we can lock in an empty-stats snapshot. Continuing to
+  // re-fetch for 30 minutes after the final whistle gives FotMob time to
+  // settle and lets us capture the canonical post-match values.
+  const POST_FINISH_FETCH_MS = 30 * 60_000
+  const nowMs = Date.now()
+  const fixturesToFetch = fixtures.filter((f) => {
+    if (!f.fotmob_finished) return true
+    const seenMs = f.fotmob_status_seen_at ? new Date(f.fotmob_status_seen_at).getTime() : 0
+    return nowMs - seenMs < POST_FINISH_FETCH_MS
+  })
   const { map: apiStatsMap, fixtureResults, liveFotmobIds, fixtureStatuses } =
     await fetchAllFixtures(fixturesToFetch)
 
-  // Persist any new status changes (started → finished) so the next tick can
-  // skip the now-finished fixtures.
+  // Persist new status. The seen_at timestamp anchors when finished was
+  // FIRST observed — it's what the 30-minute post-finish grace window
+  // measures against. Don't overwrite it on subsequent ticks once a fixture
+  // is finished; otherwise the grace window slides and we never stop
+  // re-fetching.
   if (fixtureStatuses.size > 0) {
     const nowIso = new Date().toISOString()
     const updates = fixtures
       .filter((f) => f.fotmob_match_id != null && fixtureStatuses.has(f.fotmob_match_id))
       .map((f) => {
         const s = fixtureStatuses.get(f.fotmob_match_id!)!
+        const alreadyFinished = f.fotmob_finished
         return {
           id: f.id,
           matchday_id: matchdayId,
           fotmob_match_id: f.fotmob_match_id,
           fotmob_started: s.started,
           fotmob_finished: s.finished,
-          fotmob_status_seen_at: nowIso,
+          fotmob_status_seen_at: alreadyFinished ? f.fotmob_status_seen_at : nowIso,
         }
       })
     if (updates.length > 0) {
