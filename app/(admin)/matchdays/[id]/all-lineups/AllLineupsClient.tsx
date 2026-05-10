@@ -530,8 +530,8 @@ function PlayerChip({
                 aria-label="Partita in corso"
                 className="relative inline-flex h-1.5 w-1.5 shrink-0"
               >
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-80" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-90" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
               </span>
             )}
             <span className="truncate sm:hidden">{lastNameOnly(slot.playerName ?? '')}</span>
