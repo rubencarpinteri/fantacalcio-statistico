@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 // of the cron landing, but the visible countdown is anchored to the cron
 // cadence (which is what actually changes the values).
 
-const DEFAULT_CRON_INTERVAL_MS = 5 * 60_000
+const DEFAULT_CRON_INTERVAL_MS = 2 * 60_000
 const DEFAULT_PAGE_REFRESH_MS = 30_000
 
 export function LiveAutoRefresh({
@@ -50,12 +50,14 @@ export function LiveAutoRefresh({
   }
 
   return (
-    <p className="mt-3 inline-flex items-center gap-2 text-[12px] text-ink-3">
+    <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11.5px] font-medium text-emerald-300">
       <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
       </span>
-      In tempo reale — voti provvisori, {label}
-    </p>
+      <span className="text-emerald-200">In tempo reale</span>
+      <span className="text-emerald-300/70">·</span>
+      <span className="tabular-nums text-emerald-100">{label}</span>
+    </span>
   )
 }

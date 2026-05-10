@@ -12,10 +12,12 @@ name: Live ratings cron
 
 on:
   schedule:
-    # Every 5 minutes. GitHub Actions cron is best-effort and can be
+    # Every 2 minutes. GitHub Actions cron is best-effort and can be
     # delayed by a few minutes during platform load — acceptable for
-    # provisional live scoring.
-    - cron: "*/5 * * * *"
+    # provisional live scoring. The endpoint short-circuits when no
+    # matchday is open and skips fixtures already marked finished, so
+    # off-window cost is one tiny no-op call per tick.
+    - cron: "*/2 * * * *"
   workflow_dispatch: {}
 
 jobs:

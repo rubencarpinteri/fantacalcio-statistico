@@ -1346,7 +1346,10 @@ export type Database = {
       matchday_fixtures: {
         Row: {
           created_at: string
+          fotmob_finished: boolean
           fotmob_match_id: number | null
+          fotmob_started: boolean
+          fotmob_status_seen_at: string | null
           id: string
           label: string
           matchday_id: string
@@ -1354,7 +1357,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fotmob_finished?: boolean
           fotmob_match_id?: number | null
+          fotmob_started?: boolean
+          fotmob_status_seen_at?: string | null
           id?: string
           label?: string
           matchday_id: string
@@ -1362,7 +1368,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fotmob_finished?: boolean
           fotmob_match_id?: number | null
+          fotmob_started?: boolean
+          fotmob_status_seen_at?: string | null
           id?: string
           label?: string
           matchday_id?: string

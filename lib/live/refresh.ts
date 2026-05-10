@@ -124,10 +124,12 @@ async function fetchAllFixtures(
   map: Map<string, FetchedStat>
   fixtureResults: FixtureFetchResult[]
   liveFotmobIds: Set<number>
+  fixtureStatuses: Map<number, { started: boolean; finished: boolean }>
 }> {
   const map = new Map<string, FetchedStat>()
   const fixtureResults: FixtureFetchResult[] = []
   const liveFotmobIds = new Set<number>()
+  const fixtureStatuses = new Map<number, { started: boolean; finished: boolean }>()
 
   await Promise.all(
     fixtures.map(async (fx) => {
@@ -145,6 +147,11 @@ async function fetchAllFixtures(
         status: 'ok',
         stats_count: fotmob.stats.length,
         events_count: fotmob.events.length,
+      })
+
+      fixtureStatuses.set(fx.fotmob_match_id, {
+        started: fotmob.started,
+        finished: fotmob.finished,
       })
 
       const isLive = fotmob.started && !fotmob.finished
@@ -203,7 +210,7 @@ async function fetchAllFixtures(
     })
   )
 
-  return { map, fixtureResults, liveFotmobIds }
+  return { map, fixtureResults, liveFotmobIds, fixtureStatuses }
 }
 
 // ── Public entry point ───────────────────────────────────────
@@ -222,18 +229,45 @@ export async function refreshMatchdayLive(
   matchdayId: string,
   leagueId: string
 ): Promise<LiveRefreshResult> {
-  // 1. Fixtures
+  // 1. Fixtures (incl. cached FotMob status — finished fixtures are skipped)
   const { data: fixtures } = await supabase
     .from('matchday_fixtures')
-    .select('fotmob_match_id, sofascore_event_id')
+    .select('id, fotmob_match_id, sofascore_event_id, fotmob_finished')
     .eq('matchday_id', matchdayId)
 
   if (!fixtures?.length) {
     return { ok: false, error: 'Nessuna fixture configurata per questa giornata.' }
   }
 
-  // 2. Fetch from FotMob
-  const { map: apiStatsMap, fixtureResults, liveFotmobIds } = await fetchAllFixtures(fixtures)
+  // 2. Fetch from FotMob — but only for fixtures we believe are still live.
+  // Once FotMob has reported finished=true and we've persisted that, there's
+  // no value in hitting the page again; the post-match refresh path is what
+  // writes final stats.
+  const fixturesToFetch = fixtures.filter((f) => !f.fotmob_finished)
+  const { map: apiStatsMap, fixtureResults, liveFotmobIds, fixtureStatuses } =
+    await fetchAllFixtures(fixturesToFetch)
+
+  // Persist any new status changes (started → finished) so the next tick can
+  // skip the now-finished fixtures.
+  if (fixtureStatuses.size > 0) {
+    const nowIso = new Date().toISOString()
+    const updates = fixtures
+      .filter((f) => f.fotmob_match_id != null && fixtureStatuses.has(f.fotmob_match_id))
+      .map((f) => {
+        const s = fixtureStatuses.get(f.fotmob_match_id!)!
+        return {
+          id: f.id,
+          matchday_id: matchdayId,
+          fotmob_match_id: f.fotmob_match_id,
+          fotmob_started: s.started,
+          fotmob_finished: s.finished,
+          fotmob_status_seen_at: nowIso,
+        }
+      })
+    if (updates.length > 0) {
+      await supabase.from('matchday_fixtures').upsert(updates, { onConflict: 'id' })
+    }
+  }
 
   // 3. League engine config
   const { data: engineConfigRow } = await supabase
