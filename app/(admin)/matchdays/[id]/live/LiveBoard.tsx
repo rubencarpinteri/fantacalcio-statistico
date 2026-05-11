@@ -283,8 +283,22 @@ export function LiveBoard({
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [, forceRender] = useState(0)
 
-  // Poll the GET route every 60s
+  // Poll every 60s: trigger a fresh FotMob fetch + engine run server-side,
+  // then read back the updated rows. Without the refresh kick this page sits
+  // on whatever the external cron last wrote, which routinely lags — at
+  // kickoff +10min the cron tick captured zero ratings (FotMob hadn't
+  // published yet) and nothing here would have pulled the next batch in.
+  // Mirrors LiveAutoRefresh on the all-lineups page.
   const poll = useCallback(async () => {
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+    try {
+      await fetch(`/api/live/refresh?matchday_id=${encodeURIComponent(matchdayId)}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+    } catch {
+      // Refresh blip — fall through to read whatever's there.
+    }
     try {
       const res = await fetch(`/api/matchdays/${matchdayId}/live-scores`, {
         cache: 'no-store',
@@ -300,6 +314,9 @@ export function LiveBoard({
   }, [matchdayId])
 
   useEffect(() => {
+    // Kick once on mount so the user doesn't wait a full minute for the
+    // first fresh tick.
+    void poll()
     const id = setInterval(poll, POLL_INTERVAL_MS)
     // Also tick the "X min fa" display every 30s
     const tick = setInterval(() => forceRender((n) => n + 1), 30_000)
