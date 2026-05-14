@@ -14,9 +14,7 @@ const coerceInt = (min = 0) =>
     .transform((v) => (v === '' || v === null || v === undefined ? 0 : Number(v)))
     .pipe(z.number().int().min(min))
 
-// Provider-specific float coercers with correct bounds:
-//   SofaScore  1.0 – 10.0
-//   FotMob     0.0 – 10.0
+// FotMob rating coercer: 0.0 – 10.0
 const coerceFloat = (min: number, max = 10) =>
   z.union([z.string(), z.number(), z.null()])
     .transform((v) => (v === '' || v === null || v === undefined ? null : Number(v)))
@@ -28,9 +26,8 @@ export const statRowSchema = z.object({
   minutes_played:        coerceInt(0),
   rating_class_override: z.enum(['GK', 'DEF', 'MID', 'ATT']).nullable().default(null),
 
-  // Source ratings — null means not yet entered
-  sofascore_rating:  coerceFloat(1.0),   // SofaScore: 1.0 – 10.0
-  fotmob_rating:     coerceFloat(0.0),   // FotMob:    0.0 – 10.0
+  // Source rating — null means not yet entered
+  fotmob_rating:     coerceFloat(0.0),   // FotMob: 0.0 – 10.0
 
   // Defensive / GK
   tackles_won:           coerceInt(),

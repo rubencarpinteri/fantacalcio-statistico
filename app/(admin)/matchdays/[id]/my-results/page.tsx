@@ -143,7 +143,6 @@ export default async function MyResultsPage({
     is_override: boolean
     is_provisional: boolean
     // Engine intermediates
-    z_sofascore: number | null
     z_fotmob: number | null
     z_combined: number | null
     weights_used: unknown
@@ -169,7 +168,6 @@ export default async function MyResultsPage({
         total_bonus_malus,
         is_override,
         is_provisional,
-        z_sofascore,
         z_fotmob,
         z_combined,
         weights_used,
@@ -274,10 +272,7 @@ export default async function MyResultsPage({
                     <div>
                       <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">Pipeline z-score</p>
                       <div className="space-y-1 font-mono text-xs">
-                        <BreakdownRow label="z SofaScore" value={n3(c?.z_sofascore ?? null)} dim={c?.z_sofascore == null} suffix={c?.z_sofascore != null && weights['sofascore'] != null ? `× ${Math.round(weights['sofascore'] * 100)}%` : undefined} />
-                        <BreakdownRow label="z FotMob"    value={n3(c?.z_fotmob ?? null)}    dim={c?.z_fotmob == null}    suffix={c?.z_fotmob    != null && weights['fotmob']    != null ? `× ${Math.round(weights['fotmob']    * 100)}%` : undefined} />
-                        <div className="my-1 border-t border-hairline" />
-                        <BreakdownRow label="z combinato"  value={n3(c?.z_combined    ?? null)} />
+                        <BreakdownRow label="z FotMob"    value={n3(c?.z_fotmob ?? null)}    dim={c?.z_fotmob == null} />
                         <BreakdownRow label="fattore min."  value={c?.minutes_factor != null ? `× ${c.minutes_factor.toFixed(1)}` : '—'} />
                         <BreakdownRow label="z rettificato" value={n3(c?.z_adjusted   ?? null)} />
                       </div>

@@ -697,7 +697,6 @@ export type Database = {
           created_at: string
           fotmob_mean: number
           fotmob_std: number
-          fotmob_weight: number
           goal_bonus_att: number
           goal_bonus_def: number
           goal_bonus_gk: number
@@ -720,8 +719,6 @@ export type Database = {
           role_multiplier_def: number
           role_multiplier_gk: number
           role_multiplier_mid: number
-          sofascore_mean: number
-          sofascore_std: number
           target_mean_vote: number | null
           target_vote_std: number | null
           updated_at: string
@@ -738,7 +735,6 @@ export type Database = {
           created_at?: string
           fotmob_mean?: number
           fotmob_std?: number
-          fotmob_weight?: number
           goal_bonus_att?: number
           goal_bonus_def?: number
           goal_bonus_gk?: number
@@ -761,8 +757,6 @@ export type Database = {
           role_multiplier_def?: number
           role_multiplier_gk?: number
           role_multiplier_mid?: number
-          sofascore_mean?: number
-          sofascore_std?: number
           target_mean_vote?: number | null
           target_vote_std?: number | null
           updated_at?: string
@@ -779,7 +773,6 @@ export type Database = {
           created_at?: string
           fotmob_mean?: number
           fotmob_std?: number
-          fotmob_weight?: number
           goal_bonus_att?: number
           goal_bonus_def?: number
           goal_bonus_gk?: number
@@ -802,8 +795,6 @@ export type Database = {
           role_multiplier_def?: number
           role_multiplier_gk?: number
           role_multiplier_mid?: number
-          sofascore_mean?: number
-          sofascore_std?: number
           target_mean_vote?: number | null
           target_vote_std?: number | null
           updated_at?: string
@@ -932,10 +923,10 @@ export type Database = {
           id: string
           lock_behavior: Database["public"]["Enums"]["lock_behavior"]
           name: string
+          result_rules: Json
           scoring_mode: Database["public"]["Enums"]["scoring_mode"]
           season_name: string
           source_weight_fotmob: number
-          source_weight_sofascore: number
           timezone: string
           updated_at: string
         }
@@ -947,10 +938,10 @@ export type Database = {
           id?: string
           lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
           name: string
+          result_rules?: Json
           scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
           season_name: string
           source_weight_fotmob?: number
-          source_weight_sofascore?: number
           timezone?: string
           updated_at?: string
         }
@@ -962,10 +953,10 @@ export type Database = {
           id?: string
           lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
           name?: string
+          result_rules?: Json
           scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
           season_name?: string
           source_weight_fotmob?: number
-          source_weight_sofascore?: number
           timezone?: string
           updated_at?: string
         }
@@ -1162,13 +1153,11 @@ export type Database = {
           refreshed_at: string
           role_multiplier: number | null
           saves: number
-          sofascore_rating: number | null
           sub_status: string
           team_id: string
           voto_base: number | null
           yellow_cards: number
           z_fotmob: number | null
-          z_sofascore: number | null
         }
         Insert: {
           assigned_mantra_role?: string | null
@@ -1194,13 +1183,11 @@ export type Database = {
           refreshed_at?: string
           role_multiplier?: number | null
           saves?: number
-          sofascore_rating?: number | null
           sub_status?: string
           team_id: string
           voto_base?: number | null
           yellow_cards?: number
           z_fotmob?: number | null
-          z_sofascore?: number | null
         }
         Update: {
           assigned_mantra_role?: string | null
@@ -1226,13 +1213,11 @@ export type Database = {
           refreshed_at?: string
           role_multiplier?: number | null
           saves?: number
-          sofascore_rating?: number | null
           sub_status?: string
           team_id?: string
           voto_base?: number | null
           yellow_cards?: number
           z_fotmob?: number | null
-          z_sofascore?: number | null
         }
         Relationships: [
           {
@@ -1354,7 +1339,6 @@ export type Database = {
           kickoff_at: string | null
           label: string
           matchday_id: string
-          sofascore_event_id: number | null
         }
         Insert: {
           created_at?: string
@@ -1366,7 +1350,6 @@ export type Database = {
           kickoff_at?: string | null
           label?: string
           matchday_id: string
-          sofascore_event_id?: number | null
         }
         Update: {
           created_at?: string
@@ -1378,7 +1361,6 @@ export type Database = {
           kickoff_at?: string | null
           label?: string
           matchday_id?: string
-          sofascore_event_id?: number | null
         }
         Relationships: [
           {
@@ -1581,7 +1563,6 @@ export type Database = {
           z_adjusted: number | null
           z_combined: number | null
           z_fotmob: number | null
-          z_sofascore: number | null
         }
         Insert: {
           b0?: number | null
@@ -1606,7 +1587,6 @@ export type Database = {
           z_adjusted?: number | null
           z_combined?: number | null
           z_fotmob?: number | null
-          z_sofascore?: number | null
         }
         Update: {
           b0?: number | null
@@ -1631,7 +1611,6 @@ export type Database = {
           z_adjusted?: number | null
           z_combined?: number | null
           z_fotmob?: number | null
-          z_sofascore?: number | null
         }
         Relationships: [
           {
@@ -1728,7 +1707,6 @@ export type Database = {
           saves: number
           shots: number
           shots_on_target: number
-          sofascore_rating: number | null
           successful_dribbles: number | null
           tackles_won: number
           total_crosses: number | null
@@ -1798,7 +1776,6 @@ export type Database = {
           saves?: number
           shots?: number
           shots_on_target?: number
-          sofascore_rating?: number | null
           successful_dribbles?: number | null
           tackles_won?: number
           total_crosses?: number | null
@@ -1868,7 +1845,6 @@ export type Database = {
           saves?: number
           shots?: number
           shots_on_target?: number
-          sofascore_rating?: number | null
           successful_dribbles?: number | null
           tackles_won?: number
           total_crosses?: number | null
@@ -2225,7 +2201,6 @@ export type Database = {
           rating_class: string
           search_name: string | null
           season: string
-          sofascore_id: number | null
           updated_at: string
         }
         Insert: {
@@ -2239,7 +2214,6 @@ export type Database = {
           rating_class: string
           search_name?: string | null
           season?: string
-          sofascore_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -2253,7 +2227,6 @@ export type Database = {
           rating_class?: string
           search_name?: string | null
           season?: string
-          sofascore_id?: number | null
           updated_at?: string
         }
         Relationships: []

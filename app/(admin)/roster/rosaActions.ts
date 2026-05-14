@@ -45,7 +45,7 @@ export async function assignPlayerAction(
   // Fetch pool player
   const { data: poolPlayer } = await supabase
     .from('serie_a_players')
-    .select('id, full_name, club, mantra_roles, rating_class, sofascore_id, fotmob_id')
+    .select('id, full_name, club, mantra_roles, rating_class, fotmob_id')
     .eq('id', serieAPlayerId)
     .single()
 

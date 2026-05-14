@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
-import { normalizeName, mergeFixtureStats, findDbPlayer } from '@/lib/ratings/parse'
+import { normalizeName, buildFixtureStats, findDbPlayer } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 import { computeMatchday } from '@/domain/engine/v1/engine'
 import { buildEngineConfig } from '@/domain/engine/v1/config'
@@ -293,7 +293,7 @@ async function autoFetchAndCreateRun(
   const allFetched = []
   for (const fx of fotmobFixtures) {
     const { data } = await fetchFotMobMatch(fx.fotmob_match_id!)
-    if (data) allFetched.push(...mergeFixtureStats(data as Parameters<typeof mergeFixtureStats>[0], null))
+    if (data) allFetched.push(...buildFixtureStats(data as Parameters<typeof buildFixtureStats>[0]))
   }
   if (allFetched.length === 0) return null
 
@@ -351,7 +351,6 @@ async function autoFetchAndCreateRun(
     entered_by: ctx.userId,
     minutes_played: stat.minutes_played,
     rating_class_override: null,
-    sofascore_rating: stat.sofascore_rating,
     fotmob_rating: stat.fotmob_rating,
     goals_scored: stat.goals_scored,
     assists: stat.assists,
@@ -419,7 +418,6 @@ async function autoFetchAndCreateRun(
       minutes_played:  stat.minutes_played,
       is_provisional:   false,
       fotmob_rating:    stat.fotmob_rating,
-      sofascore_rating: null, // Leghe CSV import has no SofaScore rating
       goals_scored:    stat.goals_scored,
       assists:         stat.assists,
       own_goals:       stat.own_goals,
@@ -472,8 +470,7 @@ async function autoFetchAndCreateRun(
     if (output.kind === 'skipped') {
       return {
         ...base,
-        // Legacy columns (v1) — always null in v1.1
-        z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+        z_combined: null, weights_used: null, defensive_correction: null,
         z_fotmob: null, minutes_factor: null, z_adjusted: null, b0: null,
         role_multiplier: null, b1: null, voto_base: null,
         bonus_malus_breakdown: null, total_bonus_malus: null, fantavoto: null,
@@ -482,8 +479,7 @@ async function autoFetchAndCreateRun(
     const r = output as PlayerCalculationResult
     return {
       ...base,
-      // Legacy columns (v1) — always null in v1.1
-      z_sofascore: null, z_combined: null, weights_used: null, defensive_correction: null,
+      z_combined: null, weights_used: null, defensive_correction: null,
       z_fotmob:          r.z_fotmob,
       minutes_factor:    r.minutes_factor,
       z_adjusted:        r.z_adjusted,

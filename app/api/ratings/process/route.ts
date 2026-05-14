@@ -3,8 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import {
   parseFotMobJson,
-  parseSofaScoreJson,
-  mergeFixtureStats,
+  buildFixtureStats,
   normalizeName,
   type FetchedPlayerStat,
 } from '@/lib/ratings/parse'
@@ -25,15 +24,14 @@ export type ProcessRatingsResponse = {
 type FixturePayload = {
   label: string
   fotmobData: Record<string, unknown> | null
-  sofascoreData: Record<string, unknown> | null
 }
 
 /**
  * POST /api/ratings/process
  *
- * Accepts raw JSON responses from FotMob and SofaScore (fetched client-side
- * from the user's browser), parses them, matches to league players, and
- * returns matched/unmatched lists ready for import.
+ * Accepts raw JSON responses from FotMob (fetched client-side or server-side),
+ * parses them, matches to league players, and returns matched/unmatched lists
+ * ready for import.
  *
  * Body: { matchdayId: string, fixtures: FixturePayload[] }
  */
@@ -66,11 +64,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<ProcessRating
 
   for (const fx of body.fixtures) {
     const fotmob = fx.fotmobData ? parseFotMobJson(fx.fotmobData) : null
-    const sofascore = fx.sofascoreData ? parseSofaScoreJson(fx.sofascoreData) : null
-    if (!fotmob && !sofascore) {
+    if (!fotmob) {
       errors.push(`Nessun dato per ${fx.label}`)
     }
-    allFetched.push(...mergeFixtureStats(fotmob, sofascore))
+    allFetched.push(...buildFixtureStats(fotmob))
   }
 
   if (allFetched.length === 0) {

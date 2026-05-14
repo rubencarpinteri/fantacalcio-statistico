@@ -42,7 +42,6 @@ export default async function PoolPage() {
   const allPlayers = (players ?? []) as SerieAPlayer[]
 
   const totalPlayers  = allPlayers.length
-  const withSS        = allPlayers.filter((p) => p.sofascore_id !== null).length
   const withFM        = allPlayers.filter((p) => p.fotmob_id    !== null).length
   const activePlayers = allPlayers.filter((p) => p.is_active).length
 
@@ -65,10 +64,9 @@ export default async function PoolPage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {[
           { label: 'Giocatori nel pool', value: totalPlayers,   color: 'text-ink-1' },
-          { label: 'Con ID SofaScore',   value: withSS,          color: 'text-green-400' },
           { label: 'Con ID FotMob',      value: withFM,          color: 'text-green-400' },
           { label: 'Attivi',             value: activePlayers,   color: 'text-indigo-400' },
         ].map((s) => (
@@ -98,7 +96,7 @@ export default async function PoolPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-hairline text-left">
-                  {['Nome', 'Squadra', 'Ruolo', 'Classe', 'SS ID', 'FM ID', 'Attivo'].map((h) => (
+                  {['Nome', 'Squadra', 'Ruolo', 'Classe', 'FM ID', 'Attivo'].map((h) => (
                     <th
                       key={h}
                       className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-ink-3"
@@ -118,9 +116,6 @@ export default async function PoolPage() {
                     </td>
                     <td className="px-4 py-2.5">
                       <RCBadge rc={p.rating_class} />
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-ink-3">
-                      {p.sofascore_id ?? '—'}
                     </td>
                     <td className="px-4 py-2.5 font-mono text-xs text-ink-3">
                       {p.fotmob_id ?? '—'}
@@ -149,7 +144,7 @@ export default async function PoolPage() {
             Nessun giocatore nel pool per la stagione {CURRENT_SEASON}.
           </p>
           <p className="mt-1 text-sm text-ink-4">
-            Usa il modulo qui sopra per importare i giocatori da SofaScore, FotMob e Leghe Fantacalcio.
+            Usa il modulo qui sopra per importare i giocatori da FotMob e Leghe Fantacalcio.
           </p>
         </div>
       )}

@@ -1,66 +1,39 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1.2 — Config
+// Fantacalcio Statistico — Rating Engine v2.0 — Config
 // ============================================================
-// This is the authoritative source-of-truth for the v1.2 engine.
-// Values match the approved scoring spec exactly.
-// Do not change constants here without updating engine_version.
+// Authoritative source-of-truth for the v2.0 engine.
+// Single-source FotMob — SofaScore removed from v1.2.
 //
-// Key changes from v1.1:
-//   - SofaScore re-integrated via browser-fetch of /api/v1/fantasy/event/{id}
-//     (CORS: *, ID-based matching via serie_a_players.sofascore_id chain)
-//   - Dual-source weighted average: FotMob 55%, SofaScore 45%
-//   - No shrink factor when only one source available (use directly)
-//   - SofaScore normalization: mean=6.7, std=0.65
-//   - Engine version bumped from v1.1 → v1.2
+// Normalization constants from Ball, Huynh & Varley (2025),
+// Journal of Sports Sciences 43:7 — empirical mean/std across
+// 2,162 matches in top-3 European leagues, 2022–2024.
 // ============================================================
 
 import type { EngineConfig } from './types'
 import type { LeagueEngineConfig } from '@/types/database.types'
 
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
-  engine_version: 'v1.2',
+  engine_version: 'v2.0',
 
   /** Baseline used only for exception paths (decisive event, no ratings). */
   base_score: 6.0,
 
   /**
    * FotMob rating normalization.
-   * mean = 6.6: FotMob's "average" player (confirmed by their green/yellow color boundary).
-   * std  = 0.79: typical spread of ratings across a Serie A season.
+   * mean = 6.87: empirical FotMob mean (Ball et al. 2025).
+   * std  = 0.79: empirical FotMob spread (Ball et al. 2025).
    *
    * Example:
-   *   rating 6.6 → z =  0.00 → b0 = 6.00 (neutral)
-   *   rating 7.4 → z = +1.01 → b0 = 7.16 (one std above average)
-   *   rating 5.8 → z = -1.01 → b0 = 4.84 (one std below average)
-   */
-  source_normalization: {
-    mean: 6.6,
-    std:  0.79,
-  },
-
-  /**
-   * SofaScore rating normalization.
-   * mean = 6.7: SofaScore's "average" player rating.
-   * std  = 0.65: typical spread of SofaScore ratings across Serie A.
-   */
-  /**
-   * SofaScore rating normalization.
-   * mean = 6.6: same baseline as FotMob (both platforms use 6.0–10.0 scale with ~6.6 average).
-   * std  = 0.65: SofaScore's spread is slightly narrower than FotMob.
-   * Both values are configurable per league via league_engine_config.
-   */
-  sofascore_normalization: {
-    mean: 6.6,
-    std:  0.65,
-  },
-
-  /**
-   * Weight of FotMob in the dual-source weighted average (0–1).
-   * SofaScore weight = 1 - fotmob_weight = 0.45.
-   * When only one source is available, it receives full weight (no shrink).
+   *   rating 6.87 → z =  0.00 → b0 = 6.00 (neutral)
+   *   rating 7.66 → z = +1.00 → b0 = 6.75 (one std above average)
+   *   rating 6.08 → z = -1.00 → b0 = 5.25 (one std below average)
+   *
    * Configurable per league via league_engine_config.
    */
-  fotmob_weight: 0.55,
+  source_normalization: {
+    mean: 6.87,
+    std:  0.79,
+  },
 
   /**
    * Configurable 2-band minutes factor.
@@ -75,9 +48,8 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   },
 
   /**
-   * Role multipliers — applied as distance-from-sufficiency expansion/compression:
-   *   b1 = 6.0 + multiplier × (b0 - 6.0)
-   * NOT as a direct multiplier of the whole score.
+   * Role multipliers — applied as distance-from-target expansion/compression:
+   *   b1 = target_mean_vote + multiplier × (b0 - target_mean_vote)
    *
    * Rationale:
    *   GK / DEF: FotMob rating IS the primary scoring signal (goals/assists rare)
@@ -192,16 +164,9 @@ export function buildEngineConfig(
     },
 
     source_normalization: {
-      mean: dbConfig.fotmob_mean    ?? base.source_normalization.mean,
-      std:  dbConfig.fotmob_std     ?? base.source_normalization.std,
+      mean: dbConfig.fotmob_mean ?? base.source_normalization.mean,
+      std:  dbConfig.fotmob_std  ?? base.source_normalization.std,
     },
-
-    sofascore_normalization: {
-      mean: dbConfig.sofascore_mean ?? base.sofascore_normalization.mean,
-      std:  dbConfig.sofascore_std  ?? base.sofascore_normalization.std,
-    },
-
-    fotmob_weight: dbConfig.fotmob_weight ?? base.fotmob_weight,
 
     target_mean_vote: dbConfig.target_mean_vote ?? base.target_mean_vote,
     target_vote_std:  dbConfig.target_vote_std  ?? base.target_vote_std,

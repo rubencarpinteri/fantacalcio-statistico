@@ -122,7 +122,6 @@ export function LeagueSettingsForm({ league }: { league: League }) {
 
       {/* Preserve source weights — edited on a separate page */}
       <input type="hidden" name="source_weight_fotmob"    value={league.source_weight_fotmob} />
-      <input type="hidden" name="source_weight_sofascore" value={league.source_weight_sofascore} />
 
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.success && (

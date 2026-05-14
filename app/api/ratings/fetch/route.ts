@@ -1,73 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
-import { normalizeName, mergeFixtureStats, findDbPlayer, type SofaScoreFantasyStat } from '@/lib/ratings/parse'
+import { normalizeName, buildFixtureStats, findDbPlayer, type FetchedPlayerStat } from '@/lib/ratings/parse'
 import { fetchFotMobMatch } from '@/lib/ratings/fotmob'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type FetchedPlayerStat = {
-  /** FotMob player ID */
-  fotmob_id: number | null
-  /** SofaScore player ID */
-  sofascore_id: number | null
-  name: string
-  /** Normalized name used for matching (no accents, lowercase) */
-  normalized_name: string
-  team_label: string
-  sofascore_rating: number | null
-  fotmob_rating: number | null
-  minutes_played: number
-  goals_scored: number
-  assists: number
-  own_goals: number
-  yellow_cards: number
-  red_cards: number
-  penalties_scored: number
-  penalties_missed: number
-  penalties_saved: number
-  goals_conceded: number
-  saves: number
-  /** True when the player's team conceded 0 goals. Derived from FotMob GK data. */
-  clean_sheet: boolean
-  // SofaScore extra stats (null when SS data not available)
-  ss_shots: number | null
-  ss_shots_on_target: number | null
-  ss_big_chance_created: number | null
-  ss_big_chance_missed: number | null
-  ss_blocked_scoring_attempt: number | null
-  ss_xg: number | null
-  ss_xa: number | null
-  ss_key_passes: number | null
-  ss_total_passes: number | null
-  ss_accurate_passes: number | null
-  ss_total_long_balls: number | null
-  ss_accurate_long_balls: number | null
-  ss_total_crosses: number | null
-  ss_successful_dribbles: number | null
-  ss_dribble_attempts: number | null
-  ss_touches: number | null
-  ss_ball_carries: number | null
-  ss_progressive_carries: number | null
-  ss_dispossessed: number | null
-  ss_possession_lost_ctrl: number | null
-  ss_tackles: number | null
-  ss_total_tackles: number | null
-  ss_interceptions: number | null
-  ss_clearances: number | null
-  ss_blocked_shots: number | null
-  ss_duel_won: number | null
-  ss_duel_lost: number | null
-  ss_aerial_won: number | null
-  ss_aerial_lost: number | null
-  ss_ball_recoveries: number | null
-  ss_fouls_committed: number | null
-  ss_was_fouled: number | null
-  ss_market_value: number | null
-  ss_height: number | null
-}
+export type { FetchedPlayerStat }
 
 export type MatchedPlayer = {
   league_player_id: string
@@ -95,12 +36,6 @@ export type FetchRatingsResponse = {
 
 type RequestBody = {
   matchdayId?: string
-  /**
-   * Flat map of SofaScore player ID → full stat object, collected from all fixtures.
-   * SofaScore blocks all automated fetches (403). This data must be pasted
-   * manually by the admin from their browser session and passed from the client.
-   */
-  sofascoreByPlayerId?: Record<string, SofaScoreFantasyStat>
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsResponse>> {
@@ -112,7 +47,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
 
   const supabase = await createClient()
   const body = await req.json() as RequestBody
-  const { matchdayId, sofascoreByPlayerId } = body
+  const { matchdayId } = body
   if (!matchdayId) {
     return NextResponse.json({ matched: [], unmatched: [], errors: ['matchdayId required'] }, { status: 400 })
   }
@@ -130,16 +65,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   const errors: string[] = []
   const allFetched: FetchedPlayerStat[] = []
 
-  // Build sofascore_player_id → full stat map from manually-pasted client data.
-  // SofaScore blocks all automated fetches (cloud IPs + CORS). The admin must
-  // paste each event's JSON manually; the client parses and sends this flat map.
-  const allSofascoreStats = new Map<number, SofaScoreFantasyStat>()
-  if (sofascoreByPlayerId) {
-    for (const [idStr, stat] of Object.entries(sofascoreByPlayerId)) {
-      allSofascoreStats.set(Number(idStr), stat)
-    }
-  }
-
   // Fetch FotMob fixtures sequentially to avoid rate-limiting
   for (const fx of fixtures ?? []) {
     const label = fx.label ? ` (${fx.label})` : ''
@@ -149,7 +74,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
     if (fx.fotmob_match_id && !fotmobResult.data) {
       errors.push(`FotMob fetch failed for match ${fx.fotmob_match_id}${label} — HTTP ${fotmobResult.status || 'network error'}`)
     }
-    const merged = mergeFixtureStats(fotmobResult.data, null)
+    const merged = buildFixtureStats(fotmobResult.data)
     allFetched.push(...merged)
   }
 
@@ -161,28 +86,19 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
   // Coalesce two sources for fotmob_player_id:
   //   1. league_players.fotmob_player_id — set by the manual /pool/link-fotmob UI
   //   2. serie_a_players.fotmob_id — auto-populated from the pool import
-  // Also load serie_a_players.sofascore_id for post-match SofaScore rating enrichment.
   const { data: leaguePlayers } = await supabase
     .from('league_players')
-    .select('id, full_name, club, fotmob_player_id, serie_a_players(fotmob_id, sofascore_id)')
+    .select('id, full_name, club, fotmob_player_id, serie_a_players(fotmob_id)')
     .eq('league_id', matchday.league_id)
     .eq('is_active', true)
-
-  // Map league_player_id → sofascore_player_id (for enrichment after matching)
-  const lpToSofascoreId = new Map<string, number>()
 
   const dbPlayers = (leaguePlayers ?? []).map((p) => {
     // PostgREST may return the forward FK (many-to-one) as either an object or
     // an array depending on schema introspection. Handle both.
-    type SapShape = { fotmob_id: number | null; sofascore_id: number | null }
+    type SapShape = { fotmob_id: number | null }
     const sapRaw = p.serie_a_players as SapShape | SapShape[] | null
     const sap = Array.isArray(sapRaw) ? (sapRaw[0] ?? null) : sapRaw
     const poolFotmobId = sap?.fotmob_id ?? null
-    const sofascoreId = sap?.sofascore_id ?? null
-
-    if (sofascoreId != null) {
-      lpToSofascoreId.set(p.id, Number(sofascoreId))
-    }
 
     return {
       id: p.id,
@@ -211,57 +127,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRatingsR
       })
     } else {
       unmatched.push({ stat, closest_name: null })
-    }
-  }
-
-  // ── Enrich matched players with SofaScore data (ID-based, no name matching) ──
-  // For each matched player: league_player_id → serie_a_players.sofascore_id
-  //   → allSofascoreStats map (populated from browser-fetched fantasy data).
-  if (allSofascoreStats.size > 0) {
-    for (const m of matched) {
-      const sofascorePlayerId = lpToSofascoreId.get(m.league_player_id)
-      if (sofascorePlayerId != null && allSofascoreStats.has(sofascorePlayerId)) {
-        const ss = allSofascoreStats.get(sofascorePlayerId)
-        // Guard against old localStorage format where value could be a bare number or null
-        if (ss == null || typeof ss !== 'object') continue
-        m.stat.sofascore_rating = ss.rating
-        m.stat.sofascore_id = sofascorePlayerId
-        // Extra SS stats
-        m.stat.ss_shots                   = ss.shots
-        m.stat.ss_shots_on_target         = ss.shots_on_target
-        m.stat.ss_big_chance_created      = ss.big_chance_created
-        m.stat.ss_big_chance_missed       = ss.big_chance_missed
-        m.stat.ss_blocked_scoring_attempt = ss.blocked_scoring_attempt
-        m.stat.ss_xg                      = ss.xg
-        m.stat.ss_xa                      = ss.xa
-        m.stat.ss_key_passes              = ss.key_passes
-        m.stat.ss_total_passes            = ss.total_passes
-        m.stat.ss_accurate_passes         = ss.accurate_passes
-        m.stat.ss_total_long_balls        = ss.total_long_balls
-        m.stat.ss_accurate_long_balls     = ss.accurate_long_balls
-        m.stat.ss_total_crosses           = ss.total_crosses
-        m.stat.ss_successful_dribbles     = ss.successful_dribbles
-        m.stat.ss_dribble_attempts        = ss.dribble_attempts
-        m.stat.ss_touches                 = ss.touches
-        m.stat.ss_ball_carries            = ss.ball_carries
-        m.stat.ss_progressive_carries     = ss.progressive_carries
-        m.stat.ss_dispossessed            = ss.dispossessed
-        m.stat.ss_possession_lost_ctrl    = ss.possession_lost_ctrl
-        m.stat.ss_tackles                 = ss.tackles
-        m.stat.ss_total_tackles           = ss.total_tackles
-        m.stat.ss_interceptions           = ss.interceptions
-        m.stat.ss_clearances              = ss.clearances
-        m.stat.ss_blocked_shots           = ss.blocked_shots
-        m.stat.ss_duel_won                = ss.duel_won
-        m.stat.ss_duel_lost               = ss.duel_lost
-        m.stat.ss_aerial_won              = ss.aerial_won
-        m.stat.ss_aerial_lost             = ss.aerial_lost
-        m.stat.ss_ball_recoveries         = ss.ball_recoveries
-        m.stat.ss_fouls_committed         = ss.fouls_committed
-        m.stat.ss_was_fouled              = ss.was_fouled
-        m.stat.ss_market_value            = ss.market_value
-        m.stat.ss_height                  = ss.height
-      }
     }
   }
 

@@ -1,24 +1,21 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1.2 — Core Logic
+// Fantacalcio Statistico — Rating Engine v2.0 — Core Logic
 // ============================================================
 // Pure TypeScript — no Supabase, no Next.js, no side effects.
 // All functions are deterministic given the same inputs.
 //
 // Per-player pipeline (normal 10+ minute flow):
 //   1.  NV / decisive-event gate       (minutes < 10)
-//   2a. z_fotmob    = (fotmob_rating    − mean_fm) / std_fm   (null if missing)
-//   2b. z_sofascore = (sofascore_rating − mean_ss) / std_ss   (null if missing)
-//   3.  NO_RATINGS guard               (both null → base 6.0 + B/M)
-//   4.  z_combined  = weighted avg of available z-scores (weights re-normalised)
-//                     FotMob 55% / SofaScore 45%; single source → no shrink
-//   5.  Minutes factor                 configurable 2-band (default: <45 → ×0.50, ≥45 → ×1.00)
-//   6.  z_adjusted  = z_combined × minutes_factor
+//   2.  z_fotmob   = (fotmob_rating − mean) / std   (null if missing)
+//   3.  NO_RATINGS guard               (z_fotmob null → base 6.0 + B/M)
+//   4.  Minutes factor                 configurable 2-band (default: <45 → ×0.50, ≥45 → ×1.00)
+//   5.  z_adjusted = z_fotmob × minutes_factor
 //   ---- Target distribution (Step 2 of calibration) ----
-//   7.  b0          = target_mean_vote + target_vote_std × z_adjusted   (default: 6.0 + 0.75×z)
-//   8.  b1          = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
-//   9.  voto_base   = clamp(b1, 3.0, 9.5)
-//  10.  bonus/malus                    goals, assists, events, CS, GC, multi-goal
-//  11.  fantavoto   = voto_base + total_bonus_malus
+//   6.  b0         = target_mean_vote + target_vote_std × z_adjusted  (default: 6.0 + 0.75×z)
+//   7.  b1         = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
+//   8.  voto_base  = clamp(b1, 3.0, 9.5)
+//   9.  bonus/malus                    goals, assists, events, CS, GC, multi-goal
+//  10.  fantavoto  = voto_base + total_bonus_malus
 // ============================================================
 
 import { DEFAULT_ENGINE_CONFIG } from './config'
@@ -47,11 +44,6 @@ function clamp(value: number, min: number, max: number): number {
 
 // ---- Decisive-event check -----------------------------------
 
-/**
- * Returns true if the player had any decisive event.
- * Used to decide whether a 0–9 minute player is scored via the
- * decisive-event exception rather than skipped as NV.
- */
 function hasDecisiveEvent(input: EnginePlayerInput): boolean {
   return (
     input.goals_scored     > 0 ||
@@ -172,7 +164,6 @@ export function calculatePlayerScore(
       decisive_event_exception: true,
       no_ratings_exception: false,
       z_fotmob: null,
-      z_sofascore: null,
       minutes_factor: null,
       z_adjusted: null,
       b0: null,
@@ -187,7 +178,7 @@ export function calculatePlayerScore(
   }
 
   // ----------------------------------------------------------------
-  // Step 2a — FotMob z-score
+  // Step 2 — FotMob z-score
   // ----------------------------------------------------------------
   const fmNorm = config.source_normalization
   const z_fotmob = input.fotmob_rating !== null
@@ -195,19 +186,11 @@ export function calculatePlayerScore(
     : null
 
   // ----------------------------------------------------------------
-  // Step 2b — SofaScore z-score
+  // Gate 2 — No FotMob rating available (e.g. live match before
+  // ratings published). voto_base = 6.0; minutes_factor still
+  // computed so the UI can distinguish this from decisive_event.
   // ----------------------------------------------------------------
-  const ssNorm = config.sofascore_normalization
-  const z_sofascore = input.sofascore_rating !== null
-    ? round((input.sofascore_rating - ssNorm.mean) / ssNorm.std)
-    : null
-
-  // ----------------------------------------------------------------
-  // Gate 2 — No ratings from either source
-  // voto_base = 6.0; minutes_factor is still computed so the UI
-  // can distinguish this case from decisive_event_exception.
-  // ----------------------------------------------------------------
-  if (z_fotmob === null && z_sofascore === null) {
+  if (z_fotmob === null) {
     const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
     const voto_base = config.base_score
@@ -219,7 +202,6 @@ export function calculatePlayerScore(
       decisive_event_exception: false,
       no_ratings_exception: true,
       z_fotmob: null,
-      z_sofascore: null,
       minutes_factor,
       z_adjusted: null,
       b0: null,
@@ -238,55 +220,35 @@ export function calculatePlayerScore(
   const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
 
   // ----------------------------------------------------------------
-  // Step 4 — z_combined: weighted average of available sources
-  // Weights are re-normalised among non-null sources.
-  // Single source → use directly with full weight (no shrink factor).
+  // Step 4 — z_adjusted
   // ----------------------------------------------------------------
-  let z_combined: number
-  if (z_fotmob !== null && z_sofascore !== null) {
-    // Both available — weighted average
-    const w_fm = config.fotmob_weight
-    const w_ss = 1 - w_fm
-    z_combined = round(w_fm * z_fotmob + w_ss * z_sofascore)
-  } else if (z_fotmob !== null) {
-    z_combined = z_fotmob
-  } else {
-    z_combined = z_sofascore!
-  }
+  const z_adjusted = round(z_fotmob * minutes_factor)
 
   // ----------------------------------------------------------------
-  // Step 5 — z_adjusted
-  // ----------------------------------------------------------------
-  const z_adjusted = round(z_combined * minutes_factor)
-
-  // ----------------------------------------------------------------
-  // Step 6 — b0: target distribution (Step 2 of calibration pipeline)
+  // Step 5 — b0: target distribution (Step 2 of calibration pipeline)
   //   b0 = target_mean_vote + target_vote_std × z_adjusted
-  //   (default: 6.00 + 0.75 × z_adjusted)
   // ----------------------------------------------------------------
   const b0 = round(config.target_mean_vote + config.target_vote_std * z_adjusted)
 
   // ----------------------------------------------------------------
-  // Step 7 — b1: role-distance multiplier applied around target_mean_vote
-  //   b1 = target_mean_vote + multiplier[rc] × (b0 − target_mean_vote)
-  //   (expands/compresses distance from the target center, not from a fixed 6.0)
+  // Step 6 — b1: role-distance multiplier applied around target_mean_vote
   // ----------------------------------------------------------------
   const roleMultiplier = config.role_multiplier[input.rating_class]
   const b1 = round(config.target_mean_vote + roleMultiplier * (b0 - config.target_mean_vote))
 
   // ----------------------------------------------------------------
-  // Step 8 — voto_base = clamp(b1, 3.0, 9.5)
+  // Step 7 — voto_base = clamp(b1, cap_min, cap_max)
   // ----------------------------------------------------------------
   const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
 
   // ----------------------------------------------------------------
-  // Step 9 — Bonus / malus
+  // Step 8 — Bonus / malus
   // ----------------------------------------------------------------
   const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
   const total_bonus_malus = bmTotal
 
   // ----------------------------------------------------------------
-  // Step 10 — fantavoto
+  // Step 9 — fantavoto
   // ----------------------------------------------------------------
   const fantavoto = round(voto_base + total_bonus_malus)
 
@@ -296,7 +258,6 @@ export function calculatePlayerScore(
     decisive_event_exception: false,
     no_ratings_exception: false,
     z_fotmob,
-    z_sofascore,
     minutes_factor,
     z_adjusted,
     b0,

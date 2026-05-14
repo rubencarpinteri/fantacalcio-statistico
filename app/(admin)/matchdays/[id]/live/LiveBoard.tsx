@@ -153,10 +153,8 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
         <EventBadges p={p} />
       </td>
 
-      {/* SS | FM */}
+      {/* FM */}
       <td className="px-2 py-2 text-right font-mono text-ink-3 whitespace-nowrap">
-        {p.sofascore_rating != null ? p.sofascore_rating.toFixed(1) : '—'}
-        <span className="mx-0.5 text-[#2e2e42]">|</span>
         {p.fotmob_rating != null ? p.fotmob_rating.toFixed(2) : '—'}
       </td>
 

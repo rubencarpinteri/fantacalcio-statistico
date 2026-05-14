@@ -8,7 +8,6 @@ import { MatchdayStatusControls } from './MatchdayStatusControls'
 import { FreezeButton } from './FreezeButton'
 import { FixturesInlineCard } from './FixturesInlineCard'
 import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
-import { SofaScoreManualImport } from '@/components/ui/SofaScoreManualImport'
 import { getMatchesForRound } from '@/lib/calendar/serieaCalendar'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -288,9 +287,6 @@ export default async function MatchdayDetailPage({
           const step2Done = playerStatsCount > 0
           const step3Done = v1RunId !== null
           const step4Done = (matchday.status === 'closed' || matchday.status === 'archived') && publishedRunEngine === 'v1'
-          const ssFixtures = fixtures
-            .filter((f): f is typeof f & { sofascore_event_id: number } => f.sofascore_event_id != null)
-            .map((f) => ({ sofascoreEventId: f.sofascore_event_id, label: f.label }))
 
           const StepIcon = ({ done, active }: { done: boolean; active: boolean }) => (
             <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -317,25 +313,13 @@ export default async function MatchdayDetailPage({
               </div>
 
               {/* Step 2 — Dati SofaScore */}
-              <div className={`rounded-xl border p-4 ${step1Done ? 'border-hairline bg-glass-1' : 'border-hairline bg-transparent opacity-50 pointer-events-none'}`}>
-                <div className="mb-3 flex items-center gap-3">
-                  <StepIcon done={false} active={step1Done} />
-                  <p className={`text-sm font-semibold ${step1Done ? 'text-indigo-300' : 'text-ink-4'}`}>
-                    2 — Dati SofaScore
-                  </p>
-                </div>
-                {step1Done && (
-                  <SofaScoreManualImport matchdayId={id} fixtures={ssFixtures} />
-                )}
-              </div>
-
-              {/* Step 3 — Aggiorna e pubblica */}
+              {/* Step 2 — Scarica voti, calcola e pubblica */}
               <div className={`rounded-xl border p-4 ${step1Done ? 'border-amber-500/20 bg-amber-500/5' : 'border-hairline bg-transparent opacity-50 pointer-events-none'}`}>
                 <div className="mb-3 flex items-center gap-3">
                   <StepIcon done={step2Done} active={step1Done} />
                   <div className="flex-1">
                     <p className={`text-sm font-semibold ${step2Done ? 'text-ink-1' : step1Done ? 'text-indigo-300' : 'text-ink-4'}`}>
-                      3 — Scarica voti, calcola e pubblica
+                      2 — Scarica voti, calcola e pubblica
                     </p>
                     {step2Done && (
                       <p className="text-xs text-ink-4">
@@ -354,13 +338,13 @@ export default async function MatchdayDetailPage({
                 )}
               </div>
 
-              {/* Step 4 — Formazioni */}
+              {/* Step 3 — Formazioni */}
               <div className={`rounded-xl border p-4 ${step4Done ? 'border-hairline bg-transparent' : step3Done ? 'border-indigo-500/30 bg-glass-1' : 'border-hairline bg-transparent opacity-50'}`}>
                 <div className="flex items-start gap-3">
                   <StepIcon done={step4Done} active={step3Done && !step4Done} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold ${step4Done ? 'text-ink-1' : step3Done ? 'text-indigo-300' : 'text-ink-4'}`}>
-                      4 — Formazioni e pubblicazione
+                      3 — Formazioni e pubblicazione
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <a

@@ -8,7 +8,6 @@ import { revalidatePath } from 'next/cache'
 const addFixtureSchema = z.object({
   matchdayId: z.string().uuid(),
   fotmob_match_id: z.string().optional(),
-  sofascore_event_id: z.string().optional(),
   label: z.string().max(80),
 })
 
@@ -27,28 +26,25 @@ export async function addFixtureAction(
   const parsed = addFixtureSchema.safeParse({
     matchdayId: formData.get('matchdayId'),
     fotmob_match_id: formData.get('fotmob_match_id') || undefined,
-    sofascore_event_id: formData.get('sofascore_event_id') || undefined,
     label: formData.get('label') ?? '',
   })
   if (!parsed.success) return { error: 'Dati non validi.' }
 
-  const { matchdayId, fotmob_match_id, sofascore_event_id, label } = parsed.data
+  const { matchdayId, fotmob_match_id, label } = parsed.data
 
-  if (!fotmob_match_id && !sofascore_event_id) {
-    return { error: 'Inserisci almeno un ID (FotMob o SofaScore).' }
+  if (!fotmob_match_id) {
+    return { error: 'Inserisci l\'ID FotMob.' }
   }
 
-  const fm = fotmob_match_id ? Number(fotmob_match_id) : null
-  const ss = sofascore_event_id ? Number(sofascore_event_id) : null
-  if ((fm !== null && isNaN(fm)) || (ss !== null && isNaN(ss))) {
-    return { error: 'Gli ID devono essere numeri interi.' }
+  const fm = Number(fotmob_match_id)
+  if (isNaN(fm)) {
+    return { error: 'L\'ID FotMob deve essere un numero intero.' }
   }
 
   const supabase = await createClient()
   const { error } = await supabase.from('matchday_fixtures').insert({
     matchday_id: matchdayId,
     fotmob_match_id: fm,
-    sofascore_event_id: ss,
     label: label,
   })
 
@@ -85,7 +81,6 @@ export async function saveFixturesBulkAction(
   if (!matchdayId) return { error: 'ID giornata mancante.' }
 
   const fotmobRaw = (formData.get('fotmobIds') as string | null) ?? ''
-  const sofascoreRaw = (formData.get('sofascoreIds') as string | null) ?? ''
 
   const parseIds = (raw: string): { ids: number[]; error?: string } => {
     const lines = raw
@@ -107,17 +102,7 @@ export async function saveFixturesBulkAction(
   const fm = parseIds(fotmobRaw)
   if (fm.error) return { error: `ID FotMob non valido: ${fm.error}` }
 
-  const ss = parseIds(sofascoreRaw)
-  if (ss.error) return { error: `ID SofaScore non valido: ${ss.error}` }
-
-  // Both lists must have the same length, unless one is entirely empty
-  if (fm.ids.length > 0 && ss.ids.length > 0 && fm.ids.length !== ss.ids.length) {
-    return {
-      error: `Il numero di ID FotMob (${fm.ids.length}) e SofaScore (${ss.ids.length}) deve essere uguale.`,
-    }
-  }
-
-  const count = Math.max(fm.ids.length, ss.ids.length)
+  const count = fm.ids.length
   if (count === 0) return { error: 'Inserisci almeno un ID.' }
 
   const supabase = await createClient()
@@ -148,7 +133,6 @@ export async function saveFixturesBulkAction(
   const rows = Array.from({ length: count }, (_, i) => ({
     matchday_id: matchdayId,
     fotmob_match_id: fm.ids[i] ?? null,
-    sofascore_event_id: ss.ids[i] ?? null,
     label: roundLabels[i] ?? `Partita ${i + 1}`,
   }))
 
@@ -191,11 +175,11 @@ export async function autoImportFixturesFromCsvAction(
   const matches = getMatchesForRound(matchday.matchday_number)
 
   const usableMatches = matches.filter(
-    (m) => m.sofascoreMatchId !== null || m.fotmobMatchId !== null,
+    (m) => m.fotmobMatchId !== null,
   )
 
   if (usableMatches.length === 0) {
-    return { error: 'Nessun ID partita trovato nel CSV per questa giornata.' }
+    return { error: 'Nessun ID FotMob trovato nel CSV per questa giornata.' }
   }
 
   const { error: deleteError } = await supabase
@@ -208,7 +192,6 @@ export async function autoImportFixturesFromCsvAction(
   const rows = usableMatches.map((m) => ({
     matchday_id: matchdayId,
     fotmob_match_id: m.fotmobMatchId,
-    sofascore_event_id: m.sofascoreMatchId,
     label: m.label,
     kickoff_at: m.kickoffAt,
   }))
@@ -227,7 +210,6 @@ export async function autoImportFixturesFromCsvAction(
 
 export type ImportMatch = {
   league_player_id: string
-  sofascore_rating: number | null
   fotmob_rating: number | null
   minutes_played: number
   goals_scored: number
@@ -241,41 +223,6 @@ export type ImportMatch = {
   goals_conceded: number
   saves: number
   clean_sheet: boolean
-  // SofaScore extra stats (null when SS data not available)
-  ss_shots: number | null
-  ss_shots_on_target: number | null
-  ss_big_chance_created: number | null
-  ss_big_chance_missed: number | null
-  ss_blocked_scoring_attempt: number | null
-  ss_xg: number | null
-  ss_xa: number | null
-  ss_key_passes: number | null
-  ss_total_passes: number | null
-  ss_accurate_passes: number | null
-  ss_total_long_balls: number | null
-  ss_accurate_long_balls: number | null
-  ss_total_crosses: number | null
-  ss_successful_dribbles: number | null
-  ss_dribble_attempts: number | null
-  ss_touches: number | null
-  ss_ball_carries: number | null
-  ss_progressive_carries: number | null
-  ss_dispossessed: number | null
-  ss_possession_lost_ctrl: number | null
-  ss_tackles: number | null
-  ss_total_tackles: number | null
-  ss_interceptions: number | null
-  ss_clearances: number | null
-  ss_blocked_shots: number | null
-  ss_duel_won: number | null
-  ss_duel_lost: number | null
-  ss_aerial_won: number | null
-  ss_aerial_lost: number | null
-  ss_ball_recoveries: number | null
-  ss_fouls_committed: number | null
-  ss_was_fouled: number | null
-  ss_market_value: number | null
-  ss_height: number | null
 }
 
 export type ImportRatingsState = { error?: string; imported?: number }
@@ -306,7 +253,6 @@ export async function importRatingsAction(
     matchday_id: matchdayId,
     player_id: m.league_player_id,
     entered_by: user.id,
-    sofascore_rating: m.sofascore_rating,
     fotmob_rating: m.fotmob_rating,
     minutes_played: m.minutes_played,
     goals_scored: m.goals_scored,
@@ -320,41 +266,6 @@ export async function importRatingsAction(
     goals_conceded: m.goals_conceded,
     saves: m.saves,
     clean_sheet: m.clean_sheet,
-    // SofaScore stats
-    shots:                    m.ss_shots                   ?? 0,
-    shots_on_target:          m.ss_shots_on_target          ?? 0,
-    big_chance_created:       m.ss_big_chance_created       ?? 0,
-    big_chance_missed:        m.ss_big_chance_missed        ?? 0,
-    blocked_scoring_attempt:  m.ss_blocked_scoring_attempt  ?? 0,
-    xg:                       m.ss_xg,
-    xa:                       m.ss_xa,
-    key_passes:               m.ss_key_passes,
-    total_passes:             m.ss_total_passes             ?? 0,
-    accurate_passes:          m.ss_accurate_passes          ?? 0,
-    total_long_balls:         m.ss_total_long_balls         ?? 0,
-    accurate_long_balls:      m.ss_accurate_long_balls      ?? 0,
-    total_crosses:            m.ss_total_crosses            ?? 0,
-    successful_dribbles:      m.ss_successful_dribbles,
-    dribble_attempts:         m.ss_dribble_attempts         ?? 0,
-    touches:                  m.ss_touches                  ?? 0,
-    ball_carries:             m.ss_ball_carries             ?? 0,
-    progressive_carries:      m.ss_progressive_carries      ?? 0,
-    dispossessed:             m.ss_dispossessed             ?? 0,
-    possession_lost_ctrl:     m.ss_possession_lost_ctrl     ?? 0,
-    tackles_won:              m.ss_tackles                  ?? 0,
-    total_tackles:            m.ss_total_tackles            ?? 0,
-    interceptions:            m.ss_interceptions            ?? 0,
-    clearances:               m.ss_clearances               ?? 0,
-    blocks:                   m.ss_blocked_shots            ?? 0,
-    duel_won:                 m.ss_duel_won                 ?? 0,
-    duel_lost:                m.ss_duel_lost                ?? 0,
-    aerial_won:               m.ss_aerial_won               ?? 0,
-    aerial_lost:              m.ss_aerial_lost              ?? 0,
-    ball_recoveries:          m.ss_ball_recoveries          ?? 0,
-    fouls_committed:          m.ss_fouls_committed          ?? 0,
-    was_fouled:               m.ss_was_fouled               ?? 0,
-    market_value:             m.ss_market_value,
-    height:                   m.ss_height,
   }))
 
   // Zero out stale rows — players who were imported in a previous fetch but are
@@ -371,7 +282,7 @@ export async function importRatingsAction(
     await supabase
       .from('player_match_stats')
       .update({
-        minutes_played: 0, fotmob_rating: null, sofascore_rating: null,
+        minutes_played: 0, fotmob_rating: null,
         goals_scored: 0, assists: 0, own_goals: 0, yellow_cards: 0,
         red_cards: 0, penalties_scored: 0, penalties_missed: 0,
         penalties_saved: 0, goals_conceded: 0, saves: 0, clean_sheet: false,

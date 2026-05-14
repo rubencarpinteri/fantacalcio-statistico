@@ -1,5 +1,10 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v1.2 — Types
+// Fantacalcio Statistico — Rating Engine v2.0 — Types
+// ============================================================
+// Single-source: FotMob only.
+// Normalization constants from Ball, Huynh & Varley (2025),
+// Journal of Sports Sciences 43:7 — mean 6.87, std 0.79 across
+// 2,162 matches in top-3 European leagues 2022–2024.
 // ============================================================
 
 import type { RatingClass } from '@/types/database.types'
@@ -15,9 +20,8 @@ export interface EnginePlayerInput {
   minutes_played: number
   is_provisional: boolean
 
-  // Dual-source ratings — null when the source didn't provide data for this player
+  /** FotMob rating — null when the source hasn't provided data for this player yet (e.g. early-live match). */
   fotmob_rating: number | null
-  sofascore_rating: number | null
 
   // Event counts
   goals_scored: number        // includes penalties_scored
@@ -72,21 +76,10 @@ export interface EngineConfig {
   base_score: number
   /**
    * FotMob rating normalization: z = (rating - mean) / std
-   * mean = 6.6 (FotMob "average" as confirmed by their color bands)
-   * std  = 0.79 (typical spread of ratings across a Serie A season)
+   * Defaults: mean = 6.87, std = 0.79 (Ball, Huynh & Varley 2025).
+   * Configurable per league via league_engine_config.
    */
   source_normalization: { mean: number; std: number }
-  /**
-   * SofaScore rating normalization.
-   * mean = 6.7, std = 0.65 (calibrated against SofaScore's rating distribution)
-   */
-  sofascore_normalization: { mean: number; std: number }
-  /**
-   * Weight of FotMob in the dual-source weighted average.
-   * SofaScore weight = 1 - fotmob_weight.
-   * Weights are re-normalized among available sources (if one is null, the other gets full weight).
-   */
-  fotmob_weight: number
   /** Configurable 2-band minutes factor */
   minutes_factor: MinutesFactorConfig
   /**
@@ -103,13 +96,10 @@ export interface EngineConfig {
   /**
    * Target distribution — Step 2 of the calibration pipeline.
    *
-   * After source normalization produces a combined z-score, these two parameters
-   * define the center and spread of the final voto_base distribution:
-   *
    *   b0 = target_mean_vote + target_vote_std × z_adjusted
    *   b1 = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
    *
-   * target_mean_vote: A combined z-score of 0 maps exactly to this vote.
+   * target_mean_vote: A z-score of 0 maps exactly to this vote.
    * target_vote_std:  Each ±1σ deviation shifts the vote by this many points.
    *
    * Configurable per league via league_engine_config.
@@ -149,10 +139,9 @@ export interface PlayerCalculationResult {
 
   // null for decisive_event_exception, or when source not available
   z_fotmob: number | null
-  z_sofascore: number | null
   // null for decisive_event_exception; set for no_ratings_exception (useful for indicator)
   minutes_factor: number | null
-  // null when both z-scores are null
+  // null when z_fotmob is null
   z_adjusted: number | null
   b0: number | null
   role_multiplier: number | null

@@ -143,14 +143,13 @@ export default async function AllLineupsPage({
     voto_base: number | null
     bonusMalus: BonusMalusItem[] | null
     z_fotmob: number | null
-    z_sofascore: number | null
     minutes_factor: number | null
     role_multiplier: number | null
   }>()
   if (runId) {
     const { data: calcs } = await supabase
       .from('player_calculations')
-      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown, z_fotmob, z_sofascore, minutes_factor, role_multiplier')
+      .select('player_id, fantavoto, voto_base, bonus_malus_breakdown, z_fotmob, minutes_factor, role_multiplier')
       .eq('run_id', runId)
 
     for (const c of calcs ?? []) {
@@ -161,7 +160,6 @@ export default async function AllLineupsPage({
         voto_base: c.voto_base,
         bonusMalus: bonusMalus?.length ? bonusMalus : null,
         z_fotmob: c.z_fotmob,
-        z_sofascore: c.z_sofascore,
         minutes_factor: c.minutes_factor,
         role_multiplier: c.role_multiplier,
       })
@@ -171,7 +169,6 @@ export default async function AllLineupsPage({
   // ── Raw source ratings + stats from player_match_stats ───────────────────
   type StatsRow = {
     fotmobRating: number | null
-    sofascoreRating: number | null
     minutesPlayed: number
     goalsScored: number
     assists: number
@@ -219,12 +216,11 @@ export default async function AllLineupsPage({
   {
     const { data: statsRows } = await supabase
       .from('player_match_stats')
-      .select('player_id, fotmob_rating, sofascore_rating, minutes_played, goals_scored, assists, yellow_cards, red_cards, saves, goals_conceded, clean_sheet, shots, shots_on_target, big_chance_created, big_chance_missed, blocked_scoring_attempt, xg, xa, key_passes, total_passes, accurate_passes, total_long_balls, accurate_long_balls, total_crosses, successful_dribbles, dribble_attempts, touches, ball_carries, progressive_carries, dispossessed, possession_lost_ctrl, tackles_won, total_tackles, interceptions, clearances, blocks, duel_won, duel_lost, aerial_won, aerial_lost, ball_recoveries, fouls_committed, was_fouled, market_value, height')
+      .select('player_id, fotmob_rating, minutes_played, goals_scored, assists, yellow_cards, red_cards, saves, goals_conceded, clean_sheet, shots, shots_on_target, big_chance_created, big_chance_missed, blocked_scoring_attempt, xg, xa, key_passes, total_passes, accurate_passes, total_long_balls, accurate_long_balls, total_crosses, successful_dribbles, dribble_attempts, touches, ball_carries, progressive_carries, dispossessed, possession_lost_ctrl, tackles_won, total_tackles, interceptions, clearances, blocks, duel_won, duel_lost, aerial_won, aerial_lost, ball_recoveries, fouls_committed, was_fouled, market_value, height')
       .eq('matchday_id', matchdayId)
     for (const s of statsRows ?? []) {
       statsMap.set(s.player_id, {
         fotmobRating:          s.fotmob_rating         !== null ? Number(s.fotmob_rating)    : null,
-        sofascoreRating:       s.sofascore_rating       !== null ? Number(s.sofascore_rating) : null,
         minutesPlayed:         s.minutes_played         ?? 0,
         goalsScored:           s.goals_scored           ?? 0,
         assists:               s.assists                ?? 0,
@@ -386,11 +382,9 @@ export default async function AllLineupsPage({
         votoBase: calc?.voto_base ?? null,
         bonusMalus: calc?.bonusMalus ?? null,
         zFotmob: calc?.z_fotmob ?? null,
-        zSofascore: calc?.z_sofascore ?? null,
         minutesFactor: calc?.minutes_factor ?? null,
         roleMultiplier: calc?.role_multiplier ?? null,
         rawFotmobRating:    rawStats?.fotmobRating    ?? null,
-        rawSofascoreRating: rawStats?.sofascoreRating ?? null,
         minutesPlayed:      rawStats?.minutesPlayed   ?? null,
         goalsScored:        rawStats?.goalsScored     ?? null,
         assists:            rawStats?.assists         ?? null,

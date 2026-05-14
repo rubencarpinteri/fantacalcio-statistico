@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState, useId } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { saveEngineConfigAction } from './actions'
 import type { LeagueEngineConfig } from '@/types/database.types'
@@ -69,47 +69,6 @@ function Field({
   )
 }
 
-// ── Weight slider ────────────────────────────────────────────────────────────
-
-function WeightSlider({ defaultValue }: { defaultValue: number }) {
-  const [weight, setWeight] = useState(defaultValue)
-  const id = useId()
-  const fmPct  = Math.round(weight * 100)
-  const ssPct  = 100 - fmPct
-
-  return (
-    <div className="col-span-full flex flex-col gap-2">
-      <p className="text-xs text-ink-3">Peso fonti (FotMob / SofaScore)</p>
-
-      {/* Labels + percentages */}
-      <div className="flex items-center justify-between text-xs font-medium">
-        <span className="text-indigo-300">FotMob <span className="font-mono text-ink-1">{fmPct}%</span></span>
-        <span className="text-purple-300">SofaScore <span className="font-mono text-ink-1">{ssPct}%</span></span>
-      </div>
-
-      {/* Slider */}
-      <div className="relative">
-        <input
-          id={id}
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={weight}
-          onChange={(e) => setWeight(Number(e.target.value))}
-          className="w-full cursor-pointer accent-indigo-500"
-        />
-        {/* Hidden input carries the value into the form action */}
-        <input type="hidden" name="fotmob_weight" value={weight} />
-      </div>
-
-      <p className="text-xs text-ink-4">
-        z_combinato = {fmPct}% × z_FotMob + {ssPct}% × z_SofaScore
-      </p>
-    </div>
-  )
-}
-
 // ── Target distribution section ──────────────────────────────────────────────
 
 function TargetDistributionSection({
@@ -160,8 +119,8 @@ function TargetDistributionSection({
             z = (voto_fonte − media_fonte) / std_fonte
           </p>
           <p className="text-xs text-ink-4">
-            Converte i voti FotMob e SofaScore in z-score comparabili tramite le
-            impostazioni &ldquo;Normalizzazione voti&rdquo; qui sopra.
+            Converte i voti FotMob in z-score comparabili tramite le
+            impostazioni &ldquo;Normalizzazione voti FotMob&rdquo; qui sopra.
           </p>
         </div>
         <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/8 p-3 space-y-1">
@@ -172,8 +131,8 @@ function TargetDistributionSection({
             voto = media_finale + z × std_finale
           </p>
           <p className="text-xs text-ink-3">
-            Proietta lo z-score combinato sulla nostra scala fantacalcio, con centro e
-            dispersione configurabili indipendentemente dalle fonti.
+            Proietta lo z-score FotMob sulla nostra scala fantacalcio, con centro e
+            dispersione configurabili indipendentemente dalla fonte.
           </p>
         </div>
       </div>
@@ -332,7 +291,6 @@ export function EngineConfigForm({ current }: Props) {
   const mf = DEFAULT_ENGINE_CONFIG.minutes_factor
   const rm = DEFAULT_ENGINE_CONFIG.role_multiplier
   const fn = DEFAULT_ENGINE_CONFIG.source_normalization
-  const sn = DEFAULT_ENGINE_CONFIG.sofascore_normalization
 
   // When resetKey changes, form remounts with default values
   const src = useDefaults ? null : current
@@ -340,9 +298,6 @@ export function EngineConfigForm({ current }: Props) {
   const v = {
     fotmob_mean:    src?.fotmob_mean    ?? fn.mean,
     fotmob_std:     src?.fotmob_std     ?? fn.std,
-    sofascore_mean: src?.sofascore_mean ?? sn.mean,
-    sofascore_std:  src?.sofascore_std  ?? sn.std,
-    fotmob_weight:  src?.fotmob_weight  ?? DEFAULT_ENGINE_CONFIG.fotmob_weight,
 
     minutes_factor_threshold: src?.minutes_factor_threshold ?? mf.threshold,
     minutes_factor_partial:   src?.minutes_factor_partial   ?? mf.partial,
@@ -388,7 +343,7 @@ export function EngineConfigForm({ current }: Props) {
     <form key={resetKey} action={action} className="space-y-8">
 
       {/* ── Normalizzazione voti ────────────────────────────────────── */}
-      <FieldGroup title="Normalizzazione voti (z-score)">
+      <FieldGroup title="Normalizzazione voti FotMob (z-score)">
         <Field
           label="FotMob — media"
           name="fotmob_mean"
@@ -396,7 +351,7 @@ export function EngineConfigForm({ current }: Props) {
           step="0.01"
           min="5"
           max="8"
-          hint="Voto medio FotMob (default 6.6)"
+          hint="Voto medio FotMob (default 6.87, Ball et al. 2025)"
         />
         <Field
           label="FotMob — deviazione standard"
@@ -407,25 +362,6 @@ export function EngineConfigForm({ current }: Props) {
           max="3"
           hint="Dispersione dei voti FotMob (default 0.79)"
         />
-        <Field
-          label="SofaScore — media"
-          name="sofascore_mean"
-          defaultValue={v.sofascore_mean}
-          step="0.01"
-          min="5"
-          max="8"
-          hint="Voto medio SofaScore (default 6.6)"
-        />
-        <Field
-          label="SofaScore — deviazione standard"
-          name="sofascore_std"
-          defaultValue={v.sofascore_std}
-          step="0.01"
-          min="0.1"
-          max="3"
-          hint="Dispersione dei voti SofaScore (default 0.65)"
-        />
-        <WeightSlider defaultValue={v.fotmob_weight} />
       </FieldGroup>
 
       {/* ── Scala voto finale ───────────────────────────────────────── */}

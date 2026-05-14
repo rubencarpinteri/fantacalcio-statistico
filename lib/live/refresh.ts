@@ -233,7 +233,7 @@ export async function refreshMatchdayLive(
   // 1. Fixtures (incl. cached FotMob status — long-finished fixtures are skipped)
   const { data: fixtures } = await supabase
     .from('matchday_fixtures')
-    .select('id, fotmob_match_id, sofascore_event_id, fotmob_finished, fotmob_status_seen_at, kickoff_at')
+    .select('id, fotmob_match_id, fotmob_finished, fotmob_status_seen_at, kickoff_at')
     .eq('matchday_id', matchdayId)
 
   if (!fixtures?.length) {
@@ -455,7 +455,6 @@ export async function refreshMatchdayLive(
       minutes_played:   merged.minutes_played,
       is_provisional:   db.is_provisional,
       fotmob_rating:    merged.fotmob_rating,
-      sofascore_rating: null, // live refresh has no SofaScore data
       goals_scored:     merged.goals_scored,
       assists:          merged.assists,
       own_goals:        merged.own_goals,
@@ -513,7 +512,6 @@ export async function refreshMatchdayLive(
       minutes_played:   liveMinutes,
       is_provisional:   true,
       fotmob_rating:    apiData.fotmob_rating,
-      sofascore_rating: null, // live refresh has no SofaScore data
       goals_scored:     apiData.goals_scored,
       assists:          apiData.assists,
       own_goals:        apiData.own_goals,
@@ -562,7 +560,6 @@ export async function refreshMatchdayLive(
       minutes_played:   merged.minutes_played,
       is_provisional:   true,
       fotmob_rating:    merged.fotmob_rating,
-      sofascore_rating: null,
       goals_scored:     merged.goals_scored,
       assists:          merged.assists,
       own_goals:        merged.own_goals,
@@ -623,7 +620,6 @@ export async function refreshMatchdayLive(
       points_each: number
     }>
     z_fotmob: number | null
-    z_sofascore: number | null
     minutes_factor: number | null
     role_multiplier: number | null
   }
@@ -633,7 +629,6 @@ export async function refreshMatchdayLive(
     breakdownMap.set(r.player_id, {
       bonus_malus_breakdown: r.bonus_malus_breakdown,
       z_fotmob: r.z_fotmob,
-      z_sofascore: r.z_sofascore,
       minutes_factor: r.minutes_factor,
       role_multiplier: r.role_multiplier,
     })
@@ -747,7 +742,6 @@ export async function refreshMatchdayLive(
       extended_penalty: ps.extended_penalty,
       voto_base: votoBaseMap.get(ps.player_id) ?? null,
       fantavoto: ps.fantavoto,
-      sofascore_rating: null, // SofaScore removed in v1.1
       fotmob_rating: stats?.fotmob_rating ?? null,
       minutes_played: stats?.minutes_played ?? 0,
       goals_scored: stats?.goals_scored ?? 0,
@@ -762,7 +756,6 @@ export async function refreshMatchdayLive(
       goals_conceded: stats?.goals_conceded ?? 0,
       bonus_malus_breakdown: bd?.bonus_malus_breakdown ?? null,
       z_fotmob: bd?.z_fotmob ?? null,
-      z_sofascore: bd?.z_sofascore ?? null,
       minutes_factor: bd?.minutes_factor ?? null,
       role_multiplier: bd?.role_multiplier ?? null,
       is_match_live: isMatchLive,

@@ -22,12 +22,10 @@ export interface SlotData {
   votoBase: number | null
   bonusMalus: Array<{ label: string; total: number }> | null
   zFotmob: number | null
-  zSofascore: number | null
   minutesFactor: number | null
   roleMultiplier: number | null
   // Raw ratings as fetched from the source (before any z-score / engine transformation)
   rawFotmobRating: number | null
-  rawSofascoreRating: number | null
   // Match stats from player_match_stats
   minutesPlayed: number | null
   goalsScored: number | null
@@ -255,17 +253,12 @@ function fvColor(fv: number | null): string {
 
 function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => void }) {
   const vbFm = calcSourceVotoBase(slot.zFotmob, slot.minutesFactor, slot.roleMultiplier)
-  const vbSs = calcSourceVotoBase(slot.zSofascore, slot.minutesFactor, slot.roleMultiplier)
   const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-ink-3'
   const fv = slot.fantavoto
 
   const hasFm = slot.rawFotmobRating !== null
-  const hasSs = slot.rawSofascoreRating !== null
-  const hasAnyRaw = hasFm || hasSs
+  const hasAnyRaw = hasFm
   const hasStats = slot.minutesPlayed !== null
-
-  const deltaRaw = hasFm && hasSs ? slot.rawFotmobRating! - slot.rawSofascoreRating! : null
-  const deltaConverted = vbFm !== null && vbSs !== null ? vbFm.raw - vbSs.raw : null
 
   const aerialTotal = (slot.aerialWon !== null || slot.aerialLost !== null)
     ? ((slot.aerialWon ?? 0) + (slot.aerialLost ?? 0)) || null
@@ -317,48 +310,22 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
             </div>
           )}
 
-          {/* Source breakdown — 2 color-coded cards */}
+          {/* Source breakdown — FotMob */}
           {hasAnyRaw && (
-            <div className={`grid gap-2 ${hasFm && hasSs ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              {hasFm && (
-                <div className="rounded-lg p-2" style={{ border: '1px solid rgba(4,156,100,0.3)', background: 'rgba(4,156,100,0.07)' }}>
-                  <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>FotMob</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black font-mono text-ink-1">{slot.rawFotmobRating!.toFixed(1)}</span>
-                    {vbFm !== null && (
-                      <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
-                        → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
-                      </span>
-                    )}
-                  </div>
+            <div className="grid gap-2 grid-cols-1">
+              <div className="rounded-lg p-2" style={{ border: '1px solid rgba(4,156,100,0.3)', background: 'rgba(4,156,100,0.07)' }}>
+                <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>FotMob</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-black font-mono text-ink-1">{slot.rawFotmobRating!.toFixed(1)}</span>
+                  {vbFm !== null && (
+                    <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
+                      → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
+                    </span>
+                  )}
                 </div>
-              )}
-              {hasSs && (
-                <div className="rounded-lg p-2" style={{ border: '1px solid rgba(55,77,245,0.3)', background: 'rgba(55,77,245,0.07)' }}>
-                  <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#374DF5' }}>SofaScore</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black font-mono text-ink-1">{slot.rawSofascoreRating!.toFixed(1)}</span>
-                    {vbSs !== null && (
-                      <span className={`text-[10px] font-mono ${vbSs.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
-                        → {vbSs.value.toFixed(2)}{vbSs.clamped ? ' ↑' : ''}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {deltaRaw !== null && deltaConverted !== null && (
-                <div className="col-span-2 flex items-center justify-center gap-3 text-[10px] text-ink-4">
-                  <span>Δ FM−SS</span>
-                  <span className={`font-mono ${Math.abs(deltaRaw) > 0.5 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
-                    {deltaRaw >= 0 ? '+' : ''}{deltaRaw.toFixed(1)} orig
-                  </span>
-                  <span className={`font-mono ${Math.abs(deltaConverted) > 0.5 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
-                    {deltaConverted >= 0 ? '+' : ''}{deltaConverted.toFixed(2)} conv
-                  </span>
-                </div>
-              )}
-              {((vbFm?.clamped ?? false) || (vbSs?.clamped ?? false)) && (
-                <div className="col-span-2 rounded px-2 py-1 bg-amber-500/8 text-[9px] text-amber-700 dark:text-amber-400/80">
+              </div>
+              {(vbFm?.clamped ?? false) && (
+                <div className="rounded px-2 py-1 bg-amber-500/8 text-[9px] text-amber-700 dark:text-amber-400/80">
                   ↑ voto base supera il massimo (9.50) e viene limitato
                 </div>
               )}
@@ -443,9 +410,6 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 { label: 'Gol subiti',     value: slot.goalsConceded },
               ]} />
 
-              {!hasSs && (
-                <p className="text-[10px] text-ink-4 italic">Nessuna statistica SofaScore disponibile</p>
-              )}
             </div>
           )}
 

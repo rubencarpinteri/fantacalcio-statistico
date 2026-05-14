@@ -87,7 +87,6 @@ export default async function MatchdayResultsPage({
         is_override,
         is_provisional,
         z_fotmob,
-        z_sofascore,
         minutes_factor,
         role_multiplier,
         league_players ( full_name, club, rating_class )
@@ -127,7 +126,6 @@ export default async function MatchdayResultsPage({
     is_override: boolean
     is_provisional: boolean
     z_fotmob: number | null
-    z_sofascore: number | null
     minutes_factor: number | null
     role_multiplier: number | null
     league_players: { full_name: string; club: string; rating_class: string } | null
@@ -293,12 +291,10 @@ export default async function MatchdayResultsPage({
                           </span>
                           {(() => {
                             const vbFm = calcSourceVotoBase(c?.z_fotmob ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
-                            const vbSs = calcSourceVotoBase(c?.z_sofascore ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
-                            if (vbFm === null && vbSs === null) return null
+                            if (vbFm === null) return null
                             return (
                               <div className="mt-0.5 flex justify-end gap-2 text-[10px]">
-                                {vbFm !== null && <span className="text-[#6666aa]">FM {vbFm.toFixed(2)}</span>}
-                                {vbSs !== null && <span className="text-indigo-400/60">SS {vbSs.toFixed(2)}</span>}
+                                <span className="text-[#6666aa]">FM {vbFm.toFixed(2)}</span>
                               </div>
                             )
                           })()}

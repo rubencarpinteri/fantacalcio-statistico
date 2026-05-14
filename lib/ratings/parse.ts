@@ -1,15 +1,13 @@
 /**
- * Pure parsing functions for FotMob and SofaScore match data.
+ * Pure parsing functions for FotMob match data.
  * No server imports — safe to use from both client and server.
  */
 
 export type FetchedPlayerStat = {
   fotmob_id: number | null
-  sofascore_id: number | null
   name: string
   normalized_name: string
   team_label: string
-  sofascore_rating: number | null
   fotmob_rating: number | null
   minutes_played: number
   goals_scored: number
@@ -24,41 +22,6 @@ export type FetchedPlayerStat = {
   saves: number
   /** True when the player's team conceded 0 goals in the match. Derived from FotMob GK data. */
   clean_sheet: boolean
-  // SofaScore extra stats (null until SS enrichment step in the fetch route)
-  ss_shots: number | null
-  ss_shots_on_target: number | null
-  ss_big_chance_created: number | null
-  ss_big_chance_missed: number | null
-  ss_blocked_scoring_attempt: number | null
-  ss_xg: number | null
-  ss_xa: number | null
-  ss_key_passes: number | null
-  ss_total_passes: number | null
-  ss_accurate_passes: number | null
-  ss_total_long_balls: number | null
-  ss_accurate_long_balls: number | null
-  ss_total_crosses: number | null
-  ss_successful_dribbles: number | null
-  ss_dribble_attempts: number | null
-  ss_touches: number | null
-  ss_ball_carries: number | null
-  ss_progressive_carries: number | null
-  ss_dispossessed: number | null
-  ss_possession_lost_ctrl: number | null
-  ss_tackles: number | null
-  ss_total_tackles: number | null
-  ss_interceptions: number | null
-  ss_clearances: number | null
-  ss_blocked_shots: number | null
-  ss_duel_won: number | null
-  ss_duel_lost: number | null
-  ss_aerial_won: number | null
-  ss_aerial_lost: number | null
-  ss_ball_recoveries: number | null
-  ss_fouls_committed: number | null
-  ss_was_fouled: number | null
-  ss_market_value: number | null
-  ss_height: number | null
 }
 
 export function normalizeName(name: string): string {
@@ -141,305 +104,12 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
   return { stats, events }
 }
 
-// ─── SofaScore legacy lineup parser (name + rating only) ─────────────────────
-// Used by the legacy /api/ratings/process route and mergeFixtureStats.
-// Returns only id/name/rating/minutes — kept for backward compat.
+// ─── Build FetchedPlayerStat[] from FotMob data only ──────────────────────────
 
-type SofaScoreStat = {
-  sofascore_id: number; name: string
-  rating: number | null; minutes_played: number
-}
-
-export function parseSofaScoreJson(json: Record<string, unknown>): SofaScoreStat[] {
-  const out: SofaScoreStat[] = []
-  for (const side of ['home', 'away'] as const) {
-    const team = json[side] as Record<string, unknown> | undefined
-    const players = team?.['players'] as Array<Record<string, unknown>> | undefined
-    for (const p of players ?? []) {
-      const player = p['player'] as Record<string, unknown> | undefined
-      const stats = p['statistics'] as Record<string, unknown> | undefined
-      if (!player) continue
-      out.push({
-        sofascore_id: Number(player['id']),
-        name: String(player['name'] ?? ''),
-        rating: stats?.['rating'] != null ? Number(stats['rating']) : null,
-        minutes_played: Number(stats?.['minutesPlayed'] ?? 0),
-      })
-    }
-  }
-  return out
-}
-
-// ─── SofaScore lineups endpoint parser ────────────────────────────────────────
-//
-// Endpoint: GET https://www.sofascore.com/api/v1/event/{eventId}/lineups
-//   - Blocked server-side (TLS fingerprinting / 403). Must be fetched manually
-//     in the browser and pasted into the admin UI.
-//   - Structure: { home: { players: [{player: {id, name}, statistics: {...}}] }, away: {...} }
-//   - statistics is a flat object with plain numeric values (no ratio strings)
-//   - Use statistics.rating for the official rating; ignore ratingVersions.alternative
-//   - Only players with minutesPlayed > 0 are included in the output
-
-export function parseSofaScoreLineupsJson(
-  json: Record<string, unknown>
-): SofaScoreFantasyStat[] {
-  const out: SofaScoreFantasyStat[] = []
-
-  for (const side of ['home', 'away'] as const) {
-    const team = json[side] as Record<string, unknown> | undefined
-    const players = team?.['players'] as Array<Record<string, unknown>> | undefined
-    for (const p of players ?? []) {
-      const player = p['player'] as Record<string, unknown> | undefined
-      const stats  = p['statistics'] as Record<string, number | null | undefined> | undefined
-      if (!player || !stats) continue
-
-      const get = (key: string): number => {
-        const v = stats[key]
-        return v != null ? Number(v) : 0
-      }
-      const getOrNull = (key: string): number | null => {
-        const v = stats[key]
-        return v != null ? Number(v) : null
-      }
-
-      const minutesPlayed = get('minutesPlayed')
-      if (minutesPlayed === 0) continue
-
-      const playerObj = p['player'] as Record<string, unknown> | undefined
-      const mvRaw = playerObj?.['proposedMarketValueRaw'] as Record<string, unknown> | undefined
-
-      out.push({
-        sofascore_id:              Number(player['id']),
-        rating:                    getOrNull('rating'),
-        minutes_played:            minutesPlayed,
-        goals:                     get('goals'),
-        goal_assist:               get('goalAssist'),
-        yellow_card:               get('yellowCard'),
-        red_card:                  get('redCard'),
-        own_goals:                 get('ownGoals'),
-        penalty_scored:            get('penaltyScore'),
-        penalty_miss:              get('attemptPenaltyMiss'),
-        penalty_save:              get('penaltySaves'),
-        saves:                     get('savedShotsFromInsideTheBox') + get('savedShotsFromOutsideTheBox'),
-        goals_conceded:            get('goalsConceded'),
-        // Shooting
-        shots:                     get('totalShots'),
-        shots_on_target:           get('onTargetScoringAttempt'),
-        big_chance_created:        get('bigChanceCreated'),
-        big_chance_missed:         get('bigChanceMissed'),
-        blocked_scoring_attempt:   get('blockedScoringAttempt'),
-        // Advanced metrics
-        xg:                        getOrNull('expectedGoals'),
-        xa:                        getOrNull('expectedAssists'),
-        // Passing
-        key_passes:                get('keyPass'),
-        total_passes:              get('totalPass'),
-        accurate_passes:           get('accuratePass'),
-        total_long_balls:          get('totalLongBalls'),
-        accurate_long_balls:       get('accurateLongBalls'),
-        total_crosses:             get('totalCross'),
-        // Dribbling / carrying
-        successful_dribbles:       getOrNull('wonContest'),
-        dribble_attempts:          getOrNull('totalContest'),
-        touches:                   get('touches'),
-        ball_carries:              get('ballCarriesCount'),
-        progressive_carries:       get('progressiveBallCarriesCount'),
-        dispossessed:              get('dispossessed'),
-        possession_lost_ctrl:      get('possessionLostCtrl'),
-        // Defending
-        tackles:                   get('wonTackle'),
-        total_tackles:             get('totalTackle'),
-        interceptions:             get('interceptionWon'),
-        clearances:                get('totalClearance'),
-        blocked_shots:             get('outfielderBlock'),
-        duel_won:                  get('duelWon'),
-        duel_lost:                 get('duelLost'),
-        aerial_won:                get('aerialWon'),
-        aerial_lost:               get('aerialLost'),
-        ball_recoveries:           get('ballRecovery'),
-        fouls_committed:           get('fouls'),
-        was_fouled:                get('wasFouled'),
-        // Player snapshot
-        market_value:              mvRaw?.['value'] != null ? Number(mvRaw['value']) : null,
-        height:                    player['height'] != null ? Number(player['height']) : null,
-      })
-    }
-  }
-
-  return out
-}
-
-// ─── SofaScore fantasy endpoint parser ────────────────────────────────────────
-//
-// Endpoint: GET https://www.sofascore.com/api/v1/fantasy/event/{eventId}
-//   - Has CORS access-control-allow-origin: * → can be fetched by the browser
-//   - Server-side fetches are blocked by TLS fingerprinting (403)
-//   - Returns: { playerStatistics: [{ playerId, statistics: [{key, value}] }] }
-//   - No player names — matching is done via sofascore_id → serie_a_players chain
-//   - Only players who actually played are included (minutesPlayed > 0)
-
-export type SofaScoreFantasyStat = {
-  sofascore_id: number
-  /** null if SofaScore hasn't published the rating yet (live match) */
-  rating: number | null
-  minutes_played: number
-  // Events
-  goals: number
-  goal_assist: number
-  yellow_card: number
-  red_card: number
-  own_goals: number
-  penalty_scored: number
-  penalty_miss: number
-  penalty_save: number
-  // GK
-  saves: number              // savedShotsFromInsideTheBox + savedShotsFromOutsideTheBox
-  goals_conceded: number
-  // Shooting
-  shots: number              // totalShots
-  shots_on_target: number    // onTargetScoringAttempt
-  big_chance_created: number
-  big_chance_missed: number
-  blocked_scoring_attempt: number  // blockedScoringAttempt (opponent blocked your shot)
-  // Advanced metrics
-  xg: number | null          // expectedGoals
-  xa: number | null          // expectedAssists
-  // Passing
-  key_passes: number         // keyPass
-  total_passes: number       // totalPass
-  accurate_passes: number    // accuratePass
-  total_long_balls: number   // totalLongBalls
-  accurate_long_balls: number // accurateLongBalls
-  total_crosses: number      // totalCross
-  // Dribbling / carrying
-  successful_dribbles: number | null  // wonContest
-  dribble_attempts: number | null     // totalContest
-  touches: number            // touches
-  ball_carries: number       // ballCarriesCount
-  progressive_carries: number // progressiveBallCarriesCount
-  dispossessed: number       // dispossessed
-  possession_lost_ctrl: number // possessionLostCtrl
-  // Defending
-  tackles: number            // wonTackle
-  total_tackles: number      // totalTackle
-  interceptions: number      // interceptionWon
-  clearances: number         // totalClearance
-  blocked_shots: number      // outfielderBlock (you blocked opponent's shot)
-  duel_won: number           // duelWon
-  duel_lost: number          // duelLost
-  aerial_won: number         // aerialWon
-  aerial_lost: number        // aerialLost
-  ball_recoveries: number    // ballRecovery
-  fouls_committed: number    // fouls
-  was_fouled: number         // wasFouled
-  // Player snapshot (from player object, not statistics)
-  market_value: number | null  // proposedMarketValueRaw.value in EUR
-  height: number | null        // height in cm
-}
-
-// Extract numerator / denominator from SofaScore ratio strings: "X/Y (Z%)"
-function ratioNum(v: string | number | null | undefined): number | null {
-  if (v == null) return null
-  const m = String(v).match(/^(\d+)\/(\d+)/)
-  return m ? Number(m[1]) : null
-}
-function ratioDen(v: string | number | null | undefined): number | null {
-  if (v == null) return null
-  const m = String(v).match(/^(\d+)\/(\d+)/)
-  return m ? Number(m[2]) : null
-}
-
-export function parseSofaScoreFantasyJson(
-  json: Record<string, unknown>
-): SofaScoreFantasyStat[] {
-  const playerStatistics = json['playerStatistics'] as
-    | Array<Record<string, unknown>>
-    | undefined
-  if (!Array.isArray(playerStatistics)) return []
-
-  const out: SofaScoreFantasyStat[] = []
-  for (const p of playerStatistics) {
-    const statistics = p['statistics'] as
-      | Array<{ key: string; value: string | number }>
-      | undefined
-
-    const getRaw = (key: string): string | number | null =>
-      statistics?.find((s) => s.key === key)?.value ?? null
-
-    const getNum = (key: string): number => {
-      const v = getRaw(key)
-      return v != null ? Number(v) : 0
-    }
-    const getNumOrNull = (key: string): number | null => {
-      const v = getRaw(key)
-      return v != null ? Number(v) : null
-    }
-
-    const minutesPlayed = getNum('minutesPlayed')
-    // Only include players who actually played
-    if (minutesPlayed === 0) continue
-
-    out.push({
-      sofascore_id:              Number(p['playerId']),
-      rating:                    getNumOrNull('rating'),
-      minutes_played:            minutesPlayed,
-      goals:                     getNum('goals'),
-      goal_assist:               getNum('assists'),
-      yellow_card:               getNum('yellowCard'),
-      red_card:                  getNum('redCard'),
-      own_goals:                 getNum('ownGoals'),
-      penalty_scored:            getNum('penaltyScore'),
-      penalty_miss:              getNum('attemptPenaltyMiss'),
-      penalty_save:              getNum('penaltySaves'),
-      saves:                     getNum('savedShotsFromInsideTheBox')
-                               + getNum('savedShotsFromOutsideTheBox'),
-      goals_conceded:            getNum('goalsConceded'),
-      shots:                     0,
-      shots_on_target:           0,
-      big_chance_created:        0,
-      big_chance_missed:         0,
-      blocked_scoring_attempt:   0,
-      xg:                        null,
-      xa:                        null,
-      key_passes:                getNum('keyPass'),
-      total_passes:              0,
-      accurate_passes:           0,
-      total_long_balls:          0,
-      accurate_long_balls:       0,
-      total_crosses:             0,
-      successful_dribbles:       ratioNum(getRaw('wonContest')),
-      dribble_attempts:          ratioDen(getRaw('wonContest')),
-      touches:                   0,
-      ball_carries:              0,
-      progressive_carries:       0,
-      dispossessed:              0,
-      possession_lost_ctrl:      0,
-      tackles:                   getNum('wonTackles'),
-      total_tackles:             0,
-      interceptions:             getNum('interceptions'),
-      clearances:                getNum('totalClearances'),
-      blocked_shots:             getNum('blockedShots'),
-      duel_won:                  0,
-      duel_lost:                 0,
-      aerial_won:                0,
-      aerial_lost:               0,
-      ball_recoveries:           0,
-      fouls_committed:           0,
-      was_fouled:                0,
-      market_value:              null,
-      height:                    null,
-    })
-  }
-  return out
-}
-
-// ─── Merge ────────────────────────────────────────────────────────────────────
-
-export function mergeFixtureStats(
+export function buildFixtureStats(
   fotmob: FotMobData | null,
-  sofascore: SofaScoreStat[] | null,
 ): FetchedPlayerStat[] {
-  const map = new Map<string, FetchedPlayerStat>()
+  if (!fotmob) return []
 
   const yellowsByFotmobId = new Map<number, number>()
   const redsByFotmobId = new Map<number, number>()
@@ -447,7 +117,7 @@ export function mergeFixtureStats(
   const penScoredByFotmobId = new Map<number, number>()
   const penMissedByFotmobId = new Map<number, number>()
 
-  for (const e of fotmob?.events ?? []) {
+  for (const e of fotmob.events) {
     if (!e.player_id) continue
     const pid = e.player_id
     if (e.type === 'Card') {
@@ -467,45 +137,22 @@ export function mergeFixtureStats(
     }
   }
 
-  // Derive clean_sheet per team from FotMob: take the max goals_conceded across all
-  // players on each team. FotMob only populates goals_conceded for GKs, so max gives
-  // the actual goals conceded by that team. If max === 0, it's a clean sheet.
-  // Works correctly for split-GK scenarios: if team conceded 0, every GK has 0 →
-  // max = 0; if they conceded any, at least one GK shows > 0 → max > 0.
+  // Derive clean_sheet per team: max goals_conceded across all players on each
+  // team (FotMob only populates this for GKs). max === 0 → clean sheet.
   const maxGoalsConcededByTeam = new Map<string, number>()
-  for (const s of fotmob?.stats ?? []) {
+  for (const s of fotmob.stats) {
     const prev = maxGoalsConcededByTeam.get(s.team_name) ?? 0
     maxGoalsConcededByTeam.set(s.team_name, Math.max(prev, s.goals_conceded))
   }
 
-  const nullSsExtras = {
-    ss_shots: null, ss_shots_on_target: null,
-    ss_big_chance_created: null, ss_big_chance_missed: null,
-    ss_blocked_scoring_attempt: null,
-    ss_xg: null, ss_xa: null,
-    ss_key_passes: null,
-    ss_total_passes: null, ss_accurate_passes: null,
-    ss_total_long_balls: null, ss_accurate_long_balls: null,
-    ss_total_crosses: null,
-    ss_successful_dribbles: null, ss_dribble_attempts: null,
-    ss_touches: null, ss_ball_carries: null, ss_progressive_carries: null,
-    ss_dispossessed: null, ss_possession_lost_ctrl: null,
-    ss_tackles: null, ss_total_tackles: null,
-    ss_interceptions: null, ss_clearances: null, ss_blocked_shots: null,
-    ss_duel_won: null, ss_duel_lost: null,
-    ss_aerial_won: null, ss_aerial_lost: null,
-    ss_ball_recoveries: null,
-    ss_fouls_committed: null, ss_was_fouled: null,
-    ss_market_value: null, ss_height: null,
-  }
-
-  for (const s of fotmob?.stats ?? []) {
+  const out: FetchedPlayerStat[] = []
+  for (const s of fotmob.stats) {
     const key = normalizeName(s.name)
     const teamConceded = maxGoalsConcededByTeam.get(s.team_name) ?? 0
-    map.set(key, {
-      fotmob_id: s.fotmob_id, sofascore_id: null,
+    out.push({
+      fotmob_id: s.fotmob_id,
       name: s.name, normalized_name: key, team_label: s.team_name,
-      sofascore_rating: null, fotmob_rating: s.rating,
+      fotmob_rating: s.rating,
       minutes_played: s.minutes_played,
       goals_scored: s.goals_scored, assists: s.assists,
       own_goals: ownGoalsByFotmobId.get(s.fotmob_id) ?? 0,
@@ -516,35 +163,10 @@ export function mergeFixtureStats(
       penalties_saved: 0,
       goals_conceded: s.goals_conceded, saves: s.saves,
       clean_sheet: teamConceded === 0,
-      ...nullSsExtras,
     })
   }
 
-  for (const ss of sofascore ?? []) {
-    const key = normalizeName(ss.name)
-    const existing = map.get(key)
-    if (existing) {
-      existing.sofascore_id = ss.sofascore_id
-      existing.sofascore_rating = ss.rating
-      if (existing.minutes_played === 0 && ss.minutes_played > 0)
-        existing.minutes_played = ss.minutes_played
-    } else {
-      map.set(key, {
-        fotmob_id: null, sofascore_id: ss.sofascore_id,
-        name: ss.name, normalized_name: key, team_label: '',
-        sofascore_rating: ss.rating, fotmob_rating: null,
-        minutes_played: ss.minutes_played,
-        goals_scored: 0, assists: 0, own_goals: 0,
-        yellow_cards: 0, red_cards: 0,
-        penalties_scored: 0, penalties_missed: 0, penalties_saved: 0,
-        goals_conceded: 0, saves: 0,
-        clean_sheet: false, // no FotMob data to derive from
-        ...nullSsExtras,
-      })
-    }
-  }
-
-  return Array.from(map.values())
+  return out
 }
 
 // ─── Player name matching ──────────────────────────────────────────────────────
@@ -579,10 +201,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
   }
 
   // Name-matching candidates: exclude any DB player that has a fotmob_player_id set
-  // to a value OTHER than the current stat's fotmob_id. Those players have a verified
-  // identity — they can ONLY be found via exact ID (strategy 0 above). Allowing name
-  // matching for them causes false positives where a different player from another
-  // fixture (e.g. "Leão" at a different club) incorrectly matches to them.
+  // to a value OTHER than the current stat's fotmob_id.
   const candidates = dbPlayers.filter(p =>
     p.fotmob_player_id == null || p.fotmob_player_id === fotmobId
   )
@@ -640,14 +259,11 @@ export function findDbPlayer<T extends DbPlayerEntry>(
 
   // Surname + name-prefix abbreviation (Leghe format)
   // handles: "Thuram K." → "Khéphren Thuram", "Esposito Se." → "Sebastiano Esposito"
-  // Input has exactly 2 tokens, one is short (≤ 3 chars = abbreviated first name),
-  // the other is the surname. Matches DB players whose surname equals the long token
-  // AND whose first name starts with the short token.
   if (statTokens.length === 2) {
     const shortIdx = statTokens[0]!.length <= 3 ? 0 : statTokens[1]!.length <= 3 ? 1 : -1
     if (shortIdx !== -1) {
-      const abbrev    = statTokens[shortIdx]!          // e.g. "k" or "se"
-      const surnameT  = statTokens[1 - shortIdx]!      // e.g. "thuram" or "esposito"
+      const abbrev    = statTokens[shortIdx]!
+      const surnameT  = statTokens[1 - shortIdx]!
       const prefixCands = candidates.filter(p => {
         const pts = p.normalized.split(' ').filter(Boolean)
         if (!pts.includes(surnameT)) return false
@@ -657,10 +273,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     }
   }
 
-  // Strategy 7: multiple abbreviations — "Esposito F. P." → "esposito f p"
-  // Long tokens (>2 chars) are surnames; short tokens (1-2 chars) are prefixes of first names.
-  // Matches DB players where all long tokens appear AND each short token is a prefix of
-  // some remaining DB token.
+  // Multiple abbreviations — "Esposito F. P." → "esposito f p"
   {
     const longTks  = statTokens.filter(t => t.length > 2)
     const shortTks = statTokens.filter(t => t.length <= 2)
@@ -675,9 +288,8 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     }
   }
 
-  // Strategy 8: apostrophe-concatenation — "N'Dicka" normalises to "n dicka" but DB
+  // Apostrophe-concatenation — "N'Dicka" normalises to "n dicka" but DB
   // may store it as "ndicka" (apostrophe removed at import time).
-  // Try concatenating any leading 1-2 char token with the token that follows it.
   for (let i = 0; i < statTokens.length - 1; i++) {
     const tok = statTokens[i]
     if (tok && tok.length <= 2) {
@@ -689,11 +301,9 @@ export function findDbPlayer<T extends DbPlayerEntry>(
       const altNorm = altTokens.join(' ')
       const altSig  = altTokens.filter(t => t.length > 1)
 
-      // Exact match on concatenated form
       const exactAlt = candidates.find(p => p.normalized === altNorm)
       if (exactAlt) return exactAlt
 
-      // Strategy-5 equivalent on concatenated form (unique superset)
       if (altSig.length > 0) {
         const altSuperCands = candidates.filter(p => {
           const psig = p.normalized.split(' ').filter(t => t.length > 1)
@@ -705,10 +315,7 @@ export function findDbPlayer<T extends DbPlayerEntry>(
     }
   }
 
-  // Strategy 9: token intersection — "Zambo Anguissa" ↔ "Frank Anguissa"
-  // When stat has ≥2 significant tokens and shares at least 1 with the DB player,
-  // unique match only. Catches cases where the input name uses a different part of
-  // the full name than what is stored in DB.
+  // Token intersection — "Zambo Anguissa" ↔ "Frank Anguissa"
   if (statSig.length >= 2) {
     const sigSet = new Set(statSig)
     const intersectCands = candidates.filter(p => {

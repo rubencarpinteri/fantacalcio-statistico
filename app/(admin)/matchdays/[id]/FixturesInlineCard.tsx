@@ -24,10 +24,9 @@ export function FixturesInlineCard({
   const [importing, startImport] = useTransition()
 
   const fotmobDefault = fixtures.map((f) => f.fotmob_match_id ?? '').join('\n')
-  const sofascoreDefault = fixtures.map((f) => f.sofascore_event_id ?? '').join('\n')
 
   const csvHasIds = roundMatches.some(
-    (m) => m.sofascoreMatchId !== null || m.fotmobMatchId !== null,
+    (m) => m.fotmobMatchId !== null,
   )
 
   function handleAutoImport() {
@@ -103,27 +102,15 @@ export function FixturesInlineCard({
               </ol>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-ink-4 mb-1">FotMob IDs</label>
-              <textarea
-                name="fotmobIds"
-                rows={10}
-                defaultValue={fotmobDefault}
-                placeholder={'4803335\n4803336\n...'}
-                className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm font-mono text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-ink-4 mb-1">SofaScore IDs</label>
-              <textarea
-                name="sofascoreIds"
-                rows={10}
-                defaultValue={sofascoreDefault}
-                placeholder={'13981724\n13981725\n...'}
-                className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm font-mono text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none resize-none"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-ink-4 mb-1">FotMob IDs</label>
+            <textarea
+              name="fotmobIds"
+              rows={10}
+              defaultValue={fotmobDefault}
+              placeholder={'4803335\n4803336\n...'}
+              className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm font-mono text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none resize-none"
+            />
           </div>
           {state.error && <p className="text-xs text-red-400">{state.error}</p>}
           {state.success && <p className="text-xs text-green-400">{state.count} fixture salvate.</p>}

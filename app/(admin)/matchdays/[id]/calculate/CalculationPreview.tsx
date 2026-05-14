@@ -149,7 +149,6 @@ function EditStatsModal({
           is_provisional: form.is_provisional,
           has_decisive_event: form.goals_scored > 0 || form.assists > 0 || form.yellow_cards > 0 || form.red_cards > 0 || form.penalties_scored > 0 || form.penalties_missed > 0 || form.penalties_saved > 0,
           rating_class_override: null,
-          sofascore_rating: null,
           fotmob_rating: null,
           // Defensive/advanced fields not editable in this modal — preserve via 0/null defaults
           tackles_won: 0,
