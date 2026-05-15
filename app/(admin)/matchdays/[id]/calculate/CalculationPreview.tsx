@@ -428,7 +428,6 @@ export function CalculationPreview({
                     <th className="px-4 py-2.5">Classe</th>
                     <th className="px-4 py-2.5 text-right">Min·F</th>
                     <th className="px-4 py-2.5 text-right">z FM</th>
-                    <th className="px-4 py-2.5 text-right">z SS</th>
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
                     <th className="px-4 py-2.5 text-right font-bold text-ink-1">Fantavoto</th>
@@ -464,11 +463,6 @@ export function CalculationPreview({
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.z_fotmob)}
-                          </td>
-                          <td className="px-4 py-2.5 text-right font-mono">
-                            {c.z_sofascore !== null
-                              ? <span className="text-indigo-300">{fmt(c.z_sofascore)}</span>
-                              : <span className="text-ink-4">—</span>}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.voto_base)}
@@ -510,31 +504,12 @@ export function CalculationPreview({
 
                         {/* Expanded breakdown row */}
                         {isExpanded && (() => {
-                          // Per-source translated voto_base (computed client-side from stored intermediates)
-                          // Uses: z_fotmob / z_sofascore, minutes_factor, role_multiplier stored in the row
-                          // target params come from league engine config via props
-                          const CAP_MIN = 3.0
-                          const CAP_MAX = 9.5
-                          const mf = c.minutes_factor ?? 1
-                          const rm = c.role_multiplier ?? 1
-
-                          function calcVotoBase(z: number | null): number | null {
-                            if (z === null || c.minutes_factor === null || c.role_multiplier === null) return null
-                            const b0 = targetMeanVote + targetVoteStd * (z * mf)
-                            const b1 = targetMeanVote + rm * (b0 - targetMeanVote)
-                            return Math.max(CAP_MIN, Math.min(CAP_MAX, b1))
-                          }
-
-                          const vbFm = calcVotoBase(c.z_fotmob)
-                          const vbSs = calcVotoBase(c.z_sofascore)
-
                           return (
                           <tr className="bg-glass-soft">
-                            <td colSpan={9} className="px-6 py-4">
+                            <td colSpan={8} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
                                   ['z FotMob', fmt(c.z_fotmob)],
-                                  ['z SofaScore', c.z_sofascore !== null ? fmt(c.z_sofascore) : '—'],
                                   ['min·factor', fmt(c.minutes_factor, 2)],
                                   ['z_adjusted', fmt(c.z_adjusted)],
                                   ['b0', fmt(c.b0)],
@@ -545,40 +520,11 @@ export function CalculationPreview({
                                   ['fantavoto', fmtFv(c.fantavoto)],
                                 ].map(([label, value]) => (
                                   <div key={label} className="flex justify-between gap-2">
-                                    <span className={label?.startsWith('z Sofa') ? 'text-indigo-400/60' : label?.startsWith('z Fot') ? 'text-ink-3' : 'text-ink-4'}>{label}</span>
-                                    <span className={`font-mono ${label?.startsWith('z Sofa') ? 'text-indigo-300' : 'text-ink-3'}`}>{value}</span>
+                                    <span className={label?.startsWith('z Fot') ? 'text-ink-3' : 'text-ink-4'}>{label}</span>
+                                    <span className="font-mono text-ink-3">{value}</span>
                                   </div>
                                 ))}
                               </div>
-
-                              {/* Per-source translated marks */}
-                              {(vbFm !== null || vbSs !== null) && (
-                                <div className="mt-3 border-t border-hairline pt-3">
-                                  <p className="mb-1.5 text-xs font-medium text-ink-4 uppercase tracking-wider">Voto base per fonte</p>
-                                  <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs">
-                                    {vbFm !== null && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-ink-3">Solo FotMob</span>
-                                        <span className="font-mono font-bold text-[#c8c8f0]">{fmt(vbFm)}</span>
-                                      </div>
-                                    )}
-                                    {vbSs !== null && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-indigo-400/60">Solo SofaScore</span>
-                                        <span className="font-mono font-bold text-indigo-300">{fmt(vbSs)}</span>
-                                      </div>
-                                    )}
-                                    {vbFm !== null && vbSs !== null && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-ink-4">Δ FM−SS</span>
-                                        <span className={`font-mono ${Math.abs(vbFm - vbSs) > 0.5 ? 'text-amber-400' : 'text-ink-3'}`}>
-                                          {(vbFm - vbSs) >= 0 ? '+' : ''}{(vbFm - vbSs).toFixed(2)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
 
                               {breakdown && breakdown.length > 0 && (
                                 <div className="mt-3 border-t border-hairline pt-3">

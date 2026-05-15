@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/app/(auth)/login/actions'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-type IconName = 'calendar' | 'trophy' | 'user' | 'beaker' | 'gear' | 'logout' | 'ball'
+type IconName = 'calendar' | 'trophy' | 'user' | 'beaker' | 'gear' | 'logout' | 'ball' | 'globe'
 
 interface NavItem {
   href: string
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/players',      label: 'Giocatori',    icon: 'user',   adminOnly: true },
   { href: '/playground',   label: 'Playground',   icon: 'beaker', adminOnly: true },
   { href: '/league',       label: 'Impostazioni', icon: 'gear',   adminOnly: true },
+  { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe',  adminOnly: true },
 ]
 
 function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -85,6 +86,15 @@ function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {
           <circle cx="12" cy="12" r="9" />
           <path d="M12 3l3 5-3 4-3-4z" />
           <path d="M12 12l5 3-2 5M12 12l-5 3 2 5M12 12l4-7M12 12l-4-7" />
+        </svg>
+      )
+    case 'globe':
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 3c-2.5 2.5-4 5.5-4 9s1.5 6.5 4 9M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9" />
+          <path d="M3 12h18" />
+          <path d="M3.6 8h16.8M3.6 16h16.8" />
         </svg>
       )
   }

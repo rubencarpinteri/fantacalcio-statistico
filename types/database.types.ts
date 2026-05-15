@@ -550,6 +550,1273 @@ export type Database = {
           },
         ]
       }
+      fm_audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["fm_audit_action"]
+          actor_id: string | null
+          competition_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["fm_audit_action"]
+          actor_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["fm_audit_action"]
+          actor_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_audit_log_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_battle_royale_matchup: {
+        Row: {
+          created_at: string
+          id: string
+          result: Database["public"]["Enums"]["fm_match_result"]
+          scoring_round_id: string
+          team_a_goals: number
+          team_a_id: string
+          team_a_points: number
+          team_a_score: number
+          team_b_goals: number
+          team_b_id: string
+          team_b_points: number
+          team_b_score: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          result: Database["public"]["Enums"]["fm_match_result"]
+          scoring_round_id: string
+          team_a_goals: number
+          team_a_id: string
+          team_a_points: number
+          team_a_score: number
+          team_b_goals: number
+          team_b_id: string
+          team_b_points: number
+          team_b_score: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          result?: Database["public"]["Enums"]["fm_match_result"]
+          scoring_round_id?: string
+          team_a_goals?: number
+          team_a_id?: string
+          team_a_points?: number
+          team_a_score?: number
+          team_b_goals?: number
+          team_b_id?: string
+          team_b_points?: number
+          team_b_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_battle_royale_matchup_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_battle_royale_matchup_team_a_id_fkey"
+            columns: ["team_a_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_battle_royale_matchup_team_b_id_fkey"
+            columns: ["team_b_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_coach: {
+        Row: {
+          competition_id: string
+          created_at: string
+          fotmob_coach_id: number | null
+          id: string
+          is_active: boolean
+          name: string
+          national_team_id: string
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          fotmob_coach_id?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          national_team_id: string
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          fotmob_coach_id?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          national_team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_coach_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_coach_national_team_id_fkey"
+            columns: ["national_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_national_team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_coach_match_score: {
+        Row: {
+          bonus_or_malus: number
+          calc_snapshot: Json | null
+          coach_id: string
+          created_at: string
+          final_score: number
+          id: string
+          match_result: Database["public"]["Enums"]["fm_match_result"]
+          real_match_id: string
+          scoring_round_id: string
+          team_tier: Database["public"]["Enums"]["fm_team_tier"]
+          updated_at: string
+        }
+        Insert: {
+          bonus_or_malus: number
+          calc_snapshot?: Json | null
+          coach_id: string
+          created_at?: string
+          final_score: number
+          id?: string
+          match_result: Database["public"]["Enums"]["fm_match_result"]
+          real_match_id: string
+          scoring_round_id: string
+          team_tier: Database["public"]["Enums"]["fm_team_tier"]
+          updated_at?: string
+        }
+        Update: {
+          bonus_or_malus?: number
+          calc_snapshot?: Json | null
+          coach_id?: string
+          created_at?: string
+          final_score?: number
+          id?: string
+          match_result?: Database["public"]["Enums"]["fm_match_result"]
+          real_match_id?: string
+          scoring_round_id?: string
+          team_tier?: Database["public"]["Enums"]["fm_team_tier"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_coach_match_score_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "fm_coach"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_coach_match_score_real_match_id_fkey"
+            columns: ["real_match_id"]
+            isOneToOne: false
+            referencedRelation: "fm_real_match"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_coach_match_score_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_competition: {
+        Row: {
+          created_at: string
+          edition: string
+          ends_at: string | null
+          id: string
+          name: string
+          starts_at: string | null
+          status: Database["public"]["Enums"]["fm_competition_status"]
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          edition: string
+          ends_at?: string | null
+          id?: string
+          name: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["fm_competition_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          edition?: string
+          ends_at?: string | null
+          id?: string
+          name?: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["fm_competition_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fm_competition_config: {
+        Row: {
+          competition_id: string
+          config: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          competition_id: string
+          config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          competition_id?: string
+          config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_competition_config_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: true
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_competition_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_competition_standing: {
+        Row: {
+          best_round_score: number
+          br_points_total: number
+          competition_id: string
+          computed_at: string
+          fantasy_team_id: string
+          id: string
+          mvp_bonus_total: number
+          popularity_penalty_total: number
+          rank: number | null
+          raw_score_total: number
+          round_wins: number
+        }
+        Insert: {
+          best_round_score?: number
+          br_points_total?: number
+          competition_id: string
+          computed_at?: string
+          fantasy_team_id: string
+          id?: string
+          mvp_bonus_total?: number
+          popularity_penalty_total?: number
+          rank?: number | null
+          raw_score_total?: number
+          round_wins?: number
+        }
+        Update: {
+          best_round_score?: number
+          br_points_total?: number
+          competition_id?: string
+          computed_at?: string
+          fantasy_team_id?: string
+          id?: string
+          mvp_bonus_total?: number
+          popularity_penalty_total?: number
+          rank?: number | null
+          raw_score_total?: number
+          round_wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_competition_standing_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_competition_standing_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_fantasy_team: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          manager_id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          manager_id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          manager_id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_fantasy_team_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_fantasy_team_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_fantasy_team_round_score: {
+        Row: {
+          br_draws: number
+          br_losses: number
+          br_points: number
+          br_wins: number
+          coach_total: number
+          created_at: string
+          fantasy_team_id: string
+          goals_scored: number
+          id: string
+          player_total: number
+          rank_in_round: number | null
+          raw_total: number
+          scoring_round_id: string
+          updated_at: string
+        }
+        Insert: {
+          br_draws?: number
+          br_losses?: number
+          br_points?: number
+          br_wins?: number
+          coach_total?: number
+          created_at?: string
+          fantasy_team_id: string
+          goals_scored?: number
+          id?: string
+          player_total?: number
+          rank_in_round?: number | null
+          raw_total?: number
+          scoring_round_id: string
+          updated_at?: string
+        }
+        Update: {
+          br_draws?: number
+          br_losses?: number
+          br_points?: number
+          br_wins?: number
+          coach_total?: number
+          created_at?: string
+          fantasy_team_id?: string
+          goals_scored?: number
+          id?: string
+          player_total?: number
+          rank_in_round?: number | null
+          raw_total?: number
+          scoring_round_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_fantasy_team_round_score_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_fantasy_team_round_score_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_matchday_lineup: {
+        Row: {
+          created_at: string
+          fantasy_team_id: string
+          formation: string
+          id: string
+          locked_at: string | null
+          phase_squad_id: string
+          scoring_round_id: string
+          status: Database["public"]["Enums"]["fm_lineup_status"]
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_team_id: string
+          formation: string
+          id?: string
+          locked_at?: string | null
+          phase_squad_id: string
+          scoring_round_id: string
+          status?: Database["public"]["Enums"]["fm_lineup_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_team_id?: string
+          formation?: string
+          id?: string
+          locked_at?: string | null
+          phase_squad_id?: string
+          scoring_round_id?: string
+          status?: Database["public"]["Enums"]["fm_lineup_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_matchday_lineup_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_matchday_lineup_phase_squad_id_fkey"
+            columns: ["phase_squad_id"]
+            isOneToOne: false
+            referencedRelation: "fm_phase_squad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_matchday_lineup_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_matchday_lineup_player: {
+        Row: {
+          created_at: string
+          id: string
+          is_starter: boolean
+          lineup_id: string
+          player_id: string
+          slot_order: number
+          slot_position: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_starter?: boolean
+          lineup_id: string
+          player_id: string
+          slot_order: number
+          slot_position: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_starter?: boolean
+          lineup_id?: string
+          player_id?: string
+          slot_order?: number
+          slot_position?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_matchday_lineup_player_lineup_id_fkey"
+            columns: ["lineup_id"]
+            isOneToOne: false
+            referencedRelation: "fm_matchday_lineup"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_matchday_lineup_player_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "fm_player"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_national_team: {
+        Row: {
+          competition_id: string
+          created_at: string
+          eliminated_at: string | null
+          fifa_code: string
+          flag_emoji: string | null
+          fotmob_team_id: number | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["fm_team_status"]
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          eliminated_at?: string | null
+          fifa_code: string
+          flag_emoji?: string | null
+          fotmob_team_id?: number | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["fm_team_status"]
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          eliminated_at?: string | null
+          fifa_code?: string
+          flag_emoji?: string | null
+          fotmob_team_id?: number | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["fm_team_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_national_team_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_phase: {
+        Row: {
+          budget_config: Json
+          budget_mode: Database["public"]["Enums"]["fm_budget_mode"]
+          competition_id: string
+          created_at: string
+          display_order: number
+          id: string
+          kind: Database["public"]["Enums"]["fm_phase_kind"]
+          name: string
+          requires_new_squad: boolean
+          reveal_at: string | null
+          squad_lock_at: string | null
+          squad_open_at: string | null
+          status: Database["public"]["Enums"]["fm_phase_status"]
+          updated_at: string
+        }
+        Insert: {
+          budget_config?: Json
+          budget_mode?: Database["public"]["Enums"]["fm_budget_mode"]
+          competition_id: string
+          created_at?: string
+          display_order: number
+          id?: string
+          kind: Database["public"]["Enums"]["fm_phase_kind"]
+          name: string
+          requires_new_squad?: boolean
+          reveal_at?: string | null
+          squad_lock_at?: string | null
+          squad_open_at?: string | null
+          status?: Database["public"]["Enums"]["fm_phase_status"]
+          updated_at?: string
+        }
+        Update: {
+          budget_config?: Json
+          budget_mode?: Database["public"]["Enums"]["fm_budget_mode"]
+          competition_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          kind?: Database["public"]["Enums"]["fm_phase_kind"]
+          name?: string
+          requires_new_squad?: boolean
+          reveal_at?: string | null
+          squad_lock_at?: string | null
+          squad_open_at?: string | null
+          status?: Database["public"]["Enums"]["fm_phase_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_phase_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_phase_coach_tier: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          odds_source: string | null
+          odds_value: number | null
+          phase_id: string
+          tier: Database["public"]["Enums"]["fm_team_tier"]
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          odds_source?: string | null
+          odds_value?: number | null
+          phase_id: string
+          tier: Database["public"]["Enums"]["fm_team_tier"]
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          odds_source?: string | null
+          odds_value?: number | null
+          phase_id?: string
+          tier?: Database["public"]["Enums"]["fm_team_tier"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_phase_coach_tier_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "fm_coach"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_phase_coach_tier_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "fm_phase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_phase_player_price: {
+        Row: {
+          created_at: string
+          id: string
+          phase_id: string
+          player_id: string
+          price: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase_id: string
+          player_id: string
+          price: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase_id?: string
+          player_id?: string
+          price?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_phase_player_price_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "fm_phase"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_phase_player_price_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "fm_player"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_phase_squad: {
+        Row: {
+          budget_spent: number
+          budget_total: number
+          coach_id: string | null
+          created_at: string
+          fantasy_team_id: string
+          id: string
+          locked_at: string | null
+          phase_id: string
+          status: Database["public"]["Enums"]["fm_squad_status"]
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget_spent?: number
+          budget_total: number
+          coach_id?: string | null
+          created_at?: string
+          fantasy_team_id: string
+          id?: string
+          locked_at?: string | null
+          phase_id: string
+          status?: Database["public"]["Enums"]["fm_squad_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget_spent?: number
+          budget_total?: number
+          coach_id?: string | null
+          created_at?: string
+          fantasy_team_id?: string
+          id?: string
+          locked_at?: string | null
+          phase_id?: string
+          status?: Database["public"]["Enums"]["fm_squad_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_phase_squad_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "fm_coach"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_phase_squad_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_phase_squad_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "fm_phase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_phase_squad_player: {
+        Row: {
+          created_at: string
+          id: string
+          phase_squad_id: string
+          player_id: string
+          purchase_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase_squad_id: string
+          player_id: string
+          purchase_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase_squad_id?: string
+          player_id?: string
+          purchase_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_phase_squad_player_phase_squad_id_fkey"
+            columns: ["phase_squad_id"]
+            isOneToOne: false
+            referencedRelation: "fm_phase_squad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_phase_squad_player_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "fm_player"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_player: {
+        Row: {
+          base_price: number
+          competition_id: string
+          created_at: string
+          fotmob_player_id: number | null
+          id: string
+          is_active: boolean
+          name: string
+          national_team_id: string
+          role: Database["public"]["Enums"]["fm_player_role"]
+          shirt_number: number | null
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          competition_id: string
+          created_at?: string
+          fotmob_player_id?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          national_team_id: string
+          role: Database["public"]["Enums"]["fm_player_role"]
+          shirt_number?: number | null
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          competition_id?: string
+          created_at?: string
+          fotmob_player_id?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          national_team_id?: string
+          role?: Database["public"]["Enums"]["fm_player_role"]
+          shirt_number?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_player_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_player_national_team_id_fkey"
+            columns: ["national_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_national_team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_player_match_score: {
+        Row: {
+          base_rating: number | null
+          calc_snapshot: Json | null
+          created_at: string
+          final_score: number
+          football_bonus: number
+          football_malus: number
+          id: string
+          mvp_bonus_amount: number
+          mvp_bonus_pct: number
+          ownership_pct: number
+          player_id: string
+          popularity_penalty_amount: number
+          popularity_penalty_pct: number
+          raw_subtotal: number
+          real_match_id: string
+          scoring_round_id: string
+          updated_at: string
+          voto_base: number | null
+          z_fotmob: number | null
+        }
+        Insert: {
+          base_rating?: number | null
+          calc_snapshot?: Json | null
+          created_at?: string
+          final_score?: number
+          football_bonus?: number
+          football_malus?: number
+          id?: string
+          mvp_bonus_amount?: number
+          mvp_bonus_pct?: number
+          ownership_pct?: number
+          player_id: string
+          popularity_penalty_amount?: number
+          popularity_penalty_pct?: number
+          raw_subtotal?: number
+          real_match_id: string
+          scoring_round_id: string
+          updated_at?: string
+          voto_base?: number | null
+          z_fotmob?: number | null
+        }
+        Update: {
+          base_rating?: number | null
+          calc_snapshot?: Json | null
+          created_at?: string
+          final_score?: number
+          football_bonus?: number
+          football_malus?: number
+          id?: string
+          mvp_bonus_amount?: number
+          mvp_bonus_pct?: number
+          ownership_pct?: number
+          player_id?: string
+          popularity_penalty_amount?: number
+          popularity_penalty_pct?: number
+          raw_subtotal?: number
+          real_match_id?: string
+          scoring_round_id?: string
+          updated_at?: string
+          voto_base?: number | null
+          z_fotmob?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_player_match_score_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "fm_player"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_player_match_score_real_match_id_fkey"
+            columns: ["real_match_id"]
+            isOneToOne: false
+            referencedRelation: "fm_real_match"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_player_match_score_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_player_match_stats: {
+        Row: {
+          assists: number
+          clean_sheet: boolean
+          created_at: string
+          fotmob_rating: number | null
+          goals: number
+          goals_conceded: number
+          id: string
+          is_mvp: boolean
+          minutes_played: number
+          own_goals: number
+          penalties_missed: number
+          penalties_saved: number
+          player_id: string
+          raw_payload: Json | null
+          real_match_id: string
+          red_cards: number
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          assists?: number
+          clean_sheet?: boolean
+          created_at?: string
+          fotmob_rating?: number | null
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          is_mvp?: boolean
+          minutes_played?: number
+          own_goals?: number
+          penalties_missed?: number
+          penalties_saved?: number
+          player_id: string
+          raw_payload?: Json | null
+          real_match_id: string
+          red_cards?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          assists?: number
+          clean_sheet?: boolean
+          created_at?: string
+          fotmob_rating?: number | null
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          is_mvp?: boolean
+          minutes_played?: number
+          own_goals?: number
+          penalties_missed?: number
+          penalties_saved?: number
+          player_id?: string
+          raw_payload?: Json | null
+          real_match_id?: string
+          red_cards?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_player_match_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "fm_player"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_player_match_stats_real_match_id_fkey"
+            columns: ["real_match_id"]
+            isOneToOne: false
+            referencedRelation: "fm_real_match"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_real_match: {
+        Row: {
+          away_score: number | null
+          away_team_id: string
+          created_at: string
+          fotmob_match_id: number | null
+          fotmob_url: string | null
+          home_score: number | null
+          home_team_id: string
+          id: string
+          kickoff_at: string
+          result: Database["public"]["Enums"]["fm_match_result"] | null
+          scoring_round_id: string
+          status: Database["public"]["Enums"]["fm_match_status"]
+          updated_at: string
+        }
+        Insert: {
+          away_score?: number | null
+          away_team_id: string
+          created_at?: string
+          fotmob_match_id?: number | null
+          fotmob_url?: string | null
+          home_score?: number | null
+          home_team_id: string
+          id?: string
+          kickoff_at: string
+          result?: Database["public"]["Enums"]["fm_match_result"] | null
+          scoring_round_id: string
+          status?: Database["public"]["Enums"]["fm_match_status"]
+          updated_at?: string
+        }
+        Update: {
+          away_score?: number | null
+          away_team_id?: string
+          created_at?: string
+          fotmob_match_id?: number | null
+          fotmob_url?: string | null
+          home_score?: number | null
+          home_team_id?: string
+          id?: string
+          kickoff_at?: string
+          result?: Database["public"]["Enums"]["fm_match_result"] | null
+          scoring_round_id?: string
+          status?: Database["public"]["Enums"]["fm_match_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_real_match_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_national_team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_real_match_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_national_team"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_real_match_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_round_player_ownership: {
+        Row: {
+          created_at: string
+          id: string
+          ownership_pct: number
+          player_id: string
+          scoring_round_id: string
+          teams_owning: number
+          teams_total: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ownership_pct: number
+          player_id: string
+          scoring_round_id: string
+          teams_owning: number
+          teams_total: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ownership_pct?: number
+          player_id?: string
+          scoring_round_id?: string
+          teams_owning?: number
+          teams_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_round_player_ownership_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "fm_player"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_round_player_ownership_scoring_round_id_fkey"
+            columns: ["scoring_round_id"]
+            isOneToOne: false
+            referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_scoring_round: {
+        Row: {
+          competition_id: string
+          created_at: string
+          display_order: number
+          id: string
+          lineup_open_at: string | null
+          lock_at: string | null
+          name: string
+          phase_id: string
+          published_at: string | null
+          status: Database["public"]["Enums"]["fm_round_status"]
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          display_order: number
+          id?: string
+          lineup_open_at?: string | null
+          lock_at?: string | null
+          name: string
+          phase_id: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["fm_round_status"]
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          lineup_open_at?: string | null
+          lock_at?: string | null
+          name?: string
+          phase_id?: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["fm_round_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_scoring_round_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_scoring_round_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "fm_phase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formation_slots: {
         Row: {
           allowed_mantra_roles: string[]
@@ -2330,6 +3597,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fm_get_user_team_id: {
+        Args: { p_competition_id: string }
+        Returns: string
+      }
+      fm_is_competition_member: {
+        Args: { p_competition_id: string }
+        Returns: boolean
+      }
+      fm_phase_is_revealed: { Args: { p_phase_id: string }; Returns: boolean }
+      fm_round_is_published: { Args: { p_round_id: string }; Returns: boolean }
+      fm_round_is_revealed: { Args: { p_round_id: string }; Returns: boolean }
       get_user_team_id: { Args: { p_league_id: string }; Returns: string }
       immutable_unaccent: { Args: { "": string }; Returns: string }
       is_league_admin: { Args: { p_league_id: string }; Returns: boolean }
@@ -2387,6 +3665,61 @@ export type Database = {
       competition_type: "campionato" | "battle_royale" | "coppa"
       display_rounding: "one_decimal" | "nearest_half"
       fixture_result: "home_win" | "away_win" | "draw"
+      fm_audit_action:
+        | "competition_create"
+        | "phase_create"
+        | "phase_lock"
+        | "phase_unlock"
+        | "round_create"
+        | "round_lock"
+        | "round_unlock"
+        | "round_publish"
+        | "team_create"
+        | "team_eliminate"
+        | "team_reactivate"
+        | "player_create"
+        | "player_update"
+        | "player_eliminate"
+        | "coach_create"
+        | "coach_update"
+        | "coach_tier_change"
+        | "price_update"
+        | "price_bulk_import"
+        | "squad_save"
+        | "squad_submit"
+        | "squad_admin_edit"
+        | "lineup_save"
+        | "lineup_submit"
+        | "lineup_admin_edit"
+        | "ratings_ingest"
+        | "stats_edit"
+        | "score_calculate"
+        | "score_publish"
+        | "config_change"
+      fm_budget_mode: "fixed" | "reward_leaders" | "comeback"
+      fm_calc_order: "mvp_then_penalty" | "penalty_then_mvp"
+      fm_competition_status:
+        | "draft"
+        | "open"
+        | "in_progress"
+        | "completed"
+        | "archived"
+      fm_lineup_status: "draft" | "submitted" | "locked"
+      fm_match_result: "home_win" | "draw" | "away_win"
+      fm_match_status: "scheduled" | "in_progress" | "finished" | "cancelled"
+      fm_phase_kind:
+        | "group_stage"
+        | "round_of_32"
+        | "round_of_16"
+        | "quarter_final"
+        | "semi_final"
+        | "final"
+      fm_phase_status: "draft" | "open" | "locked" | "completed"
+      fm_player_role: "P" | "D" | "C" | "A"
+      fm_round_status: "draft" | "open" | "locked" | "scoring" | "published"
+      fm_squad_status: "draft" | "submitted" | "locked"
+      fm_team_status: "active" | "eliminated"
+      fm_team_tier: "tier_1" | "tier_2" | "tier_3" | "tier_4"
       league_role: "league_admin" | "manager"
       lineup_status: "draft" | "submitted"
       lock_behavior: "auto" | "manual"
@@ -2564,6 +3897,64 @@ export const Constants = {
       competition_type: ["campionato", "battle_royale", "coppa"],
       display_rounding: ["one_decimal", "nearest_half"],
       fixture_result: ["home_win", "away_win", "draw"],
+      fm_audit_action: [
+        "competition_create",
+        "phase_create",
+        "phase_lock",
+        "phase_unlock",
+        "round_create",
+        "round_lock",
+        "round_unlock",
+        "round_publish",
+        "team_create",
+        "team_eliminate",
+        "team_reactivate",
+        "player_create",
+        "player_update",
+        "player_eliminate",
+        "coach_create",
+        "coach_update",
+        "coach_tier_change",
+        "price_update",
+        "price_bulk_import",
+        "squad_save",
+        "squad_submit",
+        "squad_admin_edit",
+        "lineup_save",
+        "lineup_submit",
+        "lineup_admin_edit",
+        "ratings_ingest",
+        "stats_edit",
+        "score_calculate",
+        "score_publish",
+        "config_change",
+      ],
+      fm_budget_mode: ["fixed", "reward_leaders", "comeback"],
+      fm_calc_order: ["mvp_then_penalty", "penalty_then_mvp"],
+      fm_competition_status: [
+        "draft",
+        "open",
+        "in_progress",
+        "completed",
+        "archived",
+      ],
+      fm_lineup_status: ["draft", "submitted", "locked"],
+      fm_match_result: ["home_win", "draw", "away_win"],
+      fm_match_status: ["scheduled", "in_progress", "finished", "cancelled"],
+      fm_phase_kind: [
+        "group_stage",
+        "round_of_32",
+        "round_of_16",
+        "quarter_final",
+        "semi_final",
+        "final",
+      ],
+      fm_phase_status: ["draft", "open", "locked", "completed"],
+      fm_player_role: ["P", "D", "C", "A"],
+      fm_round_status: ["draft", "open", "locked", "scoring", "published"],
+      fm_squad_status: ["draft", "submitted", "locked"],
+      fm_team_status: ["active", "eliminated"],
+      fm_team_tier: ["tier_1", "tier_2", "tier_3", "tier_4"],
       league_role: ["league_admin", "manager"],
       lineup_status: ["draft", "submitted"],
       lock_behavior: ["auto", "manual"],
@@ -2604,3 +3995,44 @@ export type CompetitionFixture = Database["public"]["Tables"]["competition_fixtu
 export type CompetitionMatchup = Database["public"]["Tables"]["competition_matchups"]["Row"]
 export type LeagueEngineConfig = Database["public"]["Tables"]["league_engine_config"]["Row"]
 export type SerieAPlayer = Database["public"]["Tables"]["serie_a_players"]["Row"]
+
+// ── FantaMondiale Statistico aliases ──
+
+export type FMCompetition = Database["public"]["Tables"]["fm_competition"]["Row"]
+export type FMCompetitionConfigRow = Database["public"]["Tables"]["fm_competition_config"]["Row"]
+export type FMNationalTeam = Database["public"]["Tables"]["fm_national_team"]["Row"]
+export type FMPlayer = Database["public"]["Tables"]["fm_player"]["Row"]
+export type FMCoach = Database["public"]["Tables"]["fm_coach"]["Row"]
+export type FMPhase = Database["public"]["Tables"]["fm_phase"]["Row"]
+export type FMPhasePlayerPrice = Database["public"]["Tables"]["fm_phase_player_price"]["Row"]
+export type FMPhaseCoachTier = Database["public"]["Tables"]["fm_phase_coach_tier"]["Row"]
+export type FMScoringRound = Database["public"]["Tables"]["fm_scoring_round"]["Row"]
+export type FMRealMatch = Database["public"]["Tables"]["fm_real_match"]["Row"]
+export type FMFantasyTeam = Database["public"]["Tables"]["fm_fantasy_team"]["Row"]
+export type FMPhaseSquad = Database["public"]["Tables"]["fm_phase_squad"]["Row"]
+export type FMPhaseSquadPlayer = Database["public"]["Tables"]["fm_phase_squad_player"]["Row"]
+export type FMMatchdayLineup = Database["public"]["Tables"]["fm_matchday_lineup"]["Row"]
+export type FMMatchdayLineupPlayer = Database["public"]["Tables"]["fm_matchday_lineup_player"]["Row"]
+export type FMRoundPlayerOwnership = Database["public"]["Tables"]["fm_round_player_ownership"]["Row"]
+export type FMPlayerMatchStats = Database["public"]["Tables"]["fm_player_match_stats"]["Row"]
+export type FMPlayerMatchScore = Database["public"]["Tables"]["fm_player_match_score"]["Row"]
+export type FMCoachMatchScore = Database["public"]["Tables"]["fm_coach_match_score"]["Row"]
+export type FMFantasyTeamRoundScore = Database["public"]["Tables"]["fm_fantasy_team_round_score"]["Row"]
+export type FMBattleRoyaleMatchup = Database["public"]["Tables"]["fm_battle_royale_matchup"]["Row"]
+export type FMCompetitionStanding = Database["public"]["Tables"]["fm_competition_standing"]["Row"]
+export type FMAuditLog = Database["public"]["Tables"]["fm_audit_log"]["Row"]
+
+export type FMCompetitionStatus = Database["public"]["Enums"]["fm_competition_status"]
+export type FMPhaseKind = Database["public"]["Enums"]["fm_phase_kind"]
+export type FMPhaseStatus = Database["public"]["Enums"]["fm_phase_status"]
+export type FMRoundStatus = Database["public"]["Enums"]["fm_round_status"]
+export type FMPlayerRoleEnum = Database["public"]["Enums"]["fm_player_role"]
+export type FMTeamStatus = Database["public"]["Enums"]["fm_team_status"]
+export type FMTeamTierEnum = Database["public"]["Enums"]["fm_team_tier"]
+export type FMBudgetModeEnum = Database["public"]["Enums"]["fm_budget_mode"]
+export type FMSquadStatus = Database["public"]["Enums"]["fm_squad_status"]
+export type FMLineupStatus = Database["public"]["Enums"]["fm_lineup_status"]
+export type FMMatchStatus = Database["public"]["Enums"]["fm_match_status"]
+export type FMMatchResult = Database["public"]["Enums"]["fm_match_result"]
+export type FMCalcOrderEnum = Database["public"]["Enums"]["fm_calc_order"]
+export type FMAuditAction = Database["public"]["Enums"]["fm_audit_action"]

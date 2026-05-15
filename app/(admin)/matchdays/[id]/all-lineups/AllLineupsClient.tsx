@@ -348,11 +348,11 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
             </div>
           )}
 
-          {/* SofaScore stats — compact */}
+          {/* Match stats from FotMob */}
           {hasStats && (
             <div className="space-y-2 rounded-lg p-2.5 border border-hairline" style={{ background: 'var(--bg-1)' }}>
-              <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#374DF5' }}>
-                Statistiche SofaScore
+              <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#049c64' }}>
+                Statistiche FotMob
               </p>
 
               {(slot.marketValue !== null || slot.height !== null) && (

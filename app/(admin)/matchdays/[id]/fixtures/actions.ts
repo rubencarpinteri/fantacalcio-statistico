@@ -223,6 +223,34 @@ export type ImportMatch = {
   goals_conceded: number
   saves: number
   clean_sheet: boolean
+  // Advanced FotMob stats — mirrored to player_match_stats columns.
+  xg: number | null
+  xa: number | null
+  shots: number
+  shots_on_target: number
+  blocked_scoring_attempt: number
+  big_chance_created: number
+  big_chance_missed: number
+  key_passes: number
+  accurate_passes: number
+  final_third_passes: number
+  accurate_long_balls: number
+  total_crosses: number
+  successful_dribbles: number
+  touches: number
+  dispossessed: number
+  tackles_won: number
+  interceptions: number
+  clearances: number
+  blocks: number
+  dribbled_past: number
+  ball_recoveries: number
+  duel_won: number
+  duel_lost: number
+  aerial_won: number
+  fouls_committed: number
+  was_fouled: number
+  error_leading_to_goal: number
 }
 
 export type ImportRatingsState = { error?: string; imported?: number }
@@ -266,6 +294,36 @@ export async function importRatingsAction(
     goals_conceded: m.goals_conceded,
     saves: m.saves,
     clean_sheet: m.clean_sheet,
+    // Advanced FotMob stats
+    xg: m.xg,
+    xa: m.xa,
+    shots: m.shots,
+    shots_on_target: m.shots_on_target,
+    blocked_scoring_attempt: m.blocked_scoring_attempt,
+    big_chance_created: m.big_chance_created,
+    big_chance_missed: m.big_chance_missed,
+    key_passes: m.key_passes,
+    accurate_passes: m.accurate_passes,
+    final_third_passes: m.final_third_passes,
+    accurate_long_balls: m.accurate_long_balls,
+    total_crosses: m.total_crosses,
+    successful_dribbles: m.successful_dribbles,
+    touches: m.touches,
+    dispossessed: m.dispossessed,
+    tackles_won: m.tackles_won,
+    total_tackles: m.tackles_won,
+    interceptions: m.interceptions,
+    clearances: m.clearances,
+    blocks: m.blocks,
+    dribbled_past: m.dribbled_past,
+    ball_recoveries: m.ball_recoveries,
+    duel_won: m.duel_won,
+    duel_lost: m.duel_lost,
+    aerial_won: m.aerial_won,
+    aerial_duels_won: m.aerial_won,
+    fouls_committed: m.fouls_committed,
+    was_fouled: m.was_fouled,
+    error_leading_to_goal: m.error_leading_to_goal,
   }))
 
   // Zero out stale rows — players who were imported in a previous fetch but are

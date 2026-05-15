@@ -22,6 +22,34 @@ export type FetchedPlayerStat = {
   saves: number
   /** True when the player's team conceded 0 goals in the match. Derived from FotMob GK data. */
   clean_sheet: boolean
+  // Advanced FotMob stats — fed straight through to player_match_stats columns.
+  xg: number | null
+  xa: number | null
+  shots: number
+  shots_on_target: number
+  blocked_scoring_attempt: number
+  big_chance_created: number
+  big_chance_missed: number
+  key_passes: number
+  accurate_passes: number
+  final_third_passes: number
+  accurate_long_balls: number
+  total_crosses: number
+  successful_dribbles: number
+  touches: number
+  dispossessed: number
+  tackles_won: number
+  interceptions: number
+  clearances: number
+  blocks: number
+  dribbled_past: number
+  ball_recoveries: number
+  duel_won: number
+  duel_lost: number
+  aerial_won: number
+  fouls_committed: number
+  was_fouled: number
+  error_leading_to_goal: number
 }
 
 export function normalizeName(name: string): string {
@@ -50,6 +78,16 @@ type FotMobStat = {
   fotmob_id: number; name: string; team_name: string
   rating: number | null; minutes_played: number
   goals_scored: number; assists: number; goals_conceded: number; saves: number
+  xg: number | null; xa: number | null
+  shots: number; shots_on_target: number; blocked_scoring_attempt: number
+  big_chance_created: number; big_chance_missed: number
+  key_passes: number; accurate_passes: number; final_third_passes: number
+  accurate_long_balls: number; total_crosses: number; successful_dribbles: number
+  touches: number; dispossessed: number
+  tackles_won: number; interceptions: number; clearances: number; blocks: number
+  dribbled_past: number; ball_recoveries: number
+  duel_won: number; duel_lost: number; aerial_won: number
+  fouls_committed: number; was_fouled: number; error_leading_to_goal: number
 }
 type FotMobEvent = {
   type: string; player_id: number | null; card: string | null
@@ -71,7 +109,7 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
     const p = raw as Record<string, unknown>
     const statGroups = p['stats'] as Array<Record<string, unknown>> | undefined
     if (!statGroups?.length) continue
-    // Search ALL stat groups — FotMob splits stats across Attack/Defence/etc. groups
+    // Search ALL stat groups — FotMob splits stats across Top/Attack/Defence/Duels.
     const getStat = (key: string): number => {
       for (const group of statGroups) {
         const groupStats = group['stats'] as Record<string, Record<string, unknown>> | undefined
@@ -79,6 +117,14 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
         if (v?.['value'] != null) return Number(v['value'])
       }
       return 0
+    }
+    const getStatOrNull = (key: string): number | null => {
+      for (const group of statGroups) {
+        const groupStats = group['stats'] as Record<string, Record<string, unknown>> | undefined
+        const v = groupStats?.[key]?.['stat'] as Record<string, unknown> | undefined
+        if (v?.['value'] != null) return Number(v['value'])
+      }
+      return null
     }
     stats.push({
       fotmob_id: Number(idStr),
@@ -90,6 +136,33 @@ export function parseFotMobJson(json: Record<string, unknown>): FotMobData {
       assists: getStat('Assists'),
       goals_conceded: getStat('Goals conceded'),
       saves: getStat('Saves'),
+      xg: getStatOrNull('Expected goals (xG)'),
+      xa: getStatOrNull('Expected assists (xA)'),
+      shots: getStat('Total shots'),
+      shots_on_target: getStat('Shots on target'),
+      blocked_scoring_attempt: getStat('Blocked shots'),
+      big_chance_created: getStat('Big chances created'),
+      big_chance_missed: getStat('Big chances missed'),
+      key_passes: getStat('Chances created'),
+      accurate_passes: getStat('Accurate passes'),
+      final_third_passes: getStat('Passes into final third'),
+      accurate_long_balls: getStat('Accurate long balls'),
+      total_crosses: getStat('Accurate crosses'),
+      successful_dribbles: getStat('Successful dribbles'),
+      touches: getStat('Touches'),
+      dispossessed: getStat('Dispossessed'),
+      tackles_won: getStat('Tackles'),
+      interceptions: getStat('Interceptions'),
+      clearances: getStat('Clearances'),
+      blocks: getStat('Blocks'),
+      dribbled_past: getStat('Dribbled past'),
+      ball_recoveries: getStat('Recoveries'),
+      duel_won: getStat('Duels won'),
+      duel_lost: getStat('Duels lost'),
+      aerial_won: getStat('Aerial duels won'),
+      fouls_committed: getStat('Fouls committed'),
+      was_fouled: getStat('Was fouled'),
+      error_leading_to_goal: getStat('Error led to goal'),
     })
   }
 
@@ -163,6 +236,24 @@ export function buildFixtureStats(
       penalties_saved: 0,
       goals_conceded: s.goals_conceded, saves: s.saves,
       clean_sheet: teamConceded === 0,
+      xg: s.xg, xa: s.xa,
+      shots: s.shots, shots_on_target: s.shots_on_target,
+      blocked_scoring_attempt: s.blocked_scoring_attempt,
+      big_chance_created: s.big_chance_created,
+      big_chance_missed: s.big_chance_missed,
+      key_passes: s.key_passes,
+      accurate_passes: s.accurate_passes,
+      final_third_passes: s.final_third_passes,
+      accurate_long_balls: s.accurate_long_balls,
+      total_crosses: s.total_crosses,
+      successful_dribbles: s.successful_dribbles,
+      touches: s.touches, dispossessed: s.dispossessed,
+      tackles_won: s.tackles_won, interceptions: s.interceptions,
+      clearances: s.clearances, blocks: s.blocks,
+      dribbled_past: s.dribbled_past, ball_recoveries: s.ball_recoveries,
+      duel_won: s.duel_won, duel_lost: s.duel_lost, aerial_won: s.aerial_won,
+      fouls_committed: s.fouls_committed, was_fouled: s.was_fouled,
+      error_leading_to_goal: s.error_leading_to_goal,
     })
   }
 
