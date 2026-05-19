@@ -1,5 +1,6 @@
 import { requireFMContext, assertSuperAdmin, getFMTeams } from '@/lib/fantamondiale/server'
-import { addTeamAction, eliminateTeamAction, reactivateTeamAction, deleteTeamAction } from './actions'
+import { addTeamAction, eliminateTeamAction, reactivateTeamAction } from './actions'
+import { DeleteTeamButton } from './DeleteTeamButton'
 
 export default async function TeamsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -67,20 +68,7 @@ export default async function TeamsPage({ params }: { params: Promise<{ id: stri
                       Segna come eliminata
                     </button>
                   </form>
-                  <form
-                    action={deleteTeamAction.bind(null, team.id, id)}
-                    onSubmit={(e) => {
-                      if (!confirm(`Eliminare definitivamente "${team.name}"? Questa azione è irreversibile.`)) e.preventDefault()
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      title="Elimina definitivamente"
-                      className="rounded px-2 py-1 text-[10px] font-medium text-ink-5 border border-hairline hover:text-rose-400 hover:border-rose-400/40 hover:bg-rose-400/10 transition-colors"
-                    >
-                      Elimina
-                    </button>
-                  </form>
+                  <DeleteTeamButton teamId={team.id} competitionId={id} teamName={team.name} />
                 </div>
               </div>
             ))}
