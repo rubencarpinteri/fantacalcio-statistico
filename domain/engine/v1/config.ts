@@ -15,6 +15,13 @@ import type { LeagueEngineConfig } from '@/types/database.types'
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   engine_version: 'v2.0',
 
+  /**
+   * Passthrough mode by default. SportMonks ratings are canonical;
+   * we don't re-normalize them. Set normalize_ratings=true on a
+   * league_engine_config row to opt back into the z-score path.
+   */
+  normalize_ratings: false,
+
   /** Baseline used only for exception paths (decisive event, no ratings). */
   base_score: 6.0,
 
@@ -149,6 +156,8 @@ export function buildEngineConfig(
 
   return {
     ...base,
+
+    normalize_ratings: dbConfig.normalize_ratings ?? base.normalize_ratings,
 
     minutes_factor: {
       threshold: dbConfig.minutes_factor_threshold ?? base.minutes_factor.threshold,

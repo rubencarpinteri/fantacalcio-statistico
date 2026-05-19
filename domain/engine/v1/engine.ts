@@ -178,19 +178,11 @@ export function calculatePlayerScore(
   }
 
   // ----------------------------------------------------------------
-  // Step 2 — FotMob z-score
-  // ----------------------------------------------------------------
-  const fmNorm = config.source_normalization
-  const z_fotmob = input.fotmob_rating !== null
-    ? round((input.fotmob_rating - fmNorm.mean) / fmNorm.std)
-    : null
-
-  // ----------------------------------------------------------------
-  // Gate 2 — No FotMob rating available (e.g. live match before
+  // Gate 2 — No rating available (e.g. live match before
   // ratings published). voto_base = 6.0; minutes_factor still
   // computed so the UI can distinguish this from decisive_event.
   // ----------------------------------------------------------------
-  if (z_fotmob === null) {
+  if (input.fotmob_rating === null) {
     const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
     const voto_base = config.base_score
@@ -214,45 +206,51 @@ export function calculatePlayerScore(
     }
   }
 
-  // ----------------------------------------------------------------
-  // Step 3 — Minutes factor
-  // ----------------------------------------------------------------
-  const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
-
-  // ----------------------------------------------------------------
-  // Step 4 — z_adjusted
-  // ----------------------------------------------------------------
-  const z_adjusted = round(z_fotmob * minutes_factor)
-
-  // ----------------------------------------------------------------
-  // Step 5 — b0: target distribution (Step 2 of calibration pipeline)
-  //   b0 = target_mean_vote + target_vote_std × z_adjusted
-  // ----------------------------------------------------------------
-  const b0 = round(config.target_mean_vote + config.target_vote_std * z_adjusted)
-
-  // ----------------------------------------------------------------
-  // Step 6 — b1: role-distance multiplier applied around target_mean_vote
-  // ----------------------------------------------------------------
   const roleMultiplier = config.role_multiplier[input.rating_class]
-  const b1 = round(config.target_mean_vote + roleMultiplier * (b0 - config.target_mean_vote))
-
-  // ----------------------------------------------------------------
-  // Step 7 — voto_base = clamp(b1, cap_min, cap_max)
-  // ----------------------------------------------------------------
-  const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
-
-  // ----------------------------------------------------------------
-  // Step 8 — Bonus / malus
-  // ----------------------------------------------------------------
   const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
-  const total_bonus_malus = bmTotal
 
   // ----------------------------------------------------------------
-  // Step 9 — fantavoto
+  // Passthrough mode (default for SportMonks ingestion).
+  //   voto_base = clamp(base_score + role_mult × (rating − base_score), cap_min, cap_max)
+  // minutes_factor is intentionally ignored — rating is canonical.
   // ----------------------------------------------------------------
-  const fantavoto = round(voto_base + total_bonus_malus)
+  if (!config.normalize_ratings) {
+    const delta = input.fotmob_rating - config.base_score
+    const b1 = round(config.base_score + roleMultiplier * delta)
+    const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
+    const fantavoto = round(voto_base + bmTotal)
 
-  const result: PlayerCalculationResult = {
+    return {
+      kind: 'scored',
+      player_id, stats_id, is_provisional,
+      decisive_event_exception: false,
+      no_ratings_exception: false,
+      z_fotmob: null,
+      minutes_factor: null,
+      z_adjusted: null,
+      b0: null,
+      role_multiplier: roleMultiplier,
+      b1,
+      voto_base,
+      bonus_malus_breakdown: breakdown,
+      total_bonus_malus: bmTotal,
+      fantavoto,
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // Normalization path (legacy v2.0 z-score). Opt-in per league.
+  // ----------------------------------------------------------------
+  const fmNorm = config.source_normalization
+  const z_fotmob = round((input.fotmob_rating - fmNorm.mean) / fmNorm.std)
+  const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
+  const z_adjusted = round(z_fotmob * minutes_factor)
+  const b0 = round(config.target_mean_vote + config.target_vote_std * z_adjusted)
+  const b1 = round(config.target_mean_vote + roleMultiplier * (b0 - config.target_mean_vote))
+  const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
+  const fantavoto = round(voto_base + bmTotal)
+
+  return {
     kind: 'scored',
     player_id, stats_id, is_provisional,
     decisive_event_exception: false,
@@ -265,10 +263,9 @@ export function calculatePlayerScore(
     b1,
     voto_base,
     bonus_malus_breakdown: breakdown,
-    total_bonus_malus,
+    total_bonus_malus: bmTotal,
     fantavoto,
   }
-  return result
 }
 
 // ---- Full matchday ------------------------------------------

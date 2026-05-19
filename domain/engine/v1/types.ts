@@ -72,6 +72,15 @@ export interface MinutesFactorConfig {
 
 export interface EngineConfig {
   engine_version: string
+  /**
+   * When true: legacy v2.0 z-score path
+   *   z = (rating − mean) / std, then b0/b1 around target_mean_vote.
+   * When false: passthrough — rating IS the voto_base candidate.
+   *   voto_base = clamp(base_score + role_multiplier × (rating − base_score), cap_min, cap_max)
+   *   minutes_factor is ignored. The < 10min NV gate and decisive-event
+   *   exception still apply (those are presence gates, not normalization).
+   */
+  normalize_ratings: boolean
   /** Baseline score used for exception paths (decisive event, no ratings). Always 6.0. */
   base_score: number
   /**

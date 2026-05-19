@@ -674,6 +674,7 @@ export type Database = {
           is_active: boolean
           name: string
           national_team_id: string
+          sportmonks_coach_id: number | null
           updated_at: string
         }
         Insert: {
@@ -684,6 +685,7 @@ export type Database = {
           is_active?: boolean
           name: string
           national_team_id: string
+          sportmonks_coach_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -694,6 +696,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           national_team_id?: string
+          sportmonks_coach_id?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -779,6 +782,7 @@ export type Database = {
       }
       fm_competition: {
         Row: {
+          active_sportmonks_league_id: number | null
           created_at: string
           edition: string
           ends_at: string | null
@@ -790,6 +794,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_sportmonks_league_id?: number | null
           created_at?: string
           edition: string
           ends_at?: string | null
@@ -801,6 +806,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_sportmonks_league_id?: number | null
           created_at?: string
           edition?: string
           ends_at?: string | null
@@ -1130,6 +1136,7 @@ export type Database = {
           fotmob_team_id: number | null
           id: string
           name: string
+          sportmonks_team_id: number | null
           status: Database["public"]["Enums"]["fm_team_status"]
           updated_at: string
         }
@@ -1142,6 +1149,7 @@ export type Database = {
           fotmob_team_id?: number | null
           id?: string
           name: string
+          sportmonks_team_id?: number | null
           status?: Database["public"]["Enums"]["fm_team_status"]
           updated_at?: string
         }
@@ -1154,6 +1162,7 @@ export type Database = {
           fotmob_team_id?: number | null
           id?: string
           name?: string
+          sportmonks_team_id?: number | null
           status?: Database["public"]["Enums"]["fm_team_status"]
           updated_at?: string
         }
@@ -1434,6 +1443,7 @@ export type Database = {
           national_team_id: string
           role: Database["public"]["Enums"]["fm_player_role"]
           shirt_number: number | null
+          sportmonks_player_id: number | null
           updated_at: string
         }
         Insert: {
@@ -1447,6 +1457,7 @@ export type Database = {
           national_team_id: string
           role: Database["public"]["Enums"]["fm_player_role"]
           shirt_number?: number | null
+          sportmonks_player_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -1460,6 +1471,7 @@ export type Database = {
           national_team_id?: string
           role?: Database["public"]["Enums"]["fm_player_role"]
           shirt_number?: number | null
+          sportmonks_player_id?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1658,6 +1670,7 @@ export type Database = {
           kickoff_at: string
           result: Database["public"]["Enums"]["fm_match_result"] | null
           scoring_round_id: string
+          sportmonks_fixture_id: number | null
           status: Database["public"]["Enums"]["fm_match_status"]
           updated_at: string
         }
@@ -1673,6 +1686,7 @@ export type Database = {
           kickoff_at: string
           result?: Database["public"]["Enums"]["fm_match_result"] | null
           scoring_round_id: string
+          sportmonks_fixture_id?: number | null
           status?: Database["public"]["Enums"]["fm_match_status"]
           updated_at?: string
         }
@@ -1688,6 +1702,7 @@ export type Database = {
           kickoff_at?: string
           result?: Database["public"]["Enums"]["fm_match_result"] | null
           scoring_round_id?: string
+          sportmonks_fixture_id?: number | null
           status?: Database["public"]["Enums"]["fm_match_status"]
           updated_at?: string
         }
@@ -1977,6 +1992,7 @@ export type Database = {
           minutes_factor_full: number
           minutes_factor_partial: number
           minutes_factor_threshold: number
+          normalize_ratings: boolean
           own_goal: number
           penalty_missed: number
           penalty_saved: number
@@ -2015,6 +2031,7 @@ export type Database = {
           minutes_factor_full?: number
           minutes_factor_partial?: number
           minutes_factor_threshold?: number
+          normalize_ratings?: boolean
           own_goal?: number
           penalty_missed?: number
           penalty_saved?: number
@@ -2053,6 +2070,7 @@ export type Database = {
           minutes_factor_full?: number
           minutes_factor_partial?: number
           minutes_factor_threshold?: number
+          normalize_ratings?: boolean
           own_goal?: number
           penalty_missed?: number
           penalty_saved?: number
@@ -2183,6 +2201,7 @@ export type Database = {
       }
       leagues: {
         Row: {
+          active_sportmonks_league_id: number | null
           advanced_bonuses_enabled: boolean
           bench_size: number
           created_at: string
@@ -2198,6 +2217,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_sportmonks_league_id?: number | null
           advanced_bonuses_enabled?: boolean
           bench_size?: number
           created_at?: string
@@ -2213,6 +2233,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_sportmonks_league_id?: number | null
           advanced_bonuses_enabled?: boolean
           bench_size?: number
           created_at?: string
@@ -2974,6 +2995,7 @@ export type Database = {
           saves: number
           shots: number
           shots_on_target: number
+          sportmonks_raw_stats: Json | null
           successful_dribbles: number | null
           tackles_won: number
           total_crosses: number | null
@@ -3043,6 +3065,7 @@ export type Database = {
           saves?: number
           shots?: number
           shots_on_target?: number
+          sportmonks_raw_stats?: Json | null
           successful_dribbles?: number | null
           tackles_won?: number
           total_crosses?: number | null
@@ -3112,6 +3135,7 @@ export type Database = {
           saves?: number
           shots?: number
           shots_on_target?: number
+          sportmonks_raw_stats?: Json | null
           successful_dribbles?: number | null
           tackles_won?: number
           total_crosses?: number | null
@@ -3468,6 +3492,7 @@ export type Database = {
           rating_class: string
           search_name: string | null
           season: string
+          sportmonks_player_id: number | null
           updated_at: string
         }
         Insert: {
@@ -3481,6 +3506,7 @@ export type Database = {
           rating_class: string
           search_name?: string | null
           season?: string
+          sportmonks_player_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -3494,6 +3520,64 @@ export type Database = {
           rating_class?: string
           search_name?: string | null
           season?: string
+          sportmonks_player_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sportmonks_fixtures: {
+        Row: {
+          away_team_id: number | null
+          away_team_name: string | null
+          fetched_at: string
+          home_team_id: number | null
+          home_team_name: string | null
+          kickoff_at: string
+          league_id: number
+          length_minutes: number | null
+          raw_payload: Json | null
+          round_id: number | null
+          season_id: number | null
+          sportmonks_fixture_id: number
+          stage_id: number | null
+          state_id: number | null
+          state_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          away_team_id?: number | null
+          away_team_name?: string | null
+          fetched_at?: string
+          home_team_id?: number | null
+          home_team_name?: string | null
+          kickoff_at: string
+          league_id: number
+          length_minutes?: number | null
+          raw_payload?: Json | null
+          round_id?: number | null
+          season_id?: number | null
+          sportmonks_fixture_id: number
+          stage_id?: number | null
+          state_id?: number | null
+          state_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          away_team_id?: number | null
+          away_team_name?: string | null
+          fetched_at?: string
+          home_team_id?: number | null
+          home_team_name?: string | null
+          kickoff_at?: string
+          league_id?: number
+          length_minutes?: number | null
+          raw_payload?: Json | null
+          round_id?: number | null
+          season_id?: number | null
+          sportmonks_fixture_id?: number
+          stage_id?: number | null
+          state_id?: number | null
+          state_name?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3973,6 +4057,7 @@ export const Constants = {
     },
   },
 } as const
+
 
 // ── Named type aliases (hand-maintained; regenerate the block above, keep these) ──
 
