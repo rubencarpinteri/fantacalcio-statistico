@@ -4,6 +4,7 @@ import { listFixturesBetween } from '@/lib/sportmonks/fixtures'
 import {
   autoCreateFMRoundsAndMatches,
   listActiveLeagueRefs,
+  refreshFMSquads,
   upsertFixtureCache,
 } from '@/lib/sportmonks/db'
 
@@ -46,6 +47,9 @@ export async function GET(req: NextRequest) {
     cache_upserted: number
     rounds_created?: number
     matches_created?: number
+    squad_teams?: number
+    squad_players_new?: number
+    squad_errors?: string[]
     error?: string
   }> = []
 
@@ -78,6 +82,14 @@ export async function GET(req: NextRequest) {
         )
         entry.rounds_created = rounds_created
         entry.matches_created = matches_created
+
+        // Daily squad refresh — picks up roster announcements,
+        // injury replacements, shirt-number changes. One API call
+        // per national team.
+        const squad = await refreshFMSquads(db, ref.owner_id)
+        entry.squad_teams = squad.teams_processed
+        entry.squad_players_new = squad.players_upserted
+        if (squad.errors.length) entry.squad_errors = squad.errors
       }
 
       results.push(entry)

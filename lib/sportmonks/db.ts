@@ -8,6 +8,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database.types'
+import { fetchTeamSquad } from './squad'
+import { positionIdToFMRole } from './positions'
 import type { ParsedFixture, ParsedPlayerStat, SMFixture } from './types'
 
 type DB = SupabaseClient<Database>
@@ -228,6 +230,84 @@ export async function autoCreateFMRoundsAndMatches(
   }
 
   return { rounds_created, matches_created }
+}
+
+// ============================================================
+// FantaMondiale: daily squad refresh
+// ============================================================
+
+/**
+ * Re-fetch every national team's squad from SportMonks and upsert
+ * fm_player rows. Idempotent: existing players (matched by
+ * sportmonks_player_id) get their name/role/shirt_number/team
+ * updated; new players are inserted; missing players are NOT
+ * deleted (a player dropped from a roster keeps their historical
+ * stats but won't appear in new squads picked through the UI —
+ * handled separately if needed).
+ *
+ * One SportMonks call per team. For WC2026: 32 calls/day, trivial
+ * against the rate-limit budget. Returns a summary for the cron log.
+ */
+export async function refreshFMSquads(
+  db: DB,
+  competition_id: string,
+): Promise<{ teams_processed: number; players_upserted: number; errors: string[] }> {
+  const { data: teams } = await db
+    .from('fm_national_team')
+    .select('id, name, sportmonks_team_id')
+    .eq('competition_id', competition_id)
+    .not('sportmonks_team_id', 'is', null)
+
+  const errors: string[] = []
+  let players_upserted = 0
+  let teams_processed = 0
+
+  for (const team of teams ?? []) {
+    if (team.sportmonks_team_id == null) continue
+    teams_processed += 1
+    try {
+      const squad = await fetchTeamSquad(team.sportmonks_team_id)
+      for (const entry of squad) {
+        const role = positionIdToFMRole(entry.position_id ?? entry.player?.position_id ?? null)
+        if (!role) continue
+        const playerName = entry.player.display_name ?? entry.player.name ?? `Player ${entry.player_id}`
+
+        const { data: existing } = await db
+          .from('fm_player')
+          .select('id')
+          .eq('competition_id', competition_id)
+          .eq('sportmonks_player_id', entry.player_id)
+          .maybeSingle()
+
+        if (existing) {
+          await db.from('fm_player').update({
+            national_team_id: team.id,
+            name: playerName,
+            role,
+            shirt_number: entry.jersey_number,
+          }).eq('id', existing.id)
+        } else {
+          const { error } = await db.from('fm_player').insert({
+            competition_id,
+            national_team_id: team.id,
+            name: playerName,
+            role,
+            shirt_number: entry.jersey_number,
+            sportmonks_player_id: entry.player_id,
+          })
+          if (error) {
+            errors.push(`team ${team.name}, player ${entry.player_id}: ${error.message}`)
+          } else {
+            players_upserted += 1
+          }
+        }
+      }
+    } catch (e) {
+      errors.push(`team ${team.name}: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  return { teams_processed, players_upserted, errors }
 }
 
 // ============================================================

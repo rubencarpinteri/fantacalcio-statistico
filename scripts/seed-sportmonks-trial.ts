@@ -112,8 +112,17 @@ async function main() {
   console.log(`  ${teams.length} teams in season`)
 
   const teamUuidByName = new Map<string, string>()
+  const usedFifaCodes = new Set<string>()
   for (const t of teams) {
-    const fifaCode = (t.name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'TBD').padEnd(3, 'X').slice(0, 3)
+    const letters = t.name.replace(/[^A-Za-z]/g, '').toUpperCase()
+    let fifaCode = (letters.slice(0, 3) || 'TBD').padEnd(3, 'X')
+    // Resolve collisions by incrementing the last character
+    let suffix = 0
+    while (usedFifaCodes.has(fifaCode)) {
+      suffix += 1
+      fifaCode = letters.slice(0, 2).padEnd(2, 'X') + String(suffix)
+    }
+    usedFifaCodes.add(fifaCode)
     const { data: existing } = await db
       .from('fm_national_team')
       .select('id')
