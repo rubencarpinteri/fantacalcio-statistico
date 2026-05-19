@@ -64,12 +64,21 @@ export default async function TeamsPage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-center gap-2 shrink-0">
                   <form action={eliminateTeamAction.bind(null, team.id, id)}>
                     <button type="submit" className="rounded px-2 py-1 text-[10px] font-medium text-rose-400 bg-rose-400/10 hover:bg-rose-400/20 transition-colors">
-                      Elimina
+                      Segna come eliminata
                     </button>
                   </form>
-                  <form action={deleteTeamAction.bind(null, team.id, id)}>
-                    <button type="submit" className="rounded px-2 py-1 text-[10px] text-ink-5 hover:text-ink-3 transition-colors">
-                      ✕
+                  <form
+                    action={deleteTeamAction.bind(null, team.id, id)}
+                    onSubmit={(e) => {
+                      if (!confirm(`Eliminare definitivamente "${team.name}"? Questa azione è irreversibile.`)) e.preventDefault()
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      title="Elimina definitivamente"
+                      className="rounded px-2 py-1 text-[10px] font-medium text-ink-5 border border-hairline hover:text-rose-400 hover:border-rose-400/40 hover:bg-rose-400/10 transition-colors"
+                    >
+                      Elimina
                     </button>
                   </form>
                 </div>
