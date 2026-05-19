@@ -1,436 +1,106 @@
+import Link from 'next/link'
+import type { Route } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { requireLeagueContext } from '@/lib/league'
 
-export const metadata = { title: 'Dashboard' }
+export const metadata = { title: 'FantaMondiale Statistico' }
 
 export default async function DashboardPage() {
-  const ctx = await requireLeagueContext()
   const supabase = await createClient()
-  const isAdmin = ctx.role === 'league_admin'
 
-  // ── All matchdays (ascending by number for chronological logic) ──────────
-  const { data: allMatchdays } = await supabase
-    .from('matchdays')
-    .select('id, name, matchday_number, status, round_number, locks_at, is_frozen')
-    .eq('league_id', ctx.league.id)
-    .order('matchday_number', { ascending: true, nullsFirst: false })
+  const { data: latestComp } = await supabase
+    .from('fm_competition')
+    .select('id, name, edition, starts_at, status')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  const matchdays = allMatchdays ?? []
-  const matchdayIds = matchdays.map((m) => m.id)
+  const ctaHref: Route = latestComp
+    ? (`/fantamondiale/${latestComp.id}` as Route)
+    : ('/fantamondiale' as Route)
 
-  // ── Which matchdays have published scores? ───────────────────────────────
-  // This is the single source of truth: a matchday "has results" iff it has
-  // at least one row in published_team_scores.
-  const scoredIds = new Set<string>()
-  if (matchdayIds.length > 0) {
-    const { data: scoredRows } = await supabase
-      .from('published_team_scores')
-      .select('matchday_id')
-      .in('matchday_id', matchdayIds)
-    for (const r of scoredRows ?? []) scoredIds.add(r.matchday_id)
-  }
-
-  // Ultima giornata = highest matchday_number that has real published scores
-  const prevMatchday = [...matchdays].reverse().find((m) => scoredIds.has(m.id)) ?? null
-
-  // Prossima giornata = first matchday (ascending) after prevMatchday that
-  // has no scores yet and is not frozen (frozen = treated as already played)
-  const prevNum = prevMatchday?.matchday_number ?? -Infinity
-  const nextMatchday = matchdays.find(
-    (m) =>
-      (m.matchday_number ?? 0) > prevNum &&
-      !scoredIds.has(m.id) &&
-      !m.is_frozen
-  ) ?? null
-
-  // ── Teams & competitions ─────────────────────────────────────────────────
-  const [teamsResult, compsResult] = await Promise.all([
-    supabase.from('fantasy_teams').select('id, name').eq('league_id', ctx.league.id),
-    supabase.from('competitions').select('id, type').eq('league_id', ctx.league.id),
-  ])
-  const teamNameMap = new Map((teamsResult.data ?? []).map((t) => [t.id, t.name]))
-  const compIds = (compsResult.data ?? []).map((c) => c.id)
-  const campionatoCompIds = new Set(
-    (compsResult.data ?? []).filter((c) => c.type === 'campionato').map((c) => c.id)
-  )
-
-  // ── Helper: deduplicated matchup pairs for a round ───────────────────────
-  async function getMatchupPairs(roundNumber: number) {
-    if (compIds.length === 0) return []
-    const { data: raw } = await supabase
-      .from('competition_matchups')
-      .select('home_team_id, away_team_id')
-      .in('competition_id', compIds)
-      .eq('round_number', roundNumber)
-    const seen = new Set<string>()
-    const pairs: Array<{ homeTeamId: string; awayTeamId: string }> = []
-    for (const m of raw ?? []) {
-      const key = [m.home_team_id, m.away_team_id].sort().join('|')
-      if (!seen.has(key)) {
-        seen.add(key)
-        pairs.push({ homeTeamId: m.home_team_id, awayTeamId: m.away_team_id })
-      }
-    }
-    return pairs
-  }
-
-  // ── Previous matchday: matchup results ──────────────────────────────────
-  type ResultRow = {
-    homeTeamName: string
-    awayTeamName: string
-    homeFantavoto: number | null
-    awayFantavoto: number | null
-    homeGoals: number | null
-    awayGoals: number | null
-    matchdayId: string
-  }
-  let prevMatchups: ResultRow[] = []
-
-  if (prevMatchday?.round_number != null) {
-    const [pairs, scoresResult, campionatoFixturesResult] = await Promise.all([
-      getMatchupPairs(prevMatchday.round_number),
-      supabase
-        .from('published_team_scores')
-        .select('team_id, total_fantavoto')
-        .eq('matchday_id', prevMatchday.id),
-      campionatoCompIds.size > 0
-        ? supabase
-            .from('competition_fixtures')
-            .select('home_team_id, away_team_id, home_score, away_score, competition_rounds!inner(matchday_id)')
-            .in('competition_id', Array.from(campionatoCompIds))
-            .eq('competition_rounds.matchday_id', prevMatchday.id)
-        : Promise.resolve({
-            data: [] as Array<{
-              home_team_id: string
-              away_team_id: string
-              home_score: number | null
-              away_score: number | null
-            }>,
-          }),
-    ])
-    const scoreMap = new Map(
-      (scoresResult.data ?? []).map((s) => [s.team_id, Number(s.total_fantavoto)])
-    )
-    const goalMap = new Map<string, Map<string, number>>()
-    for (const f of campionatoFixturesResult.data ?? []) {
-      if (f.home_score == null || f.away_score == null) continue
-      const key = [f.home_team_id, f.away_team_id].sort().join('|')
-      goalMap.set(
-        key,
-        new Map<string, number>([
-          [f.home_team_id, f.home_score],
-          [f.away_team_id, f.away_score],
-        ])
-      )
-    }
-    prevMatchups = pairs.map((p) => {
-      const goals = goalMap.get([p.homeTeamId, p.awayTeamId].sort().join('|'))
-      return {
-        homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
-        awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
-        homeFantavoto: scoreMap.get(p.homeTeamId) ?? null,
-        awayFantavoto: scoreMap.get(p.awayTeamId) ?? null,
-        homeGoals: goals?.get(p.homeTeamId) ?? null,
-        awayGoals: goals?.get(p.awayTeamId) ?? null,
-        matchdayId: prevMatchday.id,
-      }
-    })
-  }
-
-  // ── Next matchday: upcoming fixtures ────────────────────────────────────
-  type FixtureRow = { homeTeamName: string; awayTeamName: string }
-  let nextMatchups: FixtureRow[] = []
-
-  if (nextMatchday?.round_number != null) {
-    const pairs = await getMatchupPairs(nextMatchday.round_number)
-    nextMatchups = pairs.map((p) => ({
-      homeTeamName: teamNameMap.get(p.homeTeamId) ?? '—',
-      awayTeamName: teamNameMap.get(p.awayTeamId) ?? '—',
-    }))
-  }
-
-  // ── Manager data ─────────────────────────────────────────────────────────
-  let myTeamId: string | null = null
-  let myTeamName: string | null = null
-  let openMatchdayForLineup: { id: string; name: string; hasSubmission: boolean } | null = null
-
-  if (!isAdmin) {
-    const { data: myTeam } = await supabase
-      .from('fantasy_teams')
-      .select('id, name')
-      .eq('league_id', ctx.league.id)
-      .eq('manager_id', ctx.userId)
-      .maybeSingle()
-
-    if (myTeam) {
-      myTeamId = myTeam.id
-      myTeamName = myTeam.name
-      const openMd = matchdays.find((m) => m.status === 'open') ?? null
-      if (openMd) {
-        const { data: ptr } = await supabase
-          .from('lineup_current_pointers')
-          .select('submission_id')
-          .eq('matchday_id', openMd.id)
-          .eq('team_id', myTeam.id)
-          .maybeSingle()
-        openMatchdayForLineup = {
-          id: openMd.id,
-          name: openMd.name,
-          hasSubmission: !!ptr,
-        }
-      }
-    }
-  }
-
-  const fmt = (dt: string | null) =>
-    dt
-      ? new Intl.DateTimeFormat('it-IT', { dateStyle: 'short', timeStyle: 'short' }).format(
-          new Date(dt)
-        )
-      : '—'
+  const startsAt = latestComp?.starts_at
+    ? new Date(latestComp.starts_at).toLocaleDateString('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
 
   return (
-    <div className="space-y-5">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div>
+    <div className="mx-auto max-w-2xl space-y-10 py-8 sm:py-12">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <div className="text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-ink-4">
+          Edizione {latestComp?.edition ?? '2026'}
+        </p>
         <h1
-          className="flex flex-wrap items-baseline gap-x-2 font-light tracking-tight text-ink-1"
-          style={{ fontSize: 'clamp(22px, 2.6vw, 30px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
+          className="mt-3 font-light tracking-tight text-ink-1"
+          style={{ fontSize: 'clamp(34px, 5.5vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.04em' }}
         >
-          <span className="font-semibold">{ctx.league.name}</span>
-          <span className="serif font-normal text-ink-3">— {ctx.league.season_name}</span>
+          Fanta<span className="font-semibold">Mondiale</span>
+          <br />
+          <span className="serif italic font-light text-ink-3">Statistico</span>
         </h1>
-      </div>
-
-      {/* ── Manager lineup CTA (compact, only when open matchday exists) ── */}
-      {myTeamName && openMatchdayForLineup && (
-        <div className="flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-4 py-2.5">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-indigo-300">{openMatchdayForLineup.name}</p>
-            <p className="text-[11px] text-ink-4">
-              {openMatchdayForLineup.hasSubmission ? 'Formazione inviata' : 'Formazione non inviata'}
-            </p>
-          </div>
-          <a
-            href={`/matchdays/${openMatchdayForLineup.id}/lineup`}
-            className="ml-4 shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
-          >
-            {openMatchdayForLineup.hasSubmission ? 'Modifica' : 'Schiera'}
-          </a>
-        </div>
-      )}
-
-      {/* ── Giornate grid: Ultima + Prossima ────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Ultima Giornata */}
-        <div className="rounded-xl border border-hairline bg-glass-1 backdrop-blur-2xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-hairline">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">
-              Ultima Giornata
-            </p>
-            <p className="text-sm font-semibold text-ink-1 leading-tight">
-              {prevMatchday?.name ?? '—'}
-            </p>
-          </div>
-
-          {prevMatchups.length > 0 ? (
-            <div className="divide-y divide-hairline">
-              {prevMatchups.map((m, i) => {
-                const hasGoals = m.homeGoals !== null && m.awayGoals !== null
-                const homeWins = hasGoals
-                  ? (m.homeGoals as number) > (m.awayGoals as number)
-                  : m.homeFantavoto !== null && m.awayFantavoto !== null && m.homeFantavoto > m.awayFantavoto
-                const awayWins = hasGoals
-                  ? (m.awayGoals as number) > (m.homeGoals as number)
-                  : m.homeFantavoto !== null && m.awayFantavoto !== null && m.awayFantavoto > m.homeFantavoto
-                const homeTone = awayWins ? 'text-ink-5' : 'text-ink-1'
-                const awayTone = homeWins ? 'text-ink-5' : 'text-ink-1'
-                return (
-                  <a
-                    key={i}
-                    href={`/matchdays/${m.matchdayId}/all-lineups`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-glass-1 transition-colors"
-                  >
-                    {/* Home team */}
-                    <div className="flex-1 min-w-0 overflow-hidden text-right">
-                      <span className={`block truncate text-sm font-semibold ${homeTone}`}>
-                        {m.homeTeamName}
-                      </span>
-                    </div>
-                    {/* Score */}
-                    <div className="shrink-0 w-28 flex flex-col items-center tabular-nums">
-                      {hasGoals ? (
-                        <>
-                          <div className="flex items-baseline">
-                            <span className={`w-5 text-right text-lg font-light leading-none ${homeTone}`}>
-                              {m.homeGoals}
-                            </span>
-                            <span className="px-1.5 text-base font-thin text-ink-5 leading-none">–</span>
-                            <span className={`w-5 text-left text-lg font-light leading-none ${awayTone}`}>
-                              {m.awayGoals}
-                            </span>
-                          </div>
-                          {m.homeFantavoto !== null && m.awayFantavoto !== null && (
-                            <div className="mt-0.5 flex items-center gap-1 text-[9px] text-ink-4">
-                              <span>{m.homeFantavoto.toFixed(1)}</span>
-                              <span className="text-ink-5">–</span>
-                              <span>{m.awayFantavoto.toFixed(1)}</span>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex items-baseline">
-                          <span className={`w-9 text-right text-[13px] font-medium ${homeTone}`}>
-                            {m.homeFantavoto !== null ? m.homeFantavoto.toFixed(1) : '—'}
-                          </span>
-                          <span className="px-1.5 text-xs font-thin text-ink-5">–</span>
-                          <span className={`w-9 text-left text-[13px] font-medium ${awayTone}`}>
-                            {m.awayFantavoto !== null ? m.awayFantavoto.toFixed(1) : '—'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Away team */}
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <span className={`block truncate text-sm font-semibold ${awayTone}`}>
-                        {m.awayTeamName}
-                      </span>
-                    </div>
-                  </a>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="px-4 py-6 text-center text-xs text-ink-4">
-              {prevMatchday
-                ? 'Nessun incontro configurato.'
-                : 'Nessuna giornata conclusa.'}
-            </p>
-          )}
-
-          {prevMatchday && (
-            <div className="border-t border-hairline px-4 py-2">
-              <a
-                href={`/matchdays/${prevMatchday.id}/results`}
-                className="text-[11px] text-indigo-400 hover:text-indigo-300"
-              >
-                Dettaglio giornata →
-              </a>
-            </div>
-          )}
-        </div>
-
-        {/* Prossima Giornata */}
-        <div className="rounded-xl border border-hairline bg-glass-1 backdrop-blur-2xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-hairline">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">
-              Prossima Giornata
-            </p>
-            <p className="text-sm font-semibold text-ink-1 leading-tight">
-              {nextMatchday?.name ?? '—'}
-            </p>
-            {nextMatchday?.locks_at && (
-              <p className="text-[10px] text-ink-4 mt-0.5">
-                Scadenza: {fmt(nextMatchday.locks_at)}
-              </p>
-            )}
-          </div>
-
-          {nextMatchups.length > 0 ? (
-            <div className="divide-y divide-hairline">
-              {nextMatchups.map((m, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 px-4 py-3"
-                >
-                  {/* Home team */}
-                  <div className="flex-1 min-w-0 overflow-hidden text-right">
-                    <span className="block truncate text-sm font-semibold text-[#c0c0d8]">
-                      {m.homeTeamName}
-                    </span>
-                  </div>
-                  {/* VS */}
-                  <div className="shrink-0 w-28 flex items-center justify-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-ink-5">
-                      vs
-                    </span>
-                  </div>
-                  {/* Away team */}
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <span className="block truncate text-sm font-semibold text-[#c0c0d8]">
-                      {m.awayTeamName}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="px-4 py-6 text-center text-xs text-ink-4">
-              {nextMatchday
-                ? 'Nessun incontro configurato.'
-                : 'Nessuna prossima giornata.'}
-            </p>
-          )}
-
-          {nextMatchday && (
-            <div className="border-t border-hairline px-4 py-2">
-              <a
-                href="/matchdays"
-                className="text-[11px] text-indigo-400 hover:text-indigo-300"
-              >
-                Calendario completo →
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Classifica (WIP) ────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 backdrop-blur-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-hairline">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">
-              Classifica
-            </p>
-            <p className="text-sm font-semibold text-ink-1 leading-tight">
-              {ctx.league.name}
-            </p>
-          </div>
-          <a
-            href="/standings"
-            className="text-[11px] text-indigo-400 hover:text-indigo-300"
-          >
-            Classifica completa →
-          </a>
-        </div>
-        <div className="px-4 py-8 text-center">
-          <p className="text-xs font-medium text-ink-4">Work in progress</p>
-          <p className="mt-1 text-[11px] text-ink-5">
-            La classifica sarà disponibile prossimamente.
+        {startsAt && (
+          <p className="mt-4 text-[12px] text-ink-4">
+            Inizio competizione · <span className="text-ink-2">{startsAt}</span>
           </p>
-        </div>
+        )}
       </div>
 
-      {/* ── Admin quick links (compact, bottom) ─────────────────────────── */}
-      {isAdmin && (
-        <div className="flex flex-wrap gap-2">
-          {[
-            { href: '/matchdays', label: 'Giornate' },
-            { href: '/players', label: 'Giocatori' },
-            { href: '/league', label: 'Impostazioni' },
-            { href: '/formations', label: 'Formazioni' },
-            { href: '/roster', label: 'Rose' },
-          ].map(({ href, label }) => (
-            <a
-              key={href}
-              href={href}
-              className="rounded-md border border-hairline bg-glass-1 px-3 py-1.5 text-xs text-ink-4 hover:border-indigo-500/40 hover:text-ink-1 transition-colors"
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-      )}
+      {/* ── Explanation ──────────────────────────────────────────────────── */}
+      <div className="space-y-4 text-[14px] leading-[1.7] text-ink-2">
+        <p>
+          Il <span className="font-semibold text-ink-1">FantaMondiale Statistico</span> è il
+          fantacalcio costruito attorno alla Coppa del Mondo 2026. Ogni partecipante compone
+          la propria rosa scegliendo tra i convocati delle nazionali e segue la competizione
+          fase per fase — dalla fase a gironi fino alla finale.
+        </p>
+        <p>
+          A differenza del fanta tradizionale, i voti non sono dati da una redazione: ogni
+          giocatore riceve un <span className="font-semibold text-ink-1">voto base</span>{' '}
+          calcolato in modo statistico a partire dai rating di mercato, normalizzato e
+          tradotto sulla scala 6.0 con bonus e malus per ruolo, minuti, gol e cartellini.
+        </p>
+        <p>
+          Tra una fase e l&apos;altra puoi modificare la rosa, schierare la formazione e
+          seguire la classifica in tempo reale. Il regolamento completo e i dettagli del
+          calcolo sono disponibili all&apos;interno della competizione.
+        </p>
+      </div>
+
+      {/* ── Feature tiles ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: 'Rosa', desc: 'Convocati delle nazionali' },
+          { label: 'Fasi', desc: 'Dai gironi alla finale' },
+          { label: 'Voto base', desc: 'Calcolato in modo statistico' },
+        ].map((f) => (
+          <div
+            key={f.label}
+            className="rounded-lg border border-hairline bg-glass-1 px-3 py-3 text-center"
+          >
+            <p className="text-[11px] font-semibold text-ink-1">{f.label}</p>
+            <p className="mt-0.5 text-[10px] leading-tight text-ink-4">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── CTA ──────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col items-center gap-2 pt-2">
+        <Link
+          href={ctaHref}
+          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors"
+        >
+          Vai al FantaMondiale
+          <span aria-hidden>→</span>
+        </Link>
+        {!latestComp && (
+          <p className="text-[11px] text-ink-5">
+            La competizione non è ancora stata inizializzata.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
