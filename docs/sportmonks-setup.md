@@ -97,10 +97,16 @@ return a result object so you can grep history for errors.
 2. **Update env var** in Vercel: `SPORTMONKS_API_TOKEN=<new paid token>`. Trigger redeploy.
 3. **Verify access**: `curl "https://api.sportmonks.com/v3/football/leagues?api_token=<token>" | jq '.data[].id'` — confirm the WC league ID is present. Note it (likely `…`).
 4. **Inspect WC `season_id`** via `/leagues/<wc_id>?include=currentSeason`.
-5. **Create the real FM competition** through the admin UI (`/fantamondiale` → new), then set its `active_sportmonks_league_id` to the WC league ID (UI form or direct SQL).
-6. **Backfill squads:** copy `scripts/seed-sportmonks-trial.ts`, parameterize for WC `season_id`, run once. (Or generalize the existing script to take `--competition-id`.)
-7. **Disable the trial competition:** set `fm_competition.active_sportmonks_league_id = NULL` on the trial row. Otherwise both leagues get polled and trial fixtures keep being upserted.
-8. **Investigate webhooks** — SportMonks paid plans expose webhook delivery. If available, register `/api/webhooks/sportmonks` (route not yet built) and demote the 1-min cron to a fallback reconciler.
+5. **Seed the existing FM competition** (`FantaMondiale Statistico` already exists with 12 manually-entered teams):
+   ```bash
+   FM_COMPETITION_ID=<uuid> \
+   SPORTMONKS_LEAGUE_ID=<wc_league_id> \
+   SPORTMONKS_SEASON_ID=<wc_season_id> \
+   node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-fm-from-sportmonks.ts
+   ```
+   This: (a) sets `active_sportmonks_league_id` on the competition, (b) matches existing 12 teams by normalized name + alias map, fills in their `sportmonks_team_id`, (c) inserts the missing ~36 nations, (d) fetches all 48 squads → upserts `fm_player` rows. Idempotent.
+6. **Disable the trial competition:** set `fm_competition.active_sportmonks_league_id = NULL` on the Scottish trial row. Otherwise both leagues get polled.
+7. **Investigate webhooks** — SportMonks paid plans expose webhook delivery. If available, register `/api/webhooks/sportmonks` (route not yet built) and demote the 1-min cron to a fallback reconciler.
 
 ### WC 2026 → Serie A 26/27 (August 2026)
 
