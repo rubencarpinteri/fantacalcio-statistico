@@ -4,12 +4,23 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { InviteMemberForm } from './InviteMemberForm'
 import { CreateTeamForm } from './CreateTeamForm'
 import { ChangeRoleForm, RemoveMemberButton } from './MemberActions'
+import { InviteLinkCard } from './InviteLinkCard'
 
 export const metadata = { title: 'Membri lega' }
 
 export default async function LeagueMembersPage() {
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
+
+  // Fetch the league's current invite token
+  const { data: leagueRow } = await supabase
+    .from('leagues')
+    .select('invite_token')
+    .eq('id', ctx.league.id)
+    .single()
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fantacalcio-statistico.vercel.app'
+  const joinUrl = leagueRow?.invite_token ? `${appUrl}/join/${leagueRow.invite_token}` : null
 
   // Fetch all members with profile info
   const { data: members } = await supabase
@@ -74,6 +85,9 @@ export default async function LeagueMembersPage() {
           {memberList.length} {memberList.length === 1 ? 'membro' : 'membri'} · {teamList.length} squadre · {ctx.league.name}
         </p>
       </div>
+
+      {/* Shareable invite link */}
+      <InviteLinkCard joinUrl={joinUrl} leagueName={ctx.league.name} />
 
       {/* Member list */}
       <Card>

@@ -2207,6 +2207,7 @@ export type Database = {
           created_at: string
           display_rounding: Database["public"]["Enums"]["display_rounding"]
           id: string
+          invite_token: string | null
           lock_behavior: Database["public"]["Enums"]["lock_behavior"]
           name: string
           result_rules: Json
@@ -2223,6 +2224,7 @@ export type Database = {
           created_at?: string
           display_rounding?: Database["public"]["Enums"]["display_rounding"]
           id?: string
+          invite_token?: string | null
           lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
           name: string
           result_rules?: Json
@@ -2239,6 +2241,7 @@ export type Database = {
           created_at?: string
           display_rounding?: Database["public"]["Enums"]["display_rounding"]
           id?: string
+          invite_token?: string | null
           lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
           name?: string
           result_rules?: Json

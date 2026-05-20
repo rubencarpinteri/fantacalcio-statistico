@@ -267,3 +267,58 @@ export async function changeRoleAction(
   revalidatePath('/league/members')
   return { error: null, success: true }
 }
+
+// ─── Invite token (shareable join link) ──────────────────────────────────────
+
+function generateInviteToken(): string {
+  return crypto.randomUUID().replace(/-/g, '')
+}
+
+export async function regenerateInviteTokenAction() {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const token = generateInviteToken()
+  const { error } = await supabase
+    .from('leagues')
+    .update({ invite_token: token })
+    .eq('id', ctx.league.id)
+
+  if (error) throw new Error(error.message)
+
+  await writeAuditLog({
+    supabase,
+    leagueId: ctx.league.id,
+    actorUserId: ctx.userId,
+    actionType: 'user_role_change',
+    entityType: 'league',
+    entityId: ctx.league.id,
+    afterJson: { action: 'invite_token_regenerated' },
+  })
+
+  revalidatePath('/league/members')
+}
+
+export async function revokeInviteTokenAction() {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('leagues')
+    .update({ invite_token: null })
+    .eq('id', ctx.league.id)
+
+  if (error) throw new Error(error.message)
+
+  await writeAuditLog({
+    supabase,
+    leagueId: ctx.league.id,
+    actorUserId: ctx.userId,
+    actionType: 'user_role_change',
+    entityType: 'league',
+    entityId: ctx.league.id,
+    afterJson: { action: 'invite_token_revoked' },
+  })
+
+  revalidatePath('/league/members')
+}
