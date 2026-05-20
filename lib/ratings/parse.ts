@@ -8,7 +8,7 @@ export type FetchedPlayerStat = {
   name: string
   normalized_name: string
   team_label: string
-  fotmob_rating: number | null
+  rating: number | null
   minutes_played: number
   goals_scored: number
   assists: number
@@ -225,7 +225,7 @@ export function buildFixtureStats(
     out.push({
       fotmob_id: s.fotmob_id,
       name: s.name, normalized_name: key, team_label: s.team_name,
-      fotmob_rating: s.rating,
+      rating: s.rating,
       minutes_played: s.minutes_played,
       goals_scored: s.goals_scored, assists: s.assists,
       own_goals: ownGoalsByFotmobId.get(s.fotmob_id) ?? 0,

@@ -24,7 +24,7 @@ export type LiveCalcOverlay = {
   fantavoto: number | null
   voto_base: number | null
   bonusMalus: LiveBonusMalusItem[] | null
-  z_fotmob: number | null
+  z_rating: number | null
   minutes_factor: number | null
   role_multiplier: number | null
 }
@@ -93,10 +93,10 @@ export async function fetchLiveOverlay(
     .from('live_player_scores')
     .select(
       `player_id, voto_base, fantavoto,
-       fotmob_rating, minutes_played,
+       rating, minutes_played,
        goals_scored, assists, yellow_cards, red_cards,
        saves, goals_conceded, refreshed_at,
-       bonus_malus_breakdown, z_fotmob,
+       bonus_malus_breakdown, z_rating,
        minutes_factor, role_multiplier, is_match_live`
     )
     .eq('matchday_id', matchdayId)
@@ -117,12 +117,12 @@ export async function fetchLiveOverlay(
       fantavoto: r.fantavoto != null ? Number(r.fantavoto) : null,
       voto_base: r.voto_base != null ? Number(r.voto_base) : null,
       bonusMalus: bonusMalus?.length ? bonusMalus : null,
-      z_fotmob:        r.z_fotmob        != null ? Number(r.z_fotmob)        : null,
+      z_rating:        r.z_rating        != null ? Number(r.z_rating)        : null,
       minutes_factor:  r.minutes_factor  != null ? Number(r.minutes_factor)  : null,
       role_multiplier: r.role_multiplier != null ? Number(r.role_multiplier) : null,
     })
     statsOverlay.set(r.player_id, {
-      fotmobRating:    r.fotmob_rating    != null ? Number(r.fotmob_rating)    : null,
+      fotmobRating:    r.rating    != null ? Number(r.rating)    : null,
       minutesPlayed:   r.minutes_played   ?? 0,
       goalsScored:     r.goals_scored     ?? 0,
       assists:         r.assists          ?? 0,

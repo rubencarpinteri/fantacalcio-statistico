@@ -27,7 +27,7 @@ export const statRowSchema = z.object({
   rating_class_override: z.enum(['GK', 'DEF', 'MID', 'ATT']).nullable().default(null),
 
   // Source rating — null means not yet entered
-  fotmob_rating:     coerceFloat(0.0),   // FotMob: 0.0 – 10.0
+  rating:     coerceFloat(0.0),   // FotMob: 0.0 – 10.0
 
   // Defensive / GK
   tackles_won:           coerceInt(),

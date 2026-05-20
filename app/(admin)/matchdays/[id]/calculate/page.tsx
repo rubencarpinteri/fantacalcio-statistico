@@ -73,7 +73,7 @@ export default async function CalculatePage({
         id,
         player_id,
         is_provisional,
-        z_fotmob,
+        z_rating,
         z_sofascore,
         minutes_factor,
         z_adjusted,

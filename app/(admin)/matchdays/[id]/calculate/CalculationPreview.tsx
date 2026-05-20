@@ -14,7 +14,7 @@ export interface CalcPlayerRow {
   id: string
   player_id: string
   is_provisional: boolean
-  z_fotmob: number | null
+  z_rating: number | null
   z_sofascore: number | null
   minutes_factor: number | null
   z_adjusted: number | null
@@ -149,7 +149,7 @@ function EditStatsModal({
           is_provisional: form.is_provisional,
           has_decisive_event: form.goals_scored > 0 || form.assists > 0 || form.yellow_cards > 0 || form.red_cards > 0 || form.penalties_scored > 0 || form.penalties_missed > 0 || form.penalties_saved > 0,
           rating_class_override: null,
-          fotmob_rating: null,
+          rating: null,
           // Defensive/advanced fields not editable in this modal — preserve via 0/null defaults
           tackles_won: 0,
           interceptions: 0,
@@ -443,7 +443,7 @@ export function CalculationPreview({
                     const wasEdited = savedPlayers.has(c.player_id)
 
                     // no_ratings_exception: played ≥10 min, FotMob rating not yet available (e.g. live match)
-                    const isNoRatings = c.fantavoto !== null && c.z_fotmob === null && c.minutes_factor !== null
+                    const isNoRatings = c.fantavoto !== null && c.z_rating === null && c.minutes_factor !== null
 
                     return (
                       <Fragment key={c.id}>
@@ -462,7 +462,7 @@ export function CalculationPreview({
                             {c.minutes_factor !== null ? `×${c.minutes_factor.toFixed(1)}` : '—'}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
-                            {fmt(c.z_fotmob)}
+                            {fmt(c.z_rating)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.voto_base)}
@@ -509,7 +509,7 @@ export function CalculationPreview({
                             <td colSpan={8} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
-                                  ['z FotMob', fmt(c.z_fotmob)],
+                                  ['z FotMob', fmt(c.z_rating)],
                                   ['min·factor', fmt(c.minutes_factor, 2)],
                                   ['z_adjusted', fmt(c.z_adjusted)],
                                   ['b0', fmt(c.b0)],

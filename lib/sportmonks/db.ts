@@ -362,7 +362,7 @@ export async function upsertFMPlayerStats(
       real_match_id: match.id,
       player_id: uuid,
       minutes_played: p.minutes_played,
-      fotmob_rating: p.rating,  // legacy column repurposed — column rename will happen in cleanup migration
+      rating: p.rating,
       goals: p.goals_scored,
       assists: p.assists,
       yellow_cards: p.yellow_cards,

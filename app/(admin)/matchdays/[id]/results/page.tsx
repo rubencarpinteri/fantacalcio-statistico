@@ -86,7 +86,7 @@ export default async function MatchdayResultsPage({
         total_bonus_malus,
         is_override,
         is_provisional,
-        z_fotmob,
+        z_rating,
         minutes_factor,
         role_multiplier,
         league_players ( full_name, club, rating_class )
@@ -125,7 +125,7 @@ export default async function MatchdayResultsPage({
     total_bonus_malus: number | null
     is_override: boolean
     is_provisional: boolean
-    z_fotmob: number | null
+    z_rating: number | null
     minutes_factor: number | null
     role_multiplier: number | null
     league_players: { full_name: string; club: string; rating_class: string } | null
@@ -290,7 +290,7 @@ export default async function MatchdayResultsPage({
                             {c?.voto_base != null ? c.voto_base.toFixed(2) : '—'}
                           </span>
                           {(() => {
-                            const vbFm = calcSourceVotoBase(c?.z_fotmob ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
+                            const vbFm = calcSourceVotoBase(c?.z_rating ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
                             if (vbFm === null) return null
                             return (
                               <div className="mt-0.5 flex justify-end gap-2 text-[10px]">

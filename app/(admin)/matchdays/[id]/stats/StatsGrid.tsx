@@ -24,7 +24,7 @@ interface ExistingStat {
   player_id: string
   minutes_played: number
   rating_class_override: RatingClass | null
-  fotmob_rating: number | null
+  rating: number | null
   tackles_won: number
   interceptions: number
   clearances: number
@@ -70,7 +70,7 @@ function emptyRow(playerId: string): StatRowInput {
     player_id: playerId,
     minutes_played: 0,
     rating_class_override: null,
-    fotmob_rating: null,
+    rating: null,
     tackles_won: 0, interceptions: 0, clearances: 0, blocks: 0,
     aerial_duels_won: 0, dribbled_past: 0, saves: 0,
     goals_conceded: 0, error_leading_to_goal: 0, penalties_saved: 0,
@@ -445,7 +445,7 @@ function StatRow({
       )}
       {activeTab === 'voti' && (
         <>
-          {num('fotmob_rating')}
+          {num('rating')}
         </>
       )}
       {activeTab === 'difensivo' && (

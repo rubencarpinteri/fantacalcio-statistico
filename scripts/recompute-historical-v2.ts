@@ -60,7 +60,7 @@ async function main() {
       .from('player_match_stats')
       .select(`
         id, player_id, rating_class_override, minutes_played, is_provisional,
-        fotmob_rating, goals_scored, assists, own_goals, yellow_cards, red_cards,
+        rating, goals_scored, assists, own_goals, yellow_cards, red_cards,
         penalties_scored, penalties_missed, penalties_saved, clean_sheet, goals_conceded,
         league_players ( rating_class )
       `)
@@ -75,7 +75,7 @@ async function main() {
         rating_class: (s.rating_class_override as RatingClass | null) ?? storedClass,
         minutes_played: s.minutes_played,
         is_provisional: s.is_provisional,
-        fotmob_rating: s.fotmob_rating,
+        rating: s.rating,
         goals_scored: s.goals_scored,
         assists: s.assists,
         own_goals: s.own_goals,
@@ -128,7 +128,7 @@ async function main() {
           is_provisional: output.is_provisional,
           is_override: false,
           z_combined: null, weights_used: null, defensive_correction: null,
-          z_fotmob: null, minutes_factor: null,
+          z_rating: null, minutes_factor: null,
           z_adjusted: null, b0: null, role_multiplier: null, b1: null,
           voto_base: null,
           bonus_malus_breakdown: null, total_bonus_malus: null,
@@ -144,7 +144,7 @@ async function main() {
         is_provisional: r.is_provisional,
         is_override: false,
         z_combined: null, weights_used: null, defensive_correction: null,
-        z_fotmob: r.z_fotmob,
+        z_rating: r.z_rating,
         minutes_factor: r.minutes_factor,
         z_adjusted: r.z_adjusted,
         b0: r.b0,

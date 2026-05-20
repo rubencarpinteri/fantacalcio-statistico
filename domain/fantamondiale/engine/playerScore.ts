@@ -30,18 +30,18 @@ export function scorePlayer(
   const { stats, role, matchContext, ownershipPct } = input
 
   // ---- z-score + voto_base ------------------------------------------------
-  let z_fotmob: number | null = null
+  let z_rating: number | null = null
   let voto_base: number | null = null
 
-  if (stats.fotmob_rating != null && stats.minutes_played > 0) {
-    z_fotmob = (stats.fotmob_rating - engine.fotmob_mean) / engine.fotmob_std
+  if (stats.rating != null && stats.minutes_played > 0) {
+    z_rating = (stats.rating - engine.fotmob_mean) / engine.fotmob_std
 
     const minutesFactor =
       stats.minutes_played >= engine.minutes_threshold
         ? engine.minutes_full
         : engine.minutes_partial
 
-    const b0 = engine.target_mean_vote + engine.target_vote_std * z_fotmob * minutesFactor
+    const b0 = engine.target_mean_vote + engine.target_vote_std * z_rating * minutesFactor
     const b1 =
       engine.target_mean_vote + engine.role_multiplier[role] * (b0 - engine.target_mean_vote)
     voto_base = clamp(b1, engine.voto_base_min, engine.voto_base_max)
@@ -114,8 +114,8 @@ export function scorePlayer(
     scoring_round_id: matchContext.scoring_round_id,
     real_match_id: matchContext.real_match_id,
     player_id: input.playerId,
-    base_rating: stats.fotmob_rating,
-    z_fotmob,
+    base_rating: stats.rating,
+    z_rating,
     voto_base,
     football_bonus,
     football_malus,

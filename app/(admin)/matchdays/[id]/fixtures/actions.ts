@@ -210,7 +210,7 @@ export async function autoImportFixturesFromCsvAction(
 
 export type ImportMatch = {
   league_player_id: string
-  fotmob_rating: number | null
+  rating: number | null
   minutes_played: number
   goals_scored: number
   assists: number
@@ -281,7 +281,7 @@ export async function importRatingsAction(
     matchday_id: matchdayId,
     player_id: m.league_player_id,
     entered_by: user.id,
-    fotmob_rating: m.fotmob_rating,
+    rating: m.rating,
     minutes_played: m.minutes_played,
     goals_scored: m.goals_scored,
     assists: m.assists,
@@ -340,7 +340,7 @@ export async function importRatingsAction(
     await supabase
       .from('player_match_stats')
       .update({
-        minutes_played: 0, fotmob_rating: null,
+        minutes_played: 0, rating: null,
         goals_scored: 0, assists: 0, own_goals: 0, yellow_cards: 0,
         red_cards: 0, penalties_scored: 0, penalties_missed: 0,
         penalties_saved: 0, goals_conceded: 0, saves: 0, clean_sheet: false,

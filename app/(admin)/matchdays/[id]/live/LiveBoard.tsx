@@ -155,7 +155,7 @@ function PlayerRow({ p }: { p: LivePlayerRow }) {
 
       {/* FM */}
       <td className="px-2 py-2 text-right font-mono text-ink-3 whitespace-nowrap">
-        {p.fotmob_rating != null ? p.fotmob_rating.toFixed(2) : '—'}
+        {p.rating != null ? p.rating.toFixed(2) : '—'}
       </td>
 
       {/* Fantavoto */}

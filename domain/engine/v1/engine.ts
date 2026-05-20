@@ -6,10 +6,10 @@
 //
 // Per-player pipeline (normal 10+ minute flow):
 //   1.  NV / decisive-event gate       (minutes < 10)
-//   2.  z_fotmob   = (fotmob_rating − mean) / std   (null if missing)
-//   3.  NO_RATINGS guard               (z_fotmob null → base 6.0 + B/M)
+//   2.  z_rating   = (rating − mean) / std   (null if missing)
+//   3.  NO_RATINGS guard               (z_rating null → base 6.0 + B/M)
 //   4.  Minutes factor                 configurable 2-band (default: <45 → ×0.50, ≥45 → ×1.00)
-//   5.  z_adjusted = z_fotmob × minutes_factor
+//   5.  z_adjusted = z_rating × minutes_factor
 //   ---- Target distribution (Step 2 of calibration) ----
 //   6.  b0         = target_mean_vote + target_vote_std × z_adjusted  (default: 6.0 + 0.75×z)
 //   7.  b1         = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
@@ -163,7 +163,7 @@ export function calculatePlayerScore(
       player_id, stats_id, is_provisional,
       decisive_event_exception: true,
       no_ratings_exception: false,
-      z_fotmob: null,
+      z_rating: null,
       minutes_factor: null,
       z_adjusted: null,
       b0: null,
@@ -182,7 +182,7 @@ export function calculatePlayerScore(
   // ratings published). voto_base = 6.0; minutes_factor still
   // computed so the UI can distinguish this from decisive_event.
   // ----------------------------------------------------------------
-  if (input.fotmob_rating === null) {
+  if (input.rating === null) {
     const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
     const voto_base = config.base_score
@@ -193,7 +193,7 @@ export function calculatePlayerScore(
       player_id, stats_id, is_provisional,
       decisive_event_exception: false,
       no_ratings_exception: true,
-      z_fotmob: null,
+      z_rating: null,
       minutes_factor,
       z_adjusted: null,
       b0: null,
@@ -215,7 +215,7 @@ export function calculatePlayerScore(
   // minutes_factor is intentionally ignored — rating is canonical.
   // ----------------------------------------------------------------
   if (!config.normalize_ratings) {
-    const delta = input.fotmob_rating - config.base_score
+    const delta = input.rating - config.base_score
     const b1 = round(config.base_score + roleMultiplier * delta)
     const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
     const fantavoto = round(voto_base + bmTotal)
@@ -225,7 +225,7 @@ export function calculatePlayerScore(
       player_id, stats_id, is_provisional,
       decisive_event_exception: false,
       no_ratings_exception: false,
-      z_fotmob: null,
+      z_rating: null,
       minutes_factor: null,
       z_adjusted: null,
       b0: null,
@@ -241,10 +241,10 @@ export function calculatePlayerScore(
   // ----------------------------------------------------------------
   // Normalization path (legacy v2.0 z-score). Opt-in per league.
   // ----------------------------------------------------------------
-  const fmNorm = config.source_normalization
-  const z_fotmob = round((input.fotmob_rating - fmNorm.mean) / fmNorm.std)
+  const norm = config.source_normalization
+  const z_rating = round((input.rating - norm.mean) / norm.std)
   const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
-  const z_adjusted = round(z_fotmob * minutes_factor)
+  const z_adjusted = round(z_rating * minutes_factor)
   const b0 = round(config.target_mean_vote + config.target_vote_std * z_adjusted)
   const b1 = round(config.target_mean_vote + roleMultiplier * (b0 - config.target_mean_vote))
   const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
@@ -255,7 +255,7 @@ export function calculatePlayerScore(
     player_id, stats_id, is_provisional,
     decisive_event_exception: false,
     no_ratings_exception: false,
-    z_fotmob,
+    z_rating,
     minutes_factor,
     z_adjusted,
     b0,

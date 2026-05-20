@@ -165,7 +165,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<FetchRoundRes
         real_match_id: match.id,
         player_id: player.id,
         minutes_played: s.minutes_played,
-        fotmob_rating: s.rating,
+        rating: s.rating,
         goals: s.goals_scored,
         assists: s.assists,
         yellow_cards: s.fouls_committed > 0 ? 0 : 0, // FotMob doesn't surface cards directly in stats; use events

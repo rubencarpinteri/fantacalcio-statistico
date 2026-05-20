@@ -1511,7 +1511,7 @@ export type Database = {
           scoring_round_id: string
           updated_at: string
           voto_base: number | null
-          z_fotmob: number | null
+          z_rating: number | null
         }
         Insert: {
           base_rating?: number | null
@@ -1532,7 +1532,7 @@ export type Database = {
           scoring_round_id: string
           updated_at?: string
           voto_base?: number | null
-          z_fotmob?: number | null
+          z_rating?: number | null
         }
         Update: {
           base_rating?: number | null
@@ -1553,7 +1553,7 @@ export type Database = {
           scoring_round_id?: string
           updated_at?: string
           voto_base?: number | null
-          z_fotmob?: number | null
+          z_rating?: number | null
         }
         Relationships: [
           {
@@ -1584,7 +1584,6 @@ export type Database = {
           assists: number
           clean_sheet: boolean
           created_at: string
-          fotmob_rating: number | null
           goals: number
           goals_conceded: number
           id: string
@@ -1594,6 +1593,7 @@ export type Database = {
           penalties_missed: number
           penalties_saved: number
           player_id: string
+          rating: number | null
           raw_payload: Json | null
           real_match_id: string
           red_cards: number
@@ -1604,7 +1604,6 @@ export type Database = {
           assists?: number
           clean_sheet?: boolean
           created_at?: string
-          fotmob_rating?: number | null
           goals?: number
           goals_conceded?: number
           id?: string
@@ -1614,6 +1613,7 @@ export type Database = {
           penalties_missed?: number
           penalties_saved?: number
           player_id: string
+          rating?: number | null
           raw_payload?: Json | null
           real_match_id: string
           red_cards?: number
@@ -1624,7 +1624,6 @@ export type Database = {
           assists?: number
           clean_sheet?: boolean
           created_at?: string
-          fotmob_rating?: number | null
           goals?: number
           goals_conceded?: number
           id?: string
@@ -1634,6 +1633,7 @@ export type Database = {
           penalties_missed?: number
           penalties_saved?: number
           player_id?: string
+          rating?: number | null
           raw_payload?: Json | null
           real_match_id?: string
           red_cards?: number
@@ -2427,7 +2427,6 @@ export type Database = {
           bonus_malus_breakdown: Json | null
           extended_penalty: number
           fantavoto: number | null
-          fotmob_rating: number | null
           goals_conceded: number
           goals_scored: number
           is_bench: boolean
@@ -2440,6 +2439,7 @@ export type Database = {
           penalties_saved: number
           penalties_scored: number
           player_id: string
+          rating: number | null
           red_cards: number
           refreshed_at: string
           role_multiplier: number | null
@@ -2448,7 +2448,7 @@ export type Database = {
           team_id: string
           voto_base: number | null
           yellow_cards: number
-          z_fotmob: number | null
+          z_rating: number | null
         }
         Insert: {
           assigned_mantra_role?: string | null
@@ -2457,7 +2457,6 @@ export type Database = {
           bonus_malus_breakdown?: Json | null
           extended_penalty?: number
           fantavoto?: number | null
-          fotmob_rating?: number | null
           goals_conceded?: number
           goals_scored?: number
           is_bench?: boolean
@@ -2470,6 +2469,7 @@ export type Database = {
           penalties_saved?: number
           penalties_scored?: number
           player_id: string
+          rating?: number | null
           red_cards?: number
           refreshed_at?: string
           role_multiplier?: number | null
@@ -2478,7 +2478,7 @@ export type Database = {
           team_id: string
           voto_base?: number | null
           yellow_cards?: number
-          z_fotmob?: number | null
+          z_rating?: number | null
         }
         Update: {
           assigned_mantra_role?: string | null
@@ -2487,7 +2487,6 @@ export type Database = {
           bonus_malus_breakdown?: Json | null
           extended_penalty?: number
           fantavoto?: number | null
-          fotmob_rating?: number | null
           goals_conceded?: number
           goals_scored?: number
           is_bench?: boolean
@@ -2500,6 +2499,7 @@ export type Database = {
           penalties_saved?: number
           penalties_scored?: number
           player_id?: string
+          rating?: number | null
           red_cards?: number
           refreshed_at?: string
           role_multiplier?: number | null
@@ -2508,7 +2508,7 @@ export type Database = {
           team_id?: string
           voto_base?: number | null
           yellow_cards?: number
-          z_fotmob?: number | null
+          z_rating?: number | null
         }
         Relationships: [
           {
@@ -2630,6 +2630,7 @@ export type Database = {
           kickoff_at: string | null
           label: string
           matchday_id: string
+          sportmonks_fixture_id: number | null
         }
         Insert: {
           created_at?: string
@@ -2641,6 +2642,7 @@ export type Database = {
           kickoff_at?: string | null
           label?: string
           matchday_id: string
+          sportmonks_fixture_id?: number | null
         }
         Update: {
           created_at?: string
@@ -2652,6 +2654,7 @@ export type Database = {
           kickoff_at?: string | null
           label?: string
           matchday_id?: string
+          sportmonks_fixture_id?: number | null
         }
         Relationships: [
           {
@@ -2853,7 +2856,7 @@ export type Database = {
           weights_used: Json | null
           z_adjusted: number | null
           z_combined: number | null
-          z_fotmob: number | null
+          z_rating: number | null
         }
         Insert: {
           b0?: number | null
@@ -2877,7 +2880,7 @@ export type Database = {
           weights_used?: Json | null
           z_adjusted?: number | null
           z_combined?: number | null
-          z_fotmob?: number | null
+          z_rating?: number | null
         }
         Update: {
           b0?: number | null
@@ -2901,7 +2904,7 @@ export type Database = {
           weights_used?: Json | null
           z_adjusted?: number | null
           z_combined?: number | null
-          z_fotmob?: number | null
+          z_rating?: number | null
         }
         Relationships: [
           {
@@ -2969,7 +2972,6 @@ export type Database = {
           error_leading_to_goal: number
           expected_assists: number | null
           final_third_passes: number | null
-          fotmob_rating: number | null
           fouls_committed: number | null
           goals_conceded: number
           goals_scored: number
@@ -2991,6 +2993,7 @@ export type Database = {
           possession_lost_ctrl: number | null
           progressive_carries: number | null
           progressive_passes: number | null
+          rating: number | null
           rating_class_override:
             | Database["public"]["Enums"]["rating_class"]
             | null
@@ -3039,7 +3042,6 @@ export type Database = {
           error_leading_to_goal?: number
           expected_assists?: number | null
           final_third_passes?: number | null
-          fotmob_rating?: number | null
           fouls_committed?: number | null
           goals_conceded?: number
           goals_scored?: number
@@ -3061,6 +3063,7 @@ export type Database = {
           possession_lost_ctrl?: number | null
           progressive_carries?: number | null
           progressive_passes?: number | null
+          rating?: number | null
           rating_class_override?:
             | Database["public"]["Enums"]["rating_class"]
             | null
@@ -3109,7 +3112,6 @@ export type Database = {
           error_leading_to_goal?: number
           expected_assists?: number | null
           final_third_passes?: number | null
-          fotmob_rating?: number | null
           fouls_committed?: number | null
           goals_conceded?: number
           goals_scored?: number
@@ -3131,6 +3133,7 @@ export type Database = {
           possession_lost_ctrl?: number | null
           progressive_carries?: number | null
           progressive_passes?: number | null
+          rating?: number | null
           rating_class_override?:
             | Database["public"]["Enums"]["rating_class"]
             | null

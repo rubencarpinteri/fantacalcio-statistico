@@ -351,7 +351,7 @@ async function autoFetchAndCreateRun(
     entered_by: ctx.userId,
     minutes_played: stat.minutes_played,
     rating_class_override: null,
-    fotmob_rating: stat.fotmob_rating,
+    rating: stat.rating,
     goals_scored: stat.goals_scored,
     assists: stat.assists,
     own_goals: stat.own_goals,
@@ -436,7 +436,7 @@ async function autoFetchAndCreateRun(
       rating_class:    player.rating_class,
       minutes_played:  stat.minutes_played,
       is_provisional:   false,
-      fotmob_rating:    stat.fotmob_rating,
+      rating:    stat.rating,
       goals_scored:    stat.goals_scored,
       assists:         stat.assists,
       own_goals:       stat.own_goals,
@@ -490,7 +490,7 @@ async function autoFetchAndCreateRun(
       return {
         ...base,
         z_combined: null, weights_used: null, defensive_correction: null,
-        z_fotmob: null, minutes_factor: null, z_adjusted: null, b0: null,
+        z_rating: null, minutes_factor: null, z_adjusted: null, b0: null,
         role_multiplier: null, b1: null, voto_base: null,
         bonus_malus_breakdown: null, total_bonus_malus: null, fantavoto: null,
       }
@@ -499,7 +499,7 @@ async function autoFetchAndCreateRun(
     return {
       ...base,
       z_combined: null, weights_used: null, defensive_correction: null,
-      z_fotmob:          r.z_fotmob,
+      z_rating:          r.z_rating,
       minutes_factor:    r.minutes_factor,
       z_adjusted:        r.z_adjusted,
       b0:                r.b0,

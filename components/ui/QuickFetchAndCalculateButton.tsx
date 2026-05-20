@@ -54,7 +54,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     setPhase('importing')
     const toImport: ImportMatch[] = fetchData.matched.map((m) => ({
       league_player_id: m.league_player_id,
-      fotmob_rating: m.stat.fotmob_rating,
+      rating: m.stat.rating,
       minutes_played: m.stat.minutes_played,
       goals_scored: m.stat.goals_scored,
       assists: m.stat.assists,

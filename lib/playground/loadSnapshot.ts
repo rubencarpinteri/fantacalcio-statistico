@@ -87,7 +87,7 @@ export async function loadMatchdaySnapshot(
     .from('player_match_stats')
     .select(
       `id, player_id, rating_class_override,
-       fotmob_rating, minutes_played,
+       rating, minutes_played,
        goals_scored, assists, own_goals, yellow_cards, red_cards,
        penalties_scored, penalties_missed, penalties_saved,
        clean_sheet, goals_conceded, is_provisional`
@@ -105,7 +105,7 @@ export async function loadMatchdaySnapshot(
       rating_class:     rc,
       minutes_played:   s.minutes_played,
       is_provisional:   s.is_provisional,
-      fotmob_rating:    s.fotmob_rating,
+      rating:    s.rating,
       goals_scored:     s.goals_scored,
       assists:          s.assists,
       own_goals:        s.own_goals,

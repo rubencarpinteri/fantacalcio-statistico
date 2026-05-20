@@ -148,7 +148,7 @@ export function FetchPreview({
     setState({ phase: 'importing' })
     const toImport: ImportMatch[] = data.matched.map((m) => ({
       league_player_id: m.league_player_id,
-      fotmob_rating: m.stat.fotmob_rating,
+      rating: m.stat.rating,
       minutes_played: m.stat.minutes_played,
       goals_scored: m.stat.goals_scored,
       assists: m.stat.assists,
@@ -355,7 +355,7 @@ function MatchedRow({ m }: { m: FetchRatingsResponse['matched'][number] }) {
       </td>
       <td className="px-3 py-1.5 text-ink-3">{s.name}</td>
       <td className="px-3 py-1.5 text-right font-mono text-ink-3">
-        {s.fotmob_rating != null ? s.fotmob_rating.toFixed(2) : '—'}
+        {s.rating != null ? s.rating.toFixed(2) : '—'}
       </td>
       <td className="px-3 py-1.5 text-right font-mono text-ink-3">{s.minutes_played}</td>
       <td className="px-3 py-1.5 text-right font-mono">

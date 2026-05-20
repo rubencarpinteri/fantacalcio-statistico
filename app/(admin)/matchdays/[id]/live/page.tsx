@@ -55,7 +55,7 @@ export default async function LivePage({
     .select(
       `player_id, assigned_mantra_role, is_bench, bench_order,
        sub_status, extended_penalty, voto_base, fantavoto,
-       fotmob_rating, minutes_played,
+       rating, minutes_played,
        goals_scored, assists, yellow_cards, red_cards, own_goals,
        penalties_scored, penalties_saved, penalties_missed, saves, goals_conceded, team_id,
        league_players ( full_name )`
@@ -80,7 +80,7 @@ export default async function LivePage({
       extended_penalty: Number(p.extended_penalty ?? 0),
       voto_base: p.voto_base != null ? Number(p.voto_base) : null,
       fantavoto: p.fantavoto != null ? Number(p.fantavoto) : null,
-      fotmob_rating: p.fotmob_rating != null ? Number(p.fotmob_rating) : null,
+      rating: p.rating != null ? Number(p.rating) : null,
       minutes_played: p.minutes_played,
       goals_scored: p.goals_scored,
       assists: p.assists,

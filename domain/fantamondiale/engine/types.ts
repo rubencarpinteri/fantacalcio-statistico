@@ -8,7 +8,7 @@ export type FMEnginePlayerInput = {
   nationalTeamId: string
   stats: {
     minutes_played: number
-    fotmob_rating: number | null
+    rating: number | null
     goals: number
     assists: number
     yellow_cards: number
@@ -51,7 +51,7 @@ export type FMPlayerMatchScoreResult = {
   real_match_id: string
   player_id: string
   base_rating: number | null
-  z_fotmob: number | null
+  z_rating: number | null
   voto_base: number | null
   football_bonus: number
   football_malus: number

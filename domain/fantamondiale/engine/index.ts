@@ -94,7 +94,7 @@ export async function runRoundEngine(roundId: string, supabase: Supabase): Promi
   const { data: allStats, error: statsErr } = await supabase
     .from('fm_player_match_stats')
     .select(
-      'real_match_id, player_id, minutes_played, fotmob_rating, goals, assists, yellow_cards, red_cards, penalties_saved, penalties_missed, own_goals, goals_conceded, is_mvp'
+      'real_match_id, player_id, minutes_played, rating, goals, assists, yellow_cards, red_cards, penalties_saved, penalties_missed, own_goals, goals_conceded, is_mvp'
     )
     .in('real_match_id', matchIds)
   if (statsErr) throw new Error(`Stats load failed: ${statsErr.message}`)
@@ -177,7 +177,7 @@ export async function runRoundEngine(roundId: string, supabase: Supabase): Promi
         nationalTeamId: player.national_team_id,
         stats: {
           minutes_played: stats.minutes_played,
-          fotmob_rating: stats.fotmob_rating != null ? Number(stats.fotmob_rating) : null,
+          rating: stats.rating != null ? Number(stats.rating) : null,
           goals: stats.goals,
           assists: stats.assists,
           yellow_cards: stats.yellow_cards,
@@ -209,7 +209,7 @@ export async function runRoundEngine(roundId: string, supabase: Supabase): Promi
     real_match_id: r.real_match_id,
     player_id: r.player_id,
     base_rating: r.base_rating,
-    z_fotmob: r.z_fotmob,
+    z_rating: r.z_rating,
     voto_base: r.voto_base,
     football_bonus: r.football_bonus,
     football_malus: r.football_malus,

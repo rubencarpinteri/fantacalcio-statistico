@@ -32,7 +32,7 @@ type FetchedStat = {
   name: string
   normalized_name: string
   team_label: string
-  fotmob_rating: number | null
+  rating: number | null
   minutes_played: number
   goals_scored: number
   assists: number
@@ -194,7 +194,7 @@ async function fetchAllFixtures(
           name: s.name,
           normalized_name: key,
           team_label: s.team_name,
-          fotmob_rating: s.rating,
+          rating: s.rating,
           minutes_played: s.minutes_played,
           goals_scored: s.goals_scored,
           assists: s.assists,
@@ -363,7 +363,7 @@ export async function refreshMatchdayLive(
     .from('player_match_stats')
     .select(
       `player_id, rating_class_override,
-       fotmob_rating, minutes_played,
+       rating, minutes_played,
        goals_scored, assists, own_goals, yellow_cards, red_cards,
        penalties_scored, penalties_missed, penalties_saved,
        clean_sheet, goals_conceded, saves, is_provisional`
@@ -381,7 +381,7 @@ export async function refreshMatchdayLive(
   const { data: existingLiveRows } = await supabase
     .from('live_player_scores')
     .select(
-      `player_id, fotmob_rating, minutes_played,
+      `player_id, rating, minutes_played,
        goals_scored, assists, yellow_cards, red_cards, own_goals,
        penalties_scored, penalties_missed, penalties_saved,
        saves, goals_conceded`
@@ -403,7 +403,7 @@ export async function refreshMatchdayLive(
   // 6. Build engine inputs — merge DB stats + fresh API data
   const engineInputs: EnginePlayerInput[] = []
   type MergedStat = {
-    fotmob_rating: number | null
+    rating: number | null
     minutes_played: number
     goals_scored: number
     assists: number
@@ -429,11 +429,11 @@ export async function refreshMatchdayLive(
     const rc = (db.rating_class_override as RatingClass | null) ??
       (player.rating_class as RatingClass)
 
-    const apiRating = apiData?.fotmob_rating ?? null
+    const apiRating = apiData?.rating ?? null
     const apiMinutes = apiData ? inferLiveMinutes(apiData.minutes_played, apiRating) : null
     const prev = existingLiveMap.get(db.player_id)
     const merged: MergedStat = {
-      fotmob_rating:    apiRating                ?? db.fotmob_rating       ?? (prev?.fotmob_rating != null ? Number(prev.fotmob_rating) : null),
+      rating:    apiRating                ?? db.rating       ?? (prev?.rating != null ? Number(prev.rating) : null),
       minutes_played:   apiMinutes               ?? db.minutes_played       ?? prev?.minutes_played   ?? 0,
       goals_scored:     apiData?.goals_scored    ?? db.goals_scored         ?? prev?.goals_scored     ?? 0,
       assists:          apiData?.assists         ?? db.assists              ?? prev?.assists          ?? 0,
@@ -454,7 +454,7 @@ export async function refreshMatchdayLive(
       rating_class:     rc,
       minutes_played:   merged.minutes_played,
       is_provisional:   db.is_provisional,
-      fotmob_rating:    merged.fotmob_rating,
+      rating:    merged.rating,
       goals_scored:     merged.goals_scored,
       assists:          merged.assists,
       own_goals:        merged.own_goals,
@@ -488,9 +488,9 @@ export async function refreshMatchdayLive(
     if (dbStatsMap.has(player.id)) continue
     if (apiData.fotmob_id != null) matchedFotmobIds.add(apiData.fotmob_id)
 
-    const liveMinutes = inferLiveMinutes(apiData.minutes_played, apiData.fotmob_rating)
+    const liveMinutes = inferLiveMinutes(apiData.minutes_played, apiData.rating)
     const merged: MergedStat = {
-      fotmob_rating:    apiData.fotmob_rating,
+      rating:    apiData.rating,
       minutes_played:   liveMinutes,
       goals_scored:     apiData.goals_scored,
       assists:          apiData.assists,
@@ -511,7 +511,7 @@ export async function refreshMatchdayLive(
       rating_class:     player.rating_class as RatingClass,
       minutes_played:   liveMinutes,
       is_provisional:   true,
-      fotmob_rating:    apiData.fotmob_rating,
+      rating:    apiData.rating,
       goals_scored:     apiData.goals_scored,
       assists:          apiData.assists,
       own_goals:        apiData.own_goals,
@@ -533,12 +533,12 @@ export async function refreshMatchdayLive(
   // would silently erase ratings we already had.
   for (const [playerId, prev] of existingLiveMap) {
     if (mergedStatsMap.has(playerId)) continue
-    if (prev.fotmob_rating == null) continue
+    if (prev.rating == null) continue
     const player = leaguePlayers.find((p) => p.id === playerId)
     if (!player) continue
 
     const merged: MergedStat = {
-      fotmob_rating:    Number(prev.fotmob_rating),
+      rating:    Number(prev.rating),
       minutes_played:   prev.minutes_played   ?? 0,
       goals_scored:     prev.goals_scored     ?? 0,
       assists:          prev.assists          ?? 0,
@@ -559,7 +559,7 @@ export async function refreshMatchdayLive(
       rating_class:     player.rating_class as RatingClass,
       minutes_played:   merged.minutes_played,
       is_provisional:   true,
-      fotmob_rating:    merged.fotmob_rating,
+      rating:    merged.rating,
       goals_scored:     merged.goals_scored,
       assists:          merged.assists,
       own_goals:        merged.own_goals,
@@ -619,7 +619,7 @@ export async function refreshMatchdayLive(
       quantity: number
       points_each: number
     }>
-    z_fotmob: number | null
+    z_rating: number | null
     minutes_factor: number | null
     role_multiplier: number | null
   }
@@ -628,7 +628,7 @@ export async function refreshMatchdayLive(
     if (r.kind === 'skipped') continue
     breakdownMap.set(r.player_id, {
       bonus_malus_breakdown: r.bonus_malus_breakdown,
-      z_fotmob: r.z_fotmob,
+      z_rating: r.z_rating,
       minutes_factor: r.minutes_factor,
       role_multiplier: r.role_multiplier,
     })
@@ -742,7 +742,7 @@ export async function refreshMatchdayLive(
       extended_penalty: ps.extended_penalty,
       voto_base: votoBaseMap.get(ps.player_id) ?? null,
       fantavoto: ps.fantavoto,
-      fotmob_rating: stats?.fotmob_rating ?? null,
+      rating: stats?.rating ?? null,
       minutes_played: stats?.minutes_played ?? 0,
       goals_scored: stats?.goals_scored ?? 0,
       assists: stats?.assists ?? 0,
@@ -755,7 +755,7 @@ export async function refreshMatchdayLive(
       saves: stats?.saves ?? 0,
       goals_conceded: stats?.goals_conceded ?? 0,
       bonus_malus_breakdown: bd?.bonus_malus_breakdown ?? null,
-      z_fotmob: bd?.z_fotmob ?? null,
+      z_rating: bd?.z_rating ?? null,
       minutes_factor: bd?.minutes_factor ?? null,
       role_multiplier: bd?.role_multiplier ?? null,
       is_match_live: isMatchLive,

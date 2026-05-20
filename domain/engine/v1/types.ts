@@ -1,10 +1,7 @@
 // ============================================================
 // Fantacalcio Statistico — Rating Engine v2.0 — Types
 // ============================================================
-// Single-source: FotMob only.
-// Normalization constants from Ball, Huynh & Varley (2025),
-// Journal of Sports Sciences 43:7 — mean 6.87, std 0.79 across
-// 2,162 matches in top-3 European leagues 2022–2024.
+// Single-source: SportMonks.
 // ============================================================
 
 import type { RatingClass } from '@/types/database.types'
@@ -20,8 +17,8 @@ export interface EnginePlayerInput {
   minutes_played: number
   is_provisional: boolean
 
-  /** FotMob rating — null when the source hasn't provided data for this player yet (e.g. early-live match). */
-  fotmob_rating: number | null
+  /** SportMonks rating — null when the source hasn't provided data for this player yet (e.g. early-live match). */
+  rating: number | null
 
   // Event counts
   goals_scored: number        // includes penalties_scored
@@ -84,8 +81,7 @@ export interface EngineConfig {
   /** Baseline score used for exception paths (decisive event, no ratings). Always 6.0. */
   base_score: number
   /**
-   * FotMob rating normalization: z = (rating - mean) / std
-   * Defaults: mean = 6.87, std = 0.79 (Ball, Huynh & Varley 2025).
+   * Rating normalization: z = (rating - mean) / std
    * Configurable per league via league_engine_config.
    */
   source_normalization: { mean: number; std: number }
@@ -135,22 +131,22 @@ export interface PlayerCalculationResult {
   is_provisional: boolean
   /**
    * True when player played 0–9 minutes but had a decisive event.
-   * z_fotmob, b0, b1, minutes_factor are null; voto_base = base_score (6.0).
+   * z_rating, b0, b1, minutes_factor are null; voto_base = base_score (6.0).
    */
   decisive_event_exception: boolean
   /**
-   * True when the player had ≥10 minutes but FotMob rating was not yet available
+   * True when the player had ≥10 minutes but the rating was not yet available
    * (e.g. fetched during a live match before ratings are published).
-   * z_fotmob, z_adjusted, b0, b1 are null; voto_base = base_score (6.0);
+   * z_rating, z_adjusted, b0, b1 are null; voto_base = base_score (6.0);
    * minutes_factor is set; full B/M is applied.
    */
   no_ratings_exception: boolean
 
   // null for decisive_event_exception, or when source not available
-  z_fotmob: number | null
+  z_rating: number | null
   // null for decisive_event_exception; set for no_ratings_exception (useful for indicator)
   minutes_factor: number | null
-  // null when z_fotmob is null
+  // null when z_rating is null
   z_adjusted: number | null
   b0: number | null
   role_multiplier: number | null
