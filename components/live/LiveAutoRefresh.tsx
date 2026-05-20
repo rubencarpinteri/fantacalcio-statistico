@@ -5,22 +5,18 @@ import { useRouter } from 'next/navigation'
 
 // Live pill + polling loop for the all-lineups page.
 //
-// One timer drives everything: every `pingMs` we POST /api/live/refresh.
-// That endpoint runs the same refresh pipeline as the GitHub Actions cron
-// (fetch FotMob, run engine, upsert live_player_scores). When it returns
-// we call router.refresh() so the parent server component re-runs and
-// pulls the new rows. The visible countdown ticks down from `pingMs`
-// to zero between cycles. We only fire while the tab is visible — when
-// hidden we skip pings entirely.
+// The SportMonks ratings-tick cron writes live data to the DB every minute.
+// This component just re-runs the parent server component on the same cadence
+// so the page picks up new rows. The visible countdown ticks down between
+// refreshes. We only fire while the tab is visible.
 
 const DEFAULT_PING_MS = 60_000
 
 export function LiveAutoRefresh({
-  matchdayId,
   pingMs = DEFAULT_PING_MS,
   refreshedAt,
 }: {
-  matchdayId: string
+  matchdayId?: string  // unused — kept for backwards-compat with callers
   pingMs?: number
   /** ISO timestamp of the last cron write — shown as "aggiornato Xs/m fa". */
   refreshedAt?: string | null
@@ -31,41 +27,27 @@ export function LiveAutoRefresh({
   const [now, setNow] = useState<number | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-
-    const ping = async () => {
+    const tick = () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
-      try {
-        await fetch(`/api/live/refresh?matchday_id=${encodeURIComponent(matchdayId)}`, {
-          method: 'POST',
-          credentials: 'same-origin',
-        })
-        if (!cancelled) router.refresh()
-      } catch {
-        // Network blip — next tick will catch up.
-      }
+      router.refresh()
     }
 
     setSecondsLeft(seconds)
     setNow(Date.now())
-    void ping()
 
     const id = setInterval(() => {
       setNow(Date.now())
       setSecondsLeft((s) => {
         if (s <= 1) {
-          void ping()
+          tick()
           return seconds
         }
         return s - 1
       })
     }, 1000)
 
-    return () => {
-      cancelled = true
-      clearInterval(id)
-    }
-  }, [matchdayId, seconds, router])
+    return () => clearInterval(id)
+  }, [seconds, router])
 
   const mm = Math.floor(secondsLeft / 60)
   const ss = (secondsLeft % 60).toString().padStart(2, '0')

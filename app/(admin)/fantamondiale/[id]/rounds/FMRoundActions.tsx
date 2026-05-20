@@ -13,6 +13,9 @@ type StepResult = {
   detail: string
 }
 
+// Manual recalculation button. Live stats ingestion happens automatically via
+// the SportMonks ratings-tick cron; this just re-runs the engine over what's
+// already in fm_player_match_stats.
 export function FMRoundActions({ roundId, roundStatus }: Props) {
   const [running, setRunning] = useState(false)
   const [steps, setSteps] = useState<StepResult[]>([])
@@ -27,34 +30,6 @@ export function FMRoundActions({ roundId, roundStatus }: Props) {
     setSteps([])
     setDone(false)
 
-    // Step 1 — ingest
-    let ingestOk = false
-    try {
-      const res = await fetch('/api/fm/fetch-round', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roundId }),
-      })
-      const data = await res.json() as { matchesProcessed?: number; playersUpserted?: number; errors?: string[] }
-      ingestOk = res.ok && (!data.errors?.length || data.matchesProcessed! > 0)
-      setSteps((prev) => [
-        ...prev,
-        {
-          label: 'Ingest FotMob',
-          ok: ingestOk,
-          detail: res.ok
-            ? `${data.matchesProcessed ?? 0} partite, ${data.playersUpserted ?? 0} giocatori${data.errors?.length ? ` — ${data.errors[0]}` : ''}`
-            : `Errore ${res.status}`,
-        },
-      ])
-    } catch (err) {
-      setSteps((prev) => [
-        ...prev,
-        { label: 'Ingest FotMob', ok: false, detail: String(err) },
-      ])
-    }
-
-    // Step 2 — calculate (proceed even if ingest had partial errors)
     try {
       const res = await fetch('/api/fm/calculate-round', {
         method: 'POST',
@@ -91,7 +66,7 @@ export function FMRoundActions({ roundId, roundStatus }: Props) {
         disabled={running}
         className="rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors"
       >
-        {running ? 'In corso…' : 'Ingest + Calcola'}
+        {running ? 'In corso…' : 'Calcola punteggi'}
       </button>
 
       {steps.length > 0 && (

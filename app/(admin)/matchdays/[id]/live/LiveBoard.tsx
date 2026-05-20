@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useCallback } from 'react'
-import { triggerLiveRefreshAction } from './actions'
+import { useState, useEffect, useCallback } from 'react'
 import type { LiveScoresResponse, LiveTeamRow, LivePlayerRow } from '@/app/api/matchdays/[id]/live-scores/route'
 
 const POLL_INTERVAL_MS = 60_000
@@ -276,27 +275,12 @@ export function LiveBoard({
 }) {
   const [data, setData] = useState<LiveScoresResponse>(initialData)
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const [lastPollTime, setLastPollTime] = useState<Date>(new Date())
-  const [refreshError, setRefreshError] = useState<string | null>(null)
   const [, forceRender] = useState(0)
 
-  // Poll every 60s: trigger a fresh FotMob fetch + engine run server-side,
-  // then read back the updated rows. Without the refresh kick this page sits
-  // on whatever the external cron last wrote, which routinely lags — at
-  // kickoff +10min the cron tick captured zero ratings (FotMob hadn't
-  // published yet) and nothing here would have pulled the next batch in.
-  // Mirrors LiveAutoRefresh on the all-lineups page.
+  // Poll every 60s: re-read live_player_scores from the DB. The SportMonks
+  // ratings-tick cron is the only writer; this just refreshes the view.
   const poll = useCallback(async () => {
     if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
-    try {
-      await fetch(`/api/live/refresh?matchday_id=${encodeURIComponent(matchdayId)}`, {
-        method: 'POST',
-        credentials: 'same-origin',
-      })
-    } catch {
-      // Refresh blip — fall through to read whatever's there.
-    }
     try {
       const res = await fetch(`/api/matchdays/${matchdayId}/live-scores`, {
         cache: 'no-store',
@@ -304,7 +288,6 @@ export function LiveBoard({
       if (res.ok) {
         const json = (await res.json()) as LiveScoresResponse
         setData(json)
-        setLastPollTime(new Date())
       }
     } catch {
       // silent — keep showing last known data
@@ -312,26 +295,11 @@ export function LiveBoard({
   }, [matchdayId])
 
   useEffect(() => {
-    // Kick once on mount so the user doesn't wait a full minute for the
-    // first fresh tick.
     void poll()
     const id = setInterval(poll, POLL_INTERVAL_MS)
-    // Also tick the "X min fa" display every 30s
     const tick = setInterval(() => forceRender((n) => n + 1), 30_000)
     return () => { clearInterval(id); clearInterval(tick) }
   }, [poll])
-
-  function handleManualRefresh() {
-    setRefreshError(null)
-    startTransition(async () => {
-      const result = await triggerLiveRefreshAction(matchdayId)
-      if (result.ok) {
-        await poll()
-      } else {
-        setRefreshError(result.error ?? 'Errore sconosciuto')
-      }
-    })
-  }
 
   const selectedTeam = selectedTeamId
     ? data.teams.find((t) => t.team_id === selectedTeamId) ?? null
@@ -361,20 +329,7 @@ export function LiveBoard({
           )}
         </div>
 
-        {isAdmin && (
-          <button
-            onClick={handleManualRefresh}
-            disabled={isPending}
-            className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-xs font-medium text-ink-3 hover:border-indigo-500/50 hover:text-indigo-400 disabled:opacity-40"
-          >
-            {isPending ? 'Aggiornamento…' : '↻ Aggiorna ora'}
-          </button>
-        )}
       </div>
-
-      {refreshError && (
-        <p className="text-sm text-red-400">{refreshError}</p>
-      )}
 
       {/* No data state */}
       {data.teams.length === 0 && (
@@ -384,8 +339,7 @@ export function LiveBoard({
           </p>
           {isAdmin && (
             <p className="mt-2 text-xs text-ink-5">
-              Clicca &ldquo;Aggiorna ora&rdquo; per avviare il primo calcolo live,
-              oppure configura il cron su cron-job.org per aggiornamenti automatici ogni 5 minuti.
+              I dati live vengono scritti automaticamente dal cron SportMonks durante la partita.
             </p>
           )}
         </div>

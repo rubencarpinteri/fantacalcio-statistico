@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { FixturesManager, FetchPreview } from './FixturesManager'
+import { FixturesManager } from './FixturesManager'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -81,18 +81,6 @@ export default async function MatchdayFixturesPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader
-          title="Fetch automatico"
-          description="Recupera voti e statistiche dalle API esterne"
-        />
-        <CardContent>
-          <FetchPreview
-            matchdayId={matchdayId}
-            hasFixtures={fixtureList.length > 0}
-          />
-        </CardContent>
-      </Card>
     </div>
   )
 }

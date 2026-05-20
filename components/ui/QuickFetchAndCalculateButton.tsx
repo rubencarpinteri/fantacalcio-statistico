@@ -1,15 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { importRatingsAction } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
 import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
-import type { FetchRatingsResponse } from '@/app/api/ratings/fetch/route'
-import type { ImportMatch } from '@/app/(admin)/matchdays/[id]/fixtures/actions'
 
 type Phase =
   | 'idle'
-  | 'fetching'
-  | 'importing'
   | 'calculating'
   | 'publishing'
   | 'done'
@@ -20,86 +15,19 @@ interface Props {
   compact?: boolean
 }
 
+// Calculates and publishes from data already in player_match_stats.
+// The SportMonks ratings cron is the writer — this button just runs the
+// engine over what's there and publishes the result.
 export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   const [phase, setPhase] = useState<Phase>('idle')
-  const [summary, setSummary] = useState<{ imported: number; scored: number } | null>(null)
+  const [summary, setSummary] = useState<{ scored: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function run() {
-    setPhase('fetching')
+    setPhase('calculating')
     setError(null)
     setSummary(null)
 
-    let fetchData: FetchRatingsResponse
-    try {
-      const res = await fetch('/api/ratings/fetch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchdayId }),
-      })
-      if (!res.ok) throw new Error(`Fetch fallito (HTTP ${res.status})`)
-      fetchData = (await res.json()) as FetchRatingsResponse
-    } catch (e) {
-      setPhase('error')
-      setError(String(e))
-      return
-    }
-
-    if (fetchData.matched.length === 0) {
-      setPhase('error')
-      setError('Nessun giocatore abbinato.')
-      return
-    }
-
-    setPhase('importing')
-    const toImport: ImportMatch[] = fetchData.matched.map((m) => ({
-      league_player_id: m.league_player_id,
-      rating: m.stat.rating,
-      minutes_played: m.stat.minutes_played,
-      goals_scored: m.stat.goals_scored,
-      assists: m.stat.assists,
-      own_goals: m.stat.own_goals,
-      yellow_cards: m.stat.yellow_cards,
-      red_cards: m.stat.red_cards,
-      penalties_scored: m.stat.penalties_scored,
-      penalties_missed: m.stat.penalties_missed,
-      penalties_saved: m.stat.penalties_saved,
-      goals_conceded: m.stat.goals_conceded,
-      saves: m.stat.saves,
-      clean_sheet: m.stat.clean_sheet,
-      xg: m.stat.xg,
-      xa: m.stat.xa,
-      shots: m.stat.shots,
-      shots_on_target: m.stat.shots_on_target,
-      blocked_scoring_attempt: m.stat.blocked_scoring_attempt,
-      big_chance_created: m.stat.big_chance_created,
-      big_chance_missed: m.stat.big_chance_missed,
-      key_passes: m.stat.key_passes,
-      accurate_passes: m.stat.accurate_passes,
-      final_third_passes: m.stat.final_third_passes,
-      accurate_long_balls: m.stat.accurate_long_balls,
-      total_crosses: m.stat.total_crosses,
-      successful_dribbles: m.stat.successful_dribbles,
-      touches: m.stat.touches,
-      dispossessed: m.stat.dispossessed,
-      tackles_won: m.stat.tackles_won,
-      interceptions: m.stat.interceptions,
-      clearances: m.stat.clearances,
-      blocks: m.stat.blocks,
-      dribbled_past: m.stat.dribbled_past,
-      ball_recoveries: m.stat.ball_recoveries,
-      duel_won: m.stat.duel_won,
-      duel_lost: m.stat.duel_lost,
-      aerial_won: m.stat.aerial_won,
-      fouls_committed: m.stat.fouls_committed,
-      was_fouled: m.stat.was_fouled,
-      error_leading_to_goal: m.stat.error_leading_to_goal,
-    }))
-
-    const importResult = await importRatingsAction(matchdayId, toImport)
-    if (importResult.error) { setPhase('error'); setError(importResult.error); return }
-
-    setPhase('calculating')
     const calcResult = await triggerCalculationAction(matchdayId)
     if (calcResult.error) { setPhase('error'); setError(calcResult.error); return }
 
@@ -107,7 +35,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     const publishResult = await publishCalculationAction(matchdayId, calcResult.run_id!)
     if (publishResult.error) { setPhase('error'); setError(publishResult.error); return }
 
-    setSummary({ imported: importResult.imported ?? toImport.length, scored: calcResult.scored_count })
+    setSummary({ scored: calcResult.scored_count })
     setPhase('done')
     setTimeout(() => window.location.reload(), 1500)
   }
@@ -116,7 +44,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
     return (
       <div className="flex flex-col gap-1">
         <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-          ✓ {summary.imported} importati · {summary.scored} calcolati · pubblicato
+          ✓ {summary.scored} calcolati · pubblicato
         </span>
         <button onClick={() => { setPhase('idle'); setSummary(null) }} className="text-xs text-ink-4 hover:text-indigo-400">↺</button>
       </div>
@@ -133,11 +61,9 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
   }
 
   const busy = phase !== 'idle'
-  const label = phase === 'fetching' ? 'Scaricando voti…'
-    : phase === 'importing' ? 'Importando…'
-    : phase === 'calculating' ? 'Calcolando…'
+  const label = phase === 'calculating' ? 'Calcolando…'
     : phase === 'publishing' ? 'Pubblicando…'
-    : compact ? '⚡ Aggiorna e Pubblica' : '⚡ Aggiorna e pubblica'
+    : compact ? '⚡ Calcola e Pubblica' : '⚡ Calcola e pubblica'
 
   if (compact) {
     return (
@@ -145,7 +71,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
         <button
           disabled={busy}
           onClick={run}
-          title="Scarica voti da FotMob, calcola e pubblica"
+          title="Calcola dai voti SportMonks e pubblica"
           className={[
             'btn btn-sm whitespace-nowrap',
             busy ? 'cursor-wait' : '',
@@ -168,7 +94,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
       <button
         disabled={busy}
         onClick={run}
-        title="Scarica voti da FotMob, calcola e pubblica in un click"
+        title="Calcola dai voti SportMonks e pubblica in un click"
         className={[
           'btn w-full justify-center text-[14px] font-semibold py-3.5',
           busy ? 'cursor-wait' : '',
@@ -185,7 +111,7 @@ export function QuickFetchAndCalculateButton({ matchdayId, compact }: Props) {
             <span>{label}</span>
           </>
         ) : (
-          <span>⚡ Aggiorna e pubblica</span>
+          <span>⚡ Calcola e pubblica</span>
         )}
       </button>
     </div>
