@@ -175,7 +175,7 @@ function MatchupRow({
   const awayNum = homeWins ? 'text-ink-5' : 'text-ink-1'
 
   const href = m.matchdayId
-    ? `/matchdays/${m.matchdayId}/all-lineups`
+    ? `/campionato/giornate/${m.matchdayId}/all-lineups`
     : `/competitions/${competitionId}/match/${m.id}`
 
   return (

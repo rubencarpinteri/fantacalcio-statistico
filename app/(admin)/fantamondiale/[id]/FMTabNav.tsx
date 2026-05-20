@@ -9,7 +9,7 @@ const TABS = [
   { label: 'Fasi',       suffix: '/phases' },
   { label: 'Gironi',     suffix: '/rounds' },
   { label: 'Nazioni',    suffix: '/teams' },
-  { label: 'Giocatori',  suffix: '/players' },
+  { label: 'Giocatori',  suffix: '/campionato/giocatori' },
   { label: 'Allenatori', suffix: '/coaches' },
   { label: 'Prezzi',     suffix: '/prices' },
   { label: 'Regole',     suffix: '/config' },

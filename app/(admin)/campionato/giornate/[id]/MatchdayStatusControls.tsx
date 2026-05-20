@@ -1,0 +1,204 @@
+'use client'
+
+import { useTransition, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { transitionMatchdayStatusAction } from '../actions'
+import type { Matchday, MatchdayStatus } from '@/types/database.types'
+
+interface StatusAction {
+  label: string
+  newStatus: MatchdayStatus
+  variant: 'primary' | 'secondary' | 'danger'
+  requireNote: boolean
+  confirmMessage: string
+}
+
+const STATUS_ACTIONS: Partial<Record<MatchdayStatus, StatusAction[]>> = {
+  draft: [
+    {
+      label: 'Apri per formazioni',
+      newStatus: 'open',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aprire la giornata? I manager potranno inserire le formazioni.',
+    },
+  ],
+  open: [
+    {
+      label: 'Chiudi giornata',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Chiudere la giornata? Le formazioni saranno bloccate e la prossima giornata in programma verrà aperta automaticamente.',
+    },
+    {
+      label: 'Torna a In Programma',
+      newStatus: 'draft',
+      variant: 'secondary',
+      requireNote: false,
+      confirmMessage: 'Riportare la giornata a "In Programma"? I manager non potranno più inserire le formazioni.',
+    },
+  ],
+  closed: [
+    {
+      label: 'Riapri giornata',
+      newStatus: 'open',
+      variant: 'danger',
+      requireNote: true,
+      confirmMessage: '⚠ RIAPRI: I manager potranno modificare le formazioni. Questa azione verrà registrata nel log di audit. Continua?',
+    },
+    {
+      label: 'Archivia',
+      newStatus: 'archived',
+      variant: 'secondary',
+      requireNote: false,
+      confirmMessage: 'Archiviare la giornata? Questa azione non è reversibile.',
+    },
+  ],
+  // Legacy statuses — allow transitioning to closed
+  locked: [
+    {
+      label: 'Passa a Chiusa',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aggiornare allo stato "Chiusa"?',
+    },
+  ],
+  scoring: [
+    {
+      label: 'Passa a Chiusa',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aggiornare allo stato "Chiusa"?',
+    },
+  ],
+  published: [
+    {
+      label: 'Passa a Chiusa',
+      newStatus: 'closed',
+      variant: 'primary',
+      requireNote: false,
+      confirmMessage: 'Aggiornare allo stato "Chiusa"?',
+    },
+    {
+      label: 'Archivia',
+      newStatus: 'archived',
+      variant: 'secondary',
+      requireNote: false,
+      confirmMessage: 'Archiviare la giornata?',
+    },
+  ],
+}
+
+export function MatchdayStatusControls({ matchday }: { matchday: Matchday }) {
+  const [isPending, startTransition] = useTransition()
+  const [noteModal, setNoteModal] = useState<StatusAction | null>(null)
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const actions = STATUS_ACTIONS[matchday.status] ?? []
+
+  function handleAction(action: StatusAction) {
+    if (!window.confirm(action.confirmMessage)) return
+
+    if (action.requireNote) {
+      setNoteModal(action)
+      return
+    }
+
+    execute(action, null)
+  }
+
+  function execute(action: StatusAction, actionNote: string | null) {
+    startTransition(async () => {
+      const result = await transitionMatchdayStatusAction(
+        matchday.id,
+        action.newStatus,
+        actionNote
+      )
+      if (result.error) setError(result.error)
+      else {
+        setNoteModal(null)
+        setNote('')
+        setError(null)
+      }
+    })
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader title="Stato giornata" description={`Stato corrente: ${matchday.status}`} />
+        <CardContent className="space-y-3">
+          {actions.length === 0 ? (
+            <p className="text-sm text-ink-4">Nessuna transizione disponibile.</p>
+          ) : (
+            actions.map((action) => (
+              <Button
+                key={action.newStatus}
+                variant={action.variant as 'primary' | 'secondary' | 'danger'}
+                loading={isPending}
+                onClick={() => handleAction(action)}
+                className="w-full"
+              >
+                {action.label}
+              </Button>
+            ))
+          )}
+
+          {error && (
+            <p className="text-xs text-red-400">{error}</p>
+          )}
+
+          <a
+            href={`/campionato/giornate/${matchday.id}/lineup`}
+            className="block text-center text-sm text-indigo-400 hover:underline"
+          >
+            Gestisci formazioni →
+          </a>
+        </CardContent>
+      </Card>
+
+      {/* Note modal for actions requiring explanation */}
+      {noteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-hairline bg-glass-1 p-6 shadow-2xl">
+            <h3 className="mb-2 text-sm font-semibold text-ink-1">{noteModal.label}</h3>
+            <p className="mb-4 text-xs text-ink-4">
+              Inserisci un motivo per questa azione (obbligatorio per il log di audit).
+            </p>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              placeholder="Motivo obbligatorio…"
+              className="mb-4 w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
+            />
+            <div className="flex gap-3">
+              <Button
+                variant="danger"
+                loading={isPending}
+                disabled={!note.trim()}
+                onClick={() => execute(noteModal, note.trim())}
+              >
+                Conferma
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setNoteModal(null)
+                  setNote('')
+                }}
+              >
+                Annulla
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}

@@ -16,7 +16,7 @@ interface NavItem {
   /**
    * Extra path prefixes that should also light up this nav item as active.
    * Use for sections that live at non-obvious URLs — e.g. Campionato owns
-   * /matchdays and /players via sub-nav.
+   * /campionato/giornate and /campionato/giocatori via sub-nav.
    */
   matchPaths?: string[]
 }
@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
     href: '/campionato',
     label: 'Campionato',
     icon: 'trophy',
-    matchPaths: ['/competitions', '/matchdays', '/players'],
+    matchPaths: ['/competitions'],
   },
   { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe' },
   { href: '/playground',    label: 'Playground',    icon: 'beaker', adminOnly: true },

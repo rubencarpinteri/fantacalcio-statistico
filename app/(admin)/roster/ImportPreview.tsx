@@ -343,7 +343,7 @@ Anna Bianchi,Inter,Por`}
           Nuova importazione
         </Button>
         <a
-          href="/players"
+          href="/campionato/giocatori"
           className="self-center text-sm text-indigo-400 hover:underline"
         >
           Vai ai giocatori →

@@ -414,14 +414,14 @@ export default async function CompetitionDetailPage({
       {competition.type === 'campionato' && (
         <nav className="flex flex-wrap items-center gap-2 -mt-2">
           <a
-            href="/matchdays"
+            href="/campionato/giornate"
             className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
           >
             Giornate
           </a>
           {isAdmin && (
             <a
-              href="/players"
+              href="/campionato/giocatori"
               className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
             >
               Giocatori
@@ -468,7 +468,7 @@ export default async function CompetitionDetailPage({
               <div className="flex items-center gap-2 shrink-0">
                 <QuickFetchAndCalculateButton matchdayId={currentRoundData.matchdayId} compact />
                 <a
-                  href={`/matchdays/${currentRoundData.matchdayId}/all-lineups`}
+                  href={`/campionato/giornate/${currentRoundData.matchdayId}/all-lineups`}
                   className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
                 >
                   Formazioni →
@@ -511,7 +511,7 @@ export default async function CompetitionDetailPage({
               const awayNum = homeWins ? 'text-ink-5' : 'text-ink-1'
 
               const href = m.matchdayId
-                ? `/matchdays/${m.matchdayId}/all-lineups`
+                ? `/campionato/giornate/${m.matchdayId}/all-lineups`
                 : `/competitions/${id}/match/${m.id}`
 
               return (

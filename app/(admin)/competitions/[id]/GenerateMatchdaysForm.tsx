@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { generateMatchdaysAction } from '@/app/(admin)/matchdays/actions'
+import { generateMatchdaysAction } from '@/app/(admin)/campionato/giornate/actions'
 
 type State = { error?: string; created?: number }
 

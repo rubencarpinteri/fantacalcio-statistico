@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/matchdays/[id]/calculate/actions'
+import { triggerCalculationAction, publishCalculationAction } from '@/app/(admin)/campionato/giornate/[id]/calculate/actions'
 
 type Phase =
   | 'idle'
