@@ -13,15 +13,28 @@ interface NavItem {
   label: string
   icon: IconName
   adminOnly?: boolean
+  /**
+   * Extra path prefixes that should also light up this nav item as active.
+   * Use for sections that live at non-obvious URLs — e.g. Campionato owns
+   * /matchdays and /players via sub-nav.
+   */
+  matchPaths?: string[]
 }
 
+// Top-level IA: one entry per competition (Campionato, FantaMondiale) plus
+// admin tools. Giornate/Giocatori/Competizioni live inside the Campionato
+// detail page as sub-nav — they're properties of a competition, not
+// standalone destinations.
 const NAV_ITEMS: NavItem[] = [
-  { href: '/matchdays',    label: 'Giornate',     icon: 'calendar' },
-  { href: '/competitions', label: 'Competizioni', icon: 'trophy', adminOnly: true },
-  { href: '/players',      label: 'Giocatori',    icon: 'user',   adminOnly: true },
-  { href: '/playground',   label: 'Playground',   icon: 'beaker', adminOnly: true },
-  { href: '/league',       label: 'Impostazioni', icon: 'gear',   adminOnly: true },
+  {
+    href: '/campionato',
+    label: 'Campionato',
+    icon: 'trophy',
+    matchPaths: ['/competitions', '/matchdays', '/players'],
+  },
   { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe',  adminOnly: true },
+  { href: '/playground',    label: 'Playground',    icon: 'beaker', adminOnly: true },
+  { href: '/league',        label: 'Impostazioni',  icon: 'gear',   adminOnly: true },
 ]
 
 function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -111,8 +124,10 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
 
-  function isActive(href: string) {
-    return href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)
+  function isActive(item: NavItem) {
+    if (item.href === '/dashboard') return pathname === '/dashboard'
+    if (pathname.startsWith(item.href)) return true
+    return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }
 
   return (
@@ -149,7 +164,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
         {/* Navigation */}
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3">
           {visibleItems.map((item) => {
-            const active = isActive(item.href)
+            const active = isActive(item)
             return (
               <Link
                 key={item.href}
@@ -212,7 +227,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
       >
         <div className="flex items-stretch justify-around">
           {visibleItems.map((item) => {
-            const active = isActive(item.href)
+            const active = isActive(item)
             return (
               <Link
                 key={item.href}

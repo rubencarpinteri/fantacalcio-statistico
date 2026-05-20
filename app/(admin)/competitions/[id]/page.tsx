@@ -413,6 +413,46 @@ export default async function CompetitionDetailPage({
         )}
       </div>
 
+      {/* ── Quick links: sections that used to live in the top sidebar ───── */}
+      {competition.type === 'campionato' && (
+        <nav className="flex flex-wrap items-center gap-2 -mt-2">
+          <a
+            href="/matchdays"
+            className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
+          >
+            Giornate
+          </a>
+          {isAdmin && (
+            <a
+              href="/players"
+              className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
+            >
+              Giocatori
+            </a>
+          )}
+          <a
+            href={`/competitions/${id}/teams`}
+            className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
+          >
+            Squadre
+          </a>
+          <a
+            href={`/competitions/${id}/standings`}
+            className="rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
+          >
+            Classifica
+          </a>
+          {isAdmin && (
+            <a
+              href="/competitions"
+              className="ml-auto text-[11.5px] text-ink-4 transition-colors hover:text-ink-1"
+            >
+              Tutte le competizioni →
+            </a>
+          )}
+        </nav>
+      )}
+
       {/* ── Giornata corrente — hero matchup block ──────────────────────────── */}
       {currentRoundData && currentRoundData.matchups.length > 0 && (
         <div className="rounded-xl border border-hairline bg-glass-1 overflow-hidden">
