@@ -1,11 +1,16 @@
 import Link from 'next/link'
 import type { Route } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { enrollSelfInFMAction } from './actions'
 
 export const metadata = { title: 'FantaMondiale Statistico' }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { data: latestComp } = await supabase
     .from('fm_competition')
@@ -14,9 +19,23 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle()
 
-  const ctaHref: Route = latestComp
+  let userTeamId: string | null = null
+  if (user && latestComp) {
+    const { data: team } = await supabase
+      .from('fm_fantasy_team')
+      .select('id')
+      .eq('competition_id', latestComp.id)
+      .eq('manager_id', user.id)
+      .maybeSingle()
+    userTeamId = team?.id ?? null
+  }
+
+  const enrollmentClosed =
+    latestComp?.status === 'archived' || latestComp?.status === 'completed'
+  const canEnroll = !!latestComp && !userTeamId && !enrollmentClosed
+  const deepLink: Route | null = latestComp
     ? (`/fantamondiale/${latestComp.id}` as Route)
-    : ('/fantamondiale' as Route)
+    : null
 
   const startsAt = latestComp?.starts_at
     ? new Date(latestComp.starts_at).toLocaleDateString('it-IT', {
@@ -87,18 +106,63 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col items-center gap-2 pt-2">
-        <Link
-          href={ctaHref}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors"
-        >
-          Vai al FantaMondiale
-          <span aria-hidden>→</span>
-        </Link>
-        {!latestComp && (
-          <p className="text-[11px] text-ink-5">
-            La competizione non è ancora stata inizializzata.
-          </p>
+      <div className="pt-2">
+        {canEnroll && latestComp ? (
+          <form
+            action={enrollSelfInFMAction.bind(null, latestComp.id)}
+            className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3"
+          >
+            <div className="text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-4">
+                Iscriviti
+              </p>
+              <p className="mt-1 text-[13px] text-ink-2">
+                Scegli un nome per la tua squadra e partecipa al FantaMondiale.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                name="team_name"
+                placeholder="Nome squadra"
+                required
+                minLength={2}
+                maxLength={80}
+                className="flex-1 rounded-lg border border-hairline bg-glass-2 px-3 py-2.5 text-[14px] text-ink-1 placeholder-ink-5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors"
+              >
+                Iscriviti al FantaMondiale
+                <span aria-hidden>→</span>
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <Link
+              href={deepLink ?? ('/fantamondiale' as Route)}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-[14px] font-semibold text-white hover:bg-indigo-500 transition-colors"
+            >
+              Vai al FantaMondiale
+              <span aria-hidden>→</span>
+            </Link>
+            {!latestComp && (
+              <p className="text-[11px] text-ink-5">
+                La competizione non è ancora stata inizializzata.
+              </p>
+            )}
+            {latestComp && userTeamId && (
+              <p className="text-[11px] text-emerald-400/80">
+                Sei iscritto.
+              </p>
+            )}
+            {latestComp && !userTeamId && enrollmentClosed && (
+              <p className="text-[11px] text-ink-5">
+                Le iscrizioni sono chiuse.
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
