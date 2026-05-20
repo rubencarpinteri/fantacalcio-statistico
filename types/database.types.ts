@@ -2968,7 +2968,7 @@ export type Database = {
           dribbled_past: number
           duel_lost: number | null
           duel_won: number | null
-          entered_by: string
+          entered_by: string | null
           error_leading_to_goal: number
           expected_assists: number | null
           final_third_passes: number | null
@@ -3038,7 +3038,7 @@ export type Database = {
           dribbled_past?: number
           duel_lost?: number | null
           duel_won?: number | null
-          entered_by: string
+          entered_by?: string | null
           error_leading_to_goal?: number
           expected_assists?: number | null
           final_third_passes?: number | null
@@ -3108,7 +3108,7 @@ export type Database = {
           dribbled_past?: number
           duel_lost?: number | null
           duel_won?: number | null
-          entered_by?: string
+          entered_by?: string | null
           error_leading_to_goal?: number
           expected_assists?: number | null
           final_third_passes?: number | null
@@ -4063,10 +4063,6 @@ export const Constants = {
     },
   },
 } as const
-
-
-// ── Named type aliases (hand-maintained; regenerate the block above, keep these) ──
-
 export type AuditAction = Database["public"]["Enums"]["audit_action"]
 export type RatingClass = Database["public"]["Enums"]["rating_class"]
 export type MatchdayStatus = Database["public"]["Enums"]["matchday_status"]

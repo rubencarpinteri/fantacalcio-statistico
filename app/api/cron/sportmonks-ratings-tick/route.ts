@@ -6,6 +6,7 @@ import {
   hasFixturesInLiveWindow,
   listActiveLeagueRefs,
   upsertFMPlayerStats,
+  upsertSerieAPlayerStats,
 } from '@/lib/sportmonks/db'
 
 /**
@@ -86,10 +87,11 @@ export async function GET(req: NextRequest) {
           const r = await upsertFMPlayerStats(db, ref.owner_id, parsed)
           if (r.match_updated) fixtures_upserted += 1
           stats_total += r.stats_upserted
+        } else if (ref.product === 'serie_a') {
+          const r = await upsertSerieAPlayerStats(db, ref.owner_id, parsed)
+          if (r.matchday_id) fixtures_upserted += 1
+          stats_total += r.stats_upserted
         }
-        // Serie A path: deferred until Aug flip — sportmonks_raw_stats
-        // column exists on player_match_stats but writes happen via the
-        // existing matchday calculation flow there.
       }
     } catch (e) {
       err = e instanceof Error ? e.message : String(e)

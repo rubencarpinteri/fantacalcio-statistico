@@ -10,7 +10,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database.types'
 import { fetchTeamSquad } from './squad'
 import { positionIdToFMRole } from './positions'
-import type { ParsedFixture, ParsedPlayerStat, SMFixture } from './types'
+import type { ParsedFixture, SMFixture } from './types'
 
 type DB = SupabaseClient<Database>
 
@@ -388,6 +388,127 @@ export async function upsertFMPlayerStats(
 }
 
 // ============================================================
+// Serie A: upsert parsed player stats for one fixture
+// ============================================================
+
+/**
+ * Mirror of {@link upsertFMPlayerStats} for Serie A. Writes into
+ * `player_match_stats` keyed by (matchday_id, player_id).
+ *
+ * Mapping chain:
+ *   sportmonks_fixture_id → matchday_fixtures.matchday_id (scoped to league)
+ *   sportmonks_player_id  → serie_a_players.id → league_players.id (scoped to league)
+ *
+ * Rules:
+ *  - Rows are written with `entered_by = null` and `is_provisional = true`.
+ *  - If an existing row for (matchday, player) is non-provisional
+ *    (i.e. an admin manually edited it), we skip it — manual edits win.
+ *  - Returns early with matchday_id=null if no matchday in this league
+ *    is linked to this fixture (e.g. the admin hasn't configured it yet).
+ */
+export async function upsertSerieAPlayerStats(
+  db: DB,
+  league_id: string,
+  parsed: ParsedFixture,
+): Promise<{ stats_upserted: number; matchday_id: string | null }> {
+  // 1. Resolve matchday for this fixture *within this league*
+  const { data: mf } = await db
+    .from('matchday_fixtures')
+    .select('matchday_id, matchdays!inner(id, league_id)')
+    .eq('sportmonks_fixture_id', parsed.sportmonks_fixture_id)
+    .eq('matchdays.league_id', league_id)
+    .maybeSingle()
+  if (!mf) return { stats_upserted: 0, matchday_id: null }
+  const matchday_id = mf.matchday_id
+
+  // 2. Resolve league_player UUIDs from sportmonks_player_ids
+  const smPlayerIds = parsed.players.map((p) => p.sportmonks_player_id)
+  if (!smPlayerIds.length) return { stats_upserted: 0, matchday_id }
+
+  const { data: saPlayers } = await db
+    .from('serie_a_players')
+    .select('id, sportmonks_player_id')
+    .in('sportmonks_player_id', smPlayerIds)
+  const saIdsBySm = new Map<number, string>()
+  const saIds: string[] = []
+  for (const r of saPlayers ?? []) {
+    if (r.sportmonks_player_id != null) {
+      saIdsBySm.set(r.sportmonks_player_id, r.id)
+      saIds.push(r.id)
+    }
+  }
+  if (!saIds.length) return { stats_upserted: 0, matchday_id }
+
+  const { data: lpRows } = await db
+    .from('league_players')
+    .select('id, serie_a_player_id')
+    .eq('league_id', league_id)
+    .in('serie_a_player_id', saIds)
+  const lpIdBySaId = new Map<string, string>()
+  for (const r of lpRows ?? []) {
+    if (r.serie_a_player_id) lpIdBySaId.set(r.serie_a_player_id, r.id)
+  }
+
+  // sportmonks_player_id → league_player.id
+  const lpIdBySm = new Map<number, string>()
+  for (const [smId, saId] of saIdsBySm) {
+    const lpId = lpIdBySaId.get(saId)
+    if (lpId) lpIdBySm.set(smId, lpId)
+  }
+  if (!lpIdBySm.size) return { stats_upserted: 0, matchday_id }
+
+  // 3. Find which (matchday, player) rows are already non-provisional
+  //    (manual edits) — those we must NOT overwrite.
+  const candidateLpIds = Array.from(lpIdBySm.values())
+  const { data: lockedRows } = await db
+    .from('player_match_stats')
+    .select('player_id, is_provisional')
+    .eq('matchday_id', matchday_id)
+    .in('player_id', candidateLpIds)
+  const lockedSet = new Set<string>()
+  for (const r of lockedRows ?? []) {
+    if (r.is_provisional === false) lockedSet.add(r.player_id)
+  }
+
+  // 4. Build upsert rows
+  const rows: Array<Database['public']['Tables']['player_match_stats']['Insert']> = []
+  for (const p of parsed.players) {
+    const lpId = lpIdBySm.get(p.sportmonks_player_id)
+    if (!lpId) continue  // unknown player (not in this league's pool) — skip
+    if (lockedSet.has(lpId)) continue  // manual edit wins
+
+    rows.push({
+      matchday_id,
+      player_id: lpId,
+      entered_by: null,
+      is_provisional: true,
+      rating: p.rating,
+      minutes_played: p.minutes_played,
+      goals_scored: p.goals_scored,
+      assists: p.assists,
+      yellow_cards: p.yellow_cards,
+      red_cards: p.red_cards,
+      penalties_scored: p.penalties_scored,
+      penalties_missed: p.penalties_missed,
+      penalties_saved: p.penalties_saved,
+      own_goals: p.own_goals,
+      goals_conceded: p.goals_conceded,
+      clean_sheet: p.clean_sheet,
+      sportmonks_raw_stats: { source: 'sportmonks', stats: p.raw_stats } as unknown as Json,
+    })
+  }
+
+  if (!rows.length) return { stats_upserted: 0, matchday_id }
+
+  const { error } = await db
+    .from('player_match_stats')
+    .upsert(rows, { onConflict: 'matchday_id,player_id' })
+  if (error) throw new Error(`upsertSerieAPlayerStats: ${error.message}`)
+
+  return { stats_upserted: rows.length, matchday_id }
+}
+
+// ============================================================
 // Pre-flight check: is anything live-window right now?
 // ============================================================
 
@@ -403,5 +524,3 @@ export async function hasFixturesInLiveWindow(db: DB): Promise<boolean> {
   return (count ?? 0) > 0
 }
 
-// Suppress unused warning — kept for future Serie A integration
-export type _ParsedPlayerStatUnused = ParsedPlayerStat
