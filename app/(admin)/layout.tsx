@@ -24,6 +24,7 @@ export default async function AdminLayout({
       .from('league_users')
       .select('role, league_id, leagues(name)')
       .eq('user_id', user.id)
+      .order('joined_at', { ascending: false })
       .limit(1)
       .single(),
   ])
@@ -34,10 +35,17 @@ export default async function AdminLayout({
     return (
       <div className="flex min-h-screen items-center justify-center text-ink-4">
         <div className="glass max-w-sm px-8 py-7 text-center">
-          <p className="text-[15px] font-semibold tracking-tight text-ink-1">Accesso in attesa</p>
+          <p className="text-[15px] font-semibold tracking-tight text-ink-1">Nessuna lega</p>
           <p className="mt-2 text-[13px] leading-[1.55] text-ink-3">
-            Il tuo account non è ancora stato associato a una lega. Contatta l&apos;admin.
+            Il tuo account non è ancora associato a una lega. Crea la tua, oppure
+            chiedi a un admin di invitarti.
           </p>
+          <a
+            href="/leagues/new"
+            className="mt-4 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-indigo-500 transition-colors"
+          >
+            Crea una nuova lega
+          </a>
         </div>
       </div>
     )

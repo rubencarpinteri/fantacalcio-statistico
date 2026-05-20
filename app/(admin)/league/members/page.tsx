@@ -76,14 +76,22 @@ export default async function LeagueMembersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <a href="/league" className="text-sm text-ink-4 hover:text-indigo-400">
-          ← Impostazioni lega
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <a href="/league" className="text-sm text-ink-4 hover:text-indigo-400">
+            ← Impostazioni lega
+          </a>
+          <h1 className="mt-1 text-xl font-bold text-ink-1">Membri lega</h1>
+          <p className="mt-0.5 text-sm text-ink-3">
+            {memberList.length} {memberList.length === 1 ? 'membro' : 'membri'} · {teamList.length} squadre · {ctx.league.name}
+          </p>
+        </div>
+        <a
+          href="/leagues/new"
+          className="shrink-0 rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12px] text-ink-3 hover:border-indigo-500/40 hover:text-ink-1 transition-colors"
+        >
+          + Nuova lega
         </a>
-        <h1 className="mt-1 text-xl font-bold text-ink-1">Membri lega</h1>
-        <p className="mt-0.5 text-sm text-ink-3">
-          {memberList.length} {memberList.length === 1 ? 'membro' : 'membri'} · {teamList.length} squadre · {ctx.league.name}
-        </p>
       </div>
 
       {/* Shareable invite link */}

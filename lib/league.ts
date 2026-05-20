@@ -23,10 +23,14 @@ export async function getLeagueContext(): Promise<LeagueContext | null> {
 
   if (!user) return null
 
+  // Until we ship a proper league switcher, "current league" = the most
+  // recently joined one. This makes the post-creation flow land in the
+  // freshly created league instead of an arbitrary older membership.
   const { data, error } = await supabase
     .from('league_users')
     .select('league_id, role, leagues(*)')
     .eq('user_id', user.id)
+    .order('joined_at', { ascending: false })
     .limit(1)
     .single()
 
