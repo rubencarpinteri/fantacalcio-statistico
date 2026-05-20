@@ -102,10 +102,10 @@ export default async function RosterPage() {
           </p>
         </div>
         <Link
-          href={"/pool" as Route}
+          href={"/campionato/giocatori" as Route}
           className="rounded-xl border border-hairline bg-glass-1 px-3.5 py-2 text-[12.5px] font-medium text-ink-3 backdrop-blur-xl transition-colors hover:border-hairline-strong hover:bg-glass-2 hover:text-ink-1"
         >
-          Pool giocatori →
+          Giocatori →
         </Link>
       </div>
 
@@ -116,10 +116,8 @@ export default async function RosterPage() {
             Nessun giocatore nel pool.
           </p>
           <p className="mt-1 text-sm text-amber-400/70">
-            Importa prima i giocatori dal Pool prima di assegnarli alle rose.{' '}
-            <Link href={"/pool" as Route} className="underline hover:text-amber-300">
-              Vai al Pool →
-            </Link>
+            Il pool dei giocatori Serie A viene popolato automaticamente da
+            SportMonks al primo seed della stagione.
           </p>
         </div>
       )}

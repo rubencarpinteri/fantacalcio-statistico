@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
       { source: '/matchdays/:path*',    destination: '/campionato/giornate/:path*',  permanent: true },
       { source: '/players',             destination: '/campionato/giocatori',        permanent: true },
       { source: '/players/:path*',      destination: '/campionato/giocatori/:path*', permanent: true },
+      // /pool removed — the FotMob/SofaScore URL-scrape import is gone and the
+      // global pool view duplicated /campionato/giocatori.
+      { source: '/pool',                destination: '/campionato/giocatori',        permanent: true },
+      { source: '/pool/:path*',         destination: '/campionato/giocatori',        permanent: true },
     ]
   },
 }

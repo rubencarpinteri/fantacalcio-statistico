@@ -25,12 +25,20 @@ export default async function EngineConfigPage() {
           ← Impostazioni lega
         </a>
       </div>
-      <div>
-        <h1 className="text-xl font-bold text-ink-1">Configurazione motore di calcolo</h1>
-        <p className="mt-0.5 text-sm text-ink-3">
-          Personalizza bonus, malus e fattore minuti per la tua lega.
-          I valori predefiniti corrispondono alla configurazione standard Mantra.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-ink-1">Configurazione motore di calcolo</h1>
+          <p className="mt-0.5 text-sm text-ink-3">
+            Personalizza bonus, malus e fattore minuti per la tua lega.
+            I valori predefiniti corrispondono alla configurazione standard Mantra.
+          </p>
+        </div>
+        <a
+          href="/methodology"
+          className="shrink-0 rounded-lg border border-hairline bg-glass-1 px-3 py-1.5 text-[12.5px] text-ink-3 transition-colors hover:bg-glass-2 hover:text-ink-1"
+        >
+          Metodologia →
+        </a>
       </div>
 
       <Card>
