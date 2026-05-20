@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache'
 
 const addFixtureSchema = z.object({
   matchdayId: z.string().uuid(),
-  fotmob_match_id: z.string().optional(),
+  sportmonks_fixture_id: z.string().optional(),
   label: z.string().max(80),
 })
 
@@ -25,26 +25,26 @@ export async function addFixtureAction(
 
   const parsed = addFixtureSchema.safeParse({
     matchdayId: formData.get('matchdayId'),
-    fotmob_match_id: formData.get('fotmob_match_id') || undefined,
+    sportmonks_fixture_id: formData.get('sportmonks_fixture_id') || undefined,
     label: formData.get('label') ?? '',
   })
   if (!parsed.success) return { error: 'Dati non validi.' }
 
-  const { matchdayId, fotmob_match_id, label } = parsed.data
+  const { matchdayId, sportmonks_fixture_id, label } = parsed.data
 
-  if (!fotmob_match_id) {
-    return { error: 'Inserisci l\'ID FotMob.' }
+  if (!sportmonks_fixture_id) {
+    return { error: 'Inserisci l\'ID SportMonks.' }
   }
 
-  const fm = Number(fotmob_match_id)
-  if (isNaN(fm)) {
-    return { error: 'L\'ID FotMob deve essere un numero intero.' }
+  const fixId = Number(sportmonks_fixture_id)
+  if (isNaN(fixId)) {
+    return { error: 'L\'ID SportMonks deve essere un numero intero.' }
   }
 
   const supabase = await createClient()
   const { error } = await supabase.from('matchday_fixtures').insert({
     matchday_id: matchdayId,
-    fotmob_match_id: fm,
+    sportmonks_fixture_id: fixId,
     label: label,
   })
 
@@ -80,7 +80,7 @@ export async function saveFixturesBulkAction(
   const matchdayId = (formData.get('matchdayId') as string | null) ?? ''
   if (!matchdayId) return { error: 'ID giornata mancante.' }
 
-  const fotmobRaw = (formData.get('fotmobIds') as string | null) ?? ''
+  const rawIds = (formData.get('sportmonksIds') as string | null) ?? ''
 
   const parseIds = (raw: string): { ids: number[]; error?: string } => {
     const lines = raw
@@ -99,10 +99,10 @@ export async function saveFixturesBulkAction(
     return { ids }
   }
 
-  const fm = parseIds(fotmobRaw)
-  if (fm.error) return { error: `ID FotMob non valido: ${fm.error}` }
+  const parsed = parseIds(rawIds)
+  if (parsed.error) return { error: `ID SportMonks non valido: ${parsed.error}` }
 
-  const count = fm.ids.length
+  const count = parsed.ids.length
   if (count === 0) return { error: 'Inserisci almeno un ID.' }
 
   const supabase = await createClient()
@@ -132,7 +132,7 @@ export async function saveFixturesBulkAction(
   // Build new rows — label from CSV if available, fallback to "Partita N"
   const rows = Array.from({ length: count }, (_, i) => ({
     matchday_id: matchdayId,
-    fotmob_match_id: fm.ids[i] ?? null,
+    sportmonks_fixture_id: parsed.ids[i] ?? null,
     label: roundLabels[i] ?? `Partita ${i + 1}`,
   }))
 
@@ -175,11 +175,11 @@ export async function autoImportFixturesFromCsvAction(
   const matches = getMatchesForRound(matchday.matchday_number)
 
   const usableMatches = matches.filter(
-    (m) => m.fotmobMatchId !== null,
+    (m) => m.sportmonksFixtureId !== null,
   )
 
   if (usableMatches.length === 0) {
-    return { error: 'Nessun ID FotMob trovato nel CSV per questa giornata.' }
+    return { error: 'Nessun ID SportMonks trovato nel CSV per questa giornata.' }
   }
 
   const { error: deleteError } = await supabase
@@ -191,7 +191,7 @@ export async function autoImportFixturesFromCsvAction(
 
   const rows = usableMatches.map((m) => ({
     matchday_id: matchdayId,
-    fotmob_match_id: m.fotmobMatchId,
+    sportmonks_fixture_id: m.sportmonksFixtureId,
     label: m.label,
     kickoff_at: m.kickoffAt,
   }))
@@ -203,4 +203,3 @@ export async function autoImportFixturesFromCsvAction(
   revalidatePath(`/campionato/giornate/${matchdayId}`)
   return { success: true, count: rows.length }
 }
-

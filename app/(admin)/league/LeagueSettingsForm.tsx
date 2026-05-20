@@ -120,9 +120,6 @@ export function LeagueSettingsForm({ league }: { league: League }) {
         hint="Numero di giocatori in panchina per formazione (1–12)"
       />
 
-      {/* Preserve source weights — edited on a separate page */}
-      <input type="hidden" name="source_weight_fotmob"    value={league.source_weight_fotmob} />
-
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.success && (
         <Alert variant="success">Impostazioni salvate correttamente.</Alert>

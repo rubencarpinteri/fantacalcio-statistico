@@ -57,15 +57,15 @@ export default async function MatchdayFixturesPage({
         <p className="font-medium text-ink-1">Come funziona</p>
         <p>
           Inserisci gli ID di partita da{' '}
-          <span className="text-indigo-400">FotMob</span> e{' '}
-          <span className="text-indigo-400">SofaScore</span> per ogni incontro della giornata.
+          <span className="text-indigo-400">SportMonks</span> e{' '}
+          <span className="text-indigo-400">SportMonks</span> per ogni incontro della giornata.
           Il sistema recupera automaticamente voti, gol, assist e cartellini, abbinando i
           giocatori al database per nome.
         </p>
         <p>
-          <span className="text-amber-400">FotMob</span> è la fonte primaria per eventi
-          (cartellini, autogol, rigori). <span className="text-amber-400">SofaScore</span>{' '}
-          contribuisce solo al voto SofaScore.
+          <span className="text-amber-400">SportMonks</span> è la fonte primaria per eventi
+          (cartellini, autogol, rigori). <span className="text-amber-400">SportMonks</span>{' '}
+          contribuisce solo al voto SportMonks.
         </p>
         <p>
           L&apos;abbinamento è esatto: il nome del giocatore nell&apos;API deve corrispondere

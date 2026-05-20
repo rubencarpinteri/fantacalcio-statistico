@@ -50,12 +50,12 @@ export default async function RegolePage({ params }: { params: Promise<{ id: str
       <Section title="Motore di calcolo">
         <div className="space-y-2 text-[13px]">
           <div className="flex justify-between">
-            <span className="text-ink-4">Media FotMob</span>
-            <span className="font-medium text-ink-1 tabular-nums">{config.engine.fotmob_mean}</span>
+            <span className="text-ink-4">Media voto</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.rating_mean}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-ink-4">Std FotMob</span>
-            <span className="font-medium text-ink-1 tabular-nums">{config.engine.fotmob_std}</span>
+            <span className="text-ink-4">Std voto</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.rating_std}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-ink-4">Std voto base target</span>
@@ -140,7 +140,7 @@ export default async function RegolePage({ params }: { params: Promise<{ id: str
 
       <Section title="Bonus MVP">
         <p className="mb-3 text-[11px] text-ink-5">
-          Bonus per Man of the Match FotMob, inversamente proporzionale alla popolarità del giocatore.
+          Bonus per Man of the Match, inversamente proporzionale alla popolarità del giocatore.
         </p>
         <div className="space-y-1">
           {config.mvp_bonus_brackets.map((b, i) => (

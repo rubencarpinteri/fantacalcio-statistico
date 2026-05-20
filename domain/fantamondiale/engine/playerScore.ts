@@ -34,7 +34,7 @@ export function scorePlayer(
   let voto_base: number | null = null
 
   if (stats.rating != null && stats.minutes_played > 0) {
-    z_rating = (stats.rating - engine.fotmob_mean) / engine.fotmob_std
+    z_rating = (stats.rating - engine.rating_mean) / engine.rating_std
 
     const minutesFactor =
       stats.minutes_played >= engine.minutes_threshold

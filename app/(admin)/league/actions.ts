@@ -15,7 +15,6 @@ const leagueSettingsSchema = z.object({
   lock_behavior: z.enum(['auto', 'manual']),
   advanced_bonuses_enabled: z.coerce.boolean(),
   bench_size: z.coerce.number().int().min(1).max(12),
-  source_weight_fotmob:    z.coerce.number().int().min(0).max(100),
 })
 
 export interface LeagueSettingsState {
@@ -39,7 +38,6 @@ export async function updateLeagueSettingsAction(
     lock_behavior: formData.get('lock_behavior'),
     advanced_bonuses_enabled: formData.get('advanced_bonuses_enabled') === 'true',
     bench_size: formData.get('bench_size'),
-    source_weight_fotmob:    formData.get('source_weight_fotmob'),
   }
 
   const parsed = leagueSettingsSchema.safeParse(raw)

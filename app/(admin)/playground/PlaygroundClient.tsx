@@ -27,7 +27,7 @@ const ENGINE_NUMERIC_KEYS = [
   'clean_sheet_gk', 'clean_sheet_def', 'clean_sheet_min_minutes',
   'goals_conceded_gk', 'goals_conceded_def', 'goals_conceded_def_min_minutes',
   'role_multiplier_gk', 'role_multiplier_def', 'role_multiplier_mid', 'role_multiplier_att',
-  'fotmob_mean', 'fotmob_std', 'sofascore_mean', 'sofascore_std', 'fotmob_weight',
+  'rating_mean', 'rating_std',
   'target_mean_vote', 'target_vote_std',
   'voto_base_cap_min', 'voto_base_cap_max',
   'minutes_factor_threshold', 'minutes_factor_partial', 'minutes_factor_full',
@@ -240,10 +240,10 @@ export function PlaygroundClient({ matchdays, baseEngineConfig, baseResultRules,
             />
           </CollapsibleCard>
 
-          <CollapsibleCard title="Normalizzazione (FotMob / SofaScore)">
+          <CollapsibleCard title="Normalizzazione voto (z-score)">
             <EngineGroup
-              keys={['fotmob_mean', 'fotmob_std', 'sofascore_mean', 'sofascore_std', 'fotmob_weight']}
-              labels={{ fotmob_mean: 'FM media', fotmob_std: 'FM σ', sofascore_mean: 'SS media', sofascore_std: 'SS σ', fotmob_weight: 'Peso FM' }}
+              keys={['rating_mean', 'rating_std']}
+              labels={{ rating_mean: 'Media voto', rating_std: 'Dev. std voto' }}
               engine={engine}
               base={baseEngineConfig}
               onChange={(k, v) => setEngine((s) => ({ ...s, [k]: v }))}

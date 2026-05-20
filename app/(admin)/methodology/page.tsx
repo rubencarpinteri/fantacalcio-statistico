@@ -165,11 +165,11 @@ export default async function MethodologyPage() {
 
       {/* ── Pipeline overview ─────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Pipeline di calcolo" description="Il percorso dal voto FotMob al fantavoto finale" />
+        <CardHeader title="Pipeline di calcolo" description="Il percorso dal voto SportMonks al fantavoto finale" />
         <CardContent>
           <div className="space-y-3">
-            <Step n={1} label="Recupero voti da FotMob (unica fonte)" />
-            <Step n={2} label={`z-score FotMob: z = (voto − ${cfg.source_normalization.mean}) / ${cfg.source_normalization.std}`} />
+            <Step n={1} label="Recupero voti da SportMonks (unica fonte)" />
+            <Step n={2} label={`z-score: z = (voto − ${cfg.source_normalization.mean}) / ${cfg.source_normalization.std}`} />
             <Step n={3} label={`Fattore minuti: NV se 0', ×${eff.minutes_factor_partial} se 1–${eff.minutes_factor_threshold - 1}', ×${eff.minutes_factor_full} se ≥ ${eff.minutes_factor_threshold}'`} />
             <Step n={4} label={`Scala finale: b₀ = ${eff.target_mean_vote} + ${eff.target_vote_std} × z_adjusted`} />
             <Step n={5} label="Moltiplicatore ruolo: amplifica/comprime lo scostamento da 6.0" />
@@ -186,17 +186,16 @@ export default async function MethodologyPage() {
         </CardContent>
       </Card>
 
-      {/* ── Fonte: FotMob ─────────────────────────────────────────────────── */}
+      {/* ── Fonte: SportMonks ─────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Fonte di voto: FotMob" description="L'unica piattaforma usata per il calcolo del voto base" />
+        <CardHeader title="Fonte di voto: SportMonks" description="L'unica piattaforma usata per il calcolo del voto base" />
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border border-hairline bg-transparent p-4">
               <p className="mb-1 text-xs font-medium uppercase tracking-wider text-ink-4">Media storica</p>
               <p className="font-mono text-2xl font-bold text-ink-1">{cfg.source_normalization.mean.toFixed(2)}</p>
               <p className="mt-1 text-xs text-ink-4">
-                Corrisponde al voto &quot;sufficiente&quot; su FotMob (confermato dalle fasce cromatiche della piattaforma).
-                Un giocatore con voto {cfg.source_normalization.mean} riceve z = 0 → voto base 6.0.
+                Corrisponde al voto &quot;sufficiente&quot;: un giocatore con voto {cfg.source_normalization.mean} riceve z = 0 → voto base 6.0.
               </p>
             </div>
             <div className="rounded-lg border border-hairline bg-transparent p-4">
@@ -209,7 +208,7 @@ export default async function MethodologyPage() {
             </div>
           </div>
           <Note>
-            Il voto FotMob incorpora già tutti i contributi difensivi (tackle, intercetti, salvataggi…) in un singolo numero.
+            Il voto SportMonks incorpora già tutti i contributi difensivi (tackle, intercetti, salvataggi…) in un singolo numero.
             La formula si basa su di esso come segnale sintetico, senza correzioni aggiuntive.
           </Note>
         </CardContent>
@@ -217,21 +216,21 @@ export default async function MethodologyPage() {
 
       {/* ── Normalizzazione ───────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Normalizzazione z-score" description="Come viene convertito il voto FotMob in uno scostamento dalla media" />
+        <CardHeader title="Normalizzazione z-score" description="Come viene convertito il voto in uno scostamento dalla media" />
         <CardContent>
           <div className="rounded-lg border border-hairline bg-transparent px-4 py-3 font-mono text-sm">
             <span className="text-indigo-300">z</span>
             {' = ( '}
-            <span className="text-ink-1">voto_fotmob</span>
+            <span className="text-ink-1">voto</span>
             {' − '}
             <span className="text-ink-3">{cfg.source_normalization.mean}</span>
             {' ) / '}
             <span className="text-ink-3">{cfg.source_normalization.std}</span>
           </div>
           <Note>
-            Uno z-score pari a 0 corrisponde esattamente al giocatore medio (voto {cfg.source_normalization.mean} su FotMob).
+            Uno z-score pari a 0 corrisponde esattamente al giocatore medio (voto {cfg.source_normalization.mean}).
             Valori positivi indicano una prestazione sopra la media, valori negativi sotto.
-            Se FotMob non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve voto base 6.0 + B/M.
+            Se SportMonks non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve voto base 6.0 + B/M.
           </Note>
         </CardContent>
       </Card>
@@ -333,7 +332,7 @@ export default async function MethodologyPage() {
           </TableWrap>
           <Note>
             Il moltiplicatore agisce sulla <strong className="text-[#c8c8e8]">distanza dalla soglia di sufficienza</strong> (6.0), non sull&apos;intera scala.
-            GK e DEF sono amplificati perché il loro voto FotMob è il segnale principale (raramente segnano).
+            GK e DEF sono amplificati perché il loro voto SportMonks è il segnale principale (raramente segnano).
             ATT è leggermente compresso perché gol e assist sono già conteggiati nel B/M.
             Valori modificabili da{' '}
             <a href="/league/engine-config" className="text-indigo-300 hover:underline">Configurazione motore</a>.
@@ -446,14 +445,14 @@ export default async function MethodologyPage() {
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                I voti sono marcati come <strong className="text-[#c8c8e8]">provvisori</strong> quando le statistiche non sono ancora confermate da FotMob.
+                I voti sono marcati come <strong className="text-[#c8c8e8]">provvisori</strong> quando le statistiche non sono ancora confermate da SportMonks.
                 Un calcolo con voti provvisori è valido ma potrebbe cambiare dopo una nuova pubblicazione.
               </span>
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Se FotMob non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve <strong className="text-[#c8c8e8]">voto base 6.0</strong> con il solo contributo del B/M.
+                Se SportMonks non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve <strong className="text-[#c8c8e8]">voto base 6.0</strong> con il solo contributo del B/M.
                 Questo caso è indicato con <span className="text-sky-400">⚡</span> nella pagina calcoli.
               </span>
             </li>

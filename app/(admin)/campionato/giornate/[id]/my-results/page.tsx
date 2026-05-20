@@ -272,7 +272,7 @@ export default async function MyResultsPage({
                     <div>
                       <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">Pipeline z-score</p>
                       <div className="space-y-1 font-mono text-xs">
-                        <BreakdownRow label="z FotMob"    value={n3(c?.z_rating ?? null)}    dim={c?.z_rating == null} />
+                        <BreakdownRow label="z SportMonks"    value={n3(c?.z_rating ?? null)}    dim={c?.z_rating == null} />
                         <BreakdownRow label="fattore min."  value={c?.minutes_factor != null ? `× ${c.minutes_factor.toFixed(1)}` : '—'} />
                         <BreakdownRow label="z rettificato" value={n3(c?.z_adjusted   ?? null)} />
                       </div>

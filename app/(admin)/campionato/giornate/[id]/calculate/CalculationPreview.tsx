@@ -15,7 +15,6 @@ export interface CalcPlayerRow {
   player_id: string
   is_provisional: boolean
   z_rating: number | null
-  z_sofascore: number | null
   minutes_factor: number | null
   z_adjusted: number | null
   b0: number | null
@@ -442,7 +441,7 @@ export function CalculationPreview({
                     const isExpanded = expandedRow === c.id
                     const wasEdited = savedPlayers.has(c.player_id)
 
-                    // no_ratings_exception: played ≥10 min, FotMob rating not yet available (e.g. live match)
+                    // no_ratings_exception: played ≥10 min, SportMonks rating not yet available (e.g. live match)
                     const isNoRatings = c.fantavoto !== null && c.z_rating === null && c.minutes_factor !== null
 
                     return (
@@ -509,7 +508,7 @@ export function CalculationPreview({
                             <td colSpan={8} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
-                                  ['z FotMob', fmt(c.z_rating)],
+                                  ['z voto', fmt(c.z_rating)],
                                   ['min·factor', fmt(c.minutes_factor, 2)],
                                   ['z_adjusted', fmt(c.z_adjusted)],
                                   ['b0', fmt(c.b0)],

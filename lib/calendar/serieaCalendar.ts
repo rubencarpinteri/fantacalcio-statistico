@@ -7,8 +7,8 @@ export type CalendarMatch = {
   homeTeam: string
   awayTeam: string
   label: string
-  sofascoreMatchId: number | null
-  fotmobMatchId: number | null
+  /** SportMonks fixture ID — null when the CSV column is empty (e.g. legacy 25/26 file). */
+  sportmonksFixtureId: number | null
   /** ISO UTC kickoff time, parsed from "dd/MM/yyyy HH:mm" in Europe/Rome. */
   kickoffAt: string | null
 }
@@ -57,16 +57,16 @@ function parseCalendar(): CalendarMatch[] {
     const homeTeam = (parts[3] ?? '').trim()
     const awayTeam = (parts[4] ?? '').trim()
     if (isNaN(matchNumber) || isNaN(roundNumber) || !homeTeam || !awayTeam) continue
-    const sofascoreRaw = (parts[6] ?? '').trim()
-    const fotmobRaw = (parts[7] ?? '').trim()
+    // Column 7 (0-indexed): SportMonks fixture ID. The legacy 25/26 CSV
+    // had SofaScore at col 6 and FotMob at col 7 — both ignored now.
+    const sportmonksRaw = (parts[7] ?? '').trim()
     results.push({
       matchNumber,
       roundNumber,
       homeTeam,
       awayTeam,
       label: `${homeTeam} - ${awayTeam}`,
-      sofascoreMatchId: sofascoreRaw ? parseInt(sofascoreRaw, 10) : null,
-      fotmobMatchId: fotmobRaw ? parseInt(fotmobRaw, 10) : null,
+      sportmonksFixtureId: sportmonksRaw ? parseInt(sportmonksRaw, 10) : null,
       kickoffAt: parseRomeToUtc(dateRaw),
     })
   }

@@ -669,7 +669,6 @@ export type Database = {
         Row: {
           competition_id: string
           created_at: string
-          fotmob_coach_id: number | null
           id: string
           is_active: boolean
           name: string
@@ -680,7 +679,6 @@ export type Database = {
         Insert: {
           competition_id: string
           created_at?: string
-          fotmob_coach_id?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -691,7 +689,6 @@ export type Database = {
         Update: {
           competition_id?: string
           created_at?: string
-          fotmob_coach_id?: number | null
           id?: string
           is_active?: boolean
           name?: string
@@ -1133,7 +1130,6 @@ export type Database = {
           eliminated_at: string | null
           fifa_code: string
           flag_emoji: string | null
-          fotmob_team_id: number | null
           id: string
           name: string
           sportmonks_team_id: number | null
@@ -1146,7 +1142,6 @@ export type Database = {
           eliminated_at?: string | null
           fifa_code: string
           flag_emoji?: string | null
-          fotmob_team_id?: number | null
           id?: string
           name: string
           sportmonks_team_id?: number | null
@@ -1159,7 +1154,6 @@ export type Database = {
           eliminated_at?: string | null
           fifa_code?: string
           flag_emoji?: string | null
-          fotmob_team_id?: number | null
           id?: string
           name?: string
           sportmonks_team_id?: number | null
@@ -1436,7 +1430,6 @@ export type Database = {
           base_price: number
           competition_id: string
           created_at: string
-          fotmob_player_id: number | null
           id: string
           is_active: boolean
           name: string
@@ -1450,7 +1443,6 @@ export type Database = {
           base_price?: number
           competition_id: string
           created_at?: string
-          fotmob_player_id?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -1464,7 +1456,6 @@ export type Database = {
           base_price?: number
           competition_id?: string
           created_at?: string
-          fotmob_player_id?: number | null
           id?: string
           is_active?: boolean
           name?: string
@@ -1908,67 +1899,6 @@ export type Database = {
           },
         ]
       }
-      fotmob_ignored_players: {
-        Row: {
-          created_at: string
-          fotmob_name: string
-          fotmob_player_id: number
-          league_id: string
-        }
-        Insert: {
-          created_at?: string
-          fotmob_name: string
-          fotmob_player_id: number
-          league_id: string
-        }
-        Update: {
-          created_at?: string
-          fotmob_name?: string
-          fotmob_player_id?: number
-          league_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fotmob_ignored_players_league_id_fkey"
-            columns: ["league_id"]
-            isOneToOne: false
-            referencedRelation: "leagues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fotmob_unmatched_players: {
-        Row: {
-          created_at: string
-          fotmob_name: string
-          fotmob_player_id: number
-          fotmob_team: string | null
-          matchday_id: string
-        }
-        Insert: {
-          created_at?: string
-          fotmob_name: string
-          fotmob_player_id: number
-          fotmob_team?: string | null
-          matchday_id: string
-        }
-        Update: {
-          created_at?: string
-          fotmob_name?: string
-          fotmob_player_id?: number
-          fotmob_team?: string | null
-          matchday_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fotmob_unmatched_players_matchday_id_fkey"
-            columns: ["matchday_id"]
-            isOneToOne: false
-            referencedRelation: "matchdays"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       league_engine_config: {
         Row: {
           assist: number
@@ -1977,8 +1907,6 @@ export type Database = {
           clean_sheet_gk: number
           clean_sheet_min_minutes: number
           created_at: string
-          fotmob_mean: number
-          fotmob_std: number
           goal_bonus_att: number
           goal_bonus_def: number
           goal_bonus_gk: number
@@ -1997,6 +1925,8 @@ export type Database = {
           penalty_missed: number
           penalty_saved: number
           penalty_scored_discount: number
+          rating_mean: number
+          rating_std: number
           red_card: number
           role_multiplier_att: number
           role_multiplier_def: number
@@ -2016,8 +1946,6 @@ export type Database = {
           clean_sheet_gk?: number
           clean_sheet_min_minutes?: number
           created_at?: string
-          fotmob_mean?: number
-          fotmob_std?: number
           goal_bonus_att?: number
           goal_bonus_def?: number
           goal_bonus_gk?: number
@@ -2036,6 +1964,8 @@ export type Database = {
           penalty_missed?: number
           penalty_saved?: number
           penalty_scored_discount?: number
+          rating_mean?: number
+          rating_std?: number
           red_card?: number
           role_multiplier_att?: number
           role_multiplier_def?: number
@@ -2055,8 +1985,6 @@ export type Database = {
           clean_sheet_gk?: number
           clean_sheet_min_minutes?: number
           created_at?: string
-          fotmob_mean?: number
-          fotmob_std?: number
           goal_bonus_att?: number
           goal_bonus_def?: number
           goal_bonus_gk?: number
@@ -2075,6 +2003,8 @@ export type Database = {
           penalty_missed?: number
           penalty_saved?: number
           penalty_scored_discount?: number
+          rating_mean?: number
+          rating_std?: number
           red_card?: number
           role_multiplier_att?: number
           role_multiplier_def?: number
@@ -2101,7 +2031,6 @@ export type Database = {
         Row: {
           club: string
           created_at: string
-          fotmob_player_id: number | null
           full_name: string
           id: string
           is_active: boolean
@@ -2116,7 +2045,6 @@ export type Database = {
         Insert: {
           club: string
           created_at?: string
-          fotmob_player_id?: number | null
           full_name: string
           id?: string
           is_active?: boolean
@@ -2131,7 +2059,6 @@ export type Database = {
         Update: {
           club?: string
           created_at?: string
-          fotmob_player_id?: number | null
           full_name?: string
           id?: string
           is_active?: boolean
@@ -2213,7 +2140,6 @@ export type Database = {
           result_rules: Json
           scoring_mode: Database["public"]["Enums"]["scoring_mode"]
           season_name: string
-          source_weight_fotmob: number
           timezone: string
           updated_at: string
         }
@@ -2230,7 +2156,6 @@ export type Database = {
           result_rules?: Json
           scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
           season_name: string
-          source_weight_fotmob?: number
           timezone?: string
           updated_at?: string
         }
@@ -2247,7 +2172,6 @@ export type Database = {
           result_rules?: Json
           scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
           season_name?: string
-          source_weight_fotmob?: number
           timezone?: string
           updated_at?: string
         }
@@ -2622,10 +2546,6 @@ export type Database = {
       matchday_fixtures: {
         Row: {
           created_at: string
-          fotmob_finished: boolean
-          fotmob_match_id: number | null
-          fotmob_started: boolean
-          fotmob_status_seen_at: string | null
           id: string
           kickoff_at: string | null
           label: string
@@ -2634,10 +2554,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          fotmob_finished?: boolean
-          fotmob_match_id?: number | null
-          fotmob_started?: boolean
-          fotmob_status_seen_at?: string | null
           id?: string
           kickoff_at?: string | null
           label?: string
@@ -2646,10 +2562,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          fotmob_finished?: boolean
-          fotmob_match_id?: number | null
-          fotmob_started?: boolean
-          fotmob_status_seen_at?: string | null
           id?: string
           kickoff_at?: string | null
           label?: string
@@ -3490,7 +3402,6 @@ export type Database = {
         Row: {
           club: string
           created_at: string
-          fotmob_id: number | null
           full_name: string
           id: string
           is_active: boolean
@@ -3504,7 +3415,6 @@ export type Database = {
         Insert: {
           club: string
           created_at?: string
-          fotmob_id?: number | null
           full_name: string
           id?: string
           is_active?: boolean
@@ -3518,7 +3428,6 @@ export type Database = {
         Update: {
           club?: string
           created_at?: string
-          fotmob_id?: number | null
           full_name?: string
           id?: string
           is_active?: boolean

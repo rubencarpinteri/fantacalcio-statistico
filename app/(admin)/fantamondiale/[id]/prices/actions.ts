@@ -50,25 +50,25 @@ export async function bulkImportPricesAction(fd: FormData) {
     .filter(Boolean)
     .map((line) => {
       const parts = line.split(',').map((p) => p.trim())
-      return { fotmob_player_id: Number(parts[0]), price: Number(parts[1]) }
+      return { sportmonks_player_id: Number(parts[0]), price: Number(parts[1]) }
     })
-    .filter((r) => !isNaN(r.fotmob_player_id) && !isNaN(r.price))
+    .filter((r) => !isNaN(r.sportmonks_player_id) && !isNaN(r.price))
 
   if (rows.length === 0) throw new Error('Nessuna riga valida')
 
-  const fotmobIds = rows.map((r) => r.fotmob_player_id)
+  const sportmonksIds = rows.map((r) => r.sportmonks_player_id)
   const { data: players } = await supabase
     .from('fm_player')
-    .select('id, fotmob_player_id')
+    .select('id, sportmonks_player_id')
     .eq('competition_id', competitionId)
-    .in('fotmob_player_id', fotmobIds)
+    .in('sportmonks_player_id', sportmonksIds)
 
-  if (!players || players.length === 0) throw new Error('Nessun giocatore trovato con i FotMob ID indicati')
+  if (!players || players.length === 0) throw new Error('Nessun giocatore trovato con i SportMonks ID indicati')
 
-  const idMap = new Map(players.map((p) => [p.fotmob_player_id, p.id]))
+  const idMap = new Map(players.map((p) => [p.sportmonks_player_id, p.id]))
 
   const upsertRows = rows.flatMap((r) => {
-    const playerId = r.fotmob_player_id !== null ? idMap.get(r.fotmob_player_id) : undefined
+    const playerId = r.sportmonks_player_id !== null ? idMap.get(r.sportmonks_player_id) : undefined
     if (!playerId) return []
     return [{ phase_id: phaseId, player_id: playerId, price: r.price, source }]
   })

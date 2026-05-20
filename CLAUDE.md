@@ -25,14 +25,14 @@ Full-stack Italian Mantra-style fantasy football app. Private league, statistics
 - `rating_class` stored explicitly on `league_players`, NEVER derived at runtime
 - `resolveRatingClass()` is import-time only — `domain/roles/resolveRatingClass.ts`
 
-## Engine v1.2 (dual-source)
-- Sources: FotMob (weight 55%) + SofaScore (weight 45%)
-- z_fotmob = (rating − mean_fm) / std_fm  [defaults: mean=6.6, std=0.79]
-- z_sofascore = (rating − mean_ss) / std_ss  [defaults: mean=6.6, std=0.65]
-- No single-source shrink in v1.2 (removed from v1.1)
-- All normalization params configurable per league in `league_engine_config`
-- SofaScore fetched server-side: `api.sofascore.com/api/v1/event/{id}/lineups` in POST `/api/ratings/fetch`
-  → ID matching via `serie_a_players.sofascore_id` chain (no name matching)
+## Engine v2.0 (SportMonks single-source)
+- Sole rating source: **SportMonks**. FotMob + SofaScore were ripped out around May 2026.
+- Default mode is passthrough (`normalize_ratings: false`). Set `true` on a `league_engine_config` row to opt back into the z-score path.
+- Normalization (when enabled): `z = (rating − rating_mean) / rating_std`. Defaults: mean 6.87, std 0.79 (Ball et al. 2025, configurable per league).
+- Live ingest: cron `GET /api/cron/sportmonks-ratings-tick` every minute polls `/livescores/inplay` for active SportMonks leagues, parses each fixture, and upserts:
+  - `player_match_stats` for Serie A (via `upsertSerieAPlayerStats` — keyed on (matchday_id, player_id), `is_provisional=true`, `entered_by=null`)
+  - `fm_player_match_stats` for FantaMondiale (via `upsertFMPlayerStats`)
+- Player matching is ID-only: `serie_a_players.sportmonks_player_id`, `fm_player.sportmonks_player_id`. No name matching at ingest time.
 
 ## Supabase patterns
 - Server client: `createClient()` in `lib/supabase/server.ts` (async, per-request)
@@ -40,5 +40,5 @@ Full-stack Italian Mantra-style fantasy football app. Private league, statistics
 - Middleware refreshes token via `supabase.auth.getUser()` (NOT `getSession()`)
 
 ## Data files
-- `_data/SerieAcalendar2526.csv` — match schedule with FotMob + SofaScore match IDs per round
-- `_data/people.csv` — 421k-row cross-platform player ID map (key_sofascore col 13, key_fotmob col 22)
+- `_data/SerieAcalendar2526.csv` — legacy 25/26 match schedule (sofa/fotmob ID columns no longer read).
+- Future: 26/27 calendar CSV will populate `sportmonks_fixture_id` at column 7.

@@ -14,7 +14,7 @@ const coerceInt = (min = 0) =>
     .transform((v) => (v === '' || v === null || v === undefined ? 0 : Number(v)))
     .pipe(z.number().int().min(min))
 
-// FotMob rating coercer: 0.0 – 10.0
+// SportMonks rating coercer: 0.0 – 10.0
 const coerceFloat = (min: number, max = 10) =>
   z.union([z.string(), z.number(), z.null()])
     .transform((v) => (v === '' || v === null || v === undefined ? null : Number(v)))
@@ -27,7 +27,7 @@ export const statRowSchema = z.object({
   rating_class_override: z.enum(['GK', 'DEF', 'MID', 'ATT']).nullable().default(null),
 
   // Source rating — null means not yet entered
-  rating:     coerceFloat(0.0),   // FotMob: 0.0 – 10.0
+  rating:     coerceFloat(0.0),   // SportMonks: 0.0 – 10.0
 
   // Defensive / GK
   tackles_won:           coerceInt(),

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireSuperAdmin } from '@/lib/fantamondiale/server'
 
 const PlayerRowSchema = z.object({
-  fotmob_player_id: z.coerce.number().int().positive(),
+  sportmonks_player_id: z.coerce.number().int().positive(),
   name: z.string().min(1).max(120),
   shirt_number: z.coerce.number().int().min(1).max(99).optional(),
   role: z.enum(['P', 'D', 'C', 'A']),
@@ -30,7 +30,7 @@ export async function addPlayersAction(fd: FormData) {
     .map((line) => {
       const parts = line.split(',').map((p) => p.trim())
       return {
-        fotmob_player_id: parts[0],
+        sportmonks_player_id: parts[0],
         name: parts[1],
         shirt_number: parts[2] || undefined,
         role: parts[3],
@@ -42,7 +42,7 @@ export async function addPlayersAction(fd: FormData) {
   const valid: Array<{
     competition_id: string
     national_team_id: string
-    fotmob_player_id: number
+    sportmonks_player_id: number
     name: string
     shirt_number?: number
     role: 'P' | 'D' | 'C' | 'A'
@@ -64,7 +64,7 @@ export async function addPlayersAction(fd: FormData) {
 
   if (valid.length > 0) {
     const { error } = await supabase.from('fm_player').upsert(valid, {
-      onConflict: 'competition_id,fotmob_player_id',
+      onConflict: 'competition_id,sportmonks_player_id',
       ignoreDuplicates: false,
     })
     if (error) throw new Error(error.message)

@@ -117,8 +117,8 @@ export type FMCoachTierMatrix = z.infer<typeof fmCoachTierMatrixSchema>
 // ---- Engine v2.0 normalization (WC-tuned) ------------------
 
 export const fmEngineConfigSchema = z.object({
-  fotmob_mean: z.number().min(5).max(8),
-  fotmob_std: z.number().min(0.2).max(2),
+  rating_mean: z.number().min(5).max(8),
+  rating_std: z.number().min(0.2).max(2),
   /** Minutes threshold for partial vs full z weight. */
   minutes_threshold: z.number().int().min(0).max(120),
   minutes_partial: z.number().min(0).max(1),

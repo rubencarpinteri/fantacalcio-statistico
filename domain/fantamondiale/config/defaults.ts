@@ -4,10 +4,10 @@
 // Authoritative defaults for the 2026 WC competition.
 //
 // Engine v2.0 parameters are tuned for international football:
-//   - fotmob_mean: 6.70 (slightly below Serie A's 6.87 — WC has
+//   - rating_mean: 6.70 (slightly below Serie A's 6.87 — WC has
 //     more mismatched fixtures and underdog losses, especially
 //     in the 48-team group stage).
-//   - fotmob_std:  0.60 (tighter than Serie A's 0.79 — FotMob
+//   - rating_std:  0.60 (tighter than Serie A's 0.79 — SportMonks
 //     ratings cluster more tightly in international football,
 //     so we amplify the signal by normalizing with a smaller
 //     spread).
@@ -26,8 +26,8 @@ import type {
 } from './schema'
 
 const DEFAULT_ENGINE: FMEngineConfig = {
-  fotmob_mean: 6.70,
-  fotmob_std: 0.60,
+  rating_mean: 6.70,
+  rating_std: 0.60,
   minutes_threshold: 45,
   minutes_partial: 0.50,
   minutes_full: 1.00,

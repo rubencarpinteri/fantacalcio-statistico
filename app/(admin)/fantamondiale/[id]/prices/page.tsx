@@ -40,7 +40,7 @@ export default async function PricesPage({ params }: { params: Promise<{ id: str
       <div className="rounded-xl border border-hairline bg-glass-1 p-4">
         <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-ink-4">Importa prezzi da CSV</p>
         <p className="mb-3 text-[10px] text-ink-5">
-          Formato: <code className="font-mono text-ink-4">fotmob_id, prezzo</code> — una riga per giocatore.
+          Formato: <code className="font-mono text-ink-4">sportmonks_player_id, prezzo</code> — una riga per giocatore.
         </p>
         <form action={bulkImportPricesAction} className="space-y-3">
           <input type="hidden" name="competition_id" value={id} />

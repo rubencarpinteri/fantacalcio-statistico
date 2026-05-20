@@ -9,7 +9,7 @@ const AddCoachSchema = z.object({
   competition_id: z.string().uuid(),
   national_team_id: z.string().uuid(),
   name: z.string().min(1).max(120),
-  fotmob_coach_id: z.coerce.number().int().positive().optional(),
+  sportmonks_coach_id: z.coerce.number().int().positive().optional(),
 })
 
 export async function addCoachAction(fd: FormData) {
@@ -20,7 +20,7 @@ export async function addCoachAction(fd: FormData) {
     competition_id: fd.get('competition_id'),
     national_team_id: fd.get('national_team_id'),
     name: fd.get('name'),
-    fotmob_coach_id: fd.get('fotmob_coach_id') || undefined,
+    sportmonks_coach_id: fd.get('sportmonks_coach_id') || undefined,
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Dati non validi')
 

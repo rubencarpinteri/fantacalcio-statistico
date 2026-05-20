@@ -49,7 +49,7 @@ export default async function ImportLeghePage({
           <span className="serif font-normal text-ink-3">— da Leghe Fantacalcio</span>
         </h1>
         <p className="mt-1.5 max-w-2xl text-[12.5px] leading-[1.55] text-ink-4">
-          Carica il file .xlsx scaricato da Leghe Fantacalcio per pubblicare formazioni e punteggi FotMob.
+          Carica il file .xlsx scaricato da Leghe Fantacalcio per pubblicare formazioni e punteggi SportMonks.
         </p>
       </div>
 

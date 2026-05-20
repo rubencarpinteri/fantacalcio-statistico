@@ -351,7 +351,7 @@ export type PreviewPlayerRow = {
   subbedForNv: string | null
   finalScore: number | null
   votoBase: number | null
-  source: 'fotmob' | 'leghe' | 'none'
+  source: 'sportmonks' | 'leghe' | 'none'
   bonuses: BonusMalusItem[]
 }
 
@@ -395,10 +395,10 @@ export async function previewScoresAction(
           const calc = lookupCalc(starter.name)
           if (calc !== null) {
             total += calc.fantavoto
-            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: calc.fantavoto, votoBase: calc.voto_base, source: 'fotmob', bonuses: calc.bonus_malus_breakdown })
+            players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: calc.fantavoto, votoBase: calc.voto_base, source: 'sportmonks', bonuses: calc.bonus_malus_breakdown })
           } else if (starter.legheFantavoto !== null) {
             total += starter.legheFantavoto
-            warnings.push(`${starter.name}: voto FotMob non trovato — usato voto Leghe (${starter.legheFantavoto.toFixed(2)})`)
+            warnings.push(`${starter.name}: voto SportMonks non trovato — usato voto Leghe (${starter.legheFantavoto.toFixed(2)})`)
             players.push({ name: starter.name, role: starter.role, isNv: false, isActiveSub: false, subbedForNv: null, finalScore: starter.legheFantavoto, votoBase: null, source: 'leghe', bonuses: [] })
           } else {
             warnings.push(`${starter.name}: nessun voto disponibile`)
@@ -413,9 +413,9 @@ export async function previewScoresAction(
             const benchRole = tl.bench.find(b => b.name === assignedSubName)?.role ?? ''
             if (c !== null) {
               total += c.fantavoto
-              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: c.fantavoto, votoBase: c.voto_base, source: 'fotmob', bonuses: c.bonus_malus_breakdown })
+              players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: c.fantavoto, votoBase: c.voto_base, source: 'sportmonks', bonuses: c.bonus_malus_breakdown })
             } else {
-              warnings.push(`Sostituto ${assignedSubName} (per ${starter.name}): voto FotMob non trovato`)
+              warnings.push(`Sostituto ${assignedSubName} (per ${starter.name}): voto SportMonks non trovato`)
               players.push({ name: assignedSubName, role: benchRole, isNv: false, isActiveSub: true, subbedForNv: starter.name, finalScore: null, votoBase: null, source: 'none', bonuses: [] })
             }
           }
@@ -474,11 +474,11 @@ export async function confirmLegheImportAction(
           // Name-lookup failures do NOT make a player NV; they count as 0 (data gap).
           const calc = lookupCalc(starter.name)
           if (calc !== null) {
-            // FotMob score found — use it
+            // SportMonks score found — use it
             total += calc.fantavoto; playerCount++
             starters.push({ name: starter.name, role: starter.role, player_id: calc.player_id, fantavoto: calc.fantavoto, voto_base: calc.voto_base, bonus_malus: calc.bonus_malus_breakdown, is_nv: false, subbed_by: null })
           } else if (starter.legheFantavoto !== null) {
-            // FotMob lookup failed (name mismatch or missing stats) — fall back to Leghe score
+            // SportMonks lookup failed (name mismatch or missing stats) — fall back to Leghe score
             total += starter.legheFantavoto; playerCount++
             starters.push({ name: starter.name, role: starter.role, player_id: null, fantavoto: starter.legheFantavoto, voto_base: null, bonus_malus: null, is_nv: false, subbed_by: null })
           } else {
@@ -535,7 +535,7 @@ export async function confirmLegheImportAction(
 
     const now = new Date().toISOString()
 
-    // Upsert published_team_scores pointing to the FotMob run
+    // Upsert published_team_scores pointing to the SportMonks run
     const scoreRows = teamScores.map(ts => ({
       league_id:       ctx.league.id,
       matchday_id:     matchdayId,
@@ -606,7 +606,7 @@ export async function confirmLegheImportAction(
       old_status:  oldStatus,
       new_status:  'closed',
       changed_by:  ctx.userId,
-      note: `Formazioni da Leghe xlsx, punteggi da FotMob (run v1)`,
+      note: `Formazioni da Leghe xlsx, punteggi da SportMonks (run v1)`,
     })
 
     await writeAuditLog({
@@ -616,7 +616,7 @@ export async function confirmLegheImportAction(
       actionType: 'calculation_publish',
       entityType: 'calculation_run',
       entityId: runId,
-      afterJson: { source: 'leghe_lineups_fotmob_scores', version_number, team_count: teamScores.length },
+      afterJson: { source: 'leghe_lineups_sportmonks_scores', version_number, team_count: teamScores.length },
     })
 
     // Auto-fill competition matchups (non-fatal)
@@ -668,7 +668,7 @@ export async function confirmLegheImportAction(
     revalidatePath(`/campionato/giornate/${matchdayId}`)
     revalidatePath(`/campionato/giornate`)
 
-    return { ok: true, message: `Giornata pubblicata: formazioni da Leghe xlsx, punteggi da FotMob (${teamScores.length} squadre).` }
+    return { ok: true, message: `Giornata pubblicata: formazioni da Leghe xlsx, punteggi da SportMonks (${teamScores.length} squadre).` }
   } catch (e) {
     return { ok: false, error: String(e) }
   }

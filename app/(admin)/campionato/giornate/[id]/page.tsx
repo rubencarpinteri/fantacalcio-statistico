@@ -312,7 +312,6 @@ export default async function MatchdayDetailPage({
                 <FixturesInlineCard matchdayId={id} fixtures={fixtures} roundMatches={roundMatches} />
               </div>
 
-              {/* Step 2 — Dati SofaScore */}
               {/* Step 2 — Scarica voti, calcola e pubblica */}
               <div className={`rounded-xl border p-4 ${step1Done ? 'border-amber-500/20 bg-amber-500/5' : 'border-hairline bg-transparent opacity-50 pointer-events-none'}`}>
                 <div className="mb-3 flex items-center gap-3">

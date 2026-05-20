@@ -9,9 +9,9 @@ import { writeAuditLog } from '@/lib/audit'
 // ── Validation schema ────────────────────────────────────────────────────────
 
 const EngineConfigSchema = z.object({
-  // Normalizzazione voti (FotMob single-source, Ball et al. 2025)
-  fotmob_mean: z.coerce.number().min(5).max(8),
-  fotmob_std:  z.coerce.number().min(0.1).max(3),
+  // Normalizzazione voti (SportMonks single-source, Ball et al. 2025)
+  rating_mean: z.coerce.number().min(5).max(8),
+  rating_std:  z.coerce.number().min(0.1).max(3),
 
   // Fattore minuti
   minutes_factor_threshold: z.coerce.number().int().min(1).max(90),

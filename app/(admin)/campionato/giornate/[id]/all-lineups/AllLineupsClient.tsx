@@ -25,7 +25,7 @@ export interface SlotData {
   minutesFactor: number | null
   roleMultiplier: number | null
   // Raw ratings as fetched from the source (before any z-score / engine transformation)
-  rawFotmobRating: number | null
+  rawRating: number | null
   // Match stats from player_match_stats
   minutesPlayed: number | null
   goalsScored: number | null
@@ -35,7 +35,7 @@ export interface SlotData {
   saves: number | null
   goalsConceded: number | null
   cleanSheet: boolean | null
-  // SofaScore stats
+  // SportMonks stats
   shots: number | null
   shotsOnTarget: number | null
   bigChanceCreated: number | null
@@ -97,7 +97,7 @@ interface Props {
   matchdayStatus: string
   teamLineups: TeamLineupData[]
   matchups: MatchupPair[]
-  /** Player IDs whose FotMob fixture is currently in progress. */
+  /** Player IDs whose SportMonks fixture is currently in progress. */
   liveMatchPlayerIds?: string[]
 }
 
@@ -256,8 +256,8 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
   const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-ink-3'
   const fv = slot.fantavoto
 
-  const hasFm = slot.rawFotmobRating !== null
-  const hasAnyRaw = hasFm
+  const hasRating = slot.rawRating !== null
+  const hasAnyRaw = hasRating
   const hasStats = slot.minutesPlayed !== null
 
   const aerialTotal = (slot.aerialWon !== null || slot.aerialLost !== null)
@@ -310,13 +310,13 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
             </div>
           )}
 
-          {/* Source breakdown — FotMob */}
+          {/* Source breakdown — SportMonks */}
           {hasAnyRaw && (
             <div className="grid gap-2 grid-cols-1">
               <div className="rounded-lg p-2" style={{ border: '1px solid rgba(4,156,100,0.3)', background: 'rgba(4,156,100,0.07)' }}>
-                <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>FotMob</p>
+                <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>SportMonks</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-lg font-black font-mono text-ink-1">{slot.rawFotmobRating!.toFixed(1)}</span>
+                  <span className="text-lg font-black font-mono text-ink-1">{slot.rawRating!.toFixed(1)}</span>
                   {vbFm !== null && (
                     <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
                       → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
@@ -348,11 +348,11 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
             </div>
           )}
 
-          {/* Match stats from FotMob */}
+          {/* Match stats from SportMonks */}
           {hasStats && (
             <div className="space-y-2 rounded-lg p-2.5 border border-hairline" style={{ background: 'var(--bg-1)' }}>
               <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#049c64' }}>
-                Statistiche FotMob
+                Statistiche SportMonks
               </p>
 
               {(slot.marketValue !== null || slot.height !== null) && (

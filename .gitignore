@@ -39,3 +39,6 @@ next-env.d.ts
 .vercel
 .env*.local
 .claude/
+
+# Local working dir for one-off API responses / fixtures (not for prod)
+/_sandbox/

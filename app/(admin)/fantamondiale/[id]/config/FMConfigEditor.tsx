@@ -7,7 +7,7 @@ import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
 // ── Engine preview computation (client-side) ────────────────────────────────
 
 function computeVotoBase(
-  fotmobRating: number,
+  rating: number,
   mean: number,
   std: number,
   targetMean: number,
@@ -15,7 +15,7 @@ function computeVotoBase(
   multiplier: number,
   minutesFactor: number
 ): number {
-  const z = (fotmobRating - mean) / std
+  const z = (rating - mean) / std
   const b0 = targetMean + targetStd * z * minutesFactor
   const b1 = targetMean + multiplier * (b0 - targetMean)
   return Math.max(3, Math.min(10, Math.round(b1 * 100) / 100))
@@ -174,13 +174,13 @@ export function FMConfigEditor({
 
       {/* ── Engine normalization ── */}
       <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-4">
-        <p className="text-[13px] font-semibold text-ink-1">Engine v2.0 — Normalizzazione FotMob</p>
+        <p className="text-[13px] font-semibold text-ink-1">Engine v2.0 — Normalizzazione voto</p>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {(
             [
-              ['fotmob_mean', 'Media FotMob', 0.01],
-              ['fotmob_std', 'Dev. Std FotMob', 0.01],
+              ['rating_mean', 'Media voto', 0.01],
+              ['rating_std', 'Dev. Std voto', 0.01],
               ['target_mean_vote', 'Media voto target', 0.1],
               ['target_vote_std', 'Spread voto target', 0.01],
             ] as const
@@ -223,7 +223,7 @@ export function FMConfigEditor({
             <table className="w-full text-[11px] tabular-nums">
               <thead>
                 <tr className="border-b border-hairline text-ink-5">
-                  <th className="px-3 py-2 text-left font-semibold">Rating FotMob</th>
+                  <th className="px-3 py-2 text-left font-semibold">Voto</th>
                   {(['P', 'D', 'C', 'A'] as const).map((r) => (
                     <th key={r} className="px-3 py-2 text-right font-semibold">{r}</th>
                   ))}
@@ -231,16 +231,16 @@ export function FMConfigEditor({
               </thead>
               <tbody className="divide-y divide-hairline">
                 {PREVIEW_RATINGS.map((rating) => (
-                  <tr key={rating} className={rating === eng.fotmob_mean ? 'bg-indigo-500/10' : ''}>
+                  <tr key={rating} className={rating === eng.rating_mean ? 'bg-indigo-500/10' : ''}>
                     <td className="px-3 py-1.5 font-mono text-ink-3">
                       {rating.toFixed(1)}
-                      {rating === eng.fotmob_mean ? ' ← media' : ''}
+                      {rating === eng.rating_mean ? ' ← media' : ''}
                     </td>
                     {(['P', 'D', 'C', 'A'] as const).map((role) => {
                       const vb = computeVotoBase(
                         rating,
-                        eng.fotmob_mean,
-                        eng.fotmob_std,
+                        eng.rating_mean,
+                        eng.rating_std,
                         eng.target_mean_vote,
                         eng.target_vote_std,
                         eng.role_multiplier[role],
@@ -264,7 +264,7 @@ export function FMConfigEditor({
             </table>
           </div>
           <p className="mt-1 text-[9px] text-ink-5">
-            Riga evidenziata = rating medio ({eng.fotmob_mean}) → voto target ({eng.target_mean_vote}).
+            Riga evidenziata = rating medio ({eng.rating_mean}) → voto target ({eng.target_mean_vote}).
           </p>
         </div>
       </div>

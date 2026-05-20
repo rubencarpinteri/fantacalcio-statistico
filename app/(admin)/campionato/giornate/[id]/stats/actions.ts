@@ -197,7 +197,7 @@ const CSV_COLUMN_ALIASES: Record<string, keyof StatRow | 'full_name' | 'club'> =
   // Club / team column — used for composite identity matching
   squadra: 'club', club: 'club', team: 'club', società: 'club', societa: 'club',
   min: 'minutes_played', minuti: 'minutes_played', minutes: 'minutes_played',
-  fotmob: 'rating',
+  rating: 'rating', voto: 'rating', sportmonks: 'rating',
   gol: 'goals_scored', goal: 'goals_scored', goals: 'goals_scored',
   assist: 'assists',
   'gol_subiti': 'goals_conceded', 'gol subiti': 'goals_conceded', goals_conceded: 'goals_conceded',
@@ -386,7 +386,7 @@ export async function exportStatsCsvAction(matchdayId: string): Promise<string> 
 
   const headers = [
     'Nome', 'Squadra', 'Classe', 'Min',
-    'SofaScore', 'FotMob',
+    'Voto',
     'Gol', 'Assist', 'Autogol', 'GolSubiti', 'PortaInviolata',
     'Giallo', 'Rosso', 'RigoriSegnati', 'RigoriSbagliati', 'RigoriParati',
     'Parate', 'Tackle', 'Interceptions', 'Rinvii', 'Blocchi', 'DuelliAerei',

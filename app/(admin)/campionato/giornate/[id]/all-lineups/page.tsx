@@ -168,7 +168,7 @@ export default async function AllLineupsPage({
 
   // ── Raw source ratings + stats from player_match_stats ───────────────────
   type StatsRow = {
-    fotmobRating: number | null
+    rating: number | null
     minutesPlayed: number
     goalsScored: number
     assists: number
@@ -220,7 +220,7 @@ export default async function AllLineupsPage({
       .eq('matchday_id', matchdayId)
     for (const s of statsRows ?? []) {
       statsMap.set(s.player_id, {
-        fotmobRating:          s.rating         !== null ? Number(s.rating)    : null,
+        rating:          s.rating         !== null ? Number(s.rating)    : null,
         minutesPlayed:         s.minutes_played         ?? 0,
         goalsScored:           s.goals_scored           ?? 0,
         assists:               s.assists                ?? 0,
@@ -384,7 +384,7 @@ export default async function AllLineupsPage({
         zFotmob: calc?.z_rating ?? null,
         minutesFactor: calc?.minutes_factor ?? null,
         roleMultiplier: calc?.role_multiplier ?? null,
-        rawFotmobRating:    rawStats?.fotmobRating    ?? null,
+        rawRating:    rawStats?.rating    ?? null,
         minutesPlayed:      rawStats?.minutesPlayed   ?? null,
         goalsScored:        rawStats?.goalsScored     ?? null,
         assists:            rawStats?.assists         ?? null,

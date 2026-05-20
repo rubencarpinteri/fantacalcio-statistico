@@ -119,8 +119,8 @@ function TargetDistributionSection({
             z = (voto_fonte − media_fonte) / std_fonte
           </p>
           <p className="text-xs text-ink-4">
-            Converte i voti FotMob in z-score comparabili tramite le
-            impostazioni &ldquo;Normalizzazione voti FotMob&rdquo; qui sopra.
+            Converte i voti SportMonks in z-score comparabili tramite le
+            impostazioni &ldquo;Normalizzazione voti&rdquo; qui sopra.
           </p>
         </div>
         <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/8 p-3 space-y-1">
@@ -131,7 +131,7 @@ function TargetDistributionSection({
             voto = media_finale + z × std_finale
           </p>
           <p className="text-xs text-ink-3">
-            Proietta lo z-score FotMob sulla nostra scala fantacalcio, con centro e
+            Proietta lo z-score del voto sulla nostra scala fantacalcio, con centro e
             dispersione configurabili indipendentemente dalla fonte.
           </p>
         </div>
@@ -296,8 +296,8 @@ export function EngineConfigForm({ current }: Props) {
   const src = useDefaults ? null : current
 
   const v = {
-    fotmob_mean:    src?.fotmob_mean    ?? fn.mean,
-    fotmob_std:     src?.fotmob_std     ?? fn.std,
+    rating_mean:    src?.rating_mean    ?? fn.mean,
+    rating_std:     src?.rating_std     ?? fn.std,
 
     minutes_factor_threshold: src?.minutes_factor_threshold ?? mf.threshold,
     minutes_factor_partial:   src?.minutes_factor_partial   ?? mf.partial,
@@ -343,24 +343,24 @@ export function EngineConfigForm({ current }: Props) {
     <form key={resetKey} action={action} className="space-y-8">
 
       {/* ── Normalizzazione voti ────────────────────────────────────── */}
-      <FieldGroup title="Normalizzazione voti FotMob (z-score)">
+      <FieldGroup title="Normalizzazione voti (z-score)">
         <Field
-          label="FotMob — media"
-          name="fotmob_mean"
-          defaultValue={v.fotmob_mean}
+          label="Voto — media"
+          name="rating_mean"
+          defaultValue={v.rating_mean}
           step="0.01"
           min="5"
           max="8"
-          hint="Voto medio FotMob (default 6.87, Ball et al. 2025)"
+          hint="Voto medio della distribuzione SportMonks (default 6.87)"
         />
         <Field
-          label="FotMob — deviazione standard"
-          name="fotmob_std"
-          defaultValue={v.fotmob_std}
+          label="Voto — deviazione standard"
+          name="rating_std"
+          defaultValue={v.rating_std}
           step="0.01"
           min="0.1"
           max="3"
-          hint="Dispersione dei voti FotMob (default 0.79)"
+          hint="Dispersione dei voti SportMonks (default 0.79)"
         />
       </FieldGroup>
 

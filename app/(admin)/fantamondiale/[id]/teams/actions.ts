@@ -10,7 +10,7 @@ const AddTeamSchema = z.object({
   name: z.string().min(1).max(80),
   fifa_code: z.string().min(2).max(10).toUpperCase(),
   flag_emoji: z.string().max(8).optional(),
-  fotmob_team_id: z.coerce.number().int().positive().optional(),
+  sportmonks_team_id: z.coerce.number().int().positive().optional(),
 })
 
 export async function addTeamAction(fd: FormData) {
@@ -22,7 +22,7 @@ export async function addTeamAction(fd: FormData) {
     name: fd.get('name'),
     fifa_code: fd.get('fifa_code'),
     flag_emoji: fd.get('flag_emoji') || undefined,
-    fotmob_team_id: fd.get('fotmob_team_id') || undefined,
+    sportmonks_team_id: fd.get('sportmonks_team_id') || undefined,
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Dati non validi')
 

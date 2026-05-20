@@ -49,7 +49,7 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
               <span className="text-sm font-semibold text-ink-1">{team.legheName}</span>
               <div className="flex items-center gap-3 text-sm font-mono">
                 <span className="text-ink-4">Leghe: {team.legheTotal !== null ? team.legheTotal.toFixed(2) : '—'}</span>
-                <span className="text-ink-1 font-semibold">FotMob: {team.total.toFixed(2)}</span>
+                <span className="text-ink-1 font-semibold">SportMonks: {team.total.toFixed(2)}</span>
                 {diff !== null && (
                   <span className={Math.abs(diff) > 2 ? 'text-amber-400 font-semibold' : 'text-ink-4'}>
                     ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
@@ -107,7 +107,7 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
                       {p.votoBase != null ? p.votoBase.toFixed(2) : '—'}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono font-semibold">
-                      {p.source === 'fotmob' && (
+                      {p.source === 'sportmonks' && (
                         <span className="text-ink-1">{p.finalScore?.toFixed(2)}</span>
                       )}
                       {p.source === 'leghe' && (
@@ -406,7 +406,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-ink-1">Verifica punteggi</h3>
-            <p className="text-xs text-ink-4">Controlla i voti FotMob per ogni giocatore prima di pubblicare.</p>
+            <p className="text-xs text-ink-4">Controlla i voti SportMonks per ogni giocatore prima di pubblicare.</p>
           </div>
           {hasVerified && (
             <span className="flex items-center gap-1.5 text-xs text-emerald-400">
@@ -437,7 +437,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
             disabled={!canVerify || previewPending}
             className="rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-5 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-40"
           >
-            {previewPending ? 'Caricamento punteggi…' : hasVerified ? 'Aggiorna verifica' : 'Verifica punteggi FotMob'}
+            {previewPending ? 'Caricamento punteggi…' : hasVerified ? 'Aggiorna verifica' : 'Verifica punteggi SportMonks'}
           </button>
         </form>
       </div>
@@ -455,7 +455,7 @@ export function ImportLegheClient({ matchdayId, matchdayName, allTeams }: Props)
       )}
       {!hasVerified && canConfirm && (
         <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 text-sm text-indigo-300">
-          ℹ Clicca «Verifica punteggi FotMob» per vedere i voti prima di pubblicare.
+          ℹ Clicca «Verifica punteggi SportMonks» per vedere i voti prima di pubblicare.
         </div>
       )}
 

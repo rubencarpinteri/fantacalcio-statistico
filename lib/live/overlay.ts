@@ -30,7 +30,7 @@ export type LiveCalcOverlay = {
 }
 
 export type LiveStatsOverlay = {
-  fotmobRating: number | null
+  rating: number | null
   minutesPlayed: number
   goalsScored: number
   assists: number
@@ -122,7 +122,7 @@ export async function fetchLiveOverlay(
       role_multiplier: r.role_multiplier != null ? Number(r.role_multiplier) : null,
     })
     statsOverlay.set(r.player_id, {
-      fotmobRating:    r.rating    != null ? Number(r.rating)    : null,
+      rating:    r.rating    != null ? Number(r.rating)    : null,
       minutesPlayed:   r.minutes_played   ?? 0,
       goalsScored:     r.goals_scored     ?? 0,
       assists:         r.assists          ?? 0,

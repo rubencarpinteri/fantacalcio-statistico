@@ -23,10 +23,10 @@ export function FixturesInlineCard({
   const [autoState, setAutoState] = useState<AutoImportFixturesState>({})
   const [importing, startImport] = useTransition()
 
-  const fotmobDefault = fixtures.map((f) => f.fotmob_match_id ?? '').join('\n')
+  const idsDefault = fixtures.map((f) => f.sportmonks_fixture_id ?? '').join('\n')
 
   const csvHasIds = roundMatches.some(
-    (m) => m.fotmobMatchId !== null,
+    (m) => m.sportmonksFixtureId !== null,
   )
 
   function handleAutoImport() {
@@ -103,11 +103,11 @@ export function FixturesInlineCard({
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-ink-4 mb-1">FotMob IDs</label>
+            <label className="block text-xs font-medium text-ink-4 mb-1">SportMonks IDs</label>
             <textarea
-              name="fotmobIds"
+              name="sportmonksIds"
               rows={10}
-              defaultValue={fotmobDefault}
+              defaultValue={idsDefault}
               placeholder={'4803335\n4803336\n...'}
               className="w-full rounded-lg border border-hairline bg-glass-1 px-3 py-2 text-sm font-mono text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none resize-none"
             />

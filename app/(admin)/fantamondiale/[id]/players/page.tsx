@@ -46,7 +46,7 @@ export default async function PlayersPage({ params }: { params: Promise<{ id: st
           Aggiungi giocatori (una riga = un giocatore)
         </p>
         <p className="mb-3 text-[10px] text-ink-5">
-          Formato: <code className="font-mono text-ink-4">fotmob_id, nome, numero, ruolo (P/D/C/A), prezzo_base</code>
+          Formato: <code className="font-mono text-ink-4">sportmonks_player_id, nome, numero, ruolo (P/D/C/A), prezzo_base</code>
           <br />
           Esempio: <code className="font-mono text-ink-4">345678, Mbappé K., 10, A, 35</code>
         </p>
@@ -99,7 +99,7 @@ export default async function PlayersPage({ params }: { params: Promise<{ id: st
                     {player.role}
                   </span>
                   <span className="flex-1 text-[13px] font-medium text-ink-1 truncate">{player.name}</span>
-                  <span className="text-[10px] text-ink-5 font-mono shrink-0">FM:{player.fotmob_player_id}</span>
+                  <span className="text-[10px] text-ink-5 font-mono shrink-0">FM:{player.sportmonks_player_id}</span>
                   <span className="text-[11px] text-ink-3 tabular-nums shrink-0">{player.base_price}cr</span>
                   <form action={deletePlayerAction.bind(null, player.id, id)}>
                     <button type="submit" className="text-[10px] text-ink-5 hover:text-rose-400 transition-colors shrink-0">✕</button>
@@ -115,7 +115,7 @@ export default async function PlayersPage({ params }: { params: Promise<{ id: st
         <div className="rounded-xl border border-hairline bg-glass-1 px-6 py-10 text-center">
           <p className="text-[13px] text-ink-4">Nessun giocatore aggiunto.</p>
           <p className="mt-1 text-[11px] text-ink-5">
-            Usa il form sopra per importare i giocatori con i loro FotMob ID.
+            Usa il form sopra per importare i giocatori con i loro SportMonks ID.
           </p>
         </div>
       )}

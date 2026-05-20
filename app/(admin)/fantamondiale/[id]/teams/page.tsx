@@ -36,7 +36,7 @@ export default async function TeamsPage({ params }: { params: Promise<{ id: stri
             className="rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 placeholder-ink-5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <input
-            name="fotmob_team_id" placeholder="FotMob team ID" type="number"
+            name="sportmonks_team_id" placeholder="SportMonks team ID" type="number"
             className="rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 placeholder-ink-5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <button
@@ -60,7 +60,7 @@ export default async function TeamsPage({ params }: { params: Promise<{ id: stri
                 <span className="text-lg w-7 shrink-0 text-center">{team.flag_emoji ?? '🏴'}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-ink-1 truncate">{team.name}</p>
-                  <p className="text-[10px] text-ink-5 font-mono">{team.fifa_code}{team.fotmob_team_id ? ` · FM:${team.fotmob_team_id}` : ''}</p>
+                  <p className="text-[10px] text-ink-5 font-mono">{team.fifa_code}{team.sportmonks_team_id ? ` · FM:${team.sportmonks_team_id}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <form action={eliminateTeamAction.bind(null, team.id, id)}>

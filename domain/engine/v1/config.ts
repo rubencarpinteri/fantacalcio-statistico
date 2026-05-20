@@ -2,7 +2,7 @@
 // Fantacalcio Statistico — Rating Engine v2.0 — Config
 // ============================================================
 // Authoritative source-of-truth for the v2.0 engine.
-// Single-source FotMob — SofaScore removed from v1.2.
+// Single-source SportMonks — SportMonks removed from v1.2.
 //
 // Normalization constants from Ball, Huynh & Varley (2025),
 // Journal of Sports Sciences 43:7 — empirical mean/std across
@@ -26,9 +26,9 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   base_score: 6.0,
 
   /**
-   * FotMob rating normalization.
-   * mean = 6.87: empirical FotMob mean (Ball et al. 2025).
-   * std  = 0.79: empirical FotMob spread (Ball et al. 2025).
+   * SportMonks rating normalization.
+   * mean = 6.87: empirical SportMonks mean (Ball et al. 2025).
+   * std  = 0.79: empirical SportMonks spread (Ball et al. 2025).
    *
    * Example:
    *   rating 6.87 → z =  0.00 → b0 = 6.00 (neutral)
@@ -59,7 +59,7 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
    *   b1 = target_mean_vote + multiplier × (b0 - target_mean_vote)
    *
    * Rationale:
-   *   GK / DEF: FotMob rating IS the primary scoring signal (goals/assists rare)
+   *   GK / DEF: SportMonks rating IS the primary scoring signal (goals/assists rare)
    *             → amplify to reward standout defensive performances
    *   MID:      balanced (goals/assists and defensive work both matter)
    *             → neutral multiplier
@@ -173,8 +173,8 @@ export function buildEngineConfig(
     },
 
     source_normalization: {
-      mean: dbConfig.fotmob_mean ?? base.source_normalization.mean,
-      std:  dbConfig.fotmob_std  ?? base.source_normalization.std,
+      mean: dbConfig.rating_mean ?? base.source_normalization.mean,
+      std:  dbConfig.rating_std  ?? base.source_normalization.std,
     },
 
     target_mean_vote: dbConfig.target_mean_vote ?? base.target_mean_vote,

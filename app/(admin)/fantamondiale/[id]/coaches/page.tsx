@@ -60,7 +60,7 @@ export default async function CoachesPage({ params }: { params: Promise<{ id: st
               className="rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 placeholder-ink-5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
-              name="fotmob_coach_id" placeholder="FotMob coach ID" type="number"
+              name="sportmonks_coach_id" placeholder="SportMonks coach ID" type="number"
               className="rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 placeholder-ink-5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-indigo-500 transition-colors">
