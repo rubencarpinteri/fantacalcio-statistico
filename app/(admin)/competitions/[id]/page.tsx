@@ -375,10 +375,7 @@ export default async function CompetitionDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <a href="/competitions" className="text-[12.5px] text-ink-4 transition-colors hover:text-indigo-300">
-            ← Competizioni
-          </a>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
             <h1
               className="flex items-baseline gap-2 font-light tracking-tight text-ink-1"
               style={{ fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.15, letterSpacing: '-0.035em' }}

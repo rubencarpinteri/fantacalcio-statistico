@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: 'trophy',
     matchPaths: ['/competitions', '/matchdays', '/players'],
   },
-  { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe',  adminOnly: true },
+  { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe' },
   { href: '/playground',    label: 'Playground',    icon: 'beaker', adminOnly: true },
   { href: '/league',        label: 'Impostazioni',  icon: 'gear',   adminOnly: true },
 ]

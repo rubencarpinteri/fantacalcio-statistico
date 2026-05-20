@@ -1,6 +1,7 @@
-import { requireSuperAdmin } from '@/lib/fantamondiale/server'
 import { getFMCompetitions } from '@/lib/fantamondiale/server'
 import { bootstrapWC2026Action } from './actions'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Route } from 'next'
 
@@ -15,7 +16,34 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default async function FantaMondialePage() {
-  await requireSuperAdmin()
+  // Auth: super admins see the full competitions list. Regular managers
+  // who own at least one fm_fantasy_team get redirected straight into
+  // their competition (single-comp UX). Everyone else → home.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_super_admin')
+    .eq('id', user.id)
+    .single()
+  const isSuperAdmin = profile?.is_super_admin ?? false
+
+  if (!isSuperAdmin) {
+    const { data: team } = await supabase
+      .from('fm_fantasy_team')
+      .select('competition_id')
+      .eq('manager_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (team?.competition_id) {
+      redirect(`/fantamondiale/${team.competition_id}` as Route)
+    }
+    redirect('/')
+  }
+
   const competitions = await getFMCompetitions()
 
   return (
