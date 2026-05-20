@@ -20,15 +20,30 @@ export default async function DashboardPage() {
     .maybeSingle()
 
   let userTeamId: string | null = null
-  if (user && latestComp) {
-    const { data: team } = await supabase
-      .from('fm_fantasy_team')
-      .select('id')
-      .eq('competition_id', latestComp.id)
-      .eq('manager_id', user.id)
+  let userDisplayName: string | null = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, username')
+      .eq('id', user.id)
       .maybeSingle()
-    userTeamId = team?.id ?? null
+    const fullName = profile?.full_name?.trim() ?? ''
+    userDisplayName = fullName || profile?.username || null
+
+    if (latestComp) {
+      const { data: team } = await supabase
+        .from('fm_fantasy_team')
+        .select('id')
+        .eq('competition_id', latestComp.id)
+        .eq('manager_id', user.id)
+        .maybeSingle()
+      userTeamId = team?.id ?? null
+    }
   }
+
+  // Show only the first name in the greeting — "Ciao Mario" reads more
+  // natural than "Ciao Mario Rossi".
+  const firstName = userDisplayName?.split(' ')[0] ?? null
 
   const enrollmentClosed =
     latestComp?.status === 'archived' || latestComp?.status === 'completed'
@@ -114,10 +129,11 @@ export default async function DashboardPage() {
           >
             <div className="text-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-4">
-                Iscriviti
+                {firstName ? `Ciao ${firstName}` : 'Iscriviti'}
               </p>
               <p className="mt-1 text-[13px] text-ink-2">
-                Scegli un nome per la tua squadra e partecipa al FantaMondiale.
+                Manca solo una cosa: scegli il nome della tua squadra per
+                completare l&apos;iscrizione al FantaMondiale.
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
