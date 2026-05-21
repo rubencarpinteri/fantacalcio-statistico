@@ -1,16 +1,14 @@
 import Link from 'next/link'
 import type { Route } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth'
 import { enrollSelfInFMAction } from './actions'
 
 export const metadata = { title: 'FantaMondiale Statistico' }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
 
   const { data: latestComp } = await supabase
     .from('fm_competition')

@@ -1,4 +1,7 @@
+import { cache } from 'react'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth'
 import type { League, LeagueRole } from '@/types/database.types'
 
 export interface LeagueContext {
@@ -7,21 +10,42 @@ export interface LeagueContext {
   userId: string
 }
 
+// Memoized per request so layouts and pages that both call this hit Supabase once.
+export const isSuperAdmin = cache(async (): Promise<boolean> => {
+  const user = await getAuthUser()
+  if (!user) return false
+  const supabase = await createClient()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_super_admin')
+    .eq('id', user.id)
+    .single()
+  return profile?.is_super_admin ?? false
+})
+
+/**
+ * Redirects to `/login` if the user is not signed in, or `/` if they are
+ * signed in but not a super-admin. Returns their user id on success.
+ */
+export async function requireSuperAdmin(): Promise<{ userId: string }> {
+  const user = await getAuthUser()
+  if (!user) redirect('/login')
+  if (!(await isSuperAdmin())) redirect('/')
+  return { userId: user.id }
+}
+
 /**
  * Resolves the current user's league context.
  * In v1, each user belongs to exactly one league.
  * Returns null if the user has no league membership.
  *
- * Use in server components and server actions to get the scoped league.
+ * Memoized per request — pages can call this freely without re-querying.
  */
-export async function getLeagueContext(): Promise<LeagueContext | null> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export const getLeagueContext = cache(async (): Promise<LeagueContext | null> => {
+  const user = await getAuthUser()
   if (!user) return null
+
+  const supabase = await createClient()
 
   // Until we ship a proper league switcher, "current league" = the most
   // recently joined one. This makes the post-creation flow land in the
@@ -38,17 +62,14 @@ export async function getLeagueContext(): Promise<LeagueContext | null> {
 
   // The Supabase select-query-parser cannot resolve the `leagues(*)` join
   // because our manually-written types carry `Relationships: never[]` (no FK
-  // metadata). The actual runtime shape is correct; we widen to an explicit
-  // structural type and then narrow each field to the domain type.
+  // metadata). The runtime shape is correct; widen, then narrow.
   const d = data as { league_id: string; role: LeagueRole; leagues: unknown }
   return {
-    // leagues(*) join: shape is correct at runtime but typed as `unknown`
-    // because our types carry Relationships: never[] (no FK metadata).
     league: d.leagues as unknown as League,
     role: d.role,
     userId: user.id,
   }
-}
+})
 
 /**
  * Resolves the current user's league context or throws a redirect.
@@ -56,32 +77,17 @@ export async function getLeagueContext(): Promise<LeagueContext | null> {
  */
 export async function requireLeagueContext(): Promise<LeagueContext> {
   const ctx = await getLeagueContext()
-  if (!ctx) {
-    const { redirect } = await import('next/navigation')
-    redirect('/login')
-  }
+  if (!ctx) redirect('/login')
   return ctx as LeagueContext
 }
 
 /**
- * Resolves the current user's league context and asserts league_admin role.
- * Throws a redirect if the user is not a league_admin.
+ * Resolves the current user's league context and asserts league_admin role
+ * (or super-admin). Redirects to `/dashboard` otherwise.
  */
 export async function requireLeagueAdmin(): Promise<LeagueContext> {
   const ctx = await requireLeagueContext()
-  if (ctx.role !== 'league_admin') {
-    // Check super_admin status
-    const supabase = await createClient()
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_super_admin')
-      .eq('id', ctx.userId)
-      .single()
-
-    if (!profile?.is_super_admin) {
-      const { redirect } = await import('next/navigation')
-      redirect('/dashboard')
-    }
-  }
-  return ctx
+  if (ctx.role === 'league_admin') return ctx
+  if (await isSuperAdmin()) return ctx
+  redirect('/dashboard')
 }

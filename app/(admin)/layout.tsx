@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth'
+import { getLeagueContext } from '@/lib/league'
 import { AdminSidebar } from '@/components/nav/AdminSidebar'
 
 export default async function AdminLayout({
@@ -7,29 +9,21 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getAuthUser()
   if (!user) {
     redirect('/login')
   }
 
-  // Resolve profile and league membership
-  const [profileResult, membershipResult] = await Promise.all([
+  const supabase = await createClient()
+
+  // Profile + league context in parallel. getLeagueContext is memoized via
+  // React cache(), so child pages reading it again pay zero extra round-trips.
+  const [profileResult, ctx] = await Promise.all([
     supabase.from('profiles').select('username, full_name, is_super_admin').eq('id', user.id).single(),
-    supabase
-      .from('league_users')
-      .select('role, league_id, leagues(name)')
-      .eq('user_id', user.id)
-      .order('joined_at', { ascending: false })
-      .limit(1)
-      .single(),
+    getLeagueContext(),
   ])
 
-  if (membershipResult.error || !membershipResult.data) {
+  if (!ctx) {
     // User exists in auth but has no league membership yet
     // Show a holding page rather than a hard redirect
     return (
@@ -52,18 +46,15 @@ export default async function AdminLayout({
   }
 
   const profile = profileResult.data
-  const membership = membershipResult.data
   const isAdmin =
-    membership.role === 'league_admin' || (profile?.is_super_admin ?? false)
-
-  const leagueData = membership.leagues as unknown as { name: string } | null
+    ctx.role === 'league_admin' || (profile?.is_super_admin ?? false)
 
   return (
     <div className="flex h-screen overflow-hidden">
       <AdminSidebar
         isAdmin={isAdmin}
         username={profile?.username ?? user.email ?? 'Utente'}
-        leagueName={leagueData?.name ?? 'Fantacalcio'}
+        leagueName={ctx.league.name ?? 'Fantacalcio'}
       />
       <main className="flex-1 overflow-y-auto">
         {/* pb-24 on mobile reserves space above the fixed bottom nav bar */}
