@@ -311,6 +311,14 @@ export default async function MatchdayDetailPage({
                   </p>
                 </div>
                 <FixturesInlineCard matchdayId={id} fixtures={fixtures} roundMatches={roundMatches} />
+                <div className="mt-3 pt-3 border-t border-hairline">
+                  <a
+                    href={`/campionato/giornate/${id}/prezzi`}
+                    className="inline-flex items-center gap-2 text-xs text-indigo-300 hover:text-indigo-200"
+                  >
+                    Carica prezzi giornata (CSV) →
+                  </a>
+                </div>
               </div>
 
               {/* Step 2 — Scarica voti, calcola e pubblica */}

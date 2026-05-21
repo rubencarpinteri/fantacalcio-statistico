@@ -128,30 +128,62 @@ export async function submitLineupAction(
     )
   }
 
-  // ---- 5. All players must be in the team's active roster ---------------
+  // ---- 5. Phase 2: budget validation (full-pool draft model) ------------
+  // The "owned squad" model is dropped. Every player must:
+  //   - belong to this league's active pool
+  //   - have a price for this matchday
+  // Total cost (all selected players, starters + bench, at full price)
+  // must not exceed the league's weekly budget.
   const assignedPlayerIds = assignments.map((a) => a.player_id)
 
   if (assignedPlayerIds.length > 0) {
-    const { data: rosterEntries } = await supabase
-      .from('team_roster_entries')
-      .select('player_id')
-      .eq('team_id', team.id)
+    // 5a. All player_ids must be active in this league.
+    const { data: poolPlayers } = await supabase
+      .from('league_players')
+      .select('id, full_name')
+      .eq('league_id', ctx.league.id)
+      .eq('is_active', true)
+      .in('id', assignedPlayerIds)
+
+    const poolSet = new Set((poolPlayers ?? []).map((p) => p.id))
+    const notInPool = assignedPlayerIds.filter((id) => !poolSet.has(id))
+    if (notInPool.length > 0) {
+      return fail(
+        'Uno o più giocatori non sono nel pool attivo della lega. Ricarica la pagina.'
+      )
+    }
+
+    // 5b. Every picked player needs a price for this matchday.
+    const { data: prices } = await supabase
+      .from('matchday_player_prices')
+      .select('player_id, price')
+      .eq('matchday_id', matchday_id)
       .in('player_id', assignedPlayerIds)
-      .is('released_at', null)
 
-    const rosterSet = new Set((rosterEntries ?? []).map((e) => e.player_id))
-    const notInRoster = assignedPlayerIds.filter((id) => !rosterSet.has(id))
-
-    if (notInRoster.length > 0) {
-      // Fetch names for a readable error message
-      const { data: unknownPlayers } = await supabase
+    const priceMap = new Map((prices ?? []).map((p) => [p.player_id, p.price]))
+    const unpriced = assignedPlayerIds.filter((id) => !priceMap.has(id))
+    if (unpriced.length > 0) {
+      const { data: nameRows } = await supabase
         .from('league_players')
         .select('id, full_name')
-        .in('id', notInRoster)
+        .in('id', unpriced)
+      const names = (nameRows ?? []).map((p) => p.full_name).join(', ')
+      return fail(`Prezzo mancante per: ${names || unpriced.join(', ')}.`)
+    }
 
-      const names = (unknownPlayers ?? []).map((p) => p.full_name).join(', ')
+    // 5c. Sum prices and compare to the league's weekly budget.
+    const { data: cfg } = await supabase
+      .from('league_engine_config')
+      .select('weekly_budget')
+      .eq('league_id', ctx.league.id)
+      .maybeSingle()
+
+    const budget = cfg?.weekly_budget ?? 500
+    const totalCost = assignedPlayerIds.reduce((sum, id) => sum + (priceMap.get(id) ?? 0), 0)
+
+    if (totalCost > budget) {
       return fail(
-        `I seguenti giocatori non sono nella tua rosa attiva: ${names || notInRoster.join(', ')}.`
+        `Budget sforato: hai speso ${totalCost} su ${budget} crediti disponibili (eccesso ${totalCost - budget}).`
       )
     }
   }

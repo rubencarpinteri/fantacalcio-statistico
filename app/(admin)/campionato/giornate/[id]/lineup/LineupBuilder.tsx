@@ -9,7 +9,7 @@ import { validateLineup } from '@/domain/lineup/validateLineup'
 import { submitLineupAction } from './actions'
 import type { FormationSlot } from '@/types/database.types'
 
-interface RosterPlayer {
+interface PoolPlayer {
   id: string
   full_name: string
   club: string
@@ -39,7 +39,14 @@ interface LineupBuilderProps {
   matchdayId: string
   teamId: string
   formations: SlimFormation[]
-  rosterPlayers: RosterPlayer[]
+  /** Full active league player pool — user picks fresh from this each matchday. */
+  poolPlayers: PoolPlayer[]
+  /** player_id → price for this matchday. Missing entries = player unavailable to pick. */
+  priceByPlayerId: Record<string, number>
+  /** Total credits available for the matchday. */
+  weeklyBudget: number
+  /** True when prices have been uploaded for ≥95% of the pool. */
+  pricesReady: boolean
   currentSubmission: CurrentSubmission | null
   isReadOnly: boolean
 }
@@ -75,7 +82,10 @@ export function LineupBuilder({
   matchdayId,
   teamId,
   formations,
-  rosterPlayers,
+  poolPlayers,
+  priceByPlayerId,
+  weeklyBudget,
+  pricesReady,
   currentSubmission,
   isReadOnly,
 }: LineupBuilderProps) {
@@ -120,9 +130,19 @@ export function LineupBuilder({
   const starterSlots = slots.filter(s => !s.is_bench)
   const benchSlots   = slots.filter(s =>  s.is_bench).sort((a, b) => (a.bench_order ?? 0) - (b.bench_order ?? 0))
   const usedPlayerIds = new Set(Object.values(assignments).filter(Boolean))
-  const playerMap = new Map(rosterPlayers.map(p => [p.id, p]))
+  const playerMap = new Map(poolPlayers.map(p => [p.id, p]))
   const activeSlot = activeSlotId ? slots.find(s => s.id === activeSlotId) ?? null : null
   const selectedFormation = formations.find(f => f.id === selectedFormationId)
+
+  // ── Budget computation ──────────────────────────────────────────
+  // Every assigned player (starter or bench) contributes its full price.
+  // Players without a price entry are unavailable.
+  const totalSpent = Object.values(assignments)
+    .filter(Boolean)
+    .reduce((sum, pid) => sum + (priceByPlayerId[pid] ?? 0), 0)
+  const budgetRemaining = weeklyBudget - totalSpent
+  const overBudget = budgetRemaining < 0
+  const budgetPct = Math.min(100, Math.max(0, (totalSpent / weeklyBudget) * 100))
 
   // Distribute starter slots onto pitch rows
   const gkSlot = starterSlots[0] ?? null
@@ -182,8 +202,10 @@ export function LineupBuilder({
     })
   }
 
-  const visiblePlayers = rosterPlayers
+  const visiblePlayers = poolPlayers
     .filter(p => {
+      const hasPrice = priceByPlayerId[p.id] !== undefined
+      if (!hasPrice) return false
       const matchSearch = !playerSearch.trim() ||
         p.full_name.toLowerCase().includes(playerSearch.toLowerCase()) ||
         p.club.toLowerCase().includes(playerSearch.toLowerCase())
@@ -201,15 +223,27 @@ export function LineupBuilder({
       const bu = usedPlayerIds.has(b.id)
       if (!au && bu) return -1
       if (au && !bu) return 1
+      // Sort by price desc within compatibility tier so big names surface first.
+      const pa = priceByPlayerId[a.id] ?? 0
+      const pb = priceByPlayerId[b.id] ?? 0
+      if (pa !== pb) return pb - pa
       return a.full_name.localeCompare(b.full_name)
     })
 
   if (isReadOnly) {
-    return <Alert variant="warning">La giornata non è aperta. La formazione è in sola lettura.</Alert>
+    return (
+      <Alert variant="warning">
+        {!pricesReady
+          ? 'I prezzi della giornata non sono ancora caricati. Non è possibile inserire la formazione.'
+          : 'La giornata non è aperta. La formazione è in sola lettura.'}
+      </Alert>
+    )
   }
 
   function SlotCard({ slot }: { slot: FormationSlot }) {
-    const player = assignments[slot.id] ? playerMap.get(assignments[slot.id]!) : null
+    const playerId = assignments[slot.id]
+    const player = playerId ? playerMap.get(playerId) : null
+    const playerPrice = playerId ? priceByPlayerId[playerId] : undefined
     const isActive = activeSlotId === slot.id
     const style = rs(slot.allowed_mantra_roles[0] ?? '')
 
@@ -234,6 +268,11 @@ export function LineupBuilder({
             <span className={`text-[11px] font-semibold text-center leading-tight mt-1 px-0.5 ${isActive ? 'text-ink-1' : style.text}`}>
               {player.full_name.split(' ').slice(-1)[0]}
             </span>
+            {playerPrice !== undefined && (
+              <span className={`text-[9px] font-mono mt-0.5 leading-none ${isActive ? 'text-ink-2' : 'text-ink-1/70'}`}>
+                {playerPrice}
+              </span>
+            )}
             <button
               onClick={e => removeFromSlot(slot.id, e)}
               className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center hover:bg-red-400 z-20"
@@ -267,6 +306,35 @@ export function LineupBuilder({
         >
           {formations.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
         </select>
+      </div>
+
+      {/* ── BUDGET TRACKER ─────────────────────────────────── */}
+      <div className={`rounded-xl border p-3 ${overBudget ? 'border-rose-500/50 bg-rose-500/10' : 'border-hairline bg-glass-1'}`}>
+        <div className="flex items-baseline justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-ink-4">Budget</p>
+            <p className="font-mono text-lg font-bold text-ink-1">
+              {totalSpent} <span className="text-ink-4">/ {weeklyBudget}</span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-widest text-ink-4">Rimangono</p>
+            <p className={`font-mono text-lg font-bold ${overBudget ? 'text-rose-400' : budgetRemaining < weeklyBudget * 0.1 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {budgetRemaining}
+            </p>
+          </div>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-glass-3">
+          <div
+            className={`h-full transition-all ${overBudget ? 'bg-rose-500' : budgetPct > 90 ? 'bg-amber-400' : 'bg-emerald-500'}`}
+            style={{ width: `${budgetPct}%` }}
+          />
+        </div>
+        {overBudget && (
+          <p className="mt-1.5 text-[11px] text-rose-300">
+            Sforamento di {Math.abs(budgetRemaining)} crediti — rimuovi giocatori per inviare.
+          </p>
+        )}
       </div>
 
       {loadingSlots ? (
@@ -309,7 +377,9 @@ export function LineupBuilder({
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
               {benchSlots.map(slot => {
-                const player = assignments[slot.id] ? playerMap.get(assignments[slot.id]!) : null
+                const playerId = assignments[slot.id]
+                const player = playerId ? playerMap.get(playerId) : null
+                const playerPrice = playerId ? priceByPlayerId[playerId] : undefined
                 const isActive = activeSlotId === slot.id
                 return (
                   <div
@@ -331,6 +401,9 @@ export function LineupBuilder({
                         <span className="text-[10px] text-ink-1 font-medium leading-tight text-center px-0.5">
                           {player.full_name.split(' ').slice(-1)[0]}
                         </span>
+                        {playerPrice !== undefined && (
+                          <span className="text-[9px] font-mono text-ink-3 leading-none">{playerPrice}</span>
+                        )}
                         <button
                           onClick={e => removeFromSlot(slot.id, e)}
                           className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center"
@@ -349,10 +422,10 @@ export function LineupBuilder({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-3">
-                {activeSlotId ? `Scegli per: ${activeSlot?.slot_name}` : 'I tuoi giocatori'}
+                {activeSlotId ? `Scegli per: ${activeSlot?.slot_name}` : 'Pool completo'}
               </p>
               <span className="text-xs text-ink-4">
-                {rosterPlayers.length - usedPlayerIds.size} / {rosterPlayers.length} disponibili
+                {visiblePlayers.length} giocatori
               </span>
             </div>
 
@@ -392,21 +465,30 @@ export function LineupBuilder({
                 <p className="text-center text-sm text-ink-4 py-8">Nessun giocatore trovato</p>
               )}
               {visiblePlayers.map(player => {
+                const price = priceByPlayerId[player.id] ?? 0
                 const isUsed = usedPlayerIds.has(player.id)
                 const isCompatible = activeSlot ? playerSatisfiesSlot(player, activeSlot) : null
+                const wouldOverflow = !isUsed && price > budgetRemaining
                 const prs = rs(player.mantra_roles[0] ?? '')
 
                 return (
                   <div
                     key={player.id}
-                    onClick={() => { if (!activeSlotId || isUsed) return; assign(activeSlotId, player.id) }}
+                    onClick={() => {
+                      if (!activeSlotId || isUsed) return
+                      // Allow over-budget assignment, but the tracker will flag it
+                      // and the submit button will be blocked.
+                      assign(activeSlotId, player.id)
+                    }}
                     className={[
                       'flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all',
                       isUsed
                         ? 'opacity-30 cursor-not-allowed border-hairline bg-glass-1'
                         : activeSlotId
                         ? isCompatible
-                          ? 'cursor-pointer border-green-500/60 bg-green-950/60 active:scale-[0.98]'
+                          ? wouldOverflow
+                            ? 'cursor-pointer border-rose-500/40 bg-rose-950/40 active:scale-[0.98]'
+                            : 'cursor-pointer border-green-500/60 bg-green-950/60 active:scale-[0.98]'
                           : 'cursor-pointer border-hairline bg-glass-1 opacity-50'
                         : 'border-hairline bg-glass-1',
                     ].join(' ')}
@@ -418,9 +500,15 @@ export function LineupBuilder({
                       <p className="text-sm font-semibold text-ink-1 truncate">{player.full_name}</p>
                       <p className="text-xs text-ink-3">{player.mantra_roles.join(' · ')} · {player.club}</p>
                     </div>
-                    {isUsed && <span className="text-xs text-ink-4 shrink-0">in uso</span>}
-                    {!isUsed && activeSlotId && isCompatible === true && <span className="text-green-400 text-lg shrink-0">+</span>}
-                    {!isUsed && activeSlotId && isCompatible === false && <span className="text-xs text-ink-4 shrink-0">⚠</span>}
+                    <div className="flex flex-col items-end shrink-0 gap-0.5">
+                      <span className={`font-mono text-sm font-semibold ${wouldOverflow && !isUsed ? 'text-rose-400' : 'text-ink-1'}`}>
+                        {price}
+                      </span>
+                      {isUsed && <span className="text-[10px] text-ink-4">in uso</span>}
+                      {!isUsed && activeSlotId && isCompatible === true && !wouldOverflow && <span className="text-green-400 text-lg leading-none">+</span>}
+                      {!isUsed && activeSlotId && isCompatible === true && wouldOverflow && <span className="text-[10px] text-rose-400">over</span>}
+                      {!isUsed && activeSlotId && isCompatible === false && <span className="text-[10px] text-ink-4">⚠</span>}
+                    </div>
                   </div>
                 )
               })}
@@ -453,8 +541,14 @@ export function LineupBuilder({
               <Button variant="secondary" loading={isPending} onClick={() => submit(true)} className="flex-1">
                 Salva bozza
               </Button>
-              <Button variant="primary" loading={isPending} disabled={!validation.valid} onClick={() => submit(false)} className="flex-1">
-                Invia ⚽
+              <Button
+                variant="primary"
+                loading={isPending}
+                disabled={!validation.valid || overBudget}
+                onClick={() => submit(false)}
+                className="flex-1"
+              >
+                {overBudget ? 'Budget sforato' : 'Invia ⚽'}
               </Button>
             </div>
             <a href={`/campionato/giornate/${matchdayId}/lineup/history`} className="block text-center text-xs text-ink-4 hover:text-indigo-400">

@@ -69,6 +69,7 @@ export default async function MethodologyPage() {
   const cfg = buildEngineConfig(dbEngCfg ?? null)
   const slope = deriveSlope(cfg)
   const bm = cfg.bonus_malus
+  const weeklyBudget = (dbEngCfg as { weekly_budget?: number } | null)?.weekly_budget ?? 500
 
   const rcColor: Record<string, string> = {
     GK: 'text-yellow-400', DEF: 'text-blue-400', MID: 'text-green-400', ATT: 'text-red-400',
@@ -147,6 +148,44 @@ export default async function MethodologyPage() {
                 : 'raw_subtotal + bonus_mvp − penalità'}
             </div>
             <div className="text-ink-4">Nessun cap finale: il fantavoto può superare 10 o essere negativo.</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Phase 2 — weekly draft + pricing ─────────────────────────── */}
+      <Card>
+        <CardHeader
+          title="Come si costruisce la formazione"
+          description="Ogni giornata, ogni utente compone la squadra da zero"
+        />
+        <CardContent>
+          <div className="space-y-3 text-sm text-ink-2 leading-relaxed">
+            <p>
+              Non esiste una rosa fissa di proprietà. <strong className="text-ink-1">Ogni settimana</strong> ogni utente costruisce la formazione
+              partendo dall&apos;<strong className="text-ink-1">intero pool</strong> dei giocatori di Serie A attivi nella lega — titolari + panchina al
+              prezzo pieno — entro il budget settimanale.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3 pt-2">
+              <div className="rounded-lg border border-hairline bg-glass-1 p-4">
+                <p className="text-[10px] uppercase tracking-widest text-ink-4">Budget settimanale</p>
+                <p className="mt-1 font-mono text-2xl font-bold text-ink-1">{weeklyBudget}</p>
+                <p className="mt-1 text-[11px] text-ink-4">crediti da spendere ogni giornata</p>
+              </div>
+              <div className="rounded-lg border border-hairline bg-glass-1 p-4">
+                <p className="text-[10px] uppercase tracking-widest text-ink-4">Sorgente prezzi</p>
+                <p className="mt-1 text-sm text-ink-1 font-semibold">CSV manuale</p>
+                <p className="mt-1 text-[11px] text-ink-4">L&apos;admin carica il listino prima dell&apos;apertura della giornata</p>
+              </div>
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+                <p className="text-[10px] uppercase tracking-widest text-amber-300">Ownership nascosta</p>
+                <p className="mt-1 text-sm text-amber-200 font-semibold">Fino alla chiusura</p>
+                <p className="mt-1 text-[11px] text-ink-3">Nessuna informazione su chi pesca chi durante la finestra aperta. È un gioco mentale.</p>
+              </div>
+            </div>
+            <p className="pt-2 text-[12px] text-ink-3">
+              Quando la giornata si chiude, le percentuali di ownership vengono congelate. Solo da quel
+              momento entrano in gioco il bonus MVP e la penalità popolarità (vedi sezione qui sotto).
+            </p>
           </div>
         </CardContent>
       </Card>

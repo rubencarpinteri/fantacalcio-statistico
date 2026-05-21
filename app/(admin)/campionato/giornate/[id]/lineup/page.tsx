@@ -119,26 +119,38 @@ export default async function LineupPage({
     }
   }
 
-  // Fetch the team's roster players (two queries — avoids nested join issues)
-  const rosterPlayers = team
-    ? await (async () => {
-        const { data: entries } = await supabase
-          .from('team_roster_entries')
-          .select('player_id')
-          .eq('team_id', team.id)
-          .is('released_at', null)
+  // Phase 2 — the full active league pool is the picker source. The team
+  // no longer "owns" a permanent squad; every matchday the user drafts
+  // fresh from the entire active pool, constrained by the budget.
+  const { data: allPlayers } = await supabase
+    .from('league_players')
+    .select('id, full_name, club, mantra_roles, primary_mantra_role, rating_class')
+    .eq('league_id', ctx.league.id)
+    .eq('is_active', true)
+    .order('full_name')
 
-        const playerIds = (entries ?? []).map(e => e.player_id)
-        if (playerIds.length === 0) return []
+  const poolPlayers = allPlayers ?? []
 
-        const { data: players } = await supabase
-          .from('league_players')
-          .select('id, full_name, club, mantra_roles, primary_mantra_role, rating_class')
-          .in('id', playerIds)
+  // Fetch prices for this matchday + the league's weekly budget.
+  const [{ data: priceRows }, { data: cfgRow }] = await Promise.all([
+    supabase
+      .from('matchday_player_prices')
+      .select('player_id, price')
+      .eq('matchday_id', matchdayId),
+    supabase
+      .from('league_engine_config')
+      .select('weekly_budget')
+      .eq('league_id', ctx.league.id)
+      .maybeSingle(),
+  ])
 
-        return players ?? []
-      })()
-    : []
+  const priceByPlayerId: Record<string, number> = {}
+  for (const r of priceRows ?? []) priceByPlayerId[r.player_id] = r.price
+
+  const weeklyBudget = cfgRow?.weekly_budget ?? 500
+  const pricedCount = priceRows?.length ?? 0
+  const poolSize = poolPlayers.length
+  const pricesReady = poolSize > 0 && pricedCount >= poolSize * 0.95 // 95% coverage = usable
 
   return (
     <div className="space-y-4">
@@ -191,13 +203,23 @@ export default async function LineupPage({
         )}
       </div>
 
+      {!pricesReady && matchday.status === 'open' && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+          ⚠ I prezzi per questa giornata non sono stati ancora caricati ({pricedCount} / {poolSize}).
+          Contatta l&apos;admin di lega.
+        </div>
+      )}
+
       <LineupBuilder
         matchdayId={matchdayId}
         teamId={team?.id ?? ''}
         formations={formations}
-        rosterPlayers={rosterPlayers}
+        poolPlayers={poolPlayers}
+        priceByPlayerId={priceByPlayerId}
+        weeklyBudget={weeklyBudget}
+        pricesReady={pricesReady}
         currentSubmission={currentSubmission}
-        isReadOnly={matchday.status !== 'open'}
+        isReadOnly={matchday.status !== 'open' || !pricesReady}
       />
     </div>
   )

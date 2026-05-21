@@ -1931,6 +1931,7 @@ export type Database = {
           popularity_brackets: Json
           red_card: number
           updated_at: string
+          weekly_budget: number
           yellow_card: number
         }
         Insert: {
@@ -1961,6 +1962,7 @@ export type Database = {
           popularity_brackets?: Json
           red_card?: number
           updated_at?: string
+          weekly_budget?: number
           yellow_card?: number
         }
         Update: {
@@ -1991,6 +1993,7 @@ export type Database = {
           popularity_brackets?: Json
           red_card?: number
           updated_at?: string
+          weekly_budget?: number
           yellow_card?: number
         }
         Relationships: [
@@ -2654,6 +2657,48 @@ export type Database = {
           },
           {
             foreignKeyName: "matchday_player_ownership_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchday_player_prices: {
+        Row: {
+          created_at: string
+          id: string
+          matchday_id: string
+          player_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matchday_id: string
+          player_id: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matchday_id?: string
+          player_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_player_prices_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_player_prices_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "league_players"
