@@ -1,27 +1,35 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v2.0 — Core Logic
+// Fantacalcio Statistico — Rating Engine v3.0 — Core Logic
 // ============================================================
 // Pure TypeScript — no Supabase, no Next.js, no side effects.
 // All functions are deterministic given the same inputs.
 //
-// Per-player pipeline (normal 10+ minute flow):
-//   1.  NV / decisive-event gate       (minutes < 10)
-//   2.  z_rating   = (rating − mean) / std   (null if missing)
-//   3.  NO_RATINGS guard               (z_rating null → base 6.0 + B/M)
-//   4.  Minutes factor                 configurable 2-band (default: <45 → ×0.50, ≥45 → ×1.00)
-//   5.  z_adjusted = z_rating × minutes_factor
-//   ---- Target distribution (Step 2 of calibration) ----
-//   6.  b0         = target_mean_vote + target_vote_std × z_adjusted  (default: 6.0 + 0.75×z)
-//   7.  b1         = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
-//   8.  voto_base  = clamp(b1, 3.0, 9.5)
-//   9.  bonus/malus                    goals, assists, events, CS, GC, multi-goal
-//  10.  fantavoto  = voto_base + total_bonus_malus
+// "Pivot + Bonus" pipeline (per player):
+//
+//   1. Minutes gate — < minutes_min_for_voto (default 15):
+//        a) No decisive event → "s.v." (NV, skipped entirely)
+//        b) Decisive event   → voto_base = base_score (6.0), B/M only
+//
+//   2. No rating yet (live-match exception):
+//        voto_base = base_score (6.0), B/M only
+//
+//   3. Normal path:
+//        voto_base = pivot_vote + slope × (rating − pivot_rating)
+//        clamped to [voto_min, voto_max].
+//
+//   4. fantavoto = clamp(voto_base + Σ bonus/malus, voto_min, voto_max)
+//
+// With default anchors (6.50 → 6.00, slope ≈ 1.1429):
+//   rating 6.45 (mode) → voto_base ≈ 5.94
+//   rating 6.50 (base) → voto_base   = 6.00
+//   rating 6.72 (mean) → voto_base ≈ 6.25
+//   rating 7.50        → voto_base ≈ 7.14
+//   rating 9.00        → voto_base ≈ 8.86
 // ============================================================
 
-import { DEFAULT_ENGINE_CONFIG } from './config'
+import { DEFAULT_ENGINE_CONFIG, deriveSlope } from './config'
 import type {
   EngineConfig,
-  MinutesFactorConfig,
   EnginePlayerInput,
   PlayerEngineOutput,
   PlayerCalculationResult,
@@ -32,7 +40,6 @@ import type {
 
 // ---- Numeric helpers ----------------------------------------
 
-/** Round to `dp` decimal places (default 3) to avoid float drift */
 function round(value: number, dp = 3): number {
   const factor = Math.pow(10, dp)
   return Math.round(value * factor) / factor
@@ -55,12 +62,6 @@ function hasDecisiveEvent(input: EnginePlayerInput): boolean {
     input.penalties_missed > 0 ||
     input.penalties_saved  > 0
   )
-}
-
-// ---- Minutes factor -----------------------------------------
-
-function getMinutesFactor(minutes: number, cfg: MinutesFactorConfig): number {
-  return minutes >= cfg.threshold ? cfg.full : cfg.partial
 }
 
 // ---- Bonus / malus ------------------------------------------
@@ -86,7 +87,6 @@ function computeBonusMalus(
   add('Gol', regularGoals, goalBonus)
   add('Gol (rigore)', input.penalties_scored, penGoalBonus)
 
-  // Multi-goal extras — hat-trick supersedes brace, not stacked
   if (input.goals_scored >= 3) {
     add('Hat-trick', 1, bm.hat_trick_bonus)
   } else if (input.goals_scored === 2) {
@@ -100,12 +100,11 @@ function computeBonusMalus(
   add('Rosso', input.red_cards, bm.red_card)
   add('Rigore sbagliato', input.penalties_missed, bm.penalty_missed)
 
-  // Penalty saved — GK only
   if (rc === 'GK') {
     add('Rigore parato', input.penalties_saved, bm.penalty_saved)
   }
 
-  // ---- Clean sheet (role + min >= threshold) ----
+  // ---- Clean sheet ----
   const csBonus = bm.clean_sheet_by_role[rc]
   if (
     csBonus !== undefined &&
@@ -116,9 +115,6 @@ function computeBonusMalus(
   }
 
   // ---- Goals conceded ----
-  // GK: always (no min restriction)
-  // DEF: only if minutes_played >= goals_conceded_def_min_minutes
-  // MID/ATT: no malus
   if (input.goals_conceded > 0) {
     const gcMalus = bm.goals_conceded_by_role[rc]
     if (gcMalus !== undefined) {
@@ -135,6 +131,20 @@ function computeBonusMalus(
   return { breakdown, total }
 }
 
+// ---- Pivot formula ------------------------------------------
+
+/**
+ * voto_base = pivot_vote + slope × (rating − pivot_rating), clamped to [voto_min, voto_max].
+ *
+ * Exported so the methodology page and the engine-config preview can
+ * compute the conversion table without re-running the full pipeline.
+ */
+export function ratingToVotoBase(rating: number, config: EngineConfig = DEFAULT_ENGINE_CONFIG): number {
+  const slope = deriveSlope(config)
+  const raw = config.pivot_vote + slope * (rating - config.pivot_rating)
+  return round(clamp(raw, config.voto_min, config.voto_max))
+}
+
 // ---- Per-player entry point ---------------------------------
 
 export function calculatePlayerScore(
@@ -144,9 +154,9 @@ export function calculatePlayerScore(
   const { player_id, stats_id, is_provisional } = input
 
   // ----------------------------------------------------------------
-  // Gate 1 — 0–9 minutes
+  // Gate 1 — below minutes_min_for_voto (default 15).
   // ----------------------------------------------------------------
-  if (input.minutes_played < 10) {
+  if (input.minutes_played < config.minutes_min_for_voto) {
     if (!hasDecisiveEvent(input)) {
       const skipped: PlayerSkipped = {
         kind: 'skipped', player_id, stats_id, is_provisional, reason: 'NV',
@@ -156,19 +166,13 @@ export function calculatePlayerScore(
 
     // Decisive-event exception: voto_base = 6.0, B/M only
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
-    const fantavoto = round(config.base_score + bmTotal)
+    const fantavoto = round(clamp(config.base_score + bmTotal, config.voto_min, config.voto_max))
 
     const result: PlayerCalculationResult = {
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: true,
       no_ratings_exception: false,
-      z_rating: null,
-      minutes_factor: null,
-      z_adjusted: null,
-      b0: null,
-      role_multiplier: null,
-      b1: null,
       voto_base: config.base_score,
       bonus_malus_breakdown: breakdown,
       total_bonus_malus: bmTotal,
@@ -178,27 +182,18 @@ export function calculatePlayerScore(
   }
 
   // ----------------------------------------------------------------
-  // Gate 2 — No rating available (e.g. live match before
-  // ratings published). voto_base = 6.0; minutes_factor still
-  // computed so the UI can distinguish this from decisive_event.
+  // Gate 2 — enough minutes, but no SportMonks rating yet.
   // ----------------------------------------------------------------
   if (input.rating === null) {
-    const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
     const voto_base = config.base_score
-    const fantavoto = round(voto_base + bmTotal)
+    const fantavoto = round(clamp(voto_base + bmTotal, config.voto_min, config.voto_max))
 
     return {
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: false,
       no_ratings_exception: true,
-      z_rating: null,
-      minutes_factor,
-      z_adjusted: null,
-      b0: null,
-      role_multiplier: null,
-      b1: null,
       voto_base,
       bonus_malus_breakdown: breakdown,
       total_bonus_malus: bmTotal,
@@ -206,61 +201,18 @@ export function calculatePlayerScore(
     }
   }
 
-  const roleMultiplier = config.role_multiplier[input.rating_class]
+  // ----------------------------------------------------------------
+  // Normal path — pivot formula.
+  // ----------------------------------------------------------------
+  const voto_base = ratingToVotoBase(input.rating, config)
   const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
-
-  // ----------------------------------------------------------------
-  // Passthrough mode (default for SportMonks ingestion).
-  //   voto_base = clamp(base_score + role_mult × (rating − base_score), cap_min, cap_max)
-  // minutes_factor is intentionally ignored — rating is canonical.
-  // ----------------------------------------------------------------
-  if (!config.normalize_ratings) {
-    const delta = input.rating - config.base_score
-    const b1 = round(config.base_score + roleMultiplier * delta)
-    const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
-    const fantavoto = round(voto_base + bmTotal)
-
-    return {
-      kind: 'scored',
-      player_id, stats_id, is_provisional,
-      decisive_event_exception: false,
-      no_ratings_exception: false,
-      z_rating: null,
-      minutes_factor: null,
-      z_adjusted: null,
-      b0: null,
-      role_multiplier: roleMultiplier,
-      b1,
-      voto_base,
-      bonus_malus_breakdown: breakdown,
-      total_bonus_malus: bmTotal,
-      fantavoto,
-    }
-  }
-
-  // ----------------------------------------------------------------
-  // Normalization path (legacy v2.0 z-score). Opt-in per league.
-  // ----------------------------------------------------------------
-  const norm = config.source_normalization
-  const z_rating = round((input.rating - norm.mean) / norm.std)
-  const minutes_factor = getMinutesFactor(input.minutes_played, config.minutes_factor)
-  const z_adjusted = round(z_rating * minutes_factor)
-  const b0 = round(config.target_mean_vote + config.target_vote_std * z_adjusted)
-  const b1 = round(config.target_mean_vote + roleMultiplier * (b0 - config.target_mean_vote))
-  const voto_base = round(clamp(b1, config.voto_base_cap_min, config.voto_base_cap_max))
-  const fantavoto = round(voto_base + bmTotal)
+  const fantavoto = round(clamp(voto_base + bmTotal, config.voto_min, config.voto_max))
 
   return {
     kind: 'scored',
     player_id, stats_id, is_provisional,
     decisive_event_exception: false,
     no_ratings_exception: false,
-    z_rating,
-    minutes_factor,
-    z_adjusted,
-    b0,
-    role_multiplier: roleMultiplier,
-    b1,
     voto_base,
     bonus_malus_breakdown: breakdown,
     total_bonus_malus: bmTotal,
@@ -270,10 +222,6 @@ export function calculatePlayerScore(
 
 // ---- Full matchday ------------------------------------------
 
-/**
- * Runs the engine for every player in a matchday.
- * Pure — no DB access, no side effects.
- */
 export function computeMatchday(
   players: EnginePlayerInput[],
   config: EngineConfig = DEFAULT_ENGINE_CONFIG

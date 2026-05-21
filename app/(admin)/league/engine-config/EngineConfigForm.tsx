@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { saveEngineConfigAction } from './actions'
 import type { LeagueEngineConfig } from '@/types/database.types'
-import { DEFAULT_ENGINE_CONFIG } from '@/domain/engine/v1/config'
+import { DEFAULT_ENGINE_CONFIG, deriveSlope } from '@/domain/engine/v1/config'
 
 // ── Submit button ────────────────────────────────────────────────────────────
 
@@ -69,204 +69,123 @@ function Field({
   )
 }
 
-// ── Target distribution section ──────────────────────────────────────────────
+// ── Pivot section ────────────────────────────────────────────────────────────
 
-function TargetDistributionSection({
-  defaultMean,
-  defaultStd,
-  defaultCapMin,
-  defaultCapMax,
+function PivotSection({
+  defaultPivotRating,
+  defaultPivotVote,
 }: {
-  defaultMean: number
-  defaultStd: number
-  defaultCapMin: number
-  defaultCapMax: number
+  defaultPivotRating: number
+  defaultPivotVote: number
 }) {
-  const [mean,   setMean]   = useState(defaultMean)
-  const [std,    setStd]    = useState(defaultStd)
-  const [capMin, setCapMin] = useState(defaultCapMin)
-  const [capMax, setCapMax] = useState(defaultCapMax)
+  const [pivotRating, setPivotRating] = useState(defaultPivotRating)
+  const [pivotVote,   setPivotVote]   = useState(defaultPivotVote)
 
-  // Worked example with z = +1.0 and z = -1.0
-  const exampleZ    = 1.0
-  const votoPlus    = (mean + exampleZ * std).toFixed(2)
-  const votoMinus   = (mean - exampleZ * std).toFixed(2)
-  const votoNeutral = mean.toFixed(2)
+  const slope = pivotRating < 10
+    ? (10 - pivotVote) / (10 - pivotRating)
+    : 1
 
-  // ±2σ range (before role multiplier and clamp)
-  const rangeHigh = (mean + 2 * std).toFixed(2)
-  const rangeLow  = (mean - 2 * std).toFixed(2)
+  const examples: Array<[number, string]> = [
+    [3.00, 'minimo SportMonks'],
+    [5.50, 'brutta prova'],
+    [6.45, 'tipica (mode)'],
+    [6.50, 'baseline kickoff'],
+    [6.72, 'media SportMonks'],
+    [7.50, 'buona prova'],
+    [8.50, 'ottima'],
+    [9.50, 'top'],
+    [10.00, 'massimo'],
+  ]
+  const fmt2 = (n: number) => n.toFixed(2)
+  const compute = (r: number) => {
+    const raw = pivotVote + slope * (r - pivotRating)
+    return Math.max(1, Math.min(10, raw))
+  }
 
   return (
     <div className="rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-5 space-y-5">
-
-      {/* Section header */}
       <div>
-        <p className="text-sm font-semibold text-indigo-300">Scala voto finale</p>
+        <p className="text-sm font-semibold text-indigo-300">Scala voto base</p>
         <p className="mt-1 text-xs text-ink-3 leading-relaxed">
-          Definisce la distribuzione dei voti base nella nostra lega. È il secondo passo della
-          calibrazione, applicato dopo la normalizzazione z-score delle fonti esterne.
+          Una sola retta converte il voto SportMonks in voto base sulla scala 1–10.
+          Il pivot ancora un valore SportMonks al voto italiano corrispondente; l&apos;altro
+          estremo della retta è fissato a (10 → 10). Il bonus/malus si somma dopo.
         </p>
       </div>
 
-      {/* Two-step explanation */}
+      <div className="rounded-lg border border-hairline bg-transparent p-3 space-y-1.5">
+        <p className="text-xs font-medium uppercase tracking-wider text-ink-4">Formula</p>
+        <p className="font-mono text-xs text-indigo-200">
+          voto_base = {fmt2(pivotVote)} + {slope.toFixed(4)} × (rating − {fmt2(pivotRating)})
+        </p>
+        <p className="text-xs text-ink-4">
+          Pendenza = (10 − {fmt2(pivotVote)}) / (10 − {fmt2(pivotRating)}) ={' '}
+          <span className="font-mono text-ink-1">{slope.toFixed(4)}</span>.
+          Risultato cappato tra 1 e 10.
+        </p>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-hairline bg-transparent p-3 space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-ink-4">
-            Passo 1 — Normalizzazione fonti
-          </p>
-          <p className="font-mono text-xs text-ink-3">
-            z = (voto_fonte − media_fonte) / std_fonte
-          </p>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-ink-3" htmlFor="pivot_rating">
+            Pivot — voto SportMonks
+          </label>
+          <input
+            id="pivot_rating"
+            name="pivot_rating"
+            type="number"
+            step="0.01"
+            min="3"
+            max="9.99"
+            value={pivotRating}
+            onChange={(e) => setPivotRating(Number(e.target.value))}
+            className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
+          />
           <p className="text-xs text-ink-4">
-            Converte i voti SportMonks in z-score comparabili tramite le
-            impostazioni &ldquo;Normalizzazione voti&rdquo; qui sopra.
+            Default <span className="font-mono">6.50</span> = punto di partenza di ogni giocatore al fischio d&apos;inizio (SportMonks).
           </p>
         </div>
-        <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/8 p-3 space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-indigo-400">
-            Passo 2 — Calibrazione scala finale ← questa sezione
-          </p>
-          <p className="font-mono text-xs text-indigo-200">
-            voto = media_finale + z × std_finale
-          </p>
-          <p className="text-xs text-ink-3">
-            Proietta lo z-score del voto sulla nostra scala fantacalcio, con centro e
-            dispersione configurabili indipendentemente dalla fonte.
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-ink-3" htmlFor="pivot_vote">
+            Pivot — voto base
+          </label>
+          <input
+            id="pivot_vote"
+            name="pivot_vote"
+            type="number"
+            step="0.01"
+            min="1"
+            max="10"
+            value={pivotVote}
+            onChange={(e) => setPivotVote(Number(e.target.value))}
+            className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
+          />
+          <p className="text-xs text-ink-4">
+            Default <span className="font-mono">6.00</span> = sufficienza italiana.
           </p>
         </div>
       </div>
 
-      {/* Fields */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-ink-3" htmlFor="target_mean_vote">
-            Media voto finale
-          </label>
-          <input
-            id="target_mean_vote"
-            name="target_mean_vote"
-            type="number"
-            step="0.01"
-            min="4"
-            max="8"
-            value={mean}
-            onChange={(e) => setMean(Number(e.target.value))}
-            className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
-          />
-          <p className="text-xs text-ink-4">
-            Definisce il centro della nostra scala voto finale (z = 0 → questo voto)
-          </p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-ink-3" htmlFor="target_vote_std">
-            Deviazione standard voto finale
-          </label>
-          <input
-            id="target_vote_std"
-            name="target_vote_std"
-            type="number"
-            step="0.01"
-            min="0.1"
-            max="3"
-            value={std}
-            onChange={(e) => setStd(Number(e.target.value))}
-            className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
-          />
-          <p className="text-xs text-ink-4">
-            Definisce quanto i voti finali saranno compressi o dispersi (±1σ = ±{std.toFixed(2)} pt)
-          </p>
-        </div>
-      </div>
-
-      {/* Cap fields */}
-      <div>
+      <div className="rounded-lg border border-hairline bg-transparent p-4">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">
-          Limiti voto base (clamp)
+          Tabella di conversione
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-ink-3" htmlFor="voto_base_cap_min">
-              Minimo voto base
-            </label>
-            <input
-              id="voto_base_cap_min"
-              name="voto_base_cap_min"
-              type="number"
-              step="0.5"
-              min="1"
-              max="6"
-              value={capMin}
-              onChange={(e) => setCapMin(Number(e.target.value))}
-              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
-            />
-            <p className="text-xs text-ink-4">
-              Un giocatore con NV prende 6.00 (exception path), non il minimo.
-            </p>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-ink-3" htmlFor="voto_base_cap_max">
-              Massimo voto base
-            </label>
-            <input
-              id="voto_base_cap_max"
-              name="voto_base_cap_max"
-              type="number"
-              step="0.5"
-              min="7"
-              max="10"
-              value={capMax}
-              onChange={(e) => setCapMax(Number(e.target.value))}
-              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-indigo-400/60 focus:outline-none"
-            />
-            <p className="text-xs text-ink-4">
-              Default 10.0. Il fantavoto finale può comunque superare questo valore via bonus.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Live formula preview */}
-      <div className="rounded-lg border border-hairline bg-transparent p-4 space-y-3">
-        <p className="text-xs font-medium uppercase tracking-wider text-ink-4">
-          Anteprima formula live
-        </p>
-
-        <div className="space-y-1">
-          <p className="font-mono text-xs text-indigo-200">
-            b0 = {mean.toFixed(2)} + z_combinato × {std.toFixed(2)}
-          </p>
-          <p className="font-mono text-xs text-ink-3">
-            b1 = {mean.toFixed(2)} + moltiplicatore_ruolo × (b0 − {mean.toFixed(2)})
-          </p>
-          <p className="font-mono text-xs text-ink-3">
-            voto_base = clamp(b1, <span className="text-amber-300">{capMin.toFixed(2)}</span>, <span className="text-amber-300">{capMax.toFixed(2)}</span>)
-          </p>
-        </div>
-
-        {/* Worked example */}
-        <div className="border-t border-hairline pt-3 space-y-1">
-          <p className="text-xs font-medium text-ink-4">
-            Esempio pratico (MID, minuti pieni, moltiplicatore 1.00):
-          </p>
-          <div className="grid grid-cols-3 gap-2 text-xs font-mono">
-            <div className="rounded bg-green-500/10 px-2 py-1 text-center">
-              <p className="text-ink-4">z = +1.00</p>
-              <p className="text-green-300 font-semibold">{votoPlus}</p>
-            </div>
-            <div className="rounded bg-glass-1 px-2 py-1 text-center">
-              <p className="text-ink-4">z = 0.00</p>
-              <p className="text-ink-1 font-semibold">{votoNeutral}</p>
-            </div>
-            <div className="rounded bg-red-500/10 px-2 py-1 text-center">
-              <p className="text-ink-4">z = −1.00</p>
-              <p className="text-red-300 font-semibold">{votoMinus}</p>
-            </div>
-          </div>
-          <p className="text-xs text-ink-4 pt-1">
-            Range teorico ±2σ (prima del moltiplicatore ruolo e del clamp):{' '}
-            <span className="font-mono text-ink-1">{rangeLow} – {rangeHigh}</span>
-          </p>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+          {examples.map(([r, label]) => {
+            const v = compute(r)
+            const isAnchor = r === pivotRating || r === 10
+            return (
+              <div key={r} className="flex items-center justify-between gap-2">
+                <span className="text-ink-3">
+                  <span className="font-mono text-ink-1">{fmt2(r)}</span>{' '}
+                  <span className="text-ink-4">{label}</span>
+                </span>
+                <span className={`font-mono font-semibold ${isAnchor ? 'text-indigo-300' : 'text-ink-1'}`}>
+                  → {fmt2(v)}
+                </span>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -286,27 +205,13 @@ export function EngineConfigForm({ current }: Props) {
   const [resetKey, setResetKey] = useState(0)
   const [useDefaults, setUseDefaults] = useState(false)
 
-  // Use DB values if available, otherwise fall back to DEFAULT_ENGINE_CONFIG
   const bm = DEFAULT_ENGINE_CONFIG.bonus_malus
-  const mf = DEFAULT_ENGINE_CONFIG.minutes_factor
-  const rm = DEFAULT_ENGINE_CONFIG.role_multiplier
-  const fn = DEFAULT_ENGINE_CONFIG.source_normalization
 
-  // When resetKey changes, form remounts with default values
   const src = useDefaults ? null : current
 
   const v = {
-    rating_mean:    src?.rating_mean    ?? fn.mean,
-    rating_std:     src?.rating_std     ?? fn.std,
-
-    minutes_factor_threshold: src?.minutes_factor_threshold ?? mf.threshold,
-    minutes_factor_partial:   src?.minutes_factor_partial   ?? mf.partial,
-    minutes_factor_full:      src?.minutes_factor_full      ?? mf.full,
-
-    role_multiplier_gk:  src?.role_multiplier_gk  ?? rm.GK,
-    role_multiplier_def: src?.role_multiplier_def ?? rm.DEF,
-    role_multiplier_mid: src?.role_multiplier_mid ?? rm.MID,
-    role_multiplier_att: src?.role_multiplier_att ?? rm.ATT,
+    pivot_rating: src?.pivot_rating ?? DEFAULT_ENGINE_CONFIG.pivot_rating,
+    pivot_vote:   src?.pivot_vote   ?? DEFAULT_ENGINE_CONFIG.pivot_vote,
 
     goal_bonus_gk:  src?.goal_bonus_gk  ?? bm.goal_by_role.GK,
     goal_bonus_def: src?.goal_bonus_def ?? bm.goal_by_role.DEF,
@@ -331,122 +236,26 @@ export function EngineConfigForm({ current }: Props) {
     goals_conceded_gk:               src?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
     goals_conceded_def:              src?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
     goals_conceded_def_min_minutes:  src?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
-
-    target_mean_vote: src?.target_mean_vote ?? DEFAULT_ENGINE_CONFIG.target_mean_vote,
-    target_vote_std:  src?.target_vote_std  ?? DEFAULT_ENGINE_CONFIG.target_vote_std,
-
-    voto_base_cap_min: src?.voto_base_cap_min ?? DEFAULT_ENGINE_CONFIG.voto_base_cap_min,
-    voto_base_cap_max: src?.voto_base_cap_max ?? DEFAULT_ENGINE_CONFIG.voto_base_cap_max,
   }
+
+  // Acknowledge unused import in some code paths
+  void deriveSlope
 
   return (
     <form key={resetKey} action={action} className="space-y-8">
 
-      {/* ── Normalizzazione voti ────────────────────────────────────── */}
-      <FieldGroup title="Normalizzazione voti (z-score)">
-        <Field
-          label="Voto — media"
-          name="rating_mean"
-          defaultValue={v.rating_mean}
-          step="0.01"
-          min="5"
-          max="8"
-          hint="Voto medio della distribuzione SportMonks (default 6.87)"
-        />
-        <Field
-          label="Voto — deviazione standard"
-          name="rating_std"
-          defaultValue={v.rating_std}
-          step="0.01"
-          min="0.1"
-          max="3"
-          hint="Dispersione dei voti SportMonks (default 0.79)"
-        />
-      </FieldGroup>
-
-      {/* ── Scala voto finale ───────────────────────────────────────── */}
-      <TargetDistributionSection
-        defaultMean={v.target_mean_vote}
-        defaultStd={v.target_vote_std}
-        defaultCapMin={v.voto_base_cap_min}
-        defaultCapMax={v.voto_base_cap_max}
+      {/* ── Pivot ───────────────────────────────────────────────────── */}
+      <PivotSection
+        defaultPivotRating={v.pivot_rating}
+        defaultPivotVote={v.pivot_vote}
       />
-
-      {/* ── Fattore minuti ──────────────────────────────────────────── */}
-      <FieldGroup title="Fattore minuti">
-        <Field
-          label="Soglia minuti"
-          name="minutes_factor_threshold"
-          defaultValue={v.minutes_factor_threshold}
-          step="1"
-          min="1"
-          max="90"
-          hint="Minuti minimi per fattore pieno (default 45)"
-        />
-        <Field
-          label="Fattore parziale (< soglia)"
-          name="minutes_factor_partial"
-          defaultValue={v.minutes_factor_partial}
-          min="0"
-          max="1"
-          hint="Es. 0.50 = metà peso z-score"
-        />
-        <Field
-          label="Fattore pieno (≥ soglia)"
-          name="minutes_factor_full"
-          defaultValue={v.minutes_factor_full}
-          min="0"
-          max="1"
-          hint="Tipicamente 1.00"
-        />
-      </FieldGroup>
-
-      {/* ── Moltiplicatori di ruolo ─────────────────────────────────── */}
-      <FieldGroup title="Moltiplicatori di ruolo">
-        <Field
-          label="Moltiplicatore — Portiere (GK)"
-          name="role_multiplier_gk"
-          defaultValue={v.role_multiplier_gk}
-          step="0.01"
-          min="0.5"
-          max="2"
-          hint="Default 1.15 — amplifica lo scostamento dal voto 6 per i portieri"
-        />
-        <Field
-          label="Moltiplicatore — Difensore (DEF)"
-          name="role_multiplier_def"
-          defaultValue={v.role_multiplier_def}
-          step="0.01"
-          min="0.5"
-          max="2"
-          hint="Default 1.10"
-        />
-        <Field
-          label="Moltiplicatore — Centrocampista (MID)"
-          name="role_multiplier_mid"
-          defaultValue={v.role_multiplier_mid}
-          step="0.01"
-          min="0.5"
-          max="2"
-          hint="Default 1.00 — neutro"
-        />
-        <Field
-          label="Moltiplicatore — Attaccante (ATT)"
-          name="role_multiplier_att"
-          defaultValue={v.role_multiplier_att}
-          step="0.01"
-          min="0.5"
-          max="2"
-          hint="Default 0.97 — gol/assist già nel B/M, segnale voto leggermente compresso"
-        />
-      </FieldGroup>
 
       {/* ── Gol per ruolo ───────────────────────────────────────────── */}
       <FieldGroup title="Bonus gol per ruolo">
-        <Field label="Gol — Portiere (GK)"      name="goal_bonus_gk"  defaultValue={v.goal_bonus_gk}  min="0" max="10" />
-        <Field label="Gol — Difensore (DEF)"    name="goal_bonus_def" defaultValue={v.goal_bonus_def} min="0" max="10" />
+        <Field label="Gol — Portiere (GK)"        name="goal_bonus_gk"  defaultValue={v.goal_bonus_gk}  min="0" max="10" />
+        <Field label="Gol — Difensore (DEF)"      name="goal_bonus_def" defaultValue={v.goal_bonus_def} min="0" max="10" />
         <Field label="Gol — Centrocampista (MID)" name="goal_bonus_mid" defaultValue={v.goal_bonus_mid} min="0" max="10" />
-        <Field label="Gol — Attaccante (ATT)"   name="goal_bonus_att" defaultValue={v.goal_bonus_att} min="0" max="10" />
+        <Field label="Gol — Attaccante (ATT)"     name="goal_bonus_att" defaultValue={v.goal_bonus_att} min="0" max="10" />
         <Field
           label="Sconto gol su rigore"
           name="penalty_scored_discount"
@@ -460,7 +269,7 @@ export function EngineConfigForm({ current }: Props) {
       {/* ── Multi-gol ───────────────────────────────────────────────── */}
       <FieldGroup title="Bonus multi-gol">
         <Field label="Bonus doppietta"  name="brace_bonus"     defaultValue={v.brace_bonus}     min="0" max="5" />
-        <Field label="Bonus tripletta"  name="hat_trick_bonus" defaultValue={v.hat_trick_bonus} min="0" max="5" hint="Sostituisce il bonus doppietta" />
+        <Field label="Bonus tripletta+" name="hat_trick_bonus" defaultValue={v.hat_trick_bonus} min="0" max="5" hint="Sostituisce il bonus doppietta" />
       </FieldGroup>
 
       {/* ── Altri eventi ────────────────────────────────────────────── */}

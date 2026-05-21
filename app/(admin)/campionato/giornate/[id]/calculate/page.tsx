@@ -31,16 +31,6 @@ export default async function CalculatePage({
 
   if (!matchday) notFound()
 
-  // League engine config — for target distribution params passed to CalculationPreview
-  const { data: engCfg } = await supabase
-    .from('league_engine_config')
-    .select('target_mean_vote, target_vote_std')
-    .eq('league_id', ctx.league.id)
-    .maybeSingle()
-
-  const targetMeanVote = engCfg?.target_mean_vote ?? 6.0
-  const targetVoteStd  = engCfg?.target_vote_std  ?? 0.75
-
   // All calculation runs, newest first
   const { data: runs } = await supabase
     .from('calculation_runs')
@@ -73,12 +63,6 @@ export default async function CalculatePage({
         id,
         player_id,
         is_provisional,
-        z_rating,
-        minutes_factor,
-        z_adjusted,
-        b0,
-        role_multiplier,
-        b1,
         voto_base,
         bonus_malus_breakdown,
         total_bonus_malus,
@@ -89,7 +73,32 @@ export default async function CalculatePage({
       .eq('run_id', previewRunId)
       .order('fantavoto', { ascending: false, nullsFirst: false })
 
-    previewCalcs = (calcs ?? []) as unknown as CalcPlayerRow[]
+    // Augment each calc row with rating + minutes from player_match_stats for the same matchday.
+    const playerIds = (calcs ?? []).map((c) => c.player_id)
+    const { data: statsForCalcs } = playerIds.length > 0
+      ? await supabase
+          .from('player_match_stats')
+          .select('player_id, rating, minutes_played')
+          .eq('matchday_id', matchdayId)
+          .in('player_id', playerIds)
+      : { data: [] }
+
+    const statsByPlayerId = new Map<string, { rating: number | null; minutes_played: number }>()
+    for (const s of statsForCalcs ?? []) {
+      statsByPlayerId.set(s.player_id, {
+        rating: s.rating,
+        minutes_played: s.minutes_played ?? 0,
+      })
+    }
+
+    previewCalcs = (calcs ?? []).map((c) => {
+      const st = statsByPlayerId.get(c.player_id)
+      return {
+        ...c,
+        rating: st?.rating ?? null,
+        minutes_played: st?.minutes_played ?? 0,
+      }
+    }) as unknown as CalcPlayerRow[]
   }
 
   // Fetch existing player stats for the inline edit modal
@@ -302,8 +311,6 @@ export default async function CalculatePage({
         canTrigger={canTrigger}
         canPublish={canPublish}
         playerStats={playerStats}
-        targetMeanVote={targetMeanVote}
-        targetVoteStd={targetVoteStd}
       />
     </div>
   )

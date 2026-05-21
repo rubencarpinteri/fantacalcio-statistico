@@ -9,20 +9,9 @@ import { writeAuditLog } from '@/lib/audit'
 // ── Validation schema ────────────────────────────────────────────────────────
 
 const EngineConfigSchema = z.object({
-  // Normalizzazione voti (SportMonks single-source, Ball et al. 2025)
-  rating_mean: z.coerce.number().min(5).max(8),
-  rating_std:  z.coerce.number().min(0.1).max(3),
-
-  // Fattore minuti
-  minutes_factor_threshold: z.coerce.number().int().min(1).max(90),
-  minutes_factor_partial:   z.coerce.number().min(0).max(1),
-  minutes_factor_full:      z.coerce.number().min(0).max(1),
-
-  // Moltiplicatori di ruolo
-  role_multiplier_gk:  z.coerce.number().min(0.5).max(2),
-  role_multiplier_def: z.coerce.number().min(0.5).max(2),
-  role_multiplier_mid: z.coerce.number().min(0.5).max(2),
-  role_multiplier_att: z.coerce.number().min(0.5).max(2),
+  // Pivot anchor — rating → voto_base
+  pivot_rating: z.coerce.number().min(3).max(10),
+  pivot_vote:   z.coerce.number().min(1).max(10),
 
   // Goal bonuses
   goal_bonus_gk:  z.coerce.number().min(0).max(10),
@@ -51,14 +40,6 @@ const EngineConfigSchema = z.object({
   goals_conceded_gk:               z.coerce.number().min(-5).max(0),
   goals_conceded_def:              z.coerce.number().min(-5).max(0),
   goals_conceded_def_min_minutes:  z.coerce.number().int().min(1).max(90),
-
-  // Target vote distribution (Step 2 of calibration pipeline)
-  target_mean_vote: z.coerce.number().min(4).max(8),
-  target_vote_std:  z.coerce.number().min(0.1).max(3),
-
-  // Voto base clamp
-  voto_base_cap_min: z.coerce.number().min(1).max(6),
-  voto_base_cap_max: z.coerce.number().min(7).max(10),
 })
 
 export interface SaveEngineConfigResult {
@@ -81,6 +62,10 @@ export async function saveEngineConfigAction(
   if (!parsed.success) {
     const first = parsed.error.errors[0]
     return { error: `${first?.path.join('.')}: ${first?.message}`, success: false }
+  }
+
+  if (parsed.data.pivot_rating >= 10) {
+    return { error: 'pivot_rating: deve essere minore di 10 (l\'ancoraggio 10→10 è implicito).', success: false }
   }
 
   const values = {

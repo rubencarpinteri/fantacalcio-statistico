@@ -86,9 +86,6 @@ export default async function MatchdayResultsPage({
         total_bonus_malus,
         is_override,
         is_provisional,
-        z_rating,
-        minutes_factor,
-        role_multiplier,
         league_players ( full_name, club, rating_class )
       `)
       .eq('run_id', ptr.run_id),
@@ -125,22 +122,9 @@ export default async function MatchdayResultsPage({
     total_bonus_malus: number | null
     is_override: boolean
     is_provisional: boolean
-    z_rating: number | null
-    minutes_factor: number | null
-    role_multiplier: number | null
     league_players: { full_name: string; club: string; rating_class: string } | null
   }
 
-  // NOTE: uses league default target params — actual stored voto_base from engine is authoritative
-  const targetMean = 6.0  // DEFAULT_ENGINE_CONFIG.target_mean_vote
-  const targetStd  = 0.75 // DEFAULT_ENGINE_CONFIG.target_vote_std
-
-  function calcSourceVotoBase(z: number | null, mf: number | null, rm: number | null): number | null {
-    if (z === null || mf === null || rm === null) return null
-    const b0 = targetMean + targetStd * z * mf
-    const b1 = targetMean + rm * (b0 - targetMean)
-    return Math.max(3.0, Math.min(9.5, b1))
-  }
   const calcByPlayer = new Map<string, CalcRow>()
   for (const c of calcs ?? []) {
     calcByPlayer.set(c.player_id, c as unknown as CalcRow)
@@ -289,15 +273,6 @@ export default async function MatchdayResultsPage({
                           <span className="font-mono text-ink-3">
                             {c?.voto_base != null ? c.voto_base.toFixed(2) : '—'}
                           </span>
-                          {(() => {
-                            const vbSrc = calcSourceVotoBase(c?.z_rating ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
-                            if (vbSrc === null) return null
-                            return (
-                              <div className="mt-0.5 flex justify-end gap-2 text-[10px]">
-                                <span className="text-ink-4">src {vbSrc.toFixed(2)}</span>
-                              </div>
-                            )
-                          })()}
                         </td>
                         <td className="px-4 py-2 text-right">
                           <BmCell breakdown={c?.bonus_malus_breakdown} total={c?.total_bonus_malus ?? null} />

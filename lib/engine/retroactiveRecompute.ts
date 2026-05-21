@@ -139,6 +139,10 @@ export async function recomputeOneMatchday(
 
   const overrideDbIdMap = new Map((dbOverrides ?? []).map((o) => [o.player_id, o.id]))
 
+  // v3.0 engine writes only voto_base, B/M, fantavoto. Legacy v2.0 columns
+  // (z_*, b0, b1, role_multiplier, minutes_factor, weights_used,
+  // defensive_correction) remain on the table for historical audit and are
+  // left NULL going forward.
   const calcRows = recomputed.playerCalculations.map((pc) => {
     const output = pc.output
     const roundedFv = applyRounding(pc.effective_fantavoto)
@@ -152,19 +156,10 @@ export async function recomputeOneMatchday(
         is_provisional: output.is_provisional,
         is_override: false,
         override_id: null as string | null,
-        z_rating: null as number | null,
-        z_combined: null as number | null,
-        z_adjusted: null as number | null,
-        b0: null as number | null,
-        b1: null as number | null,
         voto_base: null as number | null,
-        minutes_factor: null as number | null,
-        role_multiplier: null as number | null,
         bonus_malus_breakdown: null as Json | null,
         total_bonus_malus: null as number | null,
         fantavoto: null as number | null,
-        weights_used: null as Json | null,
-        defensive_correction: null as number | null,
       }
     }
 
@@ -177,19 +172,10 @@ export async function recomputeOneMatchday(
       is_provisional: r.is_provisional,
       is_override: pc.is_override,
       override_id: pc.is_override ? (overrideDbIdMap.get(r.player_id) ?? null) : null,
-      z_rating: r.z_rating,
-      z_combined: null,
-      z_adjusted: r.z_adjusted,
-      b0: r.b0,
-      b1: r.b1,
       voto_base: r.voto_base,
-      minutes_factor: r.minutes_factor,
-      role_multiplier: r.role_multiplier,
       bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
       total_bonus_malus: r.total_bonus_malus,
       fantavoto: roundedFv,
-      weights_used: null,
-      defensive_correction: null,
     }
   })
 

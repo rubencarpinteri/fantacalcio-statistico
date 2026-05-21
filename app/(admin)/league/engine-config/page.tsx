@@ -43,8 +43,8 @@ export default async function EngineConfigPage() {
 
       <Card>
         <CardHeader
-          title="Parametri bonus / malus"
-          description="Modifica i valori e salva. Le modifiche hanno effetto dal prossimo calcolo."
+          title="Parametri motore v3.0 — Pivot + Bonus"
+          description="Pivot della scala voto + bonus/malus. Modifica i valori e salva. Le modifiche hanno effetto dal prossimo calcolo."
         />
         <CardContent>
           <EngineConfigForm current={current ?? null} />

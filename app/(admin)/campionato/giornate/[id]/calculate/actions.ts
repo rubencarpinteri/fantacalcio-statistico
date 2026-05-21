@@ -167,7 +167,10 @@ export async function triggerCalculationAction(
 
   const runId = run.id
 
-  // Build player_calculations insert rows
+  // Build player_calculations insert rows.
+  // Legacy v2.0 z-score columns (z_rating, z_adjusted, b0, b1, role_multiplier,
+  // minutes_factor, z_combined, defensive_correction, weights_used) are left
+  // NULL — they are preserved on the table for historical audit of older runs.
   const calcRows = engineResult.player_results.map((output) => {
     if (output.kind === 'skipped') {
       return {
@@ -177,9 +180,6 @@ export async function triggerCalculationAction(
         stats_id:  output.stats_id,
         is_provisional: output.is_provisional,
         is_override: false,
-        z_combined: null, weights_used: null, defensive_correction: null,
-        z_rating: null, minutes_factor: null,
-        z_adjusted: null, b0: null, role_multiplier: null, b1: null,
         voto_base: null,
         bonus_malus_breakdown: null, total_bonus_malus: null,
         fantavoto: null,
@@ -194,13 +194,6 @@ export async function triggerCalculationAction(
       stats_id:   r.stats_id,
       is_provisional: r.is_provisional,
       is_override: false,
-      z_combined: null, weights_used: null, defensive_correction: null,
-      z_rating:          r.z_rating,
-      minutes_factor:    r.minutes_factor,
-      z_adjusted:        r.z_adjusted,
-      b0:                r.b0,
-      role_multiplier:   r.role_multiplier,
-      b1:                r.b1,
       voto_base:         r.voto_base,
       bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
       total_bonus_malus: r.total_bonus_malus,

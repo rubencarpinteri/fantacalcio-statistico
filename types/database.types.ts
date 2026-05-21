@@ -1917,26 +1917,14 @@ export type Database = {
           hat_trick_bonus: number
           id: string
           league_id: string
-          minutes_factor_full: number
-          minutes_factor_partial: number
-          minutes_factor_threshold: number
-          normalize_ratings: boolean
           own_goal: number
           penalty_missed: number
           penalty_saved: number
           penalty_scored_discount: number
-          rating_mean: number
-          rating_std: number
+          pivot_rating: number
+          pivot_vote: number
           red_card: number
-          role_multiplier_att: number
-          role_multiplier_def: number
-          role_multiplier_gk: number
-          role_multiplier_mid: number
-          target_mean_vote: number | null
-          target_vote_std: number | null
           updated_at: string
-          voto_base_cap_max: number | null
-          voto_base_cap_min: number | null
           yellow_card: number
         }
         Insert: {
@@ -1956,26 +1944,14 @@ export type Database = {
           hat_trick_bonus?: number
           id?: string
           league_id: string
-          minutes_factor_full?: number
-          minutes_factor_partial?: number
-          minutes_factor_threshold?: number
-          normalize_ratings?: boolean
           own_goal?: number
           penalty_missed?: number
           penalty_saved?: number
           penalty_scored_discount?: number
-          rating_mean?: number
-          rating_std?: number
+          pivot_rating?: number
+          pivot_vote?: number
           red_card?: number
-          role_multiplier_att?: number
-          role_multiplier_def?: number
-          role_multiplier_gk?: number
-          role_multiplier_mid?: number
-          target_mean_vote?: number | null
-          target_vote_std?: number | null
           updated_at?: string
-          voto_base_cap_max?: number | null
-          voto_base_cap_min?: number | null
           yellow_card?: number
         }
         Update: {
@@ -1995,26 +1971,14 @@ export type Database = {
           hat_trick_bonus?: number
           id?: string
           league_id?: string
-          minutes_factor_full?: number
-          minutes_factor_partial?: number
-          minutes_factor_threshold?: number
-          normalize_ratings?: boolean
           own_goal?: number
           penalty_missed?: number
           penalty_saved?: number
           penalty_scored_discount?: number
-          rating_mean?: number
-          rating_std?: number
+          pivot_rating?: number
+          pivot_vote?: number
           red_card?: number
-          role_multiplier_att?: number
-          role_multiplier_def?: number
-          role_multiplier_gk?: number
-          role_multiplier_mid?: number
-          target_mean_vote?: number | null
-          target_vote_std?: number | null
           updated_at?: string
-          voto_base_cap_max?: number | null
-          voto_base_cap_min?: number | null
           yellow_card?: number
         }
         Relationships: [
@@ -3972,6 +3936,7 @@ export const Constants = {
     },
   },
 } as const
+
 export type AuditAction = Database["public"]["Enums"]["audit_action"]
 export type RatingClass = Database["public"]["Enums"]["rating_class"]
 export type MatchdayStatus = Database["public"]["Enums"]["matchday_status"]

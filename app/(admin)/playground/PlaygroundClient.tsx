@@ -20,17 +20,13 @@ interface Props {
 
 // Numeric column keys we expose in the form. Mirrors zod schema in the API.
 const ENGINE_NUMERIC_KEYS = [
+  'pivot_rating', 'pivot_vote',
   'goal_bonus_gk', 'goal_bonus_def', 'goal_bonus_mid', 'goal_bonus_att',
   'penalty_scored_discount', 'brace_bonus', 'hat_trick_bonus',
   'assist', 'own_goal', 'yellow_card', 'red_card',
   'penalty_missed', 'penalty_saved',
   'clean_sheet_gk', 'clean_sheet_def', 'clean_sheet_min_minutes',
   'goals_conceded_gk', 'goals_conceded_def', 'goals_conceded_def_min_minutes',
-  'role_multiplier_gk', 'role_multiplier_def', 'role_multiplier_mid', 'role_multiplier_att',
-  'rating_mean', 'rating_std',
-  'target_mean_vote', 'target_vote_std',
-  'voto_base_cap_min', 'voto_base_cap_max',
-  'minutes_factor_threshold', 'minutes_factor_partial', 'minutes_factor_full',
 ] as const
 type EngineKey = typeof ENGINE_NUMERIC_KEYS[number]
 
@@ -216,34 +212,10 @@ export function PlaygroundClient({ matchdays, baseEngineConfig, baseResultRules,
             />
           </CollapsibleCard>
 
-          <CollapsibleCard title="Calibrazione voto base">
+          <CollapsibleCard title="Scala voto base (pivot)">
             <EngineGroup
-              keys={['target_mean_vote', 'target_vote_std', 'voto_base_cap_min', 'voto_base_cap_max']}
-              labels={{ target_mean_vote: 'Voto medio target', target_vote_std: 'σ voto target', voto_base_cap_min: 'Cap min', voto_base_cap_max: 'Cap max' }}
-              engine={engine}
-              base={baseEngineConfig}
-              onChange={(k, v) => setEngine((s) => ({ ...s, [k]: v }))}
-            />
-            <EngineGroup
-              keys={['role_multiplier_gk', 'role_multiplier_def', 'role_multiplier_mid', 'role_multiplier_att']}
-              labels={{ role_multiplier_gk: 'Mult. GK', role_multiplier_def: 'Mult. DEF', role_multiplier_mid: 'Mult. MID', role_multiplier_att: 'Mult. ATT' }}
-              engine={engine}
-              base={baseEngineConfig}
-              onChange={(k, v) => setEngine((s) => ({ ...s, [k]: v }))}
-            />
-            <EngineGroup
-              keys={['minutes_factor_threshold', 'minutes_factor_partial', 'minutes_factor_full']}
-              labels={{ minutes_factor_threshold: 'Soglia minuti', minutes_factor_partial: 'Fattore parz.', minutes_factor_full: 'Fattore pieno' }}
-              engine={engine}
-              base={baseEngineConfig}
-              onChange={(k, v) => setEngine((s) => ({ ...s, [k]: v }))}
-            />
-          </CollapsibleCard>
-
-          <CollapsibleCard title="Normalizzazione voto (z-score)">
-            <EngineGroup
-              keys={['rating_mean', 'rating_std']}
-              labels={{ rating_mean: 'Media voto', rating_std: 'Dev. std voto' }}
+              keys={['pivot_rating', 'pivot_vote']}
+              labels={{ pivot_rating: 'Pivot — rating SportMonks', pivot_vote: 'Pivot — voto base' }}
               engine={engine}
               base={baseEngineConfig}
               onChange={(k, v) => setEngine((s) => ({ ...s, [k]: v }))}

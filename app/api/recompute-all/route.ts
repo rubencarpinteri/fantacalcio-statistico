@@ -50,9 +50,8 @@ const resultRulesOverrideSchema = z.object({
 
 const engineOverrideSchema = z
   .object({
-    minutes_factor_threshold: z.number(),
-    minutes_factor_partial: z.number(),
-    minutes_factor_full: z.number(),
+    pivot_rating: z.number(),
+    pivot_vote: z.number(),
     goal_bonus_gk: z.number(),
     goal_bonus_def: z.number(),
     goal_bonus_mid: z.number(),
@@ -72,16 +71,6 @@ const engineOverrideSchema = z
     goals_conceded_gk: z.number(),
     goals_conceded_def: z.number(),
     goals_conceded_def_min_minutes: z.number().int(),
-    role_multiplier_gk: z.number(),
-    role_multiplier_def: z.number(),
-    role_multiplier_mid: z.number(),
-    role_multiplier_att: z.number(),
-    rating_mean: z.number(),
-    rating_std: z.number(),
-    target_mean_vote: z.number(),
-    target_vote_std: z.number(),
-    voto_base_cap_min: z.number(),
-    voto_base_cap_max: z.number(),
   })
   .partial()
 

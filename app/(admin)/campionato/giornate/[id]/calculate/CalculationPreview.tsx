@@ -14,17 +14,15 @@ export interface CalcPlayerRow {
   id: string
   player_id: string
   is_provisional: boolean
-  z_rating: number | null
-  minutes_factor: number | null
-  z_adjusted: number | null
-  b0: number | null
-  role_multiplier: number | null
-  b1: number | null
   voto_base: number | null
   bonus_malus_breakdown: unknown
   total_bonus_malus: number | null
   fantavoto: number | null
   is_override: boolean
+  /** SportMonks rating used as engine input (null = no rating, e.g. live match). Read from player_match_stats. */
+  rating: number | null
+  /** Minutes played (used to flag the s.v. and no-ratings cases). */
+  minutes_played: number
   league_players: { full_name: string; club: string; rating_class: string } | null
 }
 
@@ -52,9 +50,6 @@ interface Props {
   canTrigger: boolean
   canPublish: boolean
   playerStats: Record<string, PlayerStatSnapshot>
-  /** Target distribution params from league_engine_config (or defaults if not set) */
-  targetMeanVote: number
-  targetVoteStd: number
 }
 
 // ---- Helpers -----------------------------------------------
@@ -262,8 +257,6 @@ export function CalculationPreview({
   canTrigger,
   canPublish,
   playerStats,
-  targetMeanVote,
-  targetVoteStd,
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -291,7 +284,6 @@ export function CalculationPreview({
         ]
         if (result.override_count > 0) parts.push(`${result.override_count} override applicati ★`)
         setTriggerResult(parts.join(' — ') + '.')
-        // Force server component re-render so the new run's calcs are displayed immediately.
         router.refresh()
       }
     })
@@ -401,7 +393,6 @@ export function CalculationPreview({
             }
           />
           <CardContent className="p-0">
-            {/* Filters */}
             <div className="flex items-center gap-3 border-b border-hairline px-6 py-3">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-3">
                 <input
@@ -425,8 +416,8 @@ export function CalculationPreview({
                   <tr className="border-b border-hairline text-left text-xs text-ink-4">
                     <th className="px-6 py-2.5 sticky left-0 bg-glass-1">Giocatore</th>
                     <th className="px-4 py-2.5">Classe</th>
-                    <th className="px-4 py-2.5 text-right">Min·F</th>
-                    <th className="px-4 py-2.5 text-right">z FM</th>
+                    <th className="px-4 py-2.5 text-right">Min</th>
+                    <th className="px-4 py-2.5 text-right">Rating SM</th>
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
                     <th className="px-4 py-2.5 text-right font-bold text-ink-1">Fantavoto</th>
@@ -441,8 +432,8 @@ export function CalculationPreview({
                     const isExpanded = expandedRow === c.id
                     const wasEdited = savedPlayers.has(c.player_id)
 
-                    // no_ratings_exception: played ≥10 min, SportMonks rating not yet available (e.g. live match)
-                    const isNoRatings = c.fantavoto !== null && c.z_rating === null && c.minutes_factor !== null
+                    // no_ratings_exception: had enough minutes but no SportMonks rating (e.g. live match)
+                    const isNoRatings = c.fantavoto !== null && c.rating === null && c.minutes_played >= 15
 
                     return (
                       <Fragment key={c.id}>
@@ -458,10 +449,10 @@ export function CalculationPreview({
                             {rcBadge(player?.rating_class ?? '')}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
-                            {c.minutes_factor !== null ? `×${c.minutes_factor.toFixed(1)}` : '—'}
+                            {c.minutes_played}&apos;
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
-                            {fmt(c.z_rating)}
+                            {fmt(c.rating)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.voto_base)}
@@ -502,24 +493,19 @@ export function CalculationPreview({
                         </tr>
 
                         {/* Expanded breakdown row */}
-                        {isExpanded && (() => {
-                          return (
+                        {isExpanded && (
                           <tr className="bg-glass-soft">
                             <td colSpan={8} className="px-6 py-4">
                               <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs sm:grid-cols-4">
                                 {[
-                                  ['z voto', fmt(c.z_rating)],
-                                  ['min·factor', fmt(c.minutes_factor, 2)],
-                                  ['z_adjusted', fmt(c.z_adjusted)],
-                                  ['b0', fmt(c.b0)],
-                                  ['role_mult', fmt(c.role_multiplier, 2)],
-                                  ['b1', fmt(c.b1)],
-                                  ['voto_base', fmt(c.voto_base)],
-                                  ['tot B/M', fmt(c.total_bonus_malus)],
-                                  ['fantavoto', fmtFv(c.fantavoto)],
+                                  ['Rating SportMonks', fmt(c.rating)],
+                                  ['Minuti', `${c.minutes_played}'`],
+                                  ['Voto base', fmt(c.voto_base)],
+                                  ['Tot B/M', fmt(c.total_bonus_malus)],
+                                  ['Fantavoto', fmtFv(c.fantavoto)],
                                 ].map(([label, value]) => (
                                   <div key={label} className="flex justify-between gap-2">
-                                    <span className={label?.startsWith('z Fot') ? 'text-ink-3' : 'text-ink-4'}>{label}</span>
+                                    <span className="text-ink-4">{label}</span>
                                     <span className="font-mono text-ink-3">{value}</span>
                                   </div>
                                 ))}
@@ -543,8 +529,7 @@ export function CalculationPreview({
                               )}
                             </td>
                           </tr>
-                          )
-                        })()}
+                        )}
                       </Fragment>
                     )
                   })}

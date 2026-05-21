@@ -1,7 +1,7 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v2.0 — Types
+// Fantacalcio Statistico — Rating Engine v3.0 — Types
 // ============================================================
-// Single-source: SportMonks.
+// Single-source: SportMonks. "Pivot + Bonus" engine.
 // ============================================================
 
 import type { RatingClass } from '@/types/database.types'
@@ -60,57 +60,30 @@ export interface BonusMalusConfig {
   hat_trick_bonus: number
 }
 
-export interface MinutesFactorConfig {
-  /** Players with minutes < threshold get factor_partial; >= threshold get factor_full */
-  threshold: number
-  partial: number
-  full: number
-}
-
 export interface EngineConfig {
   engine_version: string
+
   /**
-   * When true: legacy v2.0 z-score path
-   *   z = (rating − mean) / std, then b0/b1 around target_mean_vote.
-   * When false: passthrough — rating IS the voto_base candidate.
-   *   voto_base = clamp(base_score + role_multiplier × (rating − base_score), cap_min, cap_max)
-   *   minutes_factor is ignored. The < 10min NV gate and decisive-event
-   *   exception still apply (those are presence gates, not normalization).
+   * Pivot point of the rating → voto_base line.
+   *   voto_base = pivot_vote + slope × (rating − pivot_rating)
+   *   slope     = (voto_max − pivot_vote) / (voto_max − pivot_rating)
+   *
+   * Default: SportMonks 6.50 (kickoff baseline) → voto 6.00 (sufficienza)
    */
-  normalize_ratings: boolean
-  /** Baseline score used for exception paths (decisive event, no ratings). Always 6.0. */
+  pivot_rating: number
+  pivot_vote: number
+
+  /** Hard scale bounds for fantavoto. Default 1.0 – 10.0. */
+  voto_min: number
+  voto_max: number
+
+  /** Below this minute count, the rating is discarded ("s.v." rule). */
+  minutes_min_for_voto: number
+
+  /** Baseline used when <15 min played but a decisive event fires. */
   base_score: number
-  /**
-   * Rating normalization: z = (rating - mean) / std
-   * Configurable per league via league_engine_config.
-   */
-  source_normalization: { mean: number; std: number }
-  /** Configurable 2-band minutes factor */
-  minutes_factor: MinutesFactorConfig
-  /**
-   * Role multipliers — expand/compress distance from target_mean_vote:
-   *   b1 = target_mean_vote + multiplier × (b0 - target_mean_vote)
-   * GK/DEF: amplified (rating is the primary scoring signal)
-   * MID: neutral
-   * ATT: slightly compressed (goals/assists already captured in B/M)
-   */
-  role_multiplier: Record<RatingClass, number>
+
   bonus_malus: BonusMalusConfig
-  voto_base_cap_min: number
-  voto_base_cap_max: number
-  /**
-   * Target distribution — Step 2 of the calibration pipeline.
-   *
-   *   b0 = target_mean_vote + target_vote_std × z_adjusted
-   *   b1 = target_mean_vote + role_multiplier × (b0 − target_mean_vote)
-   *
-   * target_mean_vote: A z-score of 0 maps exactly to this vote.
-   * target_vote_std:  Each ±1σ deviation shifts the vote by this many points.
-   *
-   * Configurable per league via league_engine_config.
-   */
-  target_mean_vote: number
-  target_vote_std: number
 }
 
 // ---- BM item -----------------------------------------------
@@ -129,30 +102,21 @@ export interface PlayerCalculationResult {
   player_id: string
   stats_id: string
   is_provisional: boolean
+
   /**
-   * True when player played 0–9 minutes but had a decisive event.
-   * z_rating, b0, b1, minutes_factor are null; voto_base = base_score (6.0).
+   * True when player played < minutes_min_for_voto but had a decisive event.
+   * voto_base = base_score (6.0); B/M applied.
    */
   decisive_event_exception: boolean
+
   /**
-   * True when the player had ≥10 minutes but the rating was not yet available
-   * (e.g. fetched during a live match before ratings are published).
-   * z_rating, z_adjusted, b0, b1 are null; voto_base = base_score (6.0);
-   * minutes_factor is set; full B/M is applied.
+   * True when the player had enough minutes but the SportMonks rating was
+   * not yet available (e.g. early in a live match).
+   * voto_base = base_score (6.0); B/M applied.
    */
   no_ratings_exception: boolean
 
-  // null for decisive_event_exception, or when source not available
-  z_rating: number | null
-  // null for decisive_event_exception; set for no_ratings_exception (useful for indicator)
-  minutes_factor: number | null
-  // null when z_rating is null
-  z_adjusted: number | null
-  b0: number | null
-  role_multiplier: number | null
-  b1: number | null
-
-  // Always set: base_score (6.0) for exceptions, clamped b1 otherwise
+  /** Always set: base_score (6.0) for exception paths, pivot-formula output otherwise. */
   voto_base: number
 
   bonus_malus_breakdown: BonusMalusItem[]
