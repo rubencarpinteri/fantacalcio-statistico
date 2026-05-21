@@ -139,6 +139,37 @@ export async function transitionMatchdayStatusAction(
         error: `Impossibile aprire questa giornata: "${alreadyOpen.name}" è già aperta. Chiudila prima di aprire un'altra giornata.`,
       }
     }
+
+    // Phase 2 pre-flight: prices must cover ≥95% of the active pool
+    // before users can build their lineups (otherwise too many players
+    // would be unpickable).
+    const [{ count: poolSize }, { count: pricedCount }] = await Promise.all([
+      supabase
+        .from('league_players')
+        .select('id', { count: 'exact', head: true })
+        .eq('league_id', ctx.league.id)
+        .eq('is_active', true),
+      supabase
+        .from('matchday_player_prices')
+        .select('id', { count: 'exact', head: true })
+        .eq('matchday_id', matchdayId),
+    ])
+
+    const total = poolSize ?? 0
+    const priced = pricedCount ?? 0
+    const coveragePct = total > 0 ? (priced / total) * 100 : 0
+
+    if (total === 0) {
+      return {
+        error: 'Nessun giocatore attivo nel pool della lega. Importa i giocatori prima di aprire la giornata.',
+      }
+    }
+
+    if (coveragePct < 95) {
+      return {
+        error: `Prezzi insufficienti per aprire la giornata: ${priced} su ${total} giocatori prezzati (${coveragePct.toFixed(0)}%). Carica il CSV dei prezzi (almeno 95% di copertura) prima di aprire.`,
+      }
+    }
   }
 
   const { error } = await supabase
