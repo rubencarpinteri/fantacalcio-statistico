@@ -84,7 +84,7 @@ function rcBadge(rc: string) {
 function BMBreakdown({ breakdown }: { breakdown: BonusMalusItem[] }) {
   if (!breakdown || breakdown.length === 0) return <span className="text-ink-4">—</span>
   return (
-    <span className="cursor-help border-b border-dotted border-[#55556a] text-ink-1" title={
+    <span className="cursor-help border-b border-dotted border-hairline-strong text-ink-1" title={
       breakdown.map((b) => `${b.label}: ${b.quantity > 1 ? `${b.quantity}×` : ''}${b.points_each > 0 ? '+' : ''}${b.points_each} = ${b.total > 0 ? '+' : ''}${b.total}`).join('\n')
     }>
       {breakdown.reduce((acc, b) => acc + b.total, 0) >= 0 ? '+' : ''}
@@ -447,7 +447,7 @@ export function CalculationPreview({
                     return (
                       <Fragment key={c.id}>
                         <tr
-                          className={`${isNV ? 'opacity-50' : ''} ${wasEdited ? 'bg-amber-500/5' : ''} hover:bg-[#1a1a2a] cursor-pointer`}
+                          className={`${isNV ? 'opacity-50' : ''} ${wasEdited ? 'bg-amber-500/5' : ''} hover:bg-glass-2 cursor-pointer`}
                           onClick={() => setExpandedRow(isExpanded ? null : c.id)}
                         >
                           <td className="px-6 py-2.5 sticky left-0 bg-glass-1">

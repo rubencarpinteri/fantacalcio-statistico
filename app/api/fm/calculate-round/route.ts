@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { requireSuperAdmin } from '@/lib/fantamondiale/server'
+import { requireSuperAdmin } from '@/lib/league'
 import { runRoundEngine } from '@/domain/fantamondiale/engine/index'
 
 export type CalculateRoundResponse = {

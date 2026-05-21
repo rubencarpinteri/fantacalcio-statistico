@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
@@ -8,13 +9,9 @@ import { generateRoundRobin } from '@/domain/competitions/roundRobin'
 import { computeRound } from '@/domain/competitions/computeRound'
 import type { ScoringConfig, FixtureInput, TeamStandingRow } from '@/domain/competitions/computeRound'
 import type { Json } from '@/types/database.types'
+import type { ActionResult } from '@/lib/actionResult'
 
-// ---- Shared result type ------------------------------------
-
-export interface ActionResult {
-  error: string | null
-  success: boolean
-}
+const uuid = z.string().uuid('ID non valido')
 
 // ============================================================
 // enrollTeamsAction
@@ -27,6 +24,9 @@ export async function enrollTeamsAction(
   competitionId: string,
   teamIds: string[]
 ): Promise<ActionResult> {
+  const parsed = z.object({ competitionId: uuid, teamIds: z.array(uuid).min(1) }).safeParse({ competitionId, teamIds })
+  if (!parsed.success) return { error: 'Input non valido.', success: false }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -61,6 +61,9 @@ export async function unenrollTeamAction(
   competitionId: string,
   teamId: string
 ): Promise<ActionResult> {
+  const parsed = z.object({ competitionId: uuid, teamId: uuid }).safeParse({ competitionId, teamId })
+  if (!parsed.success) return { error: 'ID non validi.', success: false }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -104,12 +107,15 @@ export async function generateCalendarioAction(
   competitionId: string,
   legs: 1 | 2
 ): Promise<GenerateCalendarioResult> {
-  const ctx = await requireLeagueAdmin()
-  const supabase = await createClient()
-
   const fail = (error: string): GenerateCalendarioResult => ({
     error, success: false, rounds_created: 0, fixtures_created: 0,
   })
+
+  const parsed = z.object({ competitionId: uuid, legs: z.union([z.literal(1), z.literal(2)]) }).safeParse({ competitionId, legs })
+  if (!parsed.success) return fail('Input non valido.')
+
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
 
   const { data: comp } = await supabase
     .from('competitions')
@@ -203,6 +209,9 @@ export async function linkRoundToMatchdayAction(
   roundId: string,
   matchdayId: string
 ): Promise<ActionResult> {
+  const parsed = z.object({ roundId: uuid, matchdayId: uuid }).safeParse({ roundId, matchdayId })
+  if (!parsed.success) return { error: 'ID non validi.', success: false }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -261,10 +270,12 @@ export interface ComputeRoundResult extends ActionResult {
 export async function computeRoundAction(
   roundId: string
 ): Promise<ComputeRoundResult> {
+  const fail = (error: string): ComputeRoundResult => ({ error, success: false, fixtures_computed: 0 })
+
+  if (!uuid.safeParse(roundId).success) return fail('ID turno non valido.')
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
-
-  const fail = (error: string): ComputeRoundResult => ({ error, success: false, fixtures_computed: 0 })
 
   // 1. Fetch round + competition
   const { data: round } = await supabase
@@ -512,10 +523,13 @@ export async function createBattleRoyaleRoundAction(
   competitionId: string,
   matchdayId: string
 ): Promise<ComputeRoundResult & { round_id?: string }> {
+  const fail = (error: string) => ({ error, success: false, fixtures_computed: 0 })
+
+  const parsed = z.object({ competitionId: uuid, matchdayId: uuid }).safeParse({ competitionId, matchdayId })
+  if (!parsed.success) return fail('ID non validi.')
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
-
-  const fail = (error: string) => ({ error, success: false, fixtures_computed: 0 })
 
   const { data: comp } = await supabase
     .from('competitions')
@@ -605,9 +619,6 @@ export interface BulkBRResult {
 export async function bulkCreateBattleRoyaleRoundsAction(
   competitionId: string
 ): Promise<BulkBRResult> {
-  const ctx = await requireLeagueAdmin()
-  const supabase = await createClient()
-
   const fail = (error: string): BulkBRResult => ({
     error,
     success: false,
@@ -617,6 +628,11 @@ export async function bulkCreateBattleRoyaleRoundsAction(
     fixtures_total: 0,
     failures: [],
   })
+
+  if (!uuid.safeParse(competitionId).success) return fail('ID competizione non valido.')
+
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
 
   // 1. Verify competition belongs to league + is BR
   const { data: comp } = await supabase

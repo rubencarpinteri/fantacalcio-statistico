@@ -3,6 +3,9 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { fetchFixtureWithDetail } from '@/lib/sportmonks/fixtures'
 import { parseFixture } from '@/lib/sportmonks/parse'
 import { listActiveLeagueRefs, upsertFMPlayerStats } from '@/lib/sportmonks/db'
+import { checkCronEnv, logCronRun } from '@/lib/sportmonks/cronLog'
+
+const ENDPOINT = 'sportmonks-reconcile-week'
 
 /**
  * GET /api/cron/sportmonks-reconcile-week
@@ -15,6 +18,15 @@ import { listActiveLeagueRefs, upsertFMPlayerStats } from '@/lib/sportmonks/db'
  * Auth: Bearer CRON_SECRET.
  */
 export async function GET(req: NextRequest) {
+  const started_at = new Date()
+  const envCheck = checkCronEnv()
+  if (envCheck) {
+    return NextResponse.json(
+      { error: 'Missing required env vars', missing: envCheck.missing },
+      { status: 503 },
+    )
+  }
+
   const secret = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!secret || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -23,7 +35,15 @@ export async function GET(req: NextRequest) {
   const db = createServiceClient()
   const refs = await listActiveLeagueRefs(db)
   if (!refs.length) {
-    return NextResponse.json({ message: 'No active SportMonks leagues', refs: 0 })
+    const body = { message: 'No active SportMonks leagues', refs: 0 }
+    await logCronRun(db, {
+      endpoint: ENDPOINT,
+      started_at,
+      status: 'skipped',
+      http_status: 200,
+      summary: body,
+    })
+    return NextResponse.json(body)
   }
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -77,5 +97,15 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  return NextResponse.json({ refs: refs.length, results })
+  const body = { refs: refs.length, results }
+  const firstErr = results.flatMap((r) => r.errors)[0]
+  await logCronRun(db, {
+    endpoint: ENDPOINT,
+    started_at,
+    status: firstErr ? 'error' : 'ok',
+    http_status: 200,
+    summary: body,
+    error: firstErr ?? null,
+  })
+  return NextResponse.json(body)
 }

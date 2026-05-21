@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { requireSuperAdmin } from '@/lib/fantamondiale/server'
+import { requireSuperAdmin } from '@/lib/league'
 
 const PriceSchema = z.object({
   phase_id: z.string().uuid(),

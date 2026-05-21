@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { AllLineupsClient } from './AllLineupsClient'
 import type { TeamLineupData, MatchupPair } from './AllLineupsClient'
-import { fetchLiveOverlay } from '@/lib/live/overlay'
 import { LiveAutoRefresh } from '@/components/live/LiveAutoRefresh'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -267,20 +266,24 @@ export default async function AllLineupsPage({
     }
   }
 
-  // ── Live overlay (when matchday is currently 'open' = being played) ────────
-  // Fills in missing entries in calcMap / statsMap from live_player_scores so
-  // lineups show provisional fantavoto and ratings while matches are in progress.
+  // ── Live signal ────────────────────────────────────────────────────────────
+  // SportMonks ratings-tick writes provisional rows to player_match_stats while
+  // matches are in play. Surface (a) the freshest write time for the staleness
+  // pill, (b) the set of players with a provisional row so the "playing now"
+  // dot can render.
   let liveRefreshedAt: string | null = null
   let liveMatchPlayerIds: string[] = []
   if (matchday.status === 'open') {
-    const { calcOverlay, statsOverlay, refreshedAt, liveMatchPlayerIds: liveSet } = await fetchLiveOverlay(supabase, matchdayId)
-    liveRefreshedAt = refreshedAt
-    liveMatchPlayerIds = [...liveSet]
-    for (const [pid, c] of calcOverlay) {
-      if (!calcMap.has(pid)) calcMap.set(pid, c)
-    }
-    for (const [pid, s] of statsOverlay) {
-      if (!statsMap.has(pid)) statsMap.set(pid, s)
+    const { data: provisional } = await supabase
+      .from('player_match_stats')
+      .select('player_id, updated_at')
+      .eq('matchday_id', matchdayId)
+      .eq('is_provisional', true)
+    for (const row of provisional ?? []) {
+      liveMatchPlayerIds.push(row.player_id)
+      if (row.updated_at && (!liveRefreshedAt || row.updated_at > liveRefreshedAt)) {
+        liveRefreshedAt = row.updated_at
+      }
     }
   }
 
@@ -381,7 +384,7 @@ export default async function AllLineupsPage({
         fantavoto: calc?.fantavoto ?? null,
         votoBase: calc?.voto_base ?? null,
         bonusMalus: calc?.bonusMalus ?? null,
-        zFotmob: calc?.z_rating ?? null,
+        zRating: calc?.z_rating ?? null,
         minutesFactor: calc?.minutes_factor ?? null,
         roleMultiplier: calc?.role_multiplier ?? null,
         rawRating:    rawStats?.rating    ?? null,

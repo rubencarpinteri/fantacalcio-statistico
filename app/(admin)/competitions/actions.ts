@@ -1,19 +1,27 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import { DEFAULT_MANTRA_THRESHOLDS } from '@/domain/competitions/goalThresholds'
-import type { CompetitionType, Json } from '@/types/database.types'
+import type { Json } from '@/types/database.types'
+import type { ActionResult } from '@/lib/actionResult'
 
-// ---- Shared result type ------------------------------------
+const uuid = z.string().uuid('ID non valido')
 
-export interface ActionResult {
-  error: string | null
-  success: boolean
-}
+const createCompetitionSchema = z.object({
+  name: z.string().trim().min(1, 'Nome obbligatorio').max(100),
+  type: z.enum(['campionato', 'battle_royale', 'coppa']),
+  season: z.string().trim().max(20).nullable(),
+  scoring_method: z.enum(['direct_comparison', 'goal_thresholds']),
+  points_win: z.coerce.number().int().min(0).max(100),
+  points_draw: z.coerce.number().int().min(0).max(100),
+  points_loss: z.coerce.number().int().min(0).max(100),
+  thresholds_json: z.string().nullable(),
+})
 
 // ============================================================
 // createCompetitionAction
@@ -22,36 +30,35 @@ export interface ActionResult {
 export async function createCompetitionAction(
   formData: FormData
 ): Promise<ActionResult & { competition_id?: string }> {
+  const parsed = createCompetitionSchema.safeParse({
+    name: formData.get('name'),
+    type: formData.get('type'),
+    season: (formData.get('season') as string | null)?.trim() || null,
+    scoring_method: formData.get('scoring_method'),
+    points_win: formData.get('points_win') ?? 3,
+    points_draw: formData.get('points_draw') ?? 1,
+    points_loss: formData.get('points_loss') ?? 0,
+    thresholds_json: formData.get('thresholds_json'),
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Input non valido.', success: false }
+  }
+  const { name, type, season, scoring_method, points_win, points_draw, points_loss, thresholds_json } = parsed.data
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
-  const name   = (formData.get('name') as string | null)?.trim()
-  const type   = formData.get('type') as CompetitionType | null
-  const season = (formData.get('season') as string | null)?.trim() || null
-  const method = formData.get('scoring_method') as string | null
-
-  if (!name) return { error: 'Il nome della competizione è obbligatorio.', success: false }
-  if (!type || !['campionato', 'battle_royale', 'coppa'].includes(type)) {
-    return { error: 'Tipo di competizione non valido.', success: false }
-  }
-
-  // Build scoring_config
-  const pointsWin  = Number(formData.get('points_win')  ?? 3)
-  const pointsDraw = Number(formData.get('points_draw') ?? 1)
-  const pointsLoss = Number(formData.get('points_loss') ?? 0)
-  const pointsCfg  = { win: pointsWin, draw: pointsDraw, loss: pointsLoss }
+  const pointsCfg = { win: points_win, draw: points_draw, loss: points_loss }
 
   let scoring_config: Json
-  if (method === 'direct_comparison') {
+  if (scoring_method === 'direct_comparison') {
     scoring_config = { method: 'direct_comparison', points: pointsCfg }
   } else {
-    // goal_thresholds (default)
-    const thresholdsRaw = formData.get('thresholds_json') as string | null
     let thresholds = DEFAULT_MANTRA_THRESHOLDS
-    if (thresholdsRaw) {
+    if (thresholds_json) {
       try {
-        const parsed = JSON.parse(thresholdsRaw)
-        if (Array.isArray(parsed) && parsed.length > 0) thresholds = parsed
+        const parsedThresholds = JSON.parse(thresholds_json)
+        if (Array.isArray(parsedThresholds) && parsedThresholds.length > 0) thresholds = parsedThresholds
       } catch {
         return { error: 'Formato soglie non valido.', success: false }
       }
@@ -99,6 +106,12 @@ export async function updateCompetitionStatusAction(
   competitionId: string,
   newStatus: 'active' | 'completed' | 'cancelled'
 ): Promise<ActionResult> {
+  const parsed = z.object({
+    competitionId: uuid,
+    newStatus: z.enum(['active', 'completed', 'cancelled']),
+  }).safeParse({ competitionId, newStatus })
+  if (!parsed.success) return { error: 'Input non valido.', success: false }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 

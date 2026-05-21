@@ -7,7 +7,7 @@ import type { Competition, CompetitionMatchup, FantasyTeam } from '@/types/datab
 import { GenerateMatchdaysForm } from './GenerateMatchdaysForm'
 import { CalendarioClient } from './CalendarioClient'
 import type { RoundData, MatchupData } from './CalendarioClient'
-import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { QuickFetchAndCalculateButton } from '@/app/(admin)/campionato/giornate/[id]/calculate/QuickFetchAndCalculateButton'
 import { BattleRoyaleDetailView } from './BattleRoyaleDetailView'
 
 const TYPE_LABEL: Record<string, string> = {

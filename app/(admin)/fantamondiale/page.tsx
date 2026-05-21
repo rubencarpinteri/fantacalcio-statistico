@@ -1,4 +1,5 @@
 import { getFMCompetitions } from '@/lib/fantamondiale/server'
+import { isSuperAdmin } from '@/lib/league'
 import { bootstrapWC2026Action } from './actions'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -23,14 +24,9 @@ export default async function FantaMondialePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_super_admin')
-    .eq('id', user.id)
-    .single()
-  const isSuperAdmin = profile?.is_super_admin ?? false
+  const superAdmin = await isSuperAdmin()
 
-  if (!isSuperAdmin) {
+  if (!superAdmin) {
     const { data: team } = await supabase
       .from('fm_fantasy_team')
       .select('competition_id')

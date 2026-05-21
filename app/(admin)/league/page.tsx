@@ -95,6 +95,18 @@ export default async function LeagueSettingsPage() {
                   </div>
                   <span className="text-ink-4">→</span>
                 </a>
+                <a
+                  href="/league/cron-status"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
+                >
+                  <div>
+                    <p className="font-medium text-ink-1">Stato cron SportMonks</p>
+                    <p className="text-xs text-ink-3">
+                      Ultimo tick, errori 24h, cronologia run
+                    </p>
+                  </div>
+                  <span className="text-ink-4">→</span>
+                </a>
               </nav>
             </CardContent>
           </Card>

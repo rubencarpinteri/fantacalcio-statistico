@@ -197,7 +197,7 @@ export default async function MatchdayResultsPage({
       .join('\n')
     return (
       <span
-        className="cursor-help border-b border-dotted border-[#55556a] font-mono text-ink-3"
+        className="cursor-help border-b border-dotted border-hairline-strong font-mono text-ink-3"
         title={titleText}
       >
         {total >= 0 ? '+' : ''}{total.toFixed(1)}
@@ -290,11 +290,11 @@ export default async function MatchdayResultsPage({
                             {c?.voto_base != null ? c.voto_base.toFixed(2) : '—'}
                           </span>
                           {(() => {
-                            const vbFm = calcSourceVotoBase(c?.z_rating ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
-                            if (vbFm === null) return null
+                            const vbSrc = calcSourceVotoBase(c?.z_rating ?? null, c?.minutes_factor ?? null, c?.role_multiplier ?? null)
+                            if (vbSrc === null) return null
                             return (
                               <div className="mt-0.5 flex justify-end gap-2 text-[10px]">
-                                <span className="text-[#6666aa]">FM {vbFm.toFixed(2)}</span>
+                                <span className="text-ink-4">src {vbSrc.toFixed(2)}</span>
                               </div>
                             )
                           })()}

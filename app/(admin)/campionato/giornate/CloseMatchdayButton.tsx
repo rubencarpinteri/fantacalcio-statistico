@@ -48,7 +48,7 @@ export function CloseMatchdayButton({ matchdayId, currentStatus }: Props) {
               'rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
               confirming === 'close'
                 ? 'bg-red-500/25 text-red-300 hover:bg-red-500/40'
-                : 'bg-[#2e2e42] text-[#c0c0d8] hover:bg-[#3a3a52]',
+                : 'bg-glass-2 text-ink-2 hover:bg-glass-3',
             ].join(' ')}
           >
             ✓ {label}

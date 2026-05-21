@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { enrollTeamsAction, unenrollTeamAction } from '../actions'
+import type { JoinedTeamName } from '@/lib/supabase/relations'
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus()
@@ -62,7 +63,7 @@ export function TeamEnrollmentForm({
         ) : (
           <div className="space-y-2">
             {enrolledTeams.map((et) => {
-              const name = (et.fantasy_teams as unknown as { name: string } | null)?.name ?? et.team_id.slice(0, 8)
+              const name = (et.fantasy_teams as unknown as JoinedTeamName | null)?.name ?? et.team_id.slice(0, 8)
               return (
                 <div key={et.id}
                   className="flex items-center justify-between rounded-lg border border-hairline bg-glass-1 px-4 py-2.5">

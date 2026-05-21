@@ -70,7 +70,7 @@ function ScorePreview({ teams }: { teams: PreviewTeamResult[] }) {
             {/* Player rows */}
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[#1a1a24] text-[10px] uppercase tracking-wider text-ink-5">
+                <tr className="border-b border-hairline text-[10px] uppercase tracking-wider text-ink-5">
                   <th className="w-8 px-3 py-1 text-left">R</th>
                   <th className="px-3 py-1 text-left">Giocatore</th>
                   <th className="px-3 py-1 text-left">Bonus/Malus</th>

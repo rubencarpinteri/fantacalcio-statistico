@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueContext } from '@/lib/league'
 import { MatchdayStatusBadge } from '@/components/ui/badge'
-import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { QuickFetchAndCalculateButton } from '@/app/(admin)/campionato/giornate/[id]/calculate/QuickFetchAndCalculateButton'
 import { CloseMatchdayButton } from './CloseMatchdayButton'
 
 export const metadata = { title: 'Giornate' }
@@ -305,13 +305,13 @@ export default async function MatchdaysPage() {
               {nextMatchups.map((m, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1 min-w-0 overflow-hidden text-right">
-                    <span className="block truncate text-sm font-semibold text-[#c0c0d8]">{m.homeTeamName}</span>
+                    <span className="block truncate text-sm font-semibold text-ink-2">{m.homeTeamName}</span>
                   </div>
                   <div className="shrink-0 w-28 flex items-center justify-center">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-ink-5">vs</span>
                   </div>
                   <div className="flex-1 min-w-0 overflow-hidden">
-                    <span className="block truncate text-sm font-semibold text-[#c0c0d8]">{m.awayTeamName}</span>
+                    <span className="block truncate text-sm font-semibold text-ink-2">{m.awayTeamName}</span>
                   </div>
                 </div>
               ))}
@@ -363,7 +363,7 @@ export default async function MatchdaysPage() {
                     <a
                       href={`/campionato/giornate/${m.id}`}
                       className={`flex-1 truncate text-xs font-medium hover:text-indigo-400 transition-colors ${
-                        isCurrent ? 'text-indigo-200' : 'text-[#c0c0d8]'
+                        isCurrent ? 'text-indigo-200' : 'text-ink-2'
                       }`}
                     >
                       {m.name}

@@ -260,7 +260,7 @@ export default async function MyResultsPage({
 
             {/* Breakdown panel */}
             <tr className="hidden group-open:table-row">
-              <td colSpan={5} className="border-b border-hairline bg-[#080810] px-6 py-3">
+              <td colSpan={5} className="border-b border-hairline bg-surface-0 px-6 py-3">
                 {isNV && c == null ? (
                   <p className="text-xs text-ink-4">Nessun calcolo disponibile per questo giocatore.</p>
                 ) : isNV ? (
@@ -420,7 +420,7 @@ function BreakdownRow({
       <span className="text-ink-4">{label}</span>
       <span className="flex items-center gap-1.5">
         {suffix && <span className="text-ink-5">{suffix}</span>}
-        <span className={color ?? (highlight ? 'text-white font-semibold' : dim ? 'text-ink-5' : 'text-[#c8c8e8]')}>
+        <span className={color ?? (highlight ? 'text-white font-semibold' : dim ? 'text-ink-5' : 'text-ink-2')}>
           {value}
         </span>
       </span>

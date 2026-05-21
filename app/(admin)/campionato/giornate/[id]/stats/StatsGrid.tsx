@@ -518,7 +518,7 @@ function NumCell({
           'focus:border-indigo-400/60 focus:outline-none',
           disabled
             ? 'border-transparent text-ink-3 cursor-default'
-            : 'border-hairline text-white hover:border-[#3e3e52]',
+            : 'border-hairline text-white hover:border-hairline-strong',
         ].join(' ')}
         max={max}
       />

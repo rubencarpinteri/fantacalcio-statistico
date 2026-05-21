@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 import type { RatingClass } from '@/types/database.types'
+import type { JoinedPlayerNameClubClass } from '@/lib/supabase/relations'
 import { statRowSchema } from './schema'
 import type { StatRowInput, StatRow } from './schema'
 
@@ -396,7 +397,7 @@ export async function exportStatsCsvAction(matchdayId: string): Promise<string> 
   const rows = stats.map((s) => {
     // Join result: Relationships: never[] means the query-parser can't infer
     // the joined shape; we assert only the fields used in the CSV export.
-    const player = s.league_players as unknown as { full_name: string; club: string; rating_class: string } | null
+    const player = s.league_players as unknown as JoinedPlayerNameClubClass | null
     return [
       player?.full_name ?? '',
       player?.club ?? '',

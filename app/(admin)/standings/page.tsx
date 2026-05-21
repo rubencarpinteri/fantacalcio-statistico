@@ -150,7 +150,7 @@ export default async function StandingsPage() {
       </div>
 
       {/* ── WIP notice ──────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-hairline bg-[#0d0d1a] overflow-hidden">
+      <div className="rounded-xl border border-hairline bg-surface-0 overflow-hidden">
         <div className="px-4 py-3 border-b border-hairline">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">Classifica</p>
           <p className="text-sm font-semibold text-ink-1 leading-tight mt-0.5">{ctx.league.name}</p>

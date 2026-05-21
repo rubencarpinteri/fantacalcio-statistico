@@ -127,7 +127,7 @@ export default async function StatsPage({
                   {enteredCount} / {lineupTotal}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-[#2e2e42] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-glass-2 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-indigo-500 transition-all"
                   style={{ width: `${lineupTotal > 0 ? Math.round((enteredCount / lineupTotal) * 100) : 0}%` }}

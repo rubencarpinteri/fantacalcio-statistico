@@ -241,7 +241,7 @@ export function LineupTextImport({ matchdayId, matchdayName }: Props) {
             </a>
             <button
               onClick={() => { setStep('paste'); setText(''); setPreview([]); setResult(null) }}
-              className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:text-ink-1 hover:border-[#3e3e52]"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm text-ink-3 hover:text-ink-1 hover:border-hairline-strong"
             >
               Nuova importazione
             </button>
@@ -325,7 +325,7 @@ function TeamCard({ team, isReady, availableTeams, teamOverride, onTeamOverride 
           {!isReady && (
             <span className="text-xs text-red-400">{team.errors.length} errori</span>
           )}
-          <span className="text-[#555570] text-xs">{expanded ? '▲' : '▼'}</span>
+          <span className="text-ink-4 text-xs">{expanded ? '▲' : '▼'}</span>
         </div>
       </button>
 
@@ -427,7 +427,7 @@ function PlayerRow({ player }: { player: import('./actions').PlayerPreview }) {
       isProblematic ? 'bg-red-500/10' : ''
     }`}>
       {player.isBench && player.benchOrder != null && (
-        <span className="text-[#383850] w-4 text-right flex-shrink-0">{player.benchOrder}.</span>
+        <span className="text-ink-5 w-4 text-right flex-shrink-0">{player.benchOrder}.</span>
       )}
       {!player.isBench && (
         <span className={`w-8 flex-shrink-0 font-mono ${
@@ -442,7 +442,7 @@ function PlayerRow({ player }: { player: import('./actions').PlayerPreview }) {
         {player.dbName ?? player.inputName}
       </span>
       {player.dbName && player.dbName !== player.inputName && (
-        <span className="text-[#383850]">← "{player.inputName}"</span>
+        <span className="text-ink-5">← "{player.inputName}"</span>
       )}
       {matched && !player.isBench && !hasSlot && (
         <span className="text-red-400 ml-auto">no slot</span>

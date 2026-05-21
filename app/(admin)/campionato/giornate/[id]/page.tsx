@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MatchdayStatusControls } from './MatchdayStatusControls'
 import { FreezeButton } from './FreezeButton'
 import { FixturesInlineCard } from './FixturesInlineCard'
-import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { QuickFetchAndCalculateButton } from '@/app/(admin)/campionato/giornate/[id]/calculate/QuickFetchAndCalculateButton'
 import { getMatchesForRound } from '@/lib/calendar/serieaCalendar'
+import type { JoinedCompetitionNameType } from '@/lib/supabase/relations'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -125,7 +126,7 @@ export default async function MatchdayDetailPage({
       .eq('matchday_id', id)
 
     linkedRounds = (rounds ?? []).map((r) => {
-      const comp = r.competitions as unknown as { name: string; type: string } | null
+      const comp = r.competitions as unknown as JoinedCompetitionNameType | null
       return {
         id: r.id,
         name: r.name,
@@ -351,7 +352,7 @@ export default async function MatchdayDetailPage({
                         className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                           ['open', 'closed'].includes(matchday.status)
                             ? 'bg-indigo-500 text-white hover:bg-indigo-400'
-                            : 'pointer-events-none bg-glass-2 text-[#3a3a4a]'
+                            : 'pointer-events-none bg-glass-2 text-ink-5'
                         }`}
                       >
                         Importa formazioni (testo)

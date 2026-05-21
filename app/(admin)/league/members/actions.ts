@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createServiceClient } from '@/lib/supabase/service'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 
@@ -98,7 +98,7 @@ export async function inviteMemberAction(
   }
 
   // Send invite via Admin API — triggers handle_new_user which creates the profile
-  const adminClient = createAdminClient()
+  const adminClient = createServiceClient()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fantacalcio-statistico.vercel.app'
 
   const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(

@@ -1,11 +1,16 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
+import type { JoinedPlayerNameClub } from '@/lib/supabase/relations'
 
 const MAX_ROSTER_SIZE = 30
+
+const uuid = z.string().uuid('ID non valido')
+const teamNameSchema = z.string().trim().min(2, 'Il nome deve avere almeno 2 caratteri').max(60, 'Il nome non può superare 60 caratteri')
 
 export interface AssignPlayerResult {
   error: string | null
@@ -27,6 +32,9 @@ export async function assignPlayerAction(
   teamId: string,
   serieAPlayerId: string
 ): Promise<AssignPlayerResult> {
+  const parsed = z.object({ teamId: uuid, serieAPlayerId: uuid }).safeParse({ teamId, serieAPlayerId })
+  if (!parsed.success) return { error: 'ID non validi.' }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -205,21 +213,19 @@ export async function renameTeamAction(
   teamId: string,
   newName: string
 ): Promise<RenameTeamResult> {
+  const parsed = z.object({ teamId: uuid, newName: teamNameSchema }).safeParse({ teamId, newName })
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Input non valido.' }
+  }
+  const { teamId: validId, newName: trimmed } = parsed.data
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
-
-  const trimmed = newName.trim()
-  if (!trimmed || trimmed.length < 2) {
-    return { error: 'Il nome deve avere almeno 2 caratteri.' }
-  }
-  if (trimmed.length > 60) {
-    return { error: 'Il nome non può superare 60 caratteri.' }
-  }
 
   const { error } = await supabase
     .from('fantasy_teams')
     .update({ name: trimmed })
-    .eq('id', teamId)
+    .eq('id', validId)
     .eq('league_id', ctx.league.id)
 
   if (error) return { error: error.message }
@@ -236,6 +242,10 @@ export async function renameTeamAction(
 export async function releasePlayerAction(
   rosterEntryId: string
 ): Promise<ReleasePlayerResult> {
+  if (!uuid.safeParse(rosterEntryId).success) {
+    return { error: 'ID rosa non valido.' }
+  }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -276,7 +286,7 @@ export async function releasePlayerAction(
     return { error: updateError.message }
   }
 
-  const lp = entry.league_players as unknown as { full_name: string; club: string }
+  const lp = entry.league_players as unknown as JoinedPlayerNameClub
 
   await writeAuditLog({
     supabase,

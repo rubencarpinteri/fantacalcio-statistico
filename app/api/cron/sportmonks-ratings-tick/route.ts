@@ -8,6 +8,9 @@ import {
   upsertFMPlayerStats,
   upsertSerieAPlayerStats,
 } from '@/lib/sportmonks/db'
+import { checkCronEnv, logCronRun } from '@/lib/sportmonks/cronLog'
+
+const ENDPOINT = 'sportmonks-ratings-tick'
 
 /**
  * GET /api/cron/sportmonks-ratings-tick
@@ -22,6 +25,14 @@ import {
  * Auth: Bearer CRON_SECRET.
  */
 export async function GET(req: NextRequest) {
+  const started_at = new Date()
+  const envCheck = checkCronEnv()
+  if (envCheck) {
+    const body = { error: 'Missing required env vars', missing: envCheck.missing }
+    // No DB client available — env is broken — just return.
+    return NextResponse.json(body, { status: 503 })
+  }
+
   const secret = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!secret || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,12 +42,28 @@ export async function GET(req: NextRequest) {
 
   const inWindow = await hasFixturesInLiveWindow(db)
   if (!inWindow) {
-    return NextResponse.json({ message: 'No fixtures in live window', live: 0 })
+    const body = { message: 'No fixtures in live window', live: 0 }
+    await logCronRun(db, {
+      endpoint: ENDPOINT,
+      started_at,
+      status: 'skipped',
+      http_status: 200,
+      summary: body,
+    })
+    return NextResponse.json(body)
   }
 
   const refs = await listActiveLeagueRefs(db)
   if (!refs.length) {
-    return NextResponse.json({ message: 'No active SportMonks leagues', live: 0 })
+    const body = { message: 'No active SportMonks leagues', live: 0 }
+    await logCronRun(db, {
+      endpoint: ENDPOINT,
+      started_at,
+      status: 'skipped',
+      http_status: 200,
+      summary: body,
+    })
+    return NextResponse.json(body)
   }
 
   // Dedupe live fetches across competitions sharing a league.
@@ -108,5 +135,15 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  return NextResponse.json({ live: liveByLeague.size, results })
+  const body = { live: liveByLeague.size, results }
+  const hadError = results.some((r) => r.error)
+  await logCronRun(db, {
+    endpoint: ENDPOINT,
+    started_at,
+    status: hadError ? 'error' : 'ok',
+    http_status: 200,
+    summary: body,
+    error: hadError ? results.find((r) => r.error)?.error : null,
+  })
+  return NextResponse.json(body)
 }

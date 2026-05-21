@@ -53,7 +53,7 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
 
 function Td({ children, right, mono, dim }: { children: React.ReactNode; right?: boolean; mono?: boolean; dim?: boolean }) {
   return (
-    <td className={`px-4 py-2.5 text-sm ${right ? 'text-right' : ''} ${mono ? 'font-mono' : ''} ${dim ? 'text-ink-4' : 'text-[#c8c8e8]'}`}>
+    <td className={`px-4 py-2.5 text-sm ${right ? 'text-right' : ''} ${mono ? 'font-mono' : ''} ${dim ? 'text-ink-4' : 'text-ink-2'}`}>
       {children}
     </td>
   )
@@ -73,7 +73,7 @@ function Step({ n, label }: { n: number; label: string }) {
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-300">
         {n}
       </div>
-      <span className="text-sm text-[#c8c8e8]">{label}</span>
+      <span className="text-sm text-ink-2">{label}</span>
     </div>
   )
 }
@@ -331,7 +331,7 @@ export default async function MethodologyPage() {
             </tbody>
           </TableWrap>
           <Note>
-            Il moltiplicatore agisce sulla <strong className="text-[#c8c8e8]">distanza dalla soglia di sufficienza</strong> (6.0), non sull&apos;intera scala.
+            Il moltiplicatore agisce sulla <strong className="text-ink-2">distanza dalla soglia di sufficienza</strong> (6.0), non sull&apos;intera scala.
             GK e DEF sono amplificati perché il loro voto SportMonks è il segnale principale (raramente segnano).
             ATT è leggermente compresso perché gol e assist sono già conteggiati nel B/M.
             Valori modificabili da{' '}
@@ -389,7 +389,7 @@ export default async function MethodologyPage() {
                 { label: 'Rigore parato',     val: eff.penalty_saved,   cond: 'solo GK' },
               ].map(({ label, val, cond }) => (
                 <div key={label} className="flex items-center justify-between gap-2 rounded px-2 py-1.5">
-                  <span className="text-sm text-[#c8c8e8]">{label}</span>
+                  <span className="text-sm text-ink-2">{label}</span>
                   <div className="flex items-center gap-1.5">
                     {cond && <span className="text-xs text-ink-4">({cond})</span>}
                     <span className={`font-mono text-sm font-semibold ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -445,21 +445,21 @@ export default async function MethodologyPage() {
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                I voti sono marcati come <strong className="text-[#c8c8e8]">provvisori</strong> quando le statistiche non sono ancora confermate da SportMonks.
+                I voti sono marcati come <strong className="text-ink-2">provvisori</strong> quando le statistiche non sono ancora confermate da SportMonks.
                 Un calcolo con voti provvisori è valido ma potrebbe cambiare dopo una nuova pubblicazione.
               </span>
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Se SportMonks non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve <strong className="text-[#c8c8e8]">voto base 6.0</strong> con il solo contributo del B/M.
+                Se SportMonks non ha ancora pubblicato il voto (es. partita in corso), il giocatore riceve <strong className="text-ink-2">voto base 6.0</strong> con il solo contributo del B/M.
                 Questo caso è indicato con <span className="text-sky-400">⚡</span> nella pagina calcoli.
               </span>
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Gli <strong className="text-[#c8c8e8]">override manuali</strong> sostituiscono il fantavoto calcolato dal motore.
+                Gli <strong className="text-ink-2">override manuali</strong> sostituiscono il fantavoto calcolato dal motore.
                 Gli intermediari (z-score, voto base, B/M) restano visibili per trasparenza.
                 Un override è indicato con <span className="text-orange-400">★</span> nella pagina risultati.
               </span>
@@ -467,13 +467,13 @@ export default async function MethodologyPage() {
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Il <strong className="text-[#c8c8e8]">fantavoto di squadra</strong> è la somma dei fantavoti dei titolari in campo, con sostituzione automatica dalla panchina per i giocatori NV (logica Mantra MASTER).
+                Il <strong className="text-ink-2">fantavoto di squadra</strong> è la somma dei fantavoti dei titolari in campo, con sostituzione automatica dalla panchina per i giocatori NV (logica Mantra MASTER).
               </span>
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
-                Bonus/malus, fattore minuti e moltiplicatori di ruolo sono <strong className="text-[#c8c8e8]">personalizzabili per lega</strong> dalla sezione{' '}
+                Bonus/malus, fattore minuti e moltiplicatori di ruolo sono <strong className="text-ink-2">personalizzabili per lega</strong> dalla sezione{' '}
                 <a href="/league/engine-config" className="text-indigo-300 hover:underline">Configurazione motore</a>.
                 Tutti i valori in questa pagina riflettono la configurazione attiva della tua lega.
               </span>

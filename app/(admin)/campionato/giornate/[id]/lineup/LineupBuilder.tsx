@@ -321,8 +321,8 @@ export function LineupBuilder({
                       isActive
                         ? 'border-white bg-white/20 scale-105'
                         : player
-                        ? 'border-[#3e3e5a] bg-glass-2'
-                        : 'border-hairline bg-[#12121a]',
+                        ? 'border-hairline-strong bg-glass-2'
+                        : 'border-hairline bg-glass-1',
                     ].join(' ')}
                   >
                     <span className="text-[9px] font-bold text-ink-4">P{slot.bench_order}</span>
@@ -337,7 +337,7 @@ export function LineupBuilder({
                         >✕</button>
                       </>
                     ) : (
-                      <span className="text-sm text-[#3e3e52]">{isActive ? '●' : '+'}</span>
+                      <span className="text-sm text-ink-5">{isActive ? '●' : '+'}</span>
                     )}
                   </div>
                 )
@@ -403,12 +403,12 @@ export function LineupBuilder({
                     className={[
                       'flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all',
                       isUsed
-                        ? 'opacity-30 cursor-not-allowed border-hairline bg-[#12121a]'
+                        ? 'opacity-30 cursor-not-allowed border-hairline bg-glass-1'
                         : activeSlotId
                         ? isCompatible
                           ? 'cursor-pointer border-green-500/60 bg-green-950/60 active:scale-[0.98]'
-                          : 'cursor-pointer border-hairline bg-[#12121a] opacity-50'
-                        : 'border-hairline bg-[#12121a]',
+                          : 'cursor-pointer border-hairline bg-glass-1 opacity-50'
+                        : 'border-hairline bg-glass-1',
                     ].join(' ')}
                   >
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-xs font-bold ${prs.bg} ${prs.text} ${prs.border}`}>

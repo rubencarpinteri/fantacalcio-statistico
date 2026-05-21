@@ -23,21 +23,6 @@ export interface FMContext {
   fantasyTeamId: string | null
 }
 
-export async function requireSuperAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_super_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_super_admin) redirect('/')
-  return { userId: user.id }
-}
-
 // Allows both super_admin and enrolled FM members.
 // Super admins get fantasyTeamId=null (they can look up any team).
 export async function requireFMContext(competitionId: string): Promise<FMContext> {

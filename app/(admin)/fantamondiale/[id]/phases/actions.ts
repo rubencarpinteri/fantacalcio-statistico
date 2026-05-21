@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requireSuperAdmin } from '@/lib/fantamondiale/server'
+import { requireSuperAdmin } from '@/lib/league'
 
 export async function updatePhaseAction(fd: FormData) {
   await requireSuperAdmin()

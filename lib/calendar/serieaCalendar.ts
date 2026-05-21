@@ -38,7 +38,11 @@ function parseRomeToUtc(raw: string): string | null {
 }
 
 function parseCalendar(): CalendarMatch[] {
-  const filePath = path.join(process.cwd(), '_data', 'SerieAcalendar2526.csv')
+  // Filename can be overridden via env so we can drop in the 26/27 file
+  // (e.g. `SerieAcalendar2627.csv`) without code changes. Default keeps
+  // the legacy 25/26 file working until Aug 1.
+  const fileName = process.env.SERIE_A_CALENDAR_FILE || 'SerieAcalendar2526.csv'
+  const filePath = path.join(process.cwd(), '_data', fileName)
   let text: string
   try {
     text = fs.readFileSync(filePath, 'utf-8')
@@ -57,8 +61,7 @@ function parseCalendar(): CalendarMatch[] {
     const homeTeam = (parts[3] ?? '').trim()
     const awayTeam = (parts[4] ?? '').trim()
     if (isNaN(matchNumber) || isNaN(roundNumber) || !homeTeam || !awayTeam) continue
-    // Column 7 (0-indexed): SportMonks fixture ID. The legacy 25/26 CSV
-    // had SofaScore at col 6 and FotMob at col 7 — both ignored now.
+    // Column 7 (0-indexed): SportMonks fixture ID.
     const sportmonksRaw = (parts[7] ?? '').trim()
     results.push({
       matchNumber,

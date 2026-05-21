@@ -5,6 +5,7 @@ import { MatchdayStatusBadge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { OverridesManager } from './OverridesManager'
 import type { ActiveOverride, PlayerOption } from './OverridesManager'
+import type { JoinedPlayerNameClub } from '@/lib/supabase/relations'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -48,7 +49,7 @@ export default async function OverridesPage({
     .order('created_at', { ascending: false })
 
   const activeOverrides: ActiveOverride[] = (rawOverrides ?? []).map((o) => {
-    const player = o.league_players as unknown as { full_name: string; club: string } | null
+    const player = o.league_players as unknown as JoinedPlayerNameClub | null
     return {
       id: o.id,
       player_id: o.player_id,
@@ -160,7 +161,7 @@ export default async function OverridesPage({
               </thead>
               <tbody className="divide-y divide-hairline">
                 {removedOverrides.map((o) => {
-                  const player = o.league_players as unknown as { full_name: string; club: string } | null
+                  const player = o.league_players as unknown as JoinedPlayerNameClub | null
                   return (
                     <tr key={o.id} className="opacity-50">
                       <td className="px-6 py-2.5">

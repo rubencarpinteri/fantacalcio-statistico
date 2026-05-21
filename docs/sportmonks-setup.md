@@ -149,15 +149,3 @@ update league_engine_config set normalize_ratings = false where league_id = '…
 | Rate-limit headroom | Inspect cron route JSON output (`rate_limit` snapshot kept in process memory; each fresh boot resets). |
 | Engine output | Trigger a round calculation in the admin UI; verify `voto_base` is close to raw SportMonks rating (passthrough mode) instead of compressed by z-normalization. |
 
----
-
-## 8. Deletion plan (after 1 week green)
-
-Separate PR, **not in this session**:
-
-- Delete `lib/ratings/fotmob.ts`, `lib/ratings/parse.ts` (or strip to a thin SportMonks-only re-export).
-- Delete `app/api/ratings/fetch/route.ts`.
-- Delete `app/api/cron/live-ratings/route.ts`.
-- Refactor `lib/live/refresh.ts` to call SportMonks.
-- Drop columns `serie_a_players.fotmob_id`, `fm_player.fotmob_player_id`, `fm_real_match.fotmob_match_id`, `fm_player_match_stats.fotmob_rating` (rename to `rating`).
-- Remove `_data/SerieAcalendar2526.csv` consumers (fixture IDs now come from SportMonks).

@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
@@ -7,6 +8,25 @@ import { writeAuditLog } from '@/lib/audit'
 import { parseLeghiLineupText } from '@/lib/lineups/parseLeghiText'
 import { normalizeName, findDbPlayer } from '@/lib/ratings/parse'
 import type { DbPlayerEntry } from '@/lib/ratings/parse'
+
+const uuid = z.string().uuid('ID non valido')
+
+const confirmedPlayerSchema = z.object({
+  playerId: uuid,
+  slotId: uuid,
+  assignedRole: z.string().nullable(),
+  isBench: z.boolean(),
+  benchOrder: z.number().int().nullable(),
+})
+
+const confirmedTeamLineupSchema = z.object({
+  teamId: uuid,
+  teamName: z.string(),
+  formationId: uuid,
+  players: z.array(confirmedPlayerSchema),
+})
+
+const MAX_PASTED_TEXT_CHARS = 100_000
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
@@ -132,6 +152,19 @@ export async function parseAndMatchAction(
   matchdayId: string,
   text: string,
 ): Promise<ParseAndMatchResult> {
+  const inputCheck = z.object({
+    matchdayId: uuid,
+    text: z.string().min(1, 'Testo vuoto').max(MAX_PASTED_TEXT_CHARS, 'Testo troppo lungo'),
+  }).safeParse({ matchdayId, text })
+  if (!inputCheck.success) {
+    return {
+      ok: false,
+      error: inputCheck.error.errors[0]?.message ?? 'Input non valido.',
+      teams: [],
+      availableTeams: [],
+    }
+  }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -418,6 +451,20 @@ export async function confirmLineupImportAction(
   matchdayId: string,
   lineups: ConfirmedTeamLineup[],
 ): Promise<ConfirmLineupImportResult> {
+  const parsed = z.object({
+    matchdayId: uuid,
+    lineups: z.array(confirmedTeamLineupSchema),
+  }).safeParse({ matchdayId, lineups })
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.errors[0]?.message ?? 'Input non valido.',
+      imported: 0,
+      skipped: 0,
+      details: [],
+    }
+  }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -558,10 +605,16 @@ export async function saveTeamLegheAliasAction(
   teamId: string,
   legheName: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  const parsed = z.object({
+    teamId: uuid,
+    legheName: z.string().trim().max(100),
+  }).safeParse({ teamId, legheName })
+  if (!parsed.success) return { ok: false, error: 'Input non valido.' }
+
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
-  const newAlias = legheName.trim()
+  const newAlias = parsed.data.legheName
   if (!newAlias) return { ok: true }
 
   // Fetch current aliases to avoid duplicates

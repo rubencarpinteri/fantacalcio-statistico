@@ -200,7 +200,7 @@ export default async function LeagueMembersPage() {
       </Card>
 
       {/* Info box */}
-      <div className="rounded-lg border border-hairline bg-[#080810] px-4 py-3 text-xs text-ink-4 space-y-1">
+      <div className="rounded-lg border border-hairline bg-surface-0 px-4 py-3 text-xs text-ink-4 space-y-1">
         <p>
           <span className="text-ink-3">Invito:</span> il manager riceve un link valido 24h. Cliccando il link, imposta la password e accede direttamente al proprio pannello.
         </p>

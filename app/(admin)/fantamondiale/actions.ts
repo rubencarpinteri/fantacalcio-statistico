@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { Route } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { requireSuperAdmin } from '@/lib/fantamondiale/server'
+import { requireSuperAdmin } from '@/lib/league'
 import { DEFAULT_FM_CONFIG } from '@/domain/fantamondiale/config/defaults'
 import type { Json } from '@/types/database.types'
 

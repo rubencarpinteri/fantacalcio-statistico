@@ -2,95 +2,12 @@
 
 import { Fragment, createContext, useContext, useState, useTransition, useRef, useEffect, useMemo } from 'react'
 import { adminOverrideLineupAction } from './actions'
-import { QuickFetchAndCalculateButton } from '@/components/ui/QuickFetchAndCalculateButton'
+import { QuickFetchAndCalculateButton } from '@/app/(admin)/campionato/giornate/[id]/calculate/QuickFetchAndCalculateButton'
+import type { SlotData, TeamLineupData, MatchupPair } from './types'
 
-// ---- Types ----------------------------------------------------------------
-
-export interface SlotData {
-  slotId: string
-  positionName: string
-  slotOrder: number
-  isBench: boolean
-  benchOrder: number | null
-  allowedRoles: string[]
-  playerId: string | null
-  playerName: string | null
-  playerClub: string | null
-  playerRoles: string[]
-  playerRatingClass: string | null
-  fantavoto: number | null
-  votoBase: number | null
-  bonusMalus: Array<{ label: string; total: number }> | null
-  zFotmob: number | null
-  minutesFactor: number | null
-  roleMultiplier: number | null
-  // Raw ratings as fetched from the source (before any z-score / engine transformation)
-  rawRating: number | null
-  // Match stats from player_match_stats
-  minutesPlayed: number | null
-  goalsScored: number | null
-  assists: number | null
-  yellowCards: number | null
-  redCards: number | null
-  saves: number | null
-  goalsConceded: number | null
-  cleanSheet: boolean | null
-  // SportMonks stats
-  shots: number | null
-  shotsOnTarget: number | null
-  bigChanceCreated: number | null
-  bigChanceMissed: number | null
-  blockedScoringAttempt: number | null
-  xg: number | null
-  xa: number | null
-  keyPasses: number | null
-  totalPasses: number | null
-  accuratePasses: number | null
-  totalLongBalls: number | null
-  accurateLongBalls: number | null
-  totalCrosses: number | null
-  successfulDribbles: number | null
-  dribbleAttempts: number | null
-  touches: number | null
-  ballCarries: number | null
-  progressiveCarries: number | null
-  dispossessed: number | null
-  possessionLostCtrl: number | null
-  tackles: number | null
-  totalTackles: number | null
-  interceptions: number | null
-  clearances: number | null
-  blockedShots: number | null
-  duelWon: number | null
-  duelLost: number | null
-  aerialWon: number | null
-  aerialLost: number | null
-  ballRecoveries: number | null
-  foulsCommitted: number | null
-  wasFouled: number | null
-  marketValue: number | null
-  height: number | null
-  assignedMantraRole: string | null
-  isBenchAssignment: boolean
-  benchOrderAssignment: number | null
-}
-
-export interface TeamLineupData {
-  teamId: string
-  teamName: string
-  formationId: string
-  formationName: string
-  submissionId: string | null
-  submissionNumber: number | null
-  slots: SlotData[]
-}
-
-export interface MatchupPair {
-  homeTeamId: string
-  awayTeamId: string
-  homeGoals: number | null
-  awayGoals: number | null
-}
+// Re-export so the existing `import type { ... } from './AllLineupsClient'`
+// callers in page.tsx keep working without churn.
+export type { SlotData, TeamLineupData, MatchupPair }
 
 interface Props {
   matchdayId: string
@@ -240,19 +157,19 @@ function fmtMarketValue(v: number): string {
 // ---- Rating colour helper --------------------------------------------------
 
 function fvColor(fv: number | null): string {
-  if (fv === null) return 'text-[#A4A9B3]'
-  if (fv < 5)  return 'text-[#DC0C00]'
-  if (fv < 6)  return 'text-[#ED7E07]'
-  if (fv < 7)  return 'text-[#D9AF00]'
-  if (fv < 8)  return 'text-[#00C424]'
-  if (fv < 9)  return 'text-[#00ADC4]'
-  return 'text-[#374DF5]'
+  if (fv === null) return 'text-ink-4'
+  if (fv < 5)  return 'text-rate-bad'
+  if (fv < 6)  return 'text-rate-low'
+  if (fv < 7)  return 'text-rate-mid'
+  if (fv < 8)  return 'text-rate-ok'
+  if (fv < 9)  return 'text-rate-good'
+  return 'text-rate-top'
 }
 
 // ---- Player detail modal ---------------------------------------------------
 
 function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => void }) {
-  const vbFm = calcSourceVotoBase(slot.zFotmob, slot.minutesFactor, slot.roleMultiplier)
+  const vbSrc = calcSourceVotoBase(slot.zRating, slot.minutesFactor, slot.roleMultiplier)
   const rcColor = RC_COLORS[slot.playerRatingClass ?? ''] ?? 'text-ink-3'
   const fv = slot.fantavoto
 
@@ -317,14 +234,14 @@ function PlayerDetailModal({ slot, onClose }: { slot: SlotData; onClose: () => v
                 <p className="text-[9px] font-bold uppercase tracking-wider mb-1" style={{ color: '#049c64' }}>SportMonks</p>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-lg font-black font-mono text-ink-1">{slot.rawRating!.toFixed(1)}</span>
-                  {vbFm !== null && (
-                    <span className={`text-[10px] font-mono ${vbFm.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
-                      → {vbFm.value.toFixed(2)}{vbFm.clamped ? ' ↑' : ''}
+                  {vbSrc !== null && (
+                    <span className={`text-[10px] font-mono ${vbSrc.clamped ? 'text-amber-700 dark:text-amber-400' : 'text-ink-3'}`}>
+                      → {vbSrc.value.toFixed(2)}{vbSrc.clamped ? ' ↑' : ''}
                     </span>
                   )}
                 </div>
               </div>
-              {(vbFm?.clamped ?? false) && (
+              {(vbSrc?.clamped ?? false) && (
                 <div className="rounded px-2 py-1 bg-amber-500/8 text-[9px] text-amber-700 dark:text-amber-400/80">
                   ↑ voto base supera il massimo (9.50) e viene limitato
                 </div>
@@ -586,25 +503,23 @@ function useTeamLineupState(team: TeamLineupData, matchdayId: string) {
       const toIdx = next.findIndex((s) => s.slotId === targetSlotId)
       if (fromIdx === -1 || toIdx === -1) return prev
 
-      const fromSlot = { ...next[fromIdx]! }
-      const toSlot = { ...next[toIdx]! }
+      const from = next[fromIdx]!
+      const to = next[toIdx]!
 
-      const swapFields = [
-        'playerId', 'playerName', 'playerClub', 'playerRoles', 'playerRatingClass',
-        'fantavoto', 'votoBase', 'bonusMalus', 'assignedMantraRole',
-      ] as const
+      const pickPlayer = (s: SlotData) => ({
+        playerId: s.playerId,
+        playerName: s.playerName,
+        playerClub: s.playerClub,
+        playerRoles: s.playerRoles,
+        playerRatingClass: s.playerRatingClass,
+        fantavoto: s.fantavoto,
+        votoBase: s.votoBase,
+        bonusMalus: s.bonusMalus,
+        assignedMantraRole: s.assignedMantraRole,
+      })
 
-      for (const field of swapFields) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tmp = (fromSlot as any)[field]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(fromSlot as any)[field] = (toSlot as any)[field]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(toSlot as any)[field] = tmp
-      }
-
-      next[fromIdx] = fromSlot
-      next[toIdx] = toSlot
+      next[fromIdx] = { ...from, ...pickPlayer(to) }
+      next[toIdx] = { ...to, ...pickPlayer(from) }
       return next
     })
     setIsDirty(true)

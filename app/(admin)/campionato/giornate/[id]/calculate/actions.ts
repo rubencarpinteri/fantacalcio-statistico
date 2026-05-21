@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
@@ -9,6 +10,8 @@ import { buildEngineConfig } from '@/domain/engine/v1/config'
 import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
 import type { EnginePlayerInput, PlayerCalculationResult } from '@/domain/engine/v1/types'
 import type { Json, RatingClass } from '@/types/database.types'
+
+const uuid = z.string().uuid('ID non valido')
 
 function applyRounding(value: number | null, mode: string): number | null {
   if (value === null) return null
@@ -42,12 +45,14 @@ export interface TriggerCalculationResult {
 export async function triggerCalculationAction(
   matchdayId: string
 ): Promise<TriggerCalculationResult> {
-  const ctx = await requireLeagueAdmin()
-  const supabase = await createClient()
-
   const fail = (error: string): TriggerCalculationResult => ({
     error, run_id: null, run_number: null, scored_count: 0, skipped_count: 0, override_count: 0,
   })
+
+  if (!uuid.safeParse(matchdayId).success) return fail('ID giornata non valido.')
+
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
 
   // Verify matchday belongs to this league and is in a calculable status
   const { data: matchday } = await supabase
@@ -307,12 +312,15 @@ export async function publishCalculationAction(
   matchdayId: string,
   runId: string
 ): Promise<PublishCalculationResult> {
-  const ctx = await requireLeagueAdmin()
-  const supabase = await createClient()
-
   const fail = (error: string): PublishCalculationResult => ({
     error, success: false, competitions_updated: [],
   })
+
+  const parsed = z.object({ matchdayId: uuid, runId: uuid }).safeParse({ matchdayId, runId })
+  if (!parsed.success) return fail('ID non validi.')
+
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
 
   // Verify run belongs to this matchday + league
   const { data: run } = await supabase

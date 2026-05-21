@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
@@ -8,6 +9,31 @@ import { computeRoundAction } from '@/app/(admin)/competitions/[id]/actions'
 import { normalizeName } from '@/lib/ratings/parse'
 import type { BonusMalusItem } from '@/domain/engine/v1/types'
 import * as XLSX from 'xlsx'
+
+const uuid = z.string().uuid('ID non valido')
+
+const teamLineupSchema = z.object({
+  teamId: uuid,
+  name: z.string(),
+  starters: z.array(z.object({
+    name: z.string(),
+    isNv: z.boolean(),
+    role: z.string(),
+    legheFantavoto: z.number().nullable(),
+  })),
+  bench: z.array(z.object({ name: z.string(), role: z.string() })),
+  subAssignments: z.record(z.string()),
+  playersPlayed: z.number().int().min(0),
+  nvCount: z.number().int().min(0),
+  legheTotal: z.number().nullable(),
+})
+
+const importPayloadSchema = z.object({
+  matchday_id: uuid,
+  team_lineups: z.array(teamLineupSchema),
+})
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024 // 5 MB
 
 // ─── xlsx → rows parser ───────────────────────────────────────────────────────
 
@@ -165,6 +191,9 @@ export async function parseLegheCSVAction(
     const ctx = await requireLeagueAdmin()
     const file = formData.get('file') as File | null
     if (!file || file.size === 0) return { ok: false, error: 'Nessun file selezionato.' }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return { ok: false, error: 'File troppo grande (massimo 5 MB).' }
+    }
 
     const buffer = await file.arrayBuffer()
     const rows = fileToRows(buffer)
@@ -374,8 +403,18 @@ export async function previewScoresAction(
 ): Promise<PreviewScoresState> {
   try {
     const ctx = await requireLeagueAdmin()
-    const matchdayId = formData.get('matchday_id') as string
-    const teamLineups = JSON.parse(formData.get('team_lineups') as string) as TeamLineupInput[]
+
+    let rawTeamLineups: unknown
+    try { rawTeamLineups = JSON.parse(formData.get('team_lineups') as string) } catch { return { ok: false, error: 'Payload JSON non valido.' } }
+
+    const parsed = importPayloadSchema.safeParse({
+      matchday_id: formData.get('matchday_id'),
+      team_lineups: rawTeamLineups,
+    })
+    if (!parsed.success) {
+      return { ok: false, error: 'Input non valido: ' + (parsed.error.errors[0]?.message ?? '') }
+    }
+    const { matchday_id: matchdayId, team_lineups: teamLineups } = parsed.data
 
     const supabase = await createClient()
     const lookupResult = await buildCalcLookup(matchdayId, supabase, ctx)
@@ -441,9 +480,16 @@ export async function confirmLegheImportAction(
 ): Promise<ConfirmState> {
   try {
     const ctx = await requireLeagueAdmin()
-    const matchdayId = formData.get('matchday_id') as string
 
-    const teamLineups = JSON.parse(formData.get('team_lineups') as string) as TeamLineupInput[]
+    let rawTeamLineups: unknown
+    try { rawTeamLineups = JSON.parse(formData.get('team_lineups') as string) } catch { return { ok: false, error: 'Payload JSON non valido.' } }
+
+    const parsed = importPayloadSchema.safeParse({
+      matchday_id: formData.get('matchday_id'),
+      team_lineups: rawTeamLineups,
+    })
+    if (!parsed.success) return { ok: false, error: 'Input non valido.' }
+    const { matchday_id: matchdayId, team_lineups: teamLineups } = parsed.data
 
     if (teamLineups.length === 0) return { ok: false, error: 'Nessuna squadra da importare.' }
 
