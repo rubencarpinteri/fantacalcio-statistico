@@ -3,25 +3,7 @@
 import { useState, useTransition } from 'react'
 import { saveConfigAction } from './actions'
 import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
-
-// ── Engine preview computation (client-side) ────────────────────────────────
-
-function computeVotoBase(
-  rating: number,
-  mean: number,
-  std: number,
-  targetMean: number,
-  targetStd: number,
-  multiplier: number,
-  minutesFactor: number
-): number {
-  const z = (rating - mean) / std
-  const b0 = targetMean + targetStd * z * minutesFactor
-  const b1 = targetMean + multiplier * (b0 - targetMean)
-  return Math.max(3, Math.min(10, Math.round(b1 * 100) / 100))
-}
-
-const PREVIEW_RATINGS = [5.5, 6.0, 6.3, 6.5, 6.7, 7.0, 7.3, 7.5, 8.0, 8.5, 9.0]
+import { ratingToVotoBase } from '@/domain/fantamondiale/engine/playerScore'
 
 // ── Bracket editor ───────────────────────────────────────────────────────────
 
@@ -99,6 +81,20 @@ function BracketEditor({
   )
 }
 
+// ── Pivot conversion preview ────────────────────────────────────────────────
+
+const PREVIEW_RATINGS: Array<[number, string]> = [
+  [3.00,  'minimo SportMonks'],
+  [5.50,  'brutta prova'],
+  [6.45,  'tipica (mode)'],
+  [6.50,  'baseline kickoff · pivot'],
+  [6.72,  'media SportMonks'],
+  [7.50,  'molto buona'],
+  [8.50,  'ottima'],
+  [9.50,  'top'],
+  [10.00, 'massimo · ancoraggio'],
+]
+
 // ── Main editor ──────────────────────────────────────────────────────────────
 
 export function FMConfigEditor({
@@ -150,6 +146,9 @@ export function FMConfigEditor({
   }
 
   const eng = cfg.engine
+  const slope = eng.pivot_rating < eng.voto_max
+    ? (eng.voto_max - eng.pivot_vote) / (eng.voto_max - eng.pivot_rating)
+    : 1
 
   return (
     <div className="space-y-6">
@@ -172,17 +171,35 @@ export function FMConfigEditor({
         </div>
       )}
 
-      {/* ── Engine normalization ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-4">
-        <p className="text-[13px] font-semibold text-ink-1">Engine v2.0 — Normalizzazione voto</p>
+      {/* ── Engine pivot ── */}
+      <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-5 space-y-4">
+        <div>
+          <p className="text-[13px] font-semibold text-indigo-300">Motore v3.0 — Scala voto base (pivot)</p>
+          <p className="mt-1 text-[11px] text-ink-3 leading-relaxed">
+            Stessa logica del Campionato: una sola retta ancora la baseline SportMonks al voto italiano,
+            con (10 → 10) per costruzione. Il bonus/malus si somma dopo.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-hairline bg-transparent p-3 space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">Formula</p>
+          <p className="font-mono text-[11px] text-indigo-200">
+            voto_base = {eng.pivot_vote.toFixed(2)} + {slope.toFixed(4)} × (rating − {eng.pivot_rating.toFixed(2)})
+          </p>
+          <p className="text-[11px] text-ink-4">
+            Pendenza = ({eng.voto_max} − {eng.pivot_vote.toFixed(2)}) / ({eng.voto_max} − {eng.pivot_rating.toFixed(2)}) ={' '}
+            <span className="font-mono text-ink-1">{slope.toFixed(4)}</span>.
+            Cappato tra {eng.voto_min.toFixed(0)} e {eng.voto_max.toFixed(0)}.
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {(
             [
-              ['rating_mean', 'Media voto', 0.01],
-              ['rating_std', 'Dev. Std voto', 0.01],
-              ['target_mean_vote', 'Media voto target', 0.1],
-              ['target_vote_std', 'Spread voto target', 0.01],
+              ['pivot_rating', 'Pivot — rating SM', 0.01],
+              ['pivot_vote',   'Pivot — voto base', 0.01],
+              ['minutes_min_for_voto', 'Min minuti per voto', 1],
+              ['base_score', 'Voto base (eccezioni)', 0.1],
             ] as const
           ).map(([key, label, step]) => (
             <div key={key}>
@@ -190,81 +207,47 @@ export function FMConfigEditor({
               <input
                 type="number"
                 step={step}
-                value={eng[key as keyof typeof eng] as number}
-                onChange={(e) => updateEngine(key as keyof typeof eng, Number(e.target.value) as never)}
+                value={eng[key]}
+                onChange={(e) => updateEngine(key, Number(e.target.value) as never)}
                 className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {(
-            [['P', 'Moltiplicatore P'], ['D', 'Moltiplicatore D'], ['C', 'Moltiplicatore C'], ['A', 'Moltiplicatore A']] as const
-          ).map(([role, label]) => (
-            <div key={role}>
-              <label className="block text-[9px] uppercase tracking-wider text-ink-5 mb-1 font-semibold">{label}</label>
-              <input
-                type="number" step={0.01}
-                value={eng.role_multiplier[role]}
-                onChange={(e) => updateEngine('role_multiplier', { ...eng.role_multiplier, [role]: Number(e.target.value) })}
-                className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* ── Live preview table ── */}
+        {/* ── Live conversion table ── */}
         <div>
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-ink-5">
-            Preview voto_base (90′, tutte le posizioni)
+            Tabella di conversione
           </p>
           <div className="overflow-x-auto rounded-lg border border-hairline">
             <table className="w-full text-[11px] tabular-nums">
               <thead>
                 <tr className="border-b border-hairline text-ink-5">
-                  <th className="px-3 py-2 text-left font-semibold">Voto</th>
-                  {(['P', 'D', 'C', 'A'] as const).map((r) => (
-                    <th key={r} className="px-3 py-2 text-right font-semibold">{r}</th>
-                  ))}
+                  <th className="px-3 py-2 text-left font-semibold">Rating SportMonks</th>
+                  <th className="px-3 py-2 text-left font-semibold">Note</th>
+                  <th className="px-3 py-2 text-right font-semibold">Voto base</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {PREVIEW_RATINGS.map((rating) => (
-                  <tr key={rating} className={rating === eng.rating_mean ? 'bg-indigo-500/10' : ''}>
-                    <td className="px-3 py-1.5 font-mono text-ink-3">
-                      {rating.toFixed(1)}
-                      {rating === eng.rating_mean ? ' ← media' : ''}
-                    </td>
-                    {(['P', 'D', 'C', 'A'] as const).map((role) => {
-                      const vb = computeVotoBase(
-                        rating,
-                        eng.rating_mean,
-                        eng.rating_std,
-                        eng.target_mean_vote,
-                        eng.target_vote_std,
-                        eng.role_multiplier[role],
-                        1.0
-                      )
-                      const diff = vb - eng.target_mean_vote
-                      return (
-                        <td
-                          key={role}
-                          className={`px-3 py-1.5 text-right font-mono ${
-                            diff > 0.5 ? 'text-emerald-400' : diff < -0.5 ? 'text-rose-400' : 'text-ink-2'
-                          }`}
-                        >
-                          {vb.toFixed(2)}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
+                {PREVIEW_RATINGS.map(([rating, label]) => {
+                  const isAnchor = rating === eng.pivot_rating || rating === eng.voto_max
+                  const vb = ratingToVotoBase(rating, eng)
+                  return (
+                    <tr key={rating} className={isAnchor ? 'bg-indigo-500/10' : ''}>
+                      <td className="px-3 py-1.5 font-mono text-ink-1">{rating.toFixed(2)}</td>
+                      <td className="px-3 py-1.5 text-ink-3">{label}</td>
+                      <td className={`px-3 py-1.5 text-right font-mono font-semibold ${isAnchor ? 'text-indigo-300' : 'text-ink-1'}`}>
+                        {vb.toFixed(2)}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
           <p className="mt-1 text-[9px] text-ink-5">
-            Riga evidenziata = rating medio ({eng.rating_mean}) → voto target ({eng.target_mean_vote}).
+            Righe evidenziate = ancoraggi della retta (pivot e massimo).
           </p>
         </div>
       </div>

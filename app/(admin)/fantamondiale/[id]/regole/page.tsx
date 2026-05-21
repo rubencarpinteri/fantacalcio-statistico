@@ -48,22 +48,33 @@ export default async function RegolePage({ params }: { params: Promise<{ id: str
       </Section>
 
       <Section title="Motore di calcolo">
+        <p className="mb-3 text-[11px] text-ink-5 leading-relaxed">
+          Motore v3.0 &ldquo;Pivot + Bonus&rdquo;, identico al Campionato. Una sola retta lega il rating SportMonks
+          al voto italiano, con (10 → 10) per costruzione.
+        </p>
+        <div className="mb-3 rounded-lg border border-hairline bg-glass-2 px-3 py-2 font-mono text-[11px] text-indigo-200">
+          voto_base = {config.engine.pivot_vote.toFixed(2)} + slope × (rating − {config.engine.pivot_rating.toFixed(2)})
+        </div>
         <div className="space-y-2 text-[13px]">
           <div className="flex justify-between">
-            <span className="text-ink-4">Media voto</span>
-            <span className="font-medium text-ink-1 tabular-nums">{config.engine.rating_mean}</span>
+            <span className="text-ink-4">Pivot rating (SportMonks)</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.pivot_rating.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-ink-4">Std voto</span>
-            <span className="font-medium text-ink-1 tabular-nums">{config.engine.rating_std}</span>
+            <span className="text-ink-4">Pivot voto base</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.pivot_vote.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-ink-4">Std voto base target</span>
-            <span className="font-medium text-ink-1 tabular-nums">{config.engine.target_vote_std}</span>
+            <span className="text-ink-4">Gate minuti (s.v. se inferiore)</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.minutes_min_for_voto} min</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-ink-4">Soglia minuti</span>
-            <span className="font-medium text-ink-1 tabular-nums">{config.engine.minutes_threshold} min</span>
+            <span className="text-ink-4">Voto base eccezioni</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.base_score.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-ink-4">Scala voto base</span>
+            <span className="font-medium text-ink-1 tabular-nums">{config.engine.voto_min} – {config.engine.voto_max}</span>
           </div>
         </div>
       </Section>

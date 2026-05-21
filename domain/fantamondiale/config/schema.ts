@@ -114,26 +114,30 @@ export const fmCoachTierMatrixSchema = z.object({
 })
 export type FMCoachTierMatrix = z.infer<typeof fmCoachTierMatrixSchema>
 
-// ---- Engine v2.0 normalization (WC-tuned) ------------------
+// ---- Engine v3.0 — Pivot + Bonus (aligned with Serie A) ---
 
+/**
+ * Player rating engine. Same architecture as the Serie A engine:
+ *   voto_base = pivot_vote + slope × (rating − pivot_rating)
+ *   slope     = (voto_max − pivot_vote) / (voto_max − pivot_rating)
+ *
+ * Defaults map SportMonks 6.50 (kickoff baseline) → voto 6.00.
+ * Below `minutes_min_for_voto` the rating is discarded and the
+ * player is "s.v." unless a decisive event fires (in which case
+ * voto_base = base_score and only B/M applies).
+ */
 export const fmEngineConfigSchema = z.object({
-  rating_mean: z.number().min(5).max(8),
-  rating_std: z.number().min(0.2).max(2),
-  /** Minutes threshold for partial vs full z weight. */
-  minutes_threshold: z.number().int().min(0).max(120),
-  minutes_partial: z.number().min(0).max(1),
-  minutes_full: z.number().min(0).max(2),
-  /** Role multipliers expand/compress the rating signal around target_mean_vote. */
-  role_multiplier: z.object({
-    P: z.number().min(0).max(3),
-    D: z.number().min(0).max(3),
-    C: z.number().min(0).max(3),
-    A: z.number().min(0).max(3),
-  }),
-  target_mean_vote: z.number().min(0).max(10),
-  target_vote_std: z.number().min(0).max(3),
-  voto_base_min: z.number().min(0).max(10),
-  voto_base_max: z.number().min(0).max(10),
+  /** SportMonks rating that pivots to `pivot_vote`. */
+  pivot_rating: z.number().min(3).max(10),
+  /** Italian voto base that the pivot_rating maps to. */
+  pivot_vote: z.number().min(1).max(10),
+  /** Hard clamp on the voto base (1..10 by default). */
+  voto_min: z.number().min(0).max(10),
+  voto_max: z.number().min(0).max(10),
+  /** Below this minute count the rating is discarded (s.v. rule). */
+  minutes_min_for_voto: z.number().int().min(0).max(90),
+  /** Baseline used when a decisive event fires for a <min-minutes player. */
+  base_score: z.number().min(1).max(10),
 })
 export type FMEngineConfig = z.infer<typeof fmEngineConfigSchema>
 

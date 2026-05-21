@@ -1,22 +1,17 @@
 // ============================================================
 // FantaMondiale Statistico — Default Competition Config
 // ============================================================
-// Authoritative defaults for the 2026 WC competition.
+// Defaults for the 2026 WC competition.
 //
-// Engine v2.0 parameters are tuned for international football:
-//   - rating_mean: 6.70 (slightly below Serie A's 6.87 — WC has
-//     more mismatched fixtures and underdog losses, especially
-//     in the 48-team group stage).
-//   - rating_std:  0.60 (tighter than Serie A's 0.79 — SportMonks
-//     ratings cluster more tightly in international football,
-//     so we amplify the signal by normalizing with a smaller
-//     spread).
-//   - target_vote_std: 0.85 (slightly wider than Serie A's 0.75
-//     to project the tighter z-distribution onto a more visible
-//     voto_base range).
+// Player rating engine is the v3.0 "Pivot + Bonus" engine,
+// aligned 1:1 with the Serie A engine: SportMonks 6.50 (kickoff
+// baseline) → voto 6.00 (Italian sufficienza); (10, 10) anchor
+// implicit. The < 15 min rule with decisive-event exception is
+// identical.
 //
-// EVERY value here is editable in the admin config screen with
-// a live engine preview.
+// FM-specific game mechanics (MVP brackets, popularity penalties,
+// coach tier matrix, Battle Royale thresholds) stay separate and
+// apply after the rating → voto_base step.
 // ============================================================
 
 import type {
@@ -26,21 +21,12 @@ import type {
 } from './schema'
 
 const DEFAULT_ENGINE: FMEngineConfig = {
-  rating_mean: 6.70,
-  rating_std: 0.60,
-  minutes_threshold: 45,
-  minutes_partial: 0.50,
-  minutes_full: 1.00,
-  role_multiplier: {
-    P: 1.15,
-    D: 1.10,
-    C: 1.00,
-    A: 0.97,
-  },
-  target_mean_vote: 6.00,
-  target_vote_std: 0.85,
-  voto_base_min: 3.0,
-  voto_base_max: 10.0,
+  pivot_rating: 6.50,
+  pivot_vote:   6.00,
+  voto_min:     1.0,
+  voto_max:     10.0,
+  minutes_min_for_voto: 15,
+  base_score:   6.0,
 }
 
 // 5 brackets, ascending. Larger penalty = more popular pick.
