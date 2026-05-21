@@ -90,9 +90,18 @@ export async function loadMatchdaySnapshot(
        rating, minutes_played,
        goals_scored, assists, own_goals, yellow_cards, red_cards,
        penalties_scored, penalties_missed, penalties_saved,
-       clean_sheet, goals_conceded, is_provisional`
+       clean_sheet, goals_conceded, is_provisional, is_mvp`
     )
     .eq('matchday_id', matchdayId)
+
+  // 4b. Ownership snapshot (empty if not yet frozen).
+  const { data: dbOwnership } = await supabase
+    .from('matchday_player_ownership')
+    .select('player_id, ownership_pct')
+    .eq('matchday_id', matchdayId)
+  const ownershipByPlayerId = new Map<string, number>(
+    (dbOwnership ?? []).map((r) => [r.player_id, Number(r.ownership_pct)])
+  )
 
   const playerStats: EnginePlayerInput[] = (dbStats ?? []).map((s) => {
     const rc =
@@ -116,6 +125,8 @@ export async function loadMatchdaySnapshot(
       penalties_saved:  s.penalties_saved,
       clean_sheet:      s.clean_sheet,
       goals_conceded:   s.goals_conceded,
+      is_mvp:           s.is_mvp,
+      ownership_pct:    ownershipByPlayerId.get(s.player_id) ?? 0,
     }
   })
 

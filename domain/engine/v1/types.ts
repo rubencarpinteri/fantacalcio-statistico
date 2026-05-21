@@ -1,7 +1,13 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v3.0 — Types
+// Fantacalcio Statistico — Rating Engine v3.1 — Types
 // ============================================================
-// Single-source: SportMonks. "Pivot + Bonus" engine.
+// Single-source: SportMonks. "Pivot + Bonus + Ownership/MVP" engine.
+//
+// Per-player pipeline:
+//   voto_base    = clamp( pivot_vote + slope×(rating−pivot_rating), 1, 10 )
+//   raw_subtotal = voto_base + football_bonus − football_malus    (no clamp)
+//   penalty      = |raw_subtotal| × popularity_pct/100
+//   final/fantavoto = (raw_subtotal − penalty) × (1 + mvp_pct/100) (no clamp)
 // ============================================================
 
 import type { RatingClass } from '@/types/database.types'
@@ -12,12 +18,11 @@ import type { RatingClass } from '@/types/database.types'
 export interface EnginePlayerInput {
   player_id: string
   stats_id: string
-  /** Effective rating class: override takes precedence over stored class. E is resolved before this point. */
   rating_class: RatingClass
   minutes_played: number
   is_provisional: boolean
 
-  /** SportMonks rating — null when the source hasn't provided data for this player yet (e.g. early-live match). */
+  /** SportMonks rating — null when source hasn't published yet. */
   rating: number | null
 
   // Event counts
@@ -31,59 +36,66 @@ export interface EnginePlayerInput {
   penalties_saved: number     // GK only in practice
   clean_sheet: boolean
   goals_conceded: number
+
+  /** True if this player had the highest SportMonks rating in their match. */
+  is_mvp: boolean
+
+  /** Frozen at lineup deadline. 0 if no snapshot yet (engine skips MVP/penalty). */
+  ownership_pct: number
 }
 
 // ---- Config types ------------------------------------------
 
 export interface BonusMalusConfig {
-  /** Per-role goal bonus (regular goal). GK > DEF > MID > ATT. */
   goal_by_role: Record<RatingClass, number>
-  /** Penalty goal = goal_by_role[rc] - penalty_scored_discount */
   penalty_scored_discount: number
   assist: number
   own_goal: number
   yellow_card: number
   red_card: number
   penalty_missed: number
-  /** Applies only to GK */
   penalty_saved: number
-  /** Per-role clean sheet bonus (only if minutes_played >= clean_sheet_min_minutes) */
   clean_sheet_by_role: Partial<Record<RatingClass, number>>
   clean_sheet_min_minutes: number
-  /** Per-role goals conceded malus — negative values */
   goals_conceded_by_role: Partial<Record<RatingClass, number>>
-  /** DEF goals conceded only applies if minutes_played >= this threshold */
   goals_conceded_def_min_minutes: number
-  /** Extra bonus for exactly 2 goals in the match */
   brace_bonus: number
-  /** Extra bonus for 3+ goals in the match (replaces, does not stack with brace_bonus) */
   hat_trick_bonus: number
 }
+
+/** Ownership-band ladder for MVP bonus / popularity penalty. */
+export interface OwnershipBracket {
+  min_pct: number
+  max_pct: number
+  /** Penalty/bonus as a percentage of |raw_subtotal|. */
+  pct: number
+}
+
+export type CalcOrder = 'mvp_then_penalty' | 'penalty_then_mvp'
 
 export interface EngineConfig {
   engine_version: string
 
-  /**
-   * Pivot point of the rating → voto_base line.
-   *   voto_base = pivot_vote + slope × (rating − pivot_rating)
-   *   slope     = (voto_max − pivot_vote) / (voto_max − pivot_rating)
-   *
-   * Default: SportMonks 6.50 (kickoff baseline) → voto 6.00 (sufficienza)
-   */
+  /** Pivot anchors for the rating → voto_base line. */
   pivot_rating: number
   pivot_vote: number
 
-  /** Hard scale bounds for fantavoto. Default 1.0 – 10.0. */
+  /** Hard bounds for voto_base (NOT for final fantavoto). */
   voto_min: number
   voto_max: number
 
-  /** Below this minute count, the rating is discarded ("s.v." rule). */
+  /** Below this minute count the rating is discarded (s.v. rule). */
   minutes_min_for_voto: number
 
-  /** Baseline used when <15 min played but a decisive event fires. */
+  /** Baseline used when a decisive event fires for a <min-minutes player. */
   base_score: number
 
   bonus_malus: BonusMalusConfig
+
+  /** Trademark trio — identical structure on FM. */
+  popularity_brackets: OwnershipBracket[]
+  mvp_bonus_brackets: OwnershipBracket[]
+  calc_order: CalcOrder
 }
 
 // ---- BM item -----------------------------------------------
@@ -103,24 +115,33 @@ export interface PlayerCalculationResult {
   stats_id: string
   is_provisional: boolean
 
-  /**
-   * True when player played < minutes_min_for_voto but had a decisive event.
-   * voto_base = base_score (6.0); B/M applied.
-   */
   decisive_event_exception: boolean
-
-  /**
-   * True when the player had enough minutes but the SportMonks rating was
-   * not yet available (e.g. early in a live match).
-   * voto_base = base_score (6.0); B/M applied.
-   */
   no_ratings_exception: boolean
 
-  /** Always set: base_score (6.0) for exception paths, pivot-formula output otherwise. */
+  /** Rating-derived voto, clamped 1–10. */
   voto_base: number
 
   bonus_malus_breakdown: BonusMalusItem[]
   total_bonus_malus: number
+
+  /** voto_base + bonus − malus. NOT clamped. */
+  raw_subtotal: number
+
+  /** Frozen ownership % at lineup deadline (0 if no snapshot yet). */
+  ownership_pct: number
+
+  /** MVP bonus, looked up from mvp_bonus_brackets. 0 if not MVP. */
+  mvp_bonus_pct: number
+  mvp_bonus_amount: number
+
+  /** Popularity penalty, looked up from popularity_brackets. Always applies. */
+  popularity_penalty_pct: number
+  popularity_penalty_amount: number
+
+  /**
+   * Final fantavoto = (raw_subtotal − popularity_penalty) × (1 + mvp_bonus/100)
+   * No clamp — can exceed voto_max or go negative.
+   */
   fantavoto: number
 }
 

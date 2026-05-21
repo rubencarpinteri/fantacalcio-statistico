@@ -17,10 +17,18 @@ export interface CalcPlayerRow {
   voto_base: number | null
   bonus_malus_breakdown: unknown
   total_bonus_malus: number | null
+  raw_subtotal: number | null
+  ownership_pct: number | null
+  mvp_bonus_pct: number | null
+  mvp_bonus_amount: number | null
+  popularity_penalty_pct: number | null
+  popularity_penalty_amount: number | null
   fantavoto: number | null
   is_override: boolean
   /** SportMonks rating used as engine input (null = no rating, e.g. live match). Read from player_match_stats. */
   rating: number | null
+  /** True if player was the highest-rated player in his match. */
+  is_mvp: boolean
   /** Minutes played (used to flag the s.v. and no-ratings cases). */
   minutes_played: number
   league_players: { full_name: string; club: string; rating_class: string } | null
@@ -417,9 +425,9 @@ export function CalculationPreview({
                     <th className="px-6 py-2.5 sticky left-0 bg-glass-1">Giocatore</th>
                     <th className="px-4 py-2.5">Classe</th>
                     <th className="px-4 py-2.5 text-right">Min</th>
-                    <th className="px-4 py-2.5 text-right">Rating SM</th>
                     <th className="px-4 py-2.5 text-right">Voto base</th>
                     <th className="px-4 py-2.5 text-right">B/M</th>
+                    <th className="px-4 py-2.5 text-right">Own%</th>
                     <th className="px-4 py-2.5 text-right font-bold text-ink-1">Fantavoto</th>
                     <th className="px-4 py-2.5 w-16"></th>
                   </tr>
@@ -452,18 +460,21 @@ export function CalculationPreview({
                             {c.minutes_played}&apos;
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-ink-3">
-                            {fmt(c.rating)}
-                          </td>
-                          <td className="px-4 py-2.5 text-right font-mono text-ink-3">
                             {fmt(c.voto_base)}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono">
                             {breakdown ? <BMBreakdown breakdown={breakdown} /> : <span className="text-ink-4">—</span>}
                           </td>
+                          <td className="px-4 py-2.5 text-right font-mono text-ink-3">
+                            {c.ownership_pct !== null ? `${c.ownership_pct.toFixed(0)}%` : '—'}
+                          </td>
                           <td className="px-4 py-2.5 text-right font-mono font-bold">
-                            <span className={isNV ? 'text-ink-4' : 'text-ink-1'}>
+                            <span className={isNV ? 'text-ink-4' : c.fantavoto !== null && c.fantavoto < 0 ? 'text-rose-400' : 'text-ink-1'}>
                               {fmtFv(c.fantavoto)}
                             </span>
+                            {c.is_mvp && (
+                              <span className="ml-1 text-[10px] text-amber-400" title="MVP del match">★</span>
+                            )}
                             {c.is_provisional && (
                               <span className="ml-1.5 text-xs text-amber-400">~</span>
                             )}
@@ -473,7 +484,7 @@ export function CalculationPreview({
                               </span>
                             )}
                             {c.is_override && (
-                              <span className="ml-1.5 text-xs text-orange-400">★</span>
+                              <span className="ml-1.5 text-xs text-orange-400">⚙</span>
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
@@ -502,6 +513,14 @@ export function CalculationPreview({
                                   ['Minuti', `${c.minutes_played}'`],
                                   ['Voto base', fmt(c.voto_base)],
                                   ['Tot B/M', fmt(c.total_bonus_malus)],
+                                  ['Raw subtotal', fmt(c.raw_subtotal)],
+                                  ['Ownership', c.ownership_pct !== null ? `${c.ownership_pct.toFixed(1)}%` : '—'],
+                                  ['Penalità popolarità', c.popularity_penalty_amount !== null && c.popularity_penalty_pct !== null
+                                    ? `−${c.popularity_penalty_amount.toFixed(2)} (${c.popularity_penalty_pct.toFixed(0)}%)`
+                                    : '—'],
+                                  [c.is_mvp ? 'Bonus MVP' : 'MVP', c.is_mvp && c.mvp_bonus_amount !== null && c.mvp_bonus_pct !== null
+                                    ? `+${c.mvp_bonus_amount.toFixed(2)} (${c.mvp_bonus_pct.toFixed(0)}%)`
+                                    : '—'],
                                   ['Fantavoto', fmtFv(c.fantavoto)],
                                 ].map(([label, value]) => (
                                   <div key={label} className="flex justify-between gap-2">

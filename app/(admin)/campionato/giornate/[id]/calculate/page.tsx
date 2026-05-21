@@ -66,6 +66,12 @@ export default async function CalculatePage({
         voto_base,
         bonus_malus_breakdown,
         total_bonus_malus,
+        raw_subtotal,
+        ownership_pct,
+        mvp_bonus_pct,
+        mvp_bonus_amount,
+        popularity_penalty_pct,
+        popularity_penalty_amount,
         fantavoto,
         is_override,
         league_players ( full_name, club, rating_class )
@@ -73,21 +79,22 @@ export default async function CalculatePage({
       .eq('run_id', previewRunId)
       .order('fantavoto', { ascending: false, nullsFirst: false })
 
-    // Augment each calc row with rating + minutes from player_match_stats for the same matchday.
+    // Augment each calc row with rating + minutes + is_mvp from player_match_stats.
     const playerIds = (calcs ?? []).map((c) => c.player_id)
     const { data: statsForCalcs } = playerIds.length > 0
       ? await supabase
           .from('player_match_stats')
-          .select('player_id, rating, minutes_played')
+          .select('player_id, rating, minutes_played, is_mvp')
           .eq('matchday_id', matchdayId)
           .in('player_id', playerIds)
       : { data: [] }
 
-    const statsByPlayerId = new Map<string, { rating: number | null; minutes_played: number }>()
+    const statsByPlayerId = new Map<string, { rating: number | null; minutes_played: number; is_mvp: boolean }>()
     for (const s of statsForCalcs ?? []) {
       statsByPlayerId.set(s.player_id, {
         rating: s.rating,
         minutes_played: s.minutes_played ?? 0,
+        is_mvp: s.is_mvp ?? false,
       })
     }
 
@@ -97,6 +104,7 @@ export default async function CalculatePage({
         ...c,
         rating: st?.rating ?? null,
         minutes_played: st?.minutes_played ?? 0,
+        is_mvp: st?.is_mvp ?? false,
       }
     }) as unknown as CalcPlayerRow[]
   }

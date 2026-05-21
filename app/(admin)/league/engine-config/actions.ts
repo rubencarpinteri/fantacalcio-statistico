@@ -5,8 +5,15 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
+import type { Json } from '@/types/database.types'
 
 // ── Validation schema ────────────────────────────────────────────────────────
+
+const bracketSchema = z.object({
+  min_pct: z.number().min(0).max(100),
+  max_pct: z.number().min(0).max(100),
+  pct:     z.number().min(0).max(100),
+})
 
 const EngineConfigSchema = z.object({
   // Pivot anchor — rating → voto_base
@@ -40,11 +47,28 @@ const EngineConfigSchema = z.object({
   goals_conceded_gk:               z.coerce.number().min(-5).max(0),
   goals_conceded_def:              z.coerce.number().min(-5).max(0),
   goals_conceded_def_min_minutes:  z.coerce.number().int().min(1).max(90),
+
+  // Trademark — ownership-driven adjustment
+  popularity_brackets_json: z.string(),
+  mvp_bonus_brackets_json:  z.string(),
+  calc_order:               z.enum(['mvp_then_penalty', 'penalty_then_mvp']),
 })
 
 export interface SaveEngineConfigResult {
   error: string | null
   success: boolean
+}
+
+function parseBracketsField(json: string, label: string): { ok: true; value: Json } | { ok: false; error: string } {
+  let raw: unknown
+  try { raw = JSON.parse(json) } catch { return { ok: false, error: `${label}: JSON non valido.` } }
+  const parsed = z.array(bracketSchema).min(1).safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, error: `${label}: ${parsed.error.errors[0]?.message ?? 'forma non valida'}.` }
+  }
+  // Sort by min_pct ascending so DB always sees ordered ladder
+  const sorted = [...parsed.data].sort((a, b) => a.min_pct - b.min_pct)
+  return { ok: true, value: sorted as unknown as Json }
 }
 
 // ── Action ───────────────────────────────────────────────────────────────────
@@ -68,8 +92,18 @@ export async function saveEngineConfigAction(
     return { error: 'pivot_rating: deve essere minore di 10 (l\'ancoraggio 10→10 è implicito).', success: false }
   }
 
+  const popParsed = parseBracketsField(parsed.data.popularity_brackets_json, 'Fasce popolarità')
+  if (!popParsed.ok) return { error: popParsed.error, success: false }
+  const mvpParsed = parseBracketsField(parsed.data.mvp_bonus_brackets_json,  'Fasce MVP')
+  if (!mvpParsed.ok) return { error: mvpParsed.error, success: false }
+
+  const { popularity_brackets_json: _p, mvp_bonus_brackets_json: _m, ...flat } = parsed.data
+  void _p; void _m
+
   const values = {
-    ...parsed.data,
+    ...flat,
+    popularity_brackets: popParsed.value,
+    mvp_bonus_brackets:  mvpParsed.value,
     league_id:  ctx.league.id,
     updated_at: new Date().toISOString(),
   }
@@ -87,7 +121,7 @@ export async function saveEngineConfigAction(
     actionType: 'league_settings_change',
     entityType: 'league_engine_config',
     entityId: ctx.league.id,
-    afterJson: parsed.data,
+    afterJson: values as unknown as Json,
   })
 
   revalidatePath('/league/engine-config')

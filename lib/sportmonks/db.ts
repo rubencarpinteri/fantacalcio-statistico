@@ -364,6 +364,7 @@ export async function upsertFMPlayerStats(
       minutes_played: p.minutes_played,
       rating: p.rating,
       goals: p.goals_scored,
+      penalties_scored: p.penalties_scored,
       assists: p.assists,
       yellow_cards: p.yellow_cards,
       red_cards: p.red_cards,
@@ -494,6 +495,7 @@ export async function upsertSerieAPlayerStats(
       own_goals: p.own_goals,
       goals_conceded: p.goals_conceded,
       clean_sheet: p.clean_sheet,
+      is_mvp: p.is_mvp,
       sportmonks_raw_stats: { source: 'sportmonks', stats: p.raw_stats } as unknown as Json,
     })
   }

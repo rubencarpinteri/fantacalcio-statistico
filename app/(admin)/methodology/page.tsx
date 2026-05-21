@@ -104,7 +104,7 @@ export default async function MethodologyPage() {
       <div>
         <h1 className="text-xl font-bold text-ink-1">Metodologia di calcolo</h1>
         <p className="mt-1 text-sm text-ink-4">
-          Motore <span className="font-mono text-indigo-300">{cfg.engine_version}</span> — &ldquo;Pivot + Bonus&rdquo;: una sola retta più il bonus/malus.
+          Motore <span className="font-mono text-indigo-300">{cfg.engine_version}</span> — &ldquo;Pivot + Bonus + Ownership&rdquo;: il voto base da una retta, il bonus/malus della partita, poi il marchio del gioco — la fascia di popolarità.
         </p>
       </div>
 
@@ -113,33 +113,93 @@ export default async function MethodologyPage() {
         <CardHeader title="In una frase" />
         <CardContent>
           <p className="text-sm leading-relaxed text-ink-2">
-            Il <strong className="text-ink-1">voto base</strong> nasce da una retta che ancora la <strong className="text-ink-1">baseline SportMonks {cfg.pivot_rating.toFixed(2)}</strong> alla{' '}
-            <strong className="text-ink-1">sufficienza italiana {cfg.pivot_vote.toFixed(2)}</strong>, con il punto massimo (10 → 10) fissato per costruzione.
-            Sopra il voto base si sommano i bonus e malus della partita.
-            Il <strong className="text-ink-1">fantavoto finale</strong> è il risultato, cappato tra {cfg.voto_min.toFixed(0)} e {cfg.voto_max.toFixed(0)}.
+            Ogni giocatore parte dal <strong className="text-ink-1">voto base</strong> (rating SportMonks proiettato sulla scala italiana via una retta che àncora{' '}
+            {cfg.pivot_rating.toFixed(2)} alla sufficienza {cfg.pivot_vote.toFixed(2)}). Si aggiungono i <strong className="text-ink-1">bonus/malus</strong> di partita per ottenere il raw subtotal.
+            Poi entra in scena il <strong className="text-amber-300">trademark</strong>: chi ha scelto un giocatore poco diffuso in lega prende il punteggio intero;
+            chi ha scelto il giocatore della folla viene penalizzato in percentuale; chi ha pescato il MVP di una partita raramente posseduto riceve un grosso bonus extra.
           </p>
         </CardContent>
       </Card>
 
       {/* ── Pipeline overview ─────────────────────────────────────────────── */}
       <Card>
-        <CardHeader title="Pipeline di calcolo" description="Il percorso dal voto SportMonks al fantavoto finale" />
+        <CardHeader title="Pipeline di calcolo" description="Il percorso completo dal voto SportMonks al fantavoto finale" />
         <CardContent>
           <div className="space-y-3">
             <Step n={1} label="Recupero voto SportMonks (unica fonte)" />
             <Step n={2} label={`Gate minuti: < ${cfg.minutes_min_for_voto}' → s.v. (NV) salvo evento decisivo (gol, assist, rosso…)`} />
             <Step n={3} label={`Voto base = ${cfg.pivot_vote.toFixed(2)} + ${slope.toFixed(4)} × (rating − ${cfg.pivot_rating.toFixed(2)}), cappato 1–10`} />
-            <Step n={4} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet…" />
-            <Step n={5} label="Fantavoto = clamp(voto_base + bonus_malus, 1, 10)" />
+            <Step n={4} label="Bonus / Malus: gol, assist, cartellini, rigori, clean sheet… → raw subtotal (NON cappato)" />
+            <Step n={5} label="Penalità popolarità = |raw subtotal| × % della fascia ownership" />
+            <Step n={6} label="Bonus MVP (solo se best rating del match): % della fascia ownership" />
+            <Step n={7} label={cfg.calc_order === 'penalty_then_mvp'
+              ? 'Fantavoto = (raw − penalità) × (1 + bonus_mvp/100) — composto'
+              : 'Fantavoto = raw + bonus_mvp − penalità — additivo'} />
           </div>
-          <div className="mt-5 rounded-lg border border-hairline bg-transparent px-4 py-3 font-mono text-xs text-ink-3">
-            <span className="text-ink-1">Fantavoto</span>
-            {' = clamp( '}
-            <span className="text-indigo-300">voto_base</span>
-            {' + '}
-            <span className="text-emerald-300">bonus_malus</span>
-            {' , 1, 10 )'}
+          <div className="mt-5 space-y-1.5 rounded-lg border border-hairline bg-transparent px-4 py-3 font-mono text-xs text-ink-3">
+            <div><span className="text-emerald-300">raw_subtotal</span> = voto_base + bonus − malus</div>
+            <div><span className="text-rose-300">penalità</span> = |raw_subtotal| × popolarità% / 100</div>
+            <div><span className="text-amber-300">bonus_mvp</span> = (raw_subtotal {cfg.calc_order === 'penalty_then_mvp' ? '− penalità' : ''}) × mvp% / 100</div>
+            <div className="pt-1 border-t border-hairline">
+              <span className="text-ink-1">Fantavoto</span> ={' '}
+              {cfg.calc_order === 'penalty_then_mvp'
+                ? '(raw_subtotal − penalità) × (1 + mvp%/100)'
+                : 'raw_subtotal + bonus_mvp − penalità'}
+            </div>
+            <div className="text-ink-4">Nessun cap finale: il fantavoto può superare 10 o essere negativo.</div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Trademark — ownership & MVP ──────────────────────────────── */}
+      <Card>
+        <CardHeader
+          title="Marchio del gioco: ownership e MVP"
+          description="Il meccanismo che premia le scelte differenziali e punisce il gregge"
+        />
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-rose-300">Penalità popolarità</p>
+              <p className="mb-3 text-xs text-ink-3">Applicata sempre, in % del valore assoluto del raw subtotal.</p>
+              <table className="w-full text-xs">
+                <thead><tr className="border-b border-hairline text-ink-4">
+                  <th className="py-1 text-left">Ownership</th>
+                  <th className="py-1 text-right">Penalità</th>
+                </tr></thead>
+                <tbody className="divide-y divide-hairline">
+                  {cfg.popularity_brackets.map((b, i) => (
+                    <tr key={i}>
+                      <td className="py-1 font-mono text-ink-2">{b.min_pct}–{b.max_pct}%</td>
+                      <td className="py-1 text-right font-mono text-rose-400 font-semibold">−{b.pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-amber-300">Bonus MVP</p>
+              <p className="mb-3 text-xs text-ink-3">Solo se il giocatore ha il rating più alto del suo match.</p>
+              <table className="w-full text-xs">
+                <thead><tr className="border-b border-hairline text-ink-4">
+                  <th className="py-1 text-left">Ownership</th>
+                  <th className="py-1 text-right">Bonus</th>
+                </tr></thead>
+                <tbody className="divide-y divide-hairline">
+                  {cfg.mvp_bonus_brackets.map((b, i) => (
+                    <tr key={i}>
+                      <td className="py-1 font-mono text-ink-2">{b.min_pct}–{b.max_pct}%</td>
+                      <td className="py-1 text-right font-mono text-amber-400 font-semibold">+{b.pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <Note>
+            La fotografia dell&apos;ownership viene congelata al momento del lock della giornata (lineup deadline).
+            Da quel momento le percentuali non cambiano più, anche se le formazioni di altri utenti vengono modificate.
+          </Note>
         </CardContent>
       </Card>
 

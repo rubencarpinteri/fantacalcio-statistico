@@ -98,6 +98,7 @@ export async function triggerCalculationAction(
       penalties_saved,
       clean_sheet,
       goals_conceded,
+      is_mvp,
       league_players ( rating_class )
     `)
     .eq('matchday_id', matchdayId)
@@ -105,6 +106,15 @@ export async function triggerCalculationAction(
   if (!statsRows || statsRows.length === 0) {
     return fail('Nessuna statistica trovata. Inserisci i dati prima di calcolare.')
   }
+
+  // Fetch ownership snapshot (frozen at lineup deadline). Empty map if not snapshotted yet.
+  const { data: ownershipRows } = await supabase
+    .from('matchday_player_ownership')
+    .select('player_id, ownership_pct')
+    .eq('matchday_id', matchdayId)
+  const ownershipByPlayerId = new Map<string, number>(
+    (ownershipRows ?? []).map((r) => [r.player_id, Number(r.ownership_pct)])
+  )
 
   // Map DB rows to engine inputs
   // Effective rating class: rating_class_override > stored league_players.rating_class
@@ -130,6 +140,8 @@ export async function triggerCalculationAction(
       penalties_saved:  s.penalties_saved,
       clean_sheet:    s.clean_sheet,
       goals_conceded: s.goals_conceded,
+      is_mvp:         s.is_mvp,
+      ownership_pct:  ownershipByPlayerId.get(s.player_id) ?? 0,
     }
   })
 
@@ -182,6 +194,12 @@ export async function triggerCalculationAction(
         is_override: false,
         voto_base: null,
         bonus_malus_breakdown: null, total_bonus_malus: null,
+        raw_subtotal: null,
+        ownership_pct: null,
+        mvp_bonus_pct: null,
+        mvp_bonus_amount: null,
+        popularity_penalty_pct: null,
+        popularity_penalty_amount: null,
         fantavoto: null,
       }
     }
@@ -197,7 +215,13 @@ export async function triggerCalculationAction(
       voto_base:         r.voto_base,
       bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
       total_bonus_malus: r.total_bonus_malus,
-      fantavoto:         r.fantavoto,
+      raw_subtotal:              r.raw_subtotal,
+      ownership_pct:             r.ownership_pct,
+      mvp_bonus_pct:             r.mvp_bonus_pct,
+      mvp_bonus_amount:          r.mvp_bonus_amount,
+      popularity_penalty_pct:    r.popularity_penalty_pct,
+      popularity_penalty_amount: r.popularity_penalty_amount,
+      fantavoto:                 r.fantavoto,
     }
   })
 

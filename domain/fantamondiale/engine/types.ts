@@ -10,6 +10,8 @@ export type FMEnginePlayerInput = {
     minutes_played: number
     rating: number | null
     goals: number
+    /** Subset of `goals` that came from penalty kicks. */
+    penalties_scored: number
     assists: number
     yellow_cards: number
     red_cards: number

@@ -1,10 +1,11 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useMemo, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { saveEngineConfigAction } from './actions'
-import type { LeagueEngineConfig } from '@/types/database.types'
+import type { LeagueEngineConfig, Json } from '@/types/database.types'
 import { DEFAULT_ENGINE_CONFIG, deriveSlope } from '@/domain/engine/v1/config'
+import type { OwnershipBracket, CalcOrder } from '@/domain/engine/v1/types'
 
 // ── Submit button ────────────────────────────────────────────────────────────
 
@@ -192,6 +193,221 @@ function PivotSection({
   )
 }
 
+// ── Ownership (trademark) section ───────────────────────────────────────────
+
+function parseBracketsJson(raw: Json | null | undefined, fallback: OwnershipBracket[]): OwnershipBracket[] {
+  if (!raw || !Array.isArray(raw)) return fallback
+  const out: OwnershipBracket[] = []
+  for (const item of raw) {
+    if (
+      item && typeof item === 'object' && !Array.isArray(item) &&
+      typeof (item as Record<string, unknown>).min_pct === 'number' &&
+      typeof (item as Record<string, unknown>).max_pct === 'number' &&
+      typeof (item as Record<string, unknown>).pct === 'number'
+    ) {
+      const o = item as Record<string, number>
+      out.push({ min_pct: o.min_pct!, max_pct: o.max_pct!, pct: o.pct! })
+    }
+  }
+  return out.length > 0 ? out : fallback
+}
+
+function BracketRow({
+  bracket, onChange, onRemove,
+}: {
+  bracket: OwnershipBracket
+  onChange: (b: OwnershipBracket) => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+      <div className="flex items-center gap-1">
+        <input
+          type="number" min={0} max={100} step={1}
+          value={bracket.min_pct}
+          onChange={(e) => onChange({ ...bracket, min_pct: Number(e.target.value) })}
+          className="w-full rounded border border-hairline bg-transparent px-2 py-1 text-xs text-ink-1 focus:outline-none focus:border-indigo-400/60"
+        />
+        <span className="text-[10px] text-ink-4">–</span>
+        <input
+          type="number" min={0} max={100} step={1}
+          value={bracket.max_pct}
+          onChange={(e) => onChange({ ...bracket, max_pct: Number(e.target.value) })}
+          className="w-full rounded border border-hairline bg-transparent px-2 py-1 text-xs text-ink-1 focus:outline-none focus:border-indigo-400/60"
+        />
+        <span className="text-[10px] text-ink-4">%</span>
+      </div>
+      <div className="col-span-2 flex items-center gap-1">
+        <span className="text-[10px] text-ink-4 shrink-0">→</span>
+        <input
+          type="number" step={1}
+          value={bracket.pct}
+          onChange={(e) => onChange({ ...bracket, pct: Number(e.target.value) })}
+          className="w-20 rounded border border-hairline bg-transparent px-2 py-1 text-xs text-ink-1 focus:outline-none focus:border-indigo-400/60"
+        />
+        <span className="text-[10px] text-ink-4">%</span>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-[10px] text-ink-4 hover:text-rose-400"
+        aria-label="Rimuovi fascia"
+      >✕</button>
+    </div>
+  )
+}
+
+function BracketsEditor({
+  title, hint, brackets, onChange,
+}: {
+  title: string
+  hint: string
+  brackets: OwnershipBracket[]
+  onChange: (next: OwnershipBracket[]) => void
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wider text-ink-4">{title}</p>
+      <p className="mt-0.5 mb-3 text-[11px] text-ink-4">{hint}</p>
+      <div className="space-y-1.5">
+        {brackets.map((b, i) => (
+          <BracketRow
+            key={i}
+            bracket={b}
+            onChange={(next) => {
+              const arr = [...brackets]
+              arr[i] = next
+              onChange(arr)
+            }}
+            onRemove={() => onChange(brackets.filter((_, j) => j !== i))}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => onChange([...brackets, { min_pct: 0, max_pct: 100, pct: 0 }])}
+          className="text-[11px] text-indigo-300 hover:text-indigo-200"
+        >+ Aggiungi fascia</button>
+      </div>
+    </div>
+  )
+}
+
+function bracketLookup(brackets: OwnershipBracket[], ownershipPct: number): number {
+  const b = brackets.find((br) => ownershipPct >= br.min_pct && ownershipPct <= br.max_pct)
+  return b?.pct ?? 0
+}
+
+function OwnershipSection({
+  defaultPopularity,
+  defaultMvp,
+  defaultCalcOrder,
+}: {
+  defaultPopularity: OwnershipBracket[]
+  defaultMvp: OwnershipBracket[]
+  defaultCalcOrder: CalcOrder
+}) {
+  const [popularity, setPopularity] = useState(defaultPopularity)
+  const [mvp, setMvp]               = useState(defaultMvp)
+  const [calcOrder, setCalcOrder]   = useState<CalcOrder>(defaultCalcOrder)
+
+  // Live scenario preview — raw_subtotal of 8.94 (a striker who scored 1 goal).
+  const samples: Array<{ label: string; ownership: number; mvp: boolean }> = [
+    { label: 'Differenziale',           ownership: 8,  mvp: false },
+    { label: 'Differenziale + MVP',     ownership: 8,  mvp: true  },
+    { label: 'Popolare',                ownership: 85, mvp: false },
+    { label: 'Popolare + MVP',          ownership: 70, mvp: true  },
+  ]
+
+  const previews = useMemo(() => {
+    const raw = 8.94
+    return samples.map((s) => {
+      const popPct = bracketLookup(popularity, s.ownership)
+      const mvpPct = s.mvp ? bracketLookup(mvp, s.ownership) : 0
+      const penalty = Math.abs(raw) * popPct / 100
+      const after = raw - penalty
+      const mvpAmount = (calcOrder === 'penalty_then_mvp' ? after : raw) * mvpPct / 100
+      const final = calcOrder === 'penalty_then_mvp'
+        ? after + mvpAmount
+        : raw + mvpAmount - penalty
+      return { ...s, popPct, mvpPct, final }
+    })
+  }, [popularity, mvp, calcOrder, samples])
+
+  const popularityJson = JSON.stringify(popularity)
+  const mvpJson = JSON.stringify(mvp)
+
+  return (
+    <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-5 space-y-5">
+      <div>
+        <p className="text-sm font-semibold text-amber-300">Ownership · MVP — il marchio del gioco</p>
+        <p className="mt-1 text-xs text-ink-3 leading-relaxed">
+          Più una scelta è popolare nella lega, più il giocatore viene penalizzato in percentuale.
+          Più una scelta è rara e il giocatore risulta MVP del suo match, più viene premiato.
+          Le percentuali sono applicate sul valore assoluto del &ldquo;raw subtotal&rdquo; (voto base + bonus/malus).
+        </p>
+      </div>
+
+      {/* Hidden inputs that submit the bracket JSON + calc_order */}
+      <input type="hidden" name="popularity_brackets_json" value={popularityJson} />
+      <input type="hidden" name="mvp_bonus_brackets_json"  value={mvpJson} />
+      <input type="hidden" name="calc_order" value={calcOrder} />
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <BracketsEditor
+          title="Fasce penalità popolarità"
+          hint="Per ogni fascia di ownership, la % di raw_subtotal sottratta."
+          brackets={popularity}
+          onChange={setPopularity}
+        />
+        <BracketsEditor
+          title="Fasce bonus MVP"
+          hint="Si applica solo se il giocatore è MVP del suo match (miglior rating)."
+          brackets={mvp}
+          onChange={setMvp}
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium uppercase tracking-wider text-ink-4">Ordine di calcolo</label>
+        <select
+          value={calcOrder}
+          onChange={(e) => setCalcOrder(e.target.value as CalcOrder)}
+          className="mt-2 w-full max-w-md rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:outline-none focus:border-indigo-400/60"
+        >
+          <option value="penalty_then_mvp">Popolarità prima, poi MVP (composto · default)</option>
+          <option value="mvp_then_penalty">MVP e popolarità entrambi sul raw_subtotal (additivo)</option>
+        </select>
+        <p className="mt-1 text-[11px] text-ink-4">
+          Default <span className="font-mono">penalty_then_mvp</span>: una scelta popolare riduce anche il bonus MVP.
+        </p>
+      </div>
+
+      {/* Live preview — same raw_subtotal, four ownership scenarios */}
+      <div className="rounded-lg border border-hairline bg-transparent p-4">
+        <p className="text-xs font-medium uppercase tracking-wider text-ink-4">Anteprima — stesso giocatore, 4 scenari</p>
+        <p className="mt-0.5 mb-3 text-[11px] text-ink-4">
+          Caso esempio: un attaccante voto 7.14 + 1 gol → <span className="font-mono">raw_subtotal = 8.94</span>.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {previews.map((p, i) => (
+            <div key={i} className="flex items-baseline justify-between gap-2 rounded border border-hairline px-3 py-2">
+              <div>
+                <p className="text-xs text-ink-2">{p.label}</p>
+                <p className="text-[10px] text-ink-4">
+                  {p.ownership}% ownership · pen {p.popPct}%{p.mvp ? ` · MVP +${p.mvpPct}%` : ''}
+                </p>
+              </div>
+              <span className={`font-mono text-sm font-semibold ${p.final >= 0 ? 'text-ink-1' : 'text-rose-400'}`}>
+                {p.final.toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -236,6 +452,12 @@ export function EngineConfigForm({ current }: Props) {
     goals_conceded_gk:               src?.goals_conceded_gk               ?? (bm.goals_conceded_by_role.GK  ?? 0),
     goals_conceded_def:              src?.goals_conceded_def              ?? (bm.goals_conceded_by_role.DEF ?? 0),
     goals_conceded_def_min_minutes:  src?.goals_conceded_def_min_minutes  ?? bm.goals_conceded_def_min_minutes,
+
+    popularity_brackets: parseBracketsJson(src?.popularity_brackets ?? null, DEFAULT_ENGINE_CONFIG.popularity_brackets),
+    mvp_bonus_brackets:  parseBracketsJson(src?.mvp_bonus_brackets  ?? null, DEFAULT_ENGINE_CONFIG.mvp_bonus_brackets),
+    calc_order: (src?.calc_order === 'mvp_then_penalty' || src?.calc_order === 'penalty_then_mvp')
+      ? (src.calc_order as CalcOrder)
+      : DEFAULT_ENGINE_CONFIG.calc_order,
   }
 
   // Acknowledge unused import in some code paths
@@ -248,6 +470,13 @@ export function EngineConfigForm({ current }: Props) {
       <PivotSection
         defaultPivotRating={v.pivot_rating}
         defaultPivotVote={v.pivot_vote}
+      />
+
+      {/* ── Ownership · MVP (trademark) ─────────────────────────────── */}
+      <OwnershipSection
+        defaultPopularity={v.popularity_brackets}
+        defaultMvp={v.mvp_bonus_brackets}
+        defaultCalcOrder={v.calc_order}
       />
 
       {/* ── Gol per ruolo ───────────────────────────────────────────── */}

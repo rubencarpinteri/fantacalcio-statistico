@@ -29,22 +29,23 @@ const DEFAULT_ENGINE: FMEngineConfig = {
   base_score:   6.0,
 }
 
-// 5 brackets, ascending. Larger penalty = more popular pick.
+// 5 ownership bands. Larger penalty = more popular pick.
+// Top cap 50%, smooth quartile edges (10/25/50/75/100).
 const DEFAULT_POPULARITY_BRACKETS: FMBracket[] = [
-  { min_pct:  0, max_pct: 10, pct:  0 },
-  { min_pct: 11, max_pct: 30, pct: 15 },
-  { min_pct: 31, max_pct: 60, pct: 30 },
-  { min_pct: 61, max_pct: 80, pct: 60 },
-  { min_pct: 81, max_pct: 100, pct: 80 },
+  { min_pct:  0, max_pct:  10, pct:  0 },
+  { min_pct: 11, max_pct:  25, pct: 10 },
+  { min_pct: 26, max_pct:  50, pct: 25 },
+  { min_pct: 51, max_pct:  75, pct: 40 },
+  { min_pct: 76, max_pct: 100, pct: 50 },
 ]
 
-// Inverse: rarer MVP picks get bigger bonuses.
+// Inverse: rarer MVP picks get bigger bonuses. Top cap 50%, same edges.
 const DEFAULT_MVP_BRACKETS: FMBracket[] = [
-  { min_pct:  0, max_pct: 10, pct: 80 },
-  { min_pct: 11, max_pct: 30, pct: 60 },
-  { min_pct: 31, max_pct: 60, pct: 40 },
-  { min_pct: 61, max_pct: 80, pct: 30 },
-  { min_pct: 81, max_pct: 100, pct: 10 },
+  { min_pct:  0, max_pct:  10, pct: 50 },
+  { min_pct: 11, max_pct:  25, pct: 40 },
+  { min_pct: 26, max_pct:  50, pct: 25 },
+  { min_pct: 51, max_pct:  75, pct: 15 },
+  { min_pct: 76, max_pct: 100, pct:  5 },
 ]
 
 export const DEFAULT_FM_CONFIG: FMCompetitionConfig = {
@@ -67,18 +68,20 @@ export const DEFAULT_FM_CONFIG: FMCompetitionConfig = {
     '5-4-1',
   ],
 
+  // Serie A-aligned football B/M values.
   football: {
-    goal: { P: 6, D: 3.5, C: 3, A: 3 },
-    assist: 1,
-    clean_sheet: { P: 1, D: 0, min_minutes: 60 },
-    penalty_saved: 3,
-    penalty_missed: -3,
-    yellow_card: -0.5,
-    red_card: -1,
-    own_goal: -1,
-    goal_conceded_P: -1,
+    goal: { P: 4.0, D: 2.8, C: 2.2, A: 1.8 },
+    penalty_scored_discount: 0.3,
+    assist: 1.0,
+    clean_sheet: { P: 0.8, D: 0.5, min_minutes: 60 },
+    penalty_saved: 2.0,
+    penalty_missed: -1.5,
+    yellow_card: -0.3,
+    red_card: -1.5,
+    own_goal: -1.5,
+    goals_conceded: { P: -0.4, D: -0.15, def_min_minutes: 60 },
     brace_bonus: 0.5,
-    hat_trick_bonus: 1,
+    hat_trick_bonus: 1.0,
   },
 
   popularity_brackets: DEFAULT_POPULARITY_BRACKETS,

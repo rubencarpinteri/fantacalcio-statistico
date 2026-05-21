@@ -159,6 +159,12 @@ export async function recomputeOneMatchday(
         voto_base: null as number | null,
         bonus_malus_breakdown: null as Json | null,
         total_bonus_malus: null as number | null,
+        raw_subtotal:              null as number | null,
+        ownership_pct:             null as number | null,
+        mvp_bonus_pct:             null as number | null,
+        mvp_bonus_amount:          null as number | null,
+        popularity_penalty_pct:    null as number | null,
+        popularity_penalty_amount: null as number | null,
         fantavoto: null as number | null,
       }
     }
@@ -175,6 +181,12 @@ export async function recomputeOneMatchday(
       voto_base: r.voto_base,
       bonus_malus_breakdown: r.bonus_malus_breakdown as unknown as Json,
       total_bonus_malus: r.total_bonus_malus,
+      raw_subtotal:              r.raw_subtotal,
+      ownership_pct:             r.ownership_pct,
+      mvp_bonus_pct:             r.mvp_bonus_pct,
+      mvp_bonus_amount:          r.mvp_bonus_amount,
+      popularity_penalty_pct:    r.popularity_penalty_pct,
+      popularity_penalty_amount: r.popularity_penalty_amount,
       fantavoto: roundedFv,
     }
   })

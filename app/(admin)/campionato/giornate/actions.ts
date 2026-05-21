@@ -149,6 +149,14 @@ export async function transitionMatchdayStatusAction(
 
   if (error) return { error: 'Impossibile aggiornare lo stato. Riprova.' }
 
+  // Trademark: when the matchday closes (lineup deadline), freeze the
+  // ownership snapshot. Counts how many teams started each player; this
+  // % is then used by the engine to compute MVP bonus and popularity
+  // penalty. Snapshot is idempotent (UNIQUE(matchday_id, player_id)).
+  if (newStatus === 'closed' && matchday.status === 'open') {
+    await snapshotMatchdayOwnership(supabase, matchdayId)
+  }
+
   // Append to status log (append-only table — no updates)
   await supabase.from('matchday_status_log').insert({
     matchday_id: matchdayId,
@@ -348,4 +356,64 @@ export async function generateMatchdaysAction(
   revalidatePath(`/competitions/${competitionId}`)
 
   return { created }
+}
+
+// ============================================================
+// Ownership snapshot — the trademark trigger
+// ============================================================
+// Fired when a matchday transitions open → closed (lineup deadline).
+// Counts starters per player across all submitted lineups for the
+// matchday and writes the % into matchday_player_ownership.
+//
+// Idempotent via UNIQUE(matchday_id, player_id).
+// Engine reads this snapshot at calculation time to apply
+// popularity penalty and MVP bonus.
+// ============================================================
+
+type SnapshotSupabase = Awaited<ReturnType<typeof createClient>>
+
+async function snapshotMatchdayOwnership(
+  supabase: SnapshotSupabase,
+  matchdayId: string
+): Promise<void> {
+  // 1. Find every current lineup submission for this matchday.
+  const { data: pointers } = await supabase
+    .from('lineup_current_pointers')
+    .select('submission_id')
+    .eq('matchday_id', matchdayId)
+
+  const submissionIds = (pointers ?? []).map((p) => p.submission_id)
+  if (submissionIds.length === 0) return
+
+  // 2. Fetch starters from each submission (bench excluded).
+  const { data: lineupPlayers } = await supabase
+    .from('lineup_submission_players')
+    .select('submission_id, player_id, is_bench')
+    .in('submission_id', submissionIds)
+
+  // Count distinct teams that fielded each player as a starter.
+  const teamsOwningByPlayer = new Map<string, Set<string>>()
+  for (const lp of lineupPlayers ?? []) {
+    if (lp.is_bench) continue
+    if (!teamsOwningByPlayer.has(lp.player_id)) {
+      teamsOwningByPlayer.set(lp.player_id, new Set())
+    }
+    teamsOwningByPlayer.get(lp.player_id)!.add(lp.submission_id)
+  }
+
+  const teamsTotal = submissionIds.length
+  if (teamsTotal === 0 || teamsOwningByPlayer.size === 0) return
+
+  const rows = Array.from(teamsOwningByPlayer.entries()).map(([player_id, set]) => ({
+    matchday_id: matchdayId,
+    player_id,
+    teams_owning: set.size,
+    teams_total: teamsTotal,
+    ownership_pct: Math.round((set.size / teamsTotal) * 10000) / 100,
+  }))
+
+  // Idempotent: overwrite on UNIQUE(matchday_id, player_id) conflict.
+  await supabase
+    .from('matchday_player_ownership')
+    .upsert(rows, { onConflict: 'matchday_id,player_id' })
 }

@@ -60,33 +60,37 @@ export const fmFormationListSchema = z.array(
   z.string().regex(/^\d-\d-\d$/, 'expected "X-Y-Z" format'),
 ).min(1)
 
-// ---- football bonuses / maluses ----------------------------
+// ---- football bonuses / maluses (Serie A-aligned) ----------
 
 export const fmFootballScoringSchema = z.object({
-  // goals split by role of the scorer
+  /** Per-role goal bonus (regular goal). Penalty goal = goal[role] − penalty_scored_discount. */
   goal: z.object({
     P: z.number(),
     D: z.number(),
     C: z.number(),
     A: z.number(),
   }),
+  /** Subtracted from goal[role] for each penalty scored. */
+  penalty_scored_discount: z.number(),
   assist: z.number(),
-  // clean sheet for goalkeepers (and optionally defenders)
+  /** Per-role clean sheet bonus; applies when minutes >= clean_sheet.min_minutes. */
   clean_sheet: z.object({
     P: z.number(),
     D: z.number(),
     min_minutes: z.number().int().min(0).max(120),
   }),
-  // goalkeeper-specific
+  /** GK only. */
   penalty_saved: z.number(),
   penalty_missed: z.number(),
-  // discipline
   yellow_card: z.number(),
   red_card: z.number(),
-  // own goal + conceded
   own_goal: z.number(),
-  goal_conceded_P: z.number(),
-  // bracket bonuses
+  /** Per-role goals-conceded malus. GK always; DEF only if minutes >= def_min_minutes. */
+  goals_conceded: z.object({
+    P: z.number(),
+    D: z.number(),
+    def_min_minutes: z.number().int().min(0).max(120),
+  }),
   brace_bonus: z.number(),
   hat_trick_bonus: z.number(),
 })

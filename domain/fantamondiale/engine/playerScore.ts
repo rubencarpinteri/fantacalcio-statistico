@@ -1,16 +1,25 @@
 // ============================================================
 // FantaMondiale — Player score (engine v3.0 "Pivot + Bonus")
 // ============================================================
-// Aligned 1:1 with the Serie A engine for the rating → voto_base
-// step (same pivot anchors, same < 15 min gate with decisive-
-// event exception, same 1–10 clamp).
+// Aligned 1:1 with the Serie A engine. Same pivot anchors, same
+// <15 min gate + decisive-event exception, same 1–10 clamp on
+// voto_base, same football B/M structure.
 //
-// FM-specific layers (football B/M, MVP bonus brackets, popularity
-// penalty brackets, calc_order) apply on top of voto_base to
-// produce raw_subtotal and final_score.
+// Final score formula (game trademark):
+//   raw_subtotal = voto_base + bonus − malus       // no clamp
+//   penalty      = |raw_subtotal| × popularity_pct/100   // absolute
+//   final_score  = (raw_subtotal − penalty) × (1 + mvp_pct/100)
+//
+// Popularity penalty hits absolute value so a popular bad-game
+// player is punished more, not less. MVP bonus compounds on the
+// post-penalty score, so a popular MVP suffers double.
 // ============================================================
 
-import type { FMCompetitionConfig, FMBracket, FMEngineConfig } from '@/domain/fantamondiale/config/schema'
+import type {
+  FMCompetitionConfig,
+  FMBracket,
+  FMEngineConfig,
+} from '@/domain/fantamondiale/config/schema'
 import type { FMEnginePlayerInput, FMPlayerMatchScoreResult } from './types'
 
 function findBracket(brackets: FMBracket[], pct: number): FMBracket | null {
@@ -35,7 +44,8 @@ function hasDecisiveEvent(stats: FMEnginePlayerInput['stats']): boolean {
     stats.yellow_cards    > 0 ||
     stats.red_cards       > 0 ||
     stats.penalties_saved > 0 ||
-    stats.penalties_missed > 0
+    stats.penalties_missed > 0 ||
+    (stats.penalties_scored ?? 0) > 0
   )
 }
 
@@ -70,28 +80,32 @@ export function scorePlayer(
       const raw = engine.pivot_vote + slope * (stats.rating - engine.pivot_rating)
       voto_base = clamp(raw, engine.voto_min, engine.voto_max)
     } else {
-      // No SportMonks rating yet (e.g. mid-match): use baseline.
       voto_base = engine.base_score
     }
   } else if (decisive) {
-    // <15 min but a decisive event fired: B/M-only with baseline voto.
     voto_base = engine.base_score
   }
-  // else: s.v. — voto_base stays null and no B/M is added.
+  // else: pure s.v. — voto_base stays null, no scoring.
 
-  // ---- football bonuses --------------------------------------------------
+  // ---- football bonuses / maluses ---------------------------------------
   let football_bonus = 0
   let football_malus = 0
 
   const isGk = role === 'P'
   const isDef = role === 'D'
 
-  // B/M applies whenever voto_base was computed (either normal path or
-  // exception path). For pure s.v. (voto_base === null), B/M is skipped.
   if (voto_base !== null) {
     const cleanSheet = computeCleanSheet(input, football.clean_sheet.min_minutes)
 
-    football_bonus += stats.goals * football.goal[role]
+    // Goals — regular vs penalty (penalty bonus = role goal − discount)
+    const penaltiesScored = stats.penalties_scored ?? 0
+    const regularGoals = Math.max(0, stats.goals - penaltiesScored)
+    const goalBonus = football.goal[role]
+    const penGoalBonus = goalBonus - football.penalty_scored_discount
+
+    football_bonus += regularGoals * goalBonus
+    football_bonus += penaltiesScored * penGoalBonus
+
     if (stats.goals >= 3) football_bonus += football.hat_trick_bonus
     else if (stats.goals >= 2) football_bonus += football.brace_bonus
 
@@ -102,33 +116,52 @@ export function scorePlayer(
 
     if (isGk) {
       football_bonus += stats.penalties_saved * football.penalty_saved
-      football_malus += Math.abs(stats.goals_conceded * football.goal_conceded_P)
     }
 
+    // Maluses (config values are negative; we accumulate absolute amounts)
     football_malus += Math.abs(stats.yellow_cards * football.yellow_card)
     football_malus += Math.abs(stats.red_cards * football.red_card)
     football_malus += Math.abs(stats.own_goals * football.own_goal)
     football_malus += Math.abs(stats.penalties_missed * football.penalty_missed)
+
+    // Goals conceded — GK always; DEF only above def_min_minutes
+    if (stats.goals_conceded > 0) {
+      if (isGk) {
+        football_malus += Math.abs(stats.goals_conceded * football.goals_conceded.P)
+      } else if (isDef && stats.minutes_played >= football.goals_conceded.def_min_minutes) {
+        football_malus += Math.abs(stats.goals_conceded * football.goals_conceded.D)
+      }
+    }
   }
 
-  // ---- raw subtotal ------------------------------------------------------
+  // ---- raw subtotal (NOT clamped) ---------------------------------------
   const raw_subtotal = (voto_base ?? 0) + football_bonus - football_malus
 
-  // ---- MVP bonus + popularity penalty (FM-specific) ---------------------
+  // ---- MVP + popularity (the trademark) ---------------------------------
+  // Bracket lookup. Popularity always applies; MVP only when is_mvp.
   const mvp_bonus_pct = stats.is_mvp
     ? (findBracket(mvp_bonus_brackets, ownershipPct)?.pct ?? 0)
     : 0
-  const mvp_bonus_amount = (raw_subtotal * mvp_bonus_pct) / 100
-
   const popularity_penalty_pct = findBracket(popularity_brackets, ownershipPct)?.pct ?? 0
-  const popularity_penalty_amount = (raw_subtotal * popularity_penalty_pct) / 100
 
+  // Option C: popularity penalty on ABSOLUTE value of raw_subtotal,
+  // always subtracted (popular bad players hurt MORE, not less).
+  const popularity_penalty_amount = (Math.abs(raw_subtotal) * popularity_penalty_pct) / 100
+
+  // Option B: popularity first, MVP compounded on the reduced score.
+  // calc_order 'mvp_then_penalty' = legacy additive interpretation,
+  // kept editable so admins can experiment.
   let final_score: number
-  if (calc_order === 'mvp_then_penalty') {
-    final_score = raw_subtotal + mvp_bonus_amount - popularity_penalty_amount
+  let mvp_bonus_amount: number
+
+  if (calc_order === 'penalty_then_mvp') {
+    const afterPenalty = raw_subtotal - popularity_penalty_amount
+    mvp_bonus_amount = afterPenalty * mvp_bonus_pct / 100
+    final_score = afterPenalty + mvp_bonus_amount
   } else {
-    const after_penalty = raw_subtotal - popularity_penalty_amount
-    final_score = after_penalty + mvp_bonus_amount
+    // 'mvp_then_penalty' — additive on the original raw_subtotal.
+    mvp_bonus_amount = raw_subtotal * mvp_bonus_pct / 100
+    final_score = raw_subtotal + mvp_bonus_amount - popularity_penalty_amount
   }
 
   return {
@@ -153,8 +186,7 @@ export function scorePlayer(
 
 /**
  * Public helper for the config editor's live preview.
- * Equivalent to the Serie A `ratingToVotoBase` — keeps the
- * preview math in lock-step with the engine.
+ * Equivalent to the Serie A `ratingToVotoBase`.
  */
 export function ratingToVotoBase(rating: number, engine: FMEngineConfig): number {
   const slope = deriveSlope(engine)

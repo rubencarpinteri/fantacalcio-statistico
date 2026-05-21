@@ -1,10 +1,9 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v3.0 — Core Logic
+// Fantacalcio Statistico — Rating Engine v3.1 — Core Logic
 // ============================================================
 // Pure TypeScript — no Supabase, no Next.js, no side effects.
-// All functions are deterministic given the same inputs.
 //
-// "Pivot + Bonus" pipeline (per player):
+// Per-player pipeline:
 //
 //   1. Minutes gate — < minutes_min_for_voto (default 15):
 //        a) No decisive event → "s.v." (NV, skipped entirely)
@@ -17,14 +16,19 @@
 //        voto_base = pivot_vote + slope × (rating − pivot_rating)
 //        clamped to [voto_min, voto_max].
 //
-//   4. fantavoto = clamp(voto_base + Σ bonus/malus, voto_min, voto_max)
+//   4. raw_subtotal = voto_base + Σ B/M    (NOT clamped)
 //
-// With default anchors (6.50 → 6.00, slope ≈ 1.1429):
-//   rating 6.45 (mode) → voto_base ≈ 5.94
-//   rating 6.50 (base) → voto_base   = 6.00
-//   rating 6.72 (mean) → voto_base ≈ 6.25
-//   rating 7.50        → voto_base ≈ 7.14
-//   rating 9.00        → voto_base ≈ 8.86
+//   5. Trademark — ownership-driven adjustment:
+//        penalty       = |raw_subtotal| × popularity_pct/100
+//        if calc_order = 'penalty_then_mvp':
+//            after     = raw_subtotal − penalty
+//            mvp_bonus = after × mvp_pct/100
+//            fantavoto = after + mvp_bonus
+//        else (mvp_then_penalty, additive):
+//            mvp_bonus = raw_subtotal × mvp_pct/100
+//            fantavoto = raw_subtotal + mvp_bonus − penalty
+//
+//   No final clamp — fantavoto can exceed voto_max or go negative.
 // ============================================================
 
 import { DEFAULT_ENGINE_CONFIG, deriveSlope } from './config'
@@ -36,6 +40,7 @@ import type {
   PlayerSkipped,
   BonusMalusItem,
   MatchdayEngineResult,
+  OwnershipBracket,
 } from './types'
 
 // ---- Numeric helpers ----------------------------------------
@@ -47,6 +52,13 @@ function round(value: number, dp = 3): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
+}
+
+// ---- Bracket lookup -----------------------------------------
+
+function findBracketPct(brackets: OwnershipBracket[], ownershipPct: number): number {
+  const b = brackets.find((br) => ownershipPct >= br.min_pct && ownershipPct <= br.max_pct)
+  return b?.pct ?? 0
 }
 
 // ---- Decisive-event check -----------------------------------
@@ -79,7 +91,6 @@ function computeBonusMalus(
     breakdown.push({ label, quantity, points_each, total: round(quantity * points_each) })
   }
 
-  // ---- Goals ----
   const goalBonus = bm.goal_by_role[rc]
   const penGoalBonus = round(goalBonus - bm.penalty_scored_discount)
   const regularGoals = Math.max(0, input.goals_scored - input.penalties_scored)
@@ -93,7 +104,6 @@ function computeBonusMalus(
     add('Doppietta', 1, bm.brace_bonus)
   }
 
-  // ---- Other events ----
   add('Assist', input.assists, bm.assist)
   add('Autogol', input.own_goals, bm.own_goal)
   add('Giallo', input.yellow_cards, bm.yellow_card)
@@ -104,7 +114,6 @@ function computeBonusMalus(
     add('Rigore parato', input.penalties_saved, bm.penalty_saved)
   }
 
-  // ---- Clean sheet ----
   const csBonus = bm.clean_sheet_by_role[rc]
   if (
     csBonus !== undefined &&
@@ -114,7 +123,6 @@ function computeBonusMalus(
     add('Porta inviolata', 1, csBonus)
   }
 
-  // ---- Goals conceded ----
   if (input.goals_conceded > 0) {
     const gcMalus = bm.goals_conceded_by_role[rc]
     if (gcMalus !== undefined) {
@@ -133,16 +141,54 @@ function computeBonusMalus(
 
 // ---- Pivot formula ------------------------------------------
 
-/**
- * voto_base = pivot_vote + slope × (rating − pivot_rating), clamped to [voto_min, voto_max].
- *
- * Exported so the methodology page and the engine-config preview can
- * compute the conversion table without re-running the full pipeline.
- */
 export function ratingToVotoBase(rating: number, config: EngineConfig = DEFAULT_ENGINE_CONFIG): number {
   const slope = deriveSlope(config)
   const raw = config.pivot_vote + slope * (rating - config.pivot_rating)
   return round(clamp(raw, config.voto_min, config.voto_max))
+}
+
+// ---- Trademark step: ownership-driven adjustment -----------
+
+interface OwnershipResult {
+  ownership_pct: number
+  mvp_bonus_pct: number
+  mvp_bonus_amount: number
+  popularity_penalty_pct: number
+  popularity_penalty_amount: number
+  fantavoto: number
+}
+
+function applyOwnership(raw_subtotal: number, input: EnginePlayerInput, config: EngineConfig): OwnershipResult {
+  const popularity_penalty_pct = findBracketPct(config.popularity_brackets, input.ownership_pct)
+  const mvp_bonus_pct = input.is_mvp
+    ? findBracketPct(config.mvp_bonus_brackets, input.ownership_pct)
+    : 0
+
+  // Option C: penalty on ABSOLUTE value (popular bad players hurt more).
+  const popularity_penalty_amount = round(Math.abs(raw_subtotal) * popularity_penalty_pct / 100)
+
+  let fantavoto: number
+  let mvp_bonus_amount: number
+
+  if (config.calc_order === 'penalty_then_mvp') {
+    // Option B: popularity first, then MVP compounded on what's left.
+    const after = raw_subtotal - popularity_penalty_amount
+    mvp_bonus_amount = round(after * mvp_bonus_pct / 100)
+    fantavoto = round(after + mvp_bonus_amount)
+  } else {
+    // Additive on the original raw_subtotal.
+    mvp_bonus_amount = round(raw_subtotal * mvp_bonus_pct / 100)
+    fantavoto = round(raw_subtotal + mvp_bonus_amount - popularity_penalty_amount)
+  }
+
+  return {
+    ownership_pct: input.ownership_pct,
+    mvp_bonus_pct,
+    mvp_bonus_amount,
+    popularity_penalty_pct,
+    popularity_penalty_amount,
+    fantavoto,
+  }
 }
 
 // ---- Per-player entry point ---------------------------------
@@ -164,19 +210,21 @@ export function calculatePlayerScore(
       return skipped
     }
 
-    // Decisive-event exception: voto_base = 6.0, B/M only
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
-    const fantavoto = round(clamp(config.base_score + bmTotal, config.voto_min, config.voto_max))
+    const voto_base = config.base_score
+    const raw_subtotal = round(voto_base + bmTotal)
+    const own = applyOwnership(raw_subtotal, input, config)
 
     const result: PlayerCalculationResult = {
       kind: 'scored',
       player_id, stats_id, is_provisional,
       decisive_event_exception: true,
       no_ratings_exception: false,
-      voto_base: config.base_score,
+      voto_base,
       bonus_malus_breakdown: breakdown,
       total_bonus_malus: bmTotal,
-      fantavoto,
+      raw_subtotal,
+      ...own,
     }
     return result
   }
@@ -187,7 +235,8 @@ export function calculatePlayerScore(
   if (input.rating === null) {
     const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
     const voto_base = config.base_score
-    const fantavoto = round(clamp(voto_base + bmTotal, config.voto_min, config.voto_max))
+    const raw_subtotal = round(voto_base + bmTotal)
+    const own = applyOwnership(raw_subtotal, input, config)
 
     return {
       kind: 'scored',
@@ -197,16 +246,18 @@ export function calculatePlayerScore(
       voto_base,
       bonus_malus_breakdown: breakdown,
       total_bonus_malus: bmTotal,
-      fantavoto,
+      raw_subtotal,
+      ...own,
     }
   }
 
   // ----------------------------------------------------------------
-  // Normal path — pivot formula.
+  // Normal path — pivot formula + B/M + ownership trademark.
   // ----------------------------------------------------------------
   const voto_base = ratingToVotoBase(input.rating, config)
   const { breakdown, total: bmTotal } = computeBonusMalus(input, config)
-  const fantavoto = round(clamp(voto_base + bmTotal, config.voto_min, config.voto_max))
+  const raw_subtotal = round(voto_base + bmTotal)
+  const own = applyOwnership(raw_subtotal, input, config)
 
   return {
     kind: 'scored',
@@ -216,7 +267,8 @@ export function calculatePlayerScore(
     voto_base,
     bonus_malus_breakdown: breakdown,
     total_bonus_malus: bmTotal,
-    fantavoto,
+    raw_subtotal,
+    ...own,
   }
 }
 

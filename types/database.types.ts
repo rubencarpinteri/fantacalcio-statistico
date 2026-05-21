@@ -1583,6 +1583,7 @@ export type Database = {
           own_goals: number
           penalties_missed: number
           penalties_saved: number
+          penalties_scored: number
           player_id: string
           rating: number | null
           raw_payload: Json | null
@@ -1603,6 +1604,7 @@ export type Database = {
           own_goals?: number
           penalties_missed?: number
           penalties_saved?: number
+          penalties_scored?: number
           player_id: string
           rating?: number | null
           raw_payload?: Json | null
@@ -1623,6 +1625,7 @@ export type Database = {
           own_goals?: number
           penalties_missed?: number
           penalties_saved?: number
+          penalties_scored?: number
           player_id?: string
           rating?: number | null
           raw_payload?: Json | null
@@ -1903,6 +1906,7 @@ export type Database = {
         Row: {
           assist: number
           brace_bonus: number
+          calc_order: string
           clean_sheet_def: number
           clean_sheet_gk: number
           clean_sheet_min_minutes: number
@@ -1917,12 +1921,14 @@ export type Database = {
           hat_trick_bonus: number
           id: string
           league_id: string
+          mvp_bonus_brackets: Json
           own_goal: number
           penalty_missed: number
           penalty_saved: number
           penalty_scored_discount: number
           pivot_rating: number
           pivot_vote: number
+          popularity_brackets: Json
           red_card: number
           updated_at: string
           yellow_card: number
@@ -1930,6 +1936,7 @@ export type Database = {
         Insert: {
           assist?: number
           brace_bonus?: number
+          calc_order?: string
           clean_sheet_def?: number
           clean_sheet_gk?: number
           clean_sheet_min_minutes?: number
@@ -1944,12 +1951,14 @@ export type Database = {
           hat_trick_bonus?: number
           id?: string
           league_id: string
+          mvp_bonus_brackets?: Json
           own_goal?: number
           penalty_missed?: number
           penalty_saved?: number
           penalty_scored_discount?: number
           pivot_rating?: number
           pivot_vote?: number
+          popularity_brackets?: Json
           red_card?: number
           updated_at?: string
           yellow_card?: number
@@ -1957,6 +1966,7 @@ export type Database = {
         Update: {
           assist?: number
           brace_bonus?: number
+          calc_order?: string
           clean_sheet_def?: number
           clean_sheet_gk?: number
           clean_sheet_min_minutes?: number
@@ -1971,12 +1981,14 @@ export type Database = {
           hat_trick_bonus?: number
           id?: string
           league_id?: string
+          mvp_bonus_brackets?: Json
           own_goal?: number
           penalty_missed?: number
           penalty_saved?: number
           penalty_scored_discount?: number
           pivot_rating?: number
           pivot_vote?: number
+          popularity_brackets?: Json
           red_card?: number
           updated_at?: string
           yellow_card?: number
@@ -2604,6 +2616,51 @@ export type Database = {
           },
         ]
       }
+      matchday_player_ownership: {
+        Row: {
+          created_at: string
+          id: string
+          matchday_id: string
+          ownership_pct: number
+          player_id: string
+          teams_owning: number
+          teams_total: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matchday_id: string
+          ownership_pct: number
+          player_id: string
+          teams_owning: number
+          teams_total: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matchday_id?: string
+          ownership_pct?: number
+          player_id?: string
+          teams_owning?: number
+          teams_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_player_ownership_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_player_ownership_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "league_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matchday_status_log: {
         Row: {
           changed_at: string
@@ -2722,8 +2779,14 @@ export type Database = {
           is_provisional: boolean
           matchday_id: string
           minutes_factor: number | null
+          mvp_bonus_amount: number | null
+          mvp_bonus_pct: number | null
           override_id: string | null
+          ownership_pct: number | null
           player_id: string
+          popularity_penalty_amount: number | null
+          popularity_penalty_pct: number | null
+          raw_subtotal: number | null
           role_multiplier: number | null
           run_id: string
           stats_id: string
@@ -2746,8 +2809,14 @@ export type Database = {
           is_provisional?: boolean
           matchday_id: string
           minutes_factor?: number | null
+          mvp_bonus_amount?: number | null
+          mvp_bonus_pct?: number | null
           override_id?: string | null
+          ownership_pct?: number | null
           player_id: string
+          popularity_penalty_amount?: number | null
+          popularity_penalty_pct?: number | null
+          raw_subtotal?: number | null
           role_multiplier?: number | null
           run_id: string
           stats_id: string
@@ -2770,8 +2839,14 @@ export type Database = {
           is_provisional?: boolean
           matchday_id?: string
           minutes_factor?: number | null
+          mvp_bonus_amount?: number | null
+          mvp_bonus_pct?: number | null
           override_id?: string | null
+          ownership_pct?: number | null
           player_id?: string
+          popularity_penalty_amount?: number | null
+          popularity_penalty_pct?: number | null
+          raw_subtotal?: number | null
           role_multiplier?: number | null
           run_id?: string
           stats_id?: string
@@ -2855,6 +2930,7 @@ export type Database = {
           height: number | null
           id: string
           interceptions: number
+          is_mvp: boolean
           is_provisional: boolean
           key_passes: number | null
           market_value: number | null
@@ -2925,6 +3001,7 @@ export type Database = {
           height?: number | null
           id?: string
           interceptions?: number
+          is_mvp?: boolean
           is_provisional?: boolean
           key_passes?: number | null
           market_value?: number | null
@@ -2995,6 +3072,7 @@ export type Database = {
           height?: number | null
           id?: string
           interceptions?: number
+          is_mvp?: boolean
           is_provisional?: boolean
           key_passes?: number | null
           market_value?: number | null
