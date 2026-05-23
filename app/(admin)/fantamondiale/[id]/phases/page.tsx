@@ -39,9 +39,18 @@ export default async function PhasesPage({ params }: { params: Promise<{ id: str
       <div>
         <h2 className="text-[16px] font-semibold text-ink-1">Fasi fantasy</h2>
         <p className="mt-0.5 text-[11.5px] text-ink-4 leading-relaxed">
-          Suddivisioni del gioco fantasy (NON le fasi del torneo reale). Definiscono budget,
-          eventuali re-draft e modalità di distribuzione crediti. In modalità Battle Royale
-          pura — draft settimanale, tutti contro tutti — basta una singola fase.
+          Una <strong className="text-ink-2">Fase</strong> è un blocco in cui la rosa fantasy
+          resta fissa. All&apos;inizio di ogni fase ogni manager rifà la rosa con i crediti del momento;
+          dentro la fase si può solo cambiare formazione tra un Turno e l&apos;altro.
+        </p>
+        <p className="mt-1.5 text-[11.5px] text-ink-4 leading-relaxed">
+          Esempio Mondiale: 5 fasi che ricalcano il torneo reale —
+          <span className="font-mono text-ink-2"> Gironi</span> (3 turni: MD1/MD2/MD3 a rosa fissa),
+          <span className="font-mono text-ink-2"> Ottavi</span>,
+          <span className="font-mono text-ink-2"> Quarti</span>,
+          <span className="font-mono text-ink-2"> Semifinali</span>,
+          <span className="font-mono text-ink-2"> Finale</span>.
+          Le fasi a eliminazione tipicamente contengono 1 turno ciascuna.
         </p>
       </div>
 

@@ -121,7 +121,9 @@ export default async function LeagueSettingsPage() {
                     </span>
                   </div>
                   <p className="mt-0.5 text-[12px] text-ink-3">
-                    Edizione {c.edition} · Setup: rosa, budget per fase, formazioni, matrice allenatore
+                    Edizione {c.edition} · Setup rosa, formazioni e matrice allenatore.
+                    Rosa rigenerata a ogni nuova Fase (es. Mondiale: Gironi → Ottavi → Quarti →
+                    Semifinali → Finale).
                   </p>
                 </div>
                 <span className="text-ink-4">→</span>

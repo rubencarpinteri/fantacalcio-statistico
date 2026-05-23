@@ -16,8 +16,10 @@ export default async function ConfigPage({ params }: { params: Promise<{ id: str
       <div>
         <h2 className="text-[16px] font-semibold text-ink-1">Setup competizione</h2>
         <p className="mt-0.5 text-[11px] text-ink-4">
-          Rosa, formazioni e matrice allenatore per questa competizione. Le regole di calcolo (motore,
-          bonus/malus, soglie gol) sono globali e si modificano in Regole di gioco.
+          Dimensione rosa, budget di default per fase, formazioni consentite e matrice allenatore
+          per questa competizione. Le regole di calcolo (motore, bonus/malus, soglie gol) sono globali
+          e si modificano in Regole di gioco. Il calendario delle Fasi e dei Turni si configura
+          nelle rispettive tab.
         </p>
       </div>
 

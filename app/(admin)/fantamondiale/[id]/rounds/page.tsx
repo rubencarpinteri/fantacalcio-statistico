@@ -47,8 +47,14 @@ export default async function RoundsPage({ params }: { params: Promise<{ id: str
       <div>
         <h2 className="text-[16px] font-semibold text-ink-1">Turni fantasy</h2>
         <p className="mt-0.5 text-[11.5px] text-ink-4 leading-relaxed">
-          Una giornata di gioco fantasy = una scadenza per il draft, un set di match reali da seguire,
-          e un calcolo punteggi. Sono i &ldquo;turni&rdquo; del Battle Royale, NON i gironi del torneo reale.
+          Un <strong className="text-ink-2">Turno</strong> è una scadenza per cambiare formazione
+          (NON la rosa). La rosa resta fissa per tutta la Fase in cui il turno vive — qui si decidono
+          solo titolari e panchina.
+        </p>
+        <p className="mt-1.5 text-[11.5px] text-ink-4 leading-relaxed">
+          Esempio Mondiale: la Fase <span className="font-mono text-ink-2">Gironi</span> contiene 3 turni
+          (uno per ogni MD del girone reale); ogni fase a eliminazione (Ottavi, Quarti, Semifinali, Finale)
+          contiene tipicamente 1 turno.
         </p>
       </div>
 
