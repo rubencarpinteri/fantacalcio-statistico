@@ -38,18 +38,20 @@ export async function requireFMContext(competitionId: string): Promise<FMContext
 
   const isSuperAdmin = profile?.is_super_admin ?? false
 
-  let fantasyTeamId: string | null = null
-  if (!isSuperAdmin) {
-    const { data: team } = await supabase
-      .from('fm_fantasy_team')
-      .select('id')
-      .eq('competition_id', competitionId)
-      .eq('manager_id', user.id)
-      .maybeSingle()
+  // Look up the user's fantasy team in this competition (if any).
+  // Super-admins may also be enrolled as managers — they get the same
+  // user-side tabs (Mia Rosa, Formazione, …) when they have a team here.
+  const { data: team } = await supabase
+    .from('fm_fantasy_team')
+    .select('id')
+    .eq('competition_id', competitionId)
+    .eq('manager_id', user.id)
+    .maybeSingle()
 
-    if (!team) redirect('/' as Route)
-    fantasyTeamId = team.id
-  }
+  // Non-admin viewers must be enrolled to access the competition pages.
+  if (!isSuperAdmin && !team) redirect('/' as Route)
+
+  const fantasyTeamId: string | null = team?.id ?? null
 
   const { data: competition } = await supabase
     .from('fm_competition')
