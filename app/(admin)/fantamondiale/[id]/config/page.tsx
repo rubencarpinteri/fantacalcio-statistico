@@ -1,22 +1,23 @@
 import { requireFMContext, assertSuperAdmin } from '@/lib/fantamondiale/server'
-import { DEFAULT_FM_CONFIG } from '@/domain/fantamondiale/config/defaults'
+import { createClient } from '@/lib/supabase/server'
+import { loadFMUnifiedConfig } from '@/lib/fantamondiale/loadUnifiedConfig'
 import { FMConfigEditor } from './FMConfigEditor'
-import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
 
 export default async function ConfigPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const ctx = await requireFMContext(id)
   assertSuperAdmin(ctx)
 
-  const storedConfig = ctx.config?.config as FMCompetitionConfig | null
-  const config: FMCompetitionConfig = storedConfig ?? DEFAULT_FM_CONFIG
+  const supabase = await createClient()
+  const config = await loadFMUnifiedConfig(supabase, id)
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-[16px] font-semibold text-ink-1">Regole e configurazione</h2>
+        <h2 className="text-[16px] font-semibold text-ink-1">Setup competizione</h2>
         <p className="mt-0.5 text-[11px] text-ink-4">
-          Tutte le modifiche sono applicate ai calcoli futuri — i punteggi già pubblicati rimangono invariati.
+          Rosa, formazioni e matrice allenatore per questa competizione. Le regole di calcolo (motore,
+          bonus/malus, soglie gol) sono globali e si modificano in Regole di gioco.
         </p>
       </div>
 

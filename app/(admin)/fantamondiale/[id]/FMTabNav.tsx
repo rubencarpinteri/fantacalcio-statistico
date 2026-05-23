@@ -12,7 +12,7 @@ const TABS = [
   { label: 'Giocatori',  suffix: '/campionato/giocatori' },
   { label: 'Allenatori', suffix: '/coaches' },
   { label: 'Prezzi',     suffix: '/prices' },
-  { label: 'Regole',     suffix: '/config' },
+  { label: 'Setup',      suffix: '/config' },
   { label: 'Iscritti',   suffix: '/members' },
 ]
 

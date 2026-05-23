@@ -3,99 +3,28 @@
 import { useState, useTransition } from 'react'
 import { saveConfigAction } from './actions'
 import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
-import { ratingToVotoBase } from '@/domain/fantamondiale/engine/playerScore'
 
-// ── Bracket editor ───────────────────────────────────────────────────────────
+// ── FantaMondiale competition shape editor ──────────────────────────────────
+//
+// This editor manages ONLY the competition-shape fields that legitimately
+// differ between FM competitions (Trial Scottish, Main FM, future WC):
+//
+//   * squad: pool size, starters, bench, default budget
+//   * formations: allowed X-Y-Z lineups
+//   * coach_tier_matrix: tier × result rewards
+//   * tie_breakers: ordered list (read-only for now)
+//
+// All scoring rules (engine pivot, bonus/malus, popularity penalty,
+// MVP bonus, goal thresholds, smoothing, W/D/L points) come from
+// the single global Regole di gioco. They are NOT edited here.
+// ────────────────────────────────────────────────────────────────────────────
 
-type Bracket = { min_pct: number; max_pct: number; pct: number }
-
-function BracketEditor({
-  label,
-  brackets,
-  onChange,
-}: {
-  label: string
-  brackets: Bracket[]
-  onChange: (b: Bracket[]) => void
-}) {
-  return (
-    <div>
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-ink-4">{label}</p>
-      <div className="space-y-1.5">
-        {brackets.map((b, i) => (
-          <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
-            <div className="flex items-center gap-1">
-              <input
-                type="number" min={0} max={100} step={1}
-                value={b.min_pct}
-                onChange={(e) => {
-                  const next = [...brackets]
-                  next[i] = { ...b, min_pct: Number(e.target.value) }
-                  onChange(next)
-                }}
-                className="w-full rounded border border-hairline bg-glass-2 px-2 py-1 text-[11px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-              <span className="text-[10px] text-ink-5">–</span>
-              <input
-                type="number" min={0} max={100} step={1}
-                value={b.max_pct}
-                onChange={(e) => {
-                  const next = [...brackets]
-                  next[i] = { ...b, max_pct: Number(e.target.value) }
-                  onChange(next)
-                }}
-                className="w-full rounded border border-hairline bg-glass-2 px-2 py-1 text-[11px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-              <span className="text-[10px] text-ink-5">%</span>
-            </div>
-            <div className="col-span-2 flex items-center gap-1">
-              <span className="text-[10px] text-ink-5 shrink-0">→</span>
-              <input
-                type="number" step={1}
-                value={b.pct}
-                onChange={(e) => {
-                  const next = [...brackets]
-                  next[i] = { ...b, pct: Number(e.target.value) }
-                  onChange(next)
-                }}
-                className="w-20 rounded border border-hairline bg-glass-2 px-2 py-1 text-[11px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-              <span className="text-[10px] text-ink-5">%</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onChange(brackets.filter((_, j) => j !== i))}
-              className="text-[10px] text-ink-5 hover:text-rose-400"
-            >✕</button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => onChange([...brackets, { min_pct: 0, max_pct: 100, pct: 0 }])}
-          className="text-[10px] text-indigo-400 hover:text-indigo-300"
-        >
-          ＋ Fascia
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Pivot conversion preview ────────────────────────────────────────────────
-
-const PREVIEW_RATINGS: Array<[number, string]> = [
-  [3.00,  'minimo SportMonks'],
-  [5.50,  'brutta prova'],
-  [6.45,  'tipica (mode)'],
-  [6.50,  'baseline kickoff · pivot'],
-  [6.72,  'media SportMonks'],
-  [7.50,  'molto buona'],
-  [8.50,  'ottima'],
-  [9.50,  'top'],
-  [10.00, 'massimo · ancoraggio'],
-]
-
-// ── Main editor ──────────────────────────────────────────────────────────────
+const TIER_LABELS = {
+  tier_1: 'Tier 1 (top)',
+  tier_2: 'Tier 2',
+  tier_3: 'Tier 3',
+  tier_4: 'Tier 4 (sfavorito)',
+} as const
 
 export function FMConfigEditor({
   competitionId,
@@ -109,24 +38,34 @@ export function FMConfigEditor({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  function update<K extends keyof FMCompetitionConfig>(key: K, value: FMCompetitionConfig[K]) {
-    setCfg((prev) => ({ ...prev, [key]: value }))
+  function updateSquad<K extends keyof FMCompetitionConfig['squad']>(
+    key: K, value: FMCompetitionConfig['squad'][K]
+  ) {
+    setCfg((prev) => ({ ...prev, squad: { ...prev.squad, [key]: value } }))
     setSaved(false)
   }
 
-  function updateEngine<K extends keyof FMCompetitionConfig['engine']>(
-    key: K,
-    value: FMCompetitionConfig['engine'][K]
+  function updateCoachTier(
+    tier: keyof FMCompetitionConfig['coach_tier_matrix'],
+    field: 'win' | 'draw' | 'loss',
+    value: number
   ) {
-    setCfg((prev) => ({ ...prev, engine: { ...prev.engine, [key]: value } }))
+    setCfg((prev) => ({
+      ...prev,
+      coach_tier_matrix: {
+        ...prev.coach_tier_matrix,
+        [tier]: { ...prev.coach_tier_matrix[tier], [field]: value },
+      },
+    }))
     setSaved(false)
   }
 
-  function updateFootball<K extends keyof FMCompetitionConfig['football']>(
-    key: K,
-    value: FMCompetitionConfig['football'][K]
-  ) {
-    setCfg((prev) => ({ ...prev, football: { ...prev.football, [key]: value } }))
+  function updateFormations(text: string) {
+    const list = text
+      .split(/[\s,]+/)
+      .map((s) => s.trim())
+      .filter((s) => /^\d-\d-\d$/.test(s))
+    setCfg((prev) => ({ ...prev, formations: list.length > 0 ? list : prev.formations }))
     setSaved(false)
   }
 
@@ -144,11 +83,6 @@ export function FMConfigEditor({
       }
     })
   }
-
-  const eng = cfg.engine
-  const slope = eng.pivot_rating < eng.voto_max
-    ? (eng.voto_max - eng.pivot_vote) / (eng.voto_max - eng.pivot_rating)
-    : 1
 
   return (
     <div className="space-y-6">
@@ -171,35 +105,34 @@ export function FMConfigEditor({
         </div>
       )}
 
-      {/* ── Engine pivot ── */}
-      <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-5 space-y-4">
-        <div>
-          <p className="text-[13px] font-semibold text-indigo-300">Motore v3.0 — Scala voto base (pivot)</p>
-          <p className="mt-1 text-[11px] text-ink-3 leading-relaxed">
-            Stessa logica del Campionato: una sola retta ancora la baseline SportMonks al voto italiano,
-            con (10 → 10) per costruzione. Il bonus/malus si somma dopo.
-          </p>
-        </div>
+      {/* ── Scope banner ── */}
+      <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 px-4 py-3">
+        <p className="text-[13px] font-semibold text-indigo-300">
+          Le regole di calcolo sono globali
+        </p>
+        <p className="mt-0.5 text-[12px] text-ink-3 leading-relaxed">
+          Motore (pivot, bonus/malus), popolarità, MVP, soglie gol e punti per risultato valgono
+          per ogni competizione della lega.
+          <a href="/regole-di-gioco" className="ml-1 text-indigo-300 underline hover:text-indigo-200">
+            Vai a Regole di gioco →
+          </a>
+        </p>
+        <p className="mt-2 text-[11px] text-ink-4 leading-relaxed">
+          In questa pagina configuri solo gli aspetti specifici di questa competizione:
+          dimensione rosa, budget di default, formazioni consentite e matrice tier × risultato per l&apos;allenatore.
+        </p>
+      </div>
 
-        <div className="rounded-lg border border-hairline bg-transparent p-3 space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-4">Formula</p>
-          <p className="font-mono text-[11px] text-indigo-200">
-            voto_base = {eng.pivot_vote.toFixed(2)} + {slope.toFixed(4)} × (rating − {eng.pivot_rating.toFixed(2)})
-          </p>
-          <p className="text-[11px] text-ink-4">
-            Pendenza = ({eng.voto_max} − {eng.pivot_vote.toFixed(2)}) / ({eng.voto_max} − {eng.pivot_rating.toFixed(2)}) ={' '}
-            <span className="font-mono text-ink-1">{slope.toFixed(4)}</span>.
-            Cappato tra {eng.voto_min.toFixed(0)} e {eng.voto_max.toFixed(0)}.
-          </p>
-        </div>
-
+      {/* ── Squad & budget ── */}
+      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
+        <p className="text-[13px] font-semibold text-ink-1">Rosa e budget</p>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {(
             [
-              ['pivot_rating', 'Pivot — rating SM', 0.01],
-              ['pivot_vote',   'Pivot — voto base', 0.01],
-              ['minutes_min_for_voto', 'Min minuti per voto', 1],
-              ['base_score', 'Voto base (eccezioni)', 0.1],
+              ['pool_size', 'Giocatori in rosa', 1],
+              ['starters',  'Titolari',          1],
+              ['bench',     'Panchina',          1],
+              ['budget_default', 'Budget default (crediti)', 10],
             ] as const
           ).map(([key, label, step]) => (
             <div key={key}>
@@ -207,240 +140,77 @@ export function FMConfigEditor({
               <input
                 type="number"
                 step={step}
-                value={eng[key]}
-                onChange={(e) => updateEngine(key, Number(e.target.value) as never)}
+                value={cfg.squad[key]}
+                onChange={(e) => updateSquad(key, Number(e.target.value))}
                 className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
           ))}
         </div>
-
-        {/* ── Live conversion table ── */}
-        <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-ink-5">
-            Tabella di conversione
-          </p>
-          <div className="overflow-x-auto rounded-lg border border-hairline">
-            <table className="w-full text-[11px] tabular-nums">
-              <thead>
-                <tr className="border-b border-hairline text-ink-5">
-                  <th className="px-3 py-2 text-left font-semibold">Rating SportMonks</th>
-                  <th className="px-3 py-2 text-left font-semibold">Note</th>
-                  <th className="px-3 py-2 text-right font-semibold">Voto base</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-hairline">
-                {PREVIEW_RATINGS.map(([rating, label]) => {
-                  const isAnchor = rating === eng.pivot_rating || rating === eng.voto_max
-                  const vb = ratingToVotoBase(rating, eng)
-                  return (
-                    <tr key={rating} className={isAnchor ? 'bg-indigo-500/10' : ''}>
-                      <td className="px-3 py-1.5 font-mono text-ink-1">{rating.toFixed(2)}</td>
-                      <td className="px-3 py-1.5 text-ink-3">{label}</td>
-                      <td className={`px-3 py-1.5 text-right font-mono font-semibold ${isAnchor ? 'text-indigo-300' : 'text-ink-1'}`}>
-                        {vb.toFixed(2)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-1 text-[9px] text-ink-5">
-            Righe evidenziate = ancoraggi della retta (pivot e massimo).
-          </p>
-        </div>
       </div>
 
-      {/* ── Football bonuses ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-4">
-        <p className="text-[13px] font-semibold text-ink-1">Bonus/Malus calcistici</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {(
-            [
-              ['goal.P', 'Goal P'],
-              ['goal.D', 'Goal D'],
-              ['goal.C', 'Goal C'],
-              ['goal.A', 'Goal A'],
-              ['assist', 'Assist'],
-              ['clean_sheet.P', 'Clean Sheet P'],
-              ['clean_sheet.D', 'Clean Sheet D'],
-              ['penalty_saved', 'Rigore parato'],
-              ['penalty_missed', 'Rigore sbagliato'],
-              ['yellow_card', 'Ammonizione'],
-              ['red_card', 'Espulsione'],
-              ['own_goal', 'Autogol'],
-              ['goal_conceded_P', 'Goal subito (P)'],
-              ['brace_bonus', 'Bonus doppietta'],
-              ['hat_trick_bonus', 'Bonus tripletta'],
-            ] as const
-          ).map(([path, label]) => {
-            const [top, sub] = path.split('.') as [string, string | undefined]
-            const value = sub
-              ? (cfg.football[top as keyof typeof cfg.football] as Record<string, number>)[sub]
-              : (cfg.football[path as keyof typeof cfg.football] as number)
-
-            return (
-              <div key={path}>
-                <label className="block text-[9px] uppercase tracking-wider text-ink-5 mb-1 font-semibold">{label}</label>
-                <input
-                  type="number" step={0.1}
-                  value={value ?? 0}
-                  onChange={(e) => {
-                    const val = Number(e.target.value)
-                    if (sub) {
-                      updateFootball(
-                        top as keyof typeof cfg.football,
-                        { ...(cfg.football[top as keyof typeof cfg.football] as Record<string, number>), [sub]: val } as never
-                      )
-                    } else {
-                      updateFootball(path as keyof typeof cfg.football, val as never)
-                    }
-                  }}
-                  className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── Popularity + MVP brackets ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-          <BracketEditor
-            label="Penalità popolarità (%)"
-            brackets={cfg.popularity_brackets}
-            onChange={(b) => update('popularity_brackets', b)}
-          />
-          <BracketEditor
-            label="Bonus MVP (%)"
-            brackets={cfg.mvp_bonus_brackets}
-            onChange={(b) => update('mvp_bonus_brackets', b)}
-          />
-        </div>
-        <p className="mt-3 text-[10px] text-ink-5">
-          Ogni fascia: &quot;se il giocatore è posseduto da [min–max]% delle squadre, applica [pct]% di penalità/bonus&quot;.
+      {/* ── Formations ── */}
+      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
+        <p className="text-[13px] font-semibold text-ink-1">Formazioni consentite</p>
+        <p className="text-[11px] text-ink-4">
+          Lista separata da virgola o spazio nel formato <span className="font-mono">X-Y-Z</span>
+          (es. <span className="font-mono">3-4-3, 4-4-2, 5-3-2</span>).
         </p>
+        <input
+          type="text"
+          defaultValue={cfg.formations.join(', ')}
+          onBlur={(e) => updateFormations(e.target.value)}
+          className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] font-mono text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+        <div className="flex flex-wrap gap-1">
+          {cfg.formations.map((f) => (
+            <span key={f} className="rounded border border-hairline bg-glass-2 px-2 py-0.5 text-[11px] font-mono text-ink-2">
+              {f}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* ── Coach tier matrix ── */}
       <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
-        <p className="text-[13px] font-semibold text-ink-1">Matrice allenatori</p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+        <p className="text-[13px] font-semibold text-ink-1">Allenatore — Matrice Tier × Risultato</p>
+        <p className="text-[11px] text-ink-4">
+          Punti che l&apos;allenatore aggiunge al raw subtotal della squadra fantasy in base
+          al tier della nazionale e al risultato della partita reale.
+        </p>
+        <div className="overflow-x-auto rounded-lg border border-hairline">
+          <table className="w-full text-[12px] tabular-nums">
             <thead>
-              <tr className="border-b border-hairline text-[10px] text-ink-5 uppercase tracking-widest">
-                <th className="pb-2 text-left font-semibold">Tier</th>
-                <th className="pb-2 text-right font-semibold">Vittoria</th>
-                <th className="pb-2 text-right font-semibold">Pareggio</th>
-                <th className="pb-2 text-right font-semibold">Sconfitta</th>
+              <tr className="border-b border-hairline">
+                <th className="px-3 py-2 text-left text-ink-4 font-medium">Tier</th>
+                <th className="px-3 py-2 text-center text-emerald-400 font-medium">Vittoria</th>
+                <th className="px-3 py-2 text-center text-ink-4 font-medium">Pareggio</th>
+                <th className="px-3 py-2 text-center text-rose-400 font-medium">Sconfitta</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
-              {(['tier_1', 'tier_2', 'tier_3', 'tier_4'] as const).map((tier) => (
-                <tr key={tier}>
-                  <td className="py-2 pr-3 text-ink-3 font-medium">{tier.replace('_', ' ').toUpperCase()}</td>
-                  {(['win', 'draw', 'loss'] as const).map((result) => (
-                    <td key={result} className="py-2 text-right">
-                      <input
-                        type="number" step={0.5}
-                        value={cfg.coach_tier_matrix[tier][result]}
-                        onChange={(e) =>
-                          update('coach_tier_matrix', {
-                            ...cfg.coach_tier_matrix,
-                            [tier]: { ...cfg.coach_tier_matrix[tier], [result]: Number(e.target.value) },
-                          })
-                        }
-                        className="w-16 rounded border border-hairline bg-glass-2 px-2 py-1 text-[12px] text-right text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {(['tier_1', 'tier_2', 'tier_3', 'tier_4'] as const).map((tier) => {
+                const row = cfg.coach_tier_matrix[tier]
+                return (
+                  <tr key={tier}>
+                    <td className="px-3 py-2 text-ink-2 font-medium">{TIER_LABELS[tier]}</td>
+                    {(['win', 'draw', 'loss'] as const).map((field) => (
+                      <td key={field} className="px-3 py-1.5 text-center">
+                        <input
+                          type="number"
+                          step={1}
+                          value={row[field]}
+                          onChange={(e) => updateCoachTier(tier, field, Number(e.target.value))}
+                          className="w-16 rounded border border-hairline bg-glass-2 px-2 py-1 text-center text-[12px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* ── BR thresholds ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
-        <p className="text-[13px] font-semibold text-ink-1">Battle Royale — soglie goal</p>
-        <p className="text-[11px] text-ink-4">
-          Ogni soglia superata = +1 goal. Es. [66, 72, 78] → punteggio 74 = 2 goal.
-        </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          {cfg.battle_royale.goal_thresholds.map((t, i) => (
-            <input
-              key={i}
-              type="number" step={0.5}
-              value={t}
-              onChange={(e) => {
-                const next = [...cfg.battle_royale.goal_thresholds]
-                next[i] = Number(e.target.value)
-                update('battle_royale', { ...cfg.battle_royale, goal_thresholds: next })
-              }}
-              className="w-16 rounded border border-hairline bg-glass-2 px-2 py-1.5 text-[12px] text-center text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          ))}
-          <button
-            type="button"
-            onClick={() => update('battle_royale', {
-              ...cfg.battle_royale,
-              goal_thresholds: [
-                ...cfg.battle_royale.goal_thresholds,
-                (cfg.battle_royale.goal_thresholds.at(-1) ?? 60) + 6,
-              ],
-            })}
-            className="text-[11px] text-indigo-400 hover:text-indigo-300"
-          >＋</button>
-          <button
-            type="button"
-            onClick={() => update('battle_royale', {
-              ...cfg.battle_royale,
-              goal_thresholds: cfg.battle_royale.goal_thresholds.slice(0, -1),
-            })}
-            className="text-[11px] text-rose-400 hover:text-rose-300"
-          >−</button>
-        </div>
-      </div>
-
-      {/* ── Squad ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
-        <p className="text-[13px] font-semibold text-ink-1">Rosa</p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {(
-            [
-              ['pool_size', 'Dim. rosa', 1],
-              ['starters', 'Titolari', 1],
-              ['bench', 'Panchina', 1],
-              ['budget_default', 'Budget default', 10],
-            ] as const
-          ).map(([key, label, step]) => (
-            <div key={key}>
-              <label className="block text-[9px] uppercase tracking-wider text-ink-5 mb-1 font-semibold">{label}</label>
-              <input
-                type="number" step={step}
-                value={cfg.squad[key]}
-                onChange={(e) => update('squad', { ...cfg.squad, [key]: Number(e.target.value) })}
-                className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Order of operations ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
-        <p className="text-[13px] font-semibold text-ink-1">Ordine di calcolo</p>
-        <select
-          value={cfg.calc_order}
-          onChange={(e) => update('calc_order', e.target.value as 'mvp_then_penalty' | 'penalty_then_mvp')}
-          className="w-full max-w-sm rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        >
-          <option value="mvp_then_penalty">1. Base → 2. Bonus/Malus → 3. MVP → 4. Penalità popolarità</option>
-          <option value="penalty_then_mvp">1. Base → 2. Bonus/Malus → 3. Penalità popolarità → 4. MVP</option>
-        </select>
       </div>
     </div>
   )

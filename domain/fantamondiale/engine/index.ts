@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/types/database.types'
 import { fmCompetitionConfigSchema } from '@/domain/fantamondiale/config/schema'
+import { loadFMUnifiedConfig } from '@/lib/fantamondiale/loadUnifiedConfig'
 import { scorePlayer } from './playerScore'
 import { scoreCoach } from './coachScore'
 import { aggregateTeamRoundScore } from './roundScore'
@@ -36,14 +37,9 @@ export async function runRoundEngine(roundId: string, supabase: Supabase): Promi
     .single()
   if (roundErr || !round) throw new Error(`Round not found: ${roundErr?.message}`)
 
-  // ---- 2. Load and parse config ----------------------------------------
-  const { data: configRow, error: configErr } = await supabase
-    .from('fm_competition_config')
-    .select('config')
-    .eq('competition_id', round.competition_id)
-    .single()
-  if (configErr || !configRow) throw new Error(`Config not found: ${configErr?.message}`)
-  const config = fmCompetitionConfigSchema.parse(configRow.config)
+  // ---- 2. Compose unified config (Regole di gioco + competition shape) -
+  const composed = await loadFMUnifiedConfig(supabase, round.competition_id)
+  const config = fmCompetitionConfigSchema.parse(composed)
 
   // ---- 3. Load real matches for this round -----------------------------
   const { data: matches, error: matchErr } = await supabase

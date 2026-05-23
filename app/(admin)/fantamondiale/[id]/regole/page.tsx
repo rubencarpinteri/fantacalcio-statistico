@@ -1,6 +1,6 @@
 import { requireFMContext } from '@/lib/fantamondiale/server'
-import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
-import { DEFAULT_FM_CONFIG } from '@/domain/fantamondiale/config/defaults'
+import { createClient } from '@/lib/supabase/server'
+import { loadFMUnifiedConfig } from '@/lib/fantamondiale/loadUnifiedConfig'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -15,15 +15,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default async function RegolePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const ctx = await requireFMContext(id)
+  await requireFMContext(id)
 
-  const config = (ctx.config?.config as FMCompetitionConfig | null) ?? DEFAULT_FM_CONFIG
+  const supabase = await createClient()
+  const config = await loadFMUnifiedConfig(supabase, id)
 
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-[16px] font-semibold text-ink-1">Regole</h2>
-        <p className="mt-0.5 text-[11px] text-ink-4">Configurazione ufficiale della competizione</p>
+        <p className="mt-0.5 text-[11px] text-ink-4">Configurazione effettiva di questa competizione</p>
+      </div>
+
+      <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 px-4 py-3">
+        <p className="text-[12px] font-semibold text-indigo-300">Regole globali + setup competizione</p>
+        <p className="mt-0.5 text-[11px] text-ink-3 leading-relaxed">
+          Motore, bonus/malus, popolarità, MVP, soglie gol e punti per risultato sono comuni a tutte
+          le competizioni e si modificano in{' '}
+          <a href="/regole-di-gioco" className="text-indigo-300 underline hover:text-indigo-200">Regole di gioco</a>.
+          Rosa, formazioni e matrice allenatore sono specifici di questa competizione.
+        </p>
       </div>
 
       <Section title="Rosa e Budget">
