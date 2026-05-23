@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/audit'
 import { generateRoundRobin } from '@/domain/competitions/roundRobin'
 import { computeRound } from '@/domain/competitions/computeRound'
 import type { ScoringConfig, FixtureInput, TeamStandingRow } from '@/domain/competitions/computeRound'
+import { loadGameRules } from '@/lib/engine/loadGameRules'
 import type { Json } from '@/types/database.types'
 import type { ActionResult } from '@/lib/actionResult'
 
@@ -436,8 +437,17 @@ export async function computeRoundAction(
     }
   }
 
-  // 6. Parse config
-  const scoringConfig = competition.scoring_config as ScoringConfig
+  // 6. Build scoring config from unified game rules + per-competition method
+  const gameRules = await loadGameRules(supabase, ctx.league.id)
+  const compSC = competition.scoring_config as { method?: string } | null
+  const method: ScoringConfig['method'] =
+    compSC?.method === 'direct_comparison' ? 'direct_comparison' : 'goal_thresholds'
+  const scoringConfig: ScoringConfig = {
+    method,
+    thresholds: gameRules.thresholds,
+    smoothing: gameRules.smoothing,
+    points: gameRules.points,
+  }
   const tiebreakerOrder = (competition.tiebreaker_config as string[] | null) ??
     ['points', 'goal_difference', 'goals_for', 'total_fantavoto']
 

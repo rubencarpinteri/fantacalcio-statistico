@@ -6,21 +6,20 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
-import { DEFAULT_MANTRA_THRESHOLDS } from '@/domain/competitions/goalThresholds'
 import type { Json } from '@/types/database.types'
 import type { ActionResult } from '@/lib/actionResult'
 
 const uuid = z.string().uuid('ID non valido')
 
+// scoring_config keeps only the per-competition method choice
+// (goal_thresholds vs direct_comparison). All actual thresholds,
+// smoothing and W/D/L points come from the unified game rules in
+// league_engine_config (Regole di gioco).
 const createCompetitionSchema = z.object({
   name: z.string().trim().min(1, 'Nome obbligatorio').max(100),
   type: z.enum(['campionato', 'battle_royale', 'coppa']),
   season: z.string().trim().max(20).nullable(),
   scoring_method: z.enum(['direct_comparison', 'goal_thresholds']),
-  points_win: z.coerce.number().int().min(0).max(100),
-  points_draw: z.coerce.number().int().min(0).max(100),
-  points_loss: z.coerce.number().int().min(0).max(100),
-  thresholds_json: z.string().nullable(),
 })
 
 // ============================================================
@@ -35,37 +34,16 @@ export async function createCompetitionAction(
     type: formData.get('type'),
     season: (formData.get('season') as string | null)?.trim() || null,
     scoring_method: formData.get('scoring_method'),
-    points_win: formData.get('points_win') ?? 3,
-    points_draw: formData.get('points_draw') ?? 1,
-    points_loss: formData.get('points_loss') ?? 0,
-    thresholds_json: formData.get('thresholds_json'),
   })
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? 'Input non valido.', success: false }
   }
-  const { name, type, season, scoring_method, points_win, points_draw, points_loss, thresholds_json } = parsed.data
+  const { name, type, season, scoring_method } = parsed.data
 
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
-  const pointsCfg = { win: points_win, draw: points_draw, loss: points_loss }
-
-  let scoring_config: Json
-  if (scoring_method === 'direct_comparison') {
-    scoring_config = { method: 'direct_comparison', points: pointsCfg }
-  } else {
-    let thresholds = DEFAULT_MANTRA_THRESHOLDS
-    if (thresholds_json) {
-      try {
-        const parsedThresholds = JSON.parse(thresholds_json)
-        if (Array.isArray(parsedThresholds) && parsedThresholds.length > 0) thresholds = parsedThresholds
-      } catch {
-        return { error: 'Formato soglie non valido.', success: false }
-      }
-    }
-    // Json is recursive; TS can't verify a plain object literal satisfies it.
-    scoring_config = { method: 'goal_thresholds', thresholds, points: pointsCfg } as unknown as Json
-  }
+  const scoring_config: Json = { method: scoring_method }
 
   const { data: competition, error } = await supabase
     .from('competitions')

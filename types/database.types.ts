@@ -1934,7 +1934,6 @@ export type Database = {
           result_points: Json
           smoothing: Json
           updated_at: string
-          weekly_budget: number
           yellow_card: number
         }
         Insert: {
@@ -1968,7 +1967,6 @@ export type Database = {
           result_points?: Json
           smoothing?: Json
           updated_at?: string
-          weekly_budget?: number
           yellow_card?: number
         }
         Update: {
@@ -2002,7 +2000,6 @@ export type Database = {
           result_points?: Json
           smoothing?: Json
           updated_at?: string
-          weekly_budget?: number
           yellow_card?: number
         }
         Relationships: [
@@ -2125,7 +2122,6 @@ export type Database = {
           invite_token: string | null
           lock_behavior: Database["public"]["Enums"]["lock_behavior"]
           name: string
-          result_rules: Json
           scoring_mode: Database["public"]["Enums"]["scoring_mode"]
           season_name: string
           timezone: string
@@ -2142,7 +2138,6 @@ export type Database = {
           invite_token?: string | null
           lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
           name: string
-          result_rules?: Json
           scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
           season_name: string
           timezone?: string
@@ -2159,7 +2154,6 @@ export type Database = {
           invite_token?: string | null
           lock_behavior?: Database["public"]["Enums"]["lock_behavior"]
           name?: string
-          result_rules?: Json
           scoring_mode?: Database["public"]["Enums"]["scoring_mode"]
           season_name?: string
           timezone?: string
