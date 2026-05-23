@@ -69,7 +69,7 @@ export default async function MethodologyPage() {
   const cfg = buildEngineConfig(dbEngCfg ?? null)
   const slope = deriveSlope(cfg)
   const bm = cfg.bonus_malus
-  const weeklyBudget = (dbEngCfg as { weekly_budget?: number } | null)?.weekly_budget ?? 500
+  const weeklyBudget = ctx.league.weekly_budget
 
   const rcColor: Record<string, string> = {
     GK: 'text-yellow-400', DEF: 'text-blue-400', MID: 'text-green-400', ATT: 'text-red-400',

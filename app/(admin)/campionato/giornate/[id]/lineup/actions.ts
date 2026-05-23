@@ -172,13 +172,7 @@ export async function submitLineupAction(
     }
 
     // 5c. Sum prices and compare to the league's weekly budget.
-    const { data: cfg } = await supabase
-      .from('league_engine_config')
-      .select('weekly_budget')
-      .eq('league_id', ctx.league.id)
-      .maybeSingle()
-
-    const budget = cfg?.weekly_budget ?? 500
+    const budget = ctx.league.weekly_budget
     const totalCost = assignedPlayerIds.reduce((sum, id) => sum + (priceMap.get(id) ?? 0), 0)
 
     if (totalCost > budget) {

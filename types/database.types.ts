@@ -2130,6 +2130,7 @@ export type Database = {
           season_name: string
           timezone: string
           updated_at: string
+          weekly_budget: number
         }
         Insert: {
           active_sportmonks_league_id?: number | null
@@ -2146,6 +2147,7 @@ export type Database = {
           season_name: string
           timezone?: string
           updated_at?: string
+          weekly_budget?: number
         }
         Update: {
           active_sportmonks_league_id?: number | null
@@ -2162,6 +2164,7 @@ export type Database = {
           season_name?: string
           timezone?: string
           updated_at?: string
+          weekly_budget?: number
         }
         Relationships: []
       }
@@ -4069,6 +4072,7 @@ export const Constants = {
   },
 } as const
 
+
 export type AuditAction = Database["public"]["Enums"]["audit_action"]
 export type RatingClass = Database["public"]["Enums"]["rating_class"]
 export type MatchdayStatus = Database["public"]["Enums"]["matchday_status"]
@@ -4089,7 +4093,7 @@ export type CompetitionMatchup = Database["public"]["Tables"]["competition_match
 export type LeagueEngineConfig = Database["public"]["Tables"]["league_engine_config"]["Row"]
 export type SerieAPlayer = Database["public"]["Tables"]["serie_a_players"]["Row"]
 
-// ── FantaMondiale Statistico aliases ──
+// FantaMondiale Statistico aliases
 
 export type FMCompetition = Database["public"]["Tables"]["fm_competition"]["Row"]
 export type FMCompetitionConfigRow = Database["public"]["Tables"]["fm_competition_config"]["Row"]

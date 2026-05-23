@@ -132,22 +132,15 @@ export default async function LineupPage({
   const poolPlayers = allPlayers ?? []
 
   // Fetch prices for this matchday + the league's weekly budget.
-  const [{ data: priceRows }, { data: cfgRow }] = await Promise.all([
-    supabase
-      .from('matchday_player_prices')
-      .select('player_id, price')
-      .eq('matchday_id', matchdayId),
-    supabase
-      .from('league_engine_config')
-      .select('weekly_budget')
-      .eq('league_id', ctx.league.id)
-      .maybeSingle(),
-  ])
+  const { data: priceRows } = await supabase
+    .from('matchday_player_prices')
+    .select('player_id, price')
+    .eq('matchday_id', matchdayId)
 
   const priceByPlayerId: Record<string, number> = {}
   for (const r of priceRows ?? []) priceByPlayerId[r.player_id] = r.price
 
-  const weeklyBudget = cfgRow?.weekly_budget ?? 500
+  const weeklyBudget = ctx.league.weekly_budget
   const pricedCount = priceRows?.length ?? 0
   const poolSize = poolPlayers.length
   const pricesReady = poolSize > 0 && pricedCount >= poolSize * 0.95 // 95% coverage = usable

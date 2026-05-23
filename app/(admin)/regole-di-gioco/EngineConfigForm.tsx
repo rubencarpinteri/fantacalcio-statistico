@@ -629,8 +629,6 @@ export function EngineConfigForm({ current }: Props) {
     pivot_rating: src?.pivot_rating ?? DEFAULT_ENGINE_CONFIG.pivot_rating,
     pivot_vote:   src?.pivot_vote   ?? DEFAULT_ENGINE_CONFIG.pivot_vote,
 
-    weekly_budget: src?.weekly_budget ?? 500,
-
     goal_bonus_gk:  src?.goal_bonus_gk  ?? bm.goal_by_role.GK,
     goal_bonus_def: src?.goal_bonus_def ?? bm.goal_by_role.DEF,
     goal_bonus_mid: src?.goal_bonus_mid ?? bm.goal_by_role.MID,
@@ -677,19 +675,6 @@ export function EngineConfigForm({ current }: Props) {
         defaultPivotRating={v.pivot_rating}
         defaultPivotVote={v.pivot_vote}
       />
-
-      {/* ── Budget settimanale ───────────────────────────────────────── */}
-      <FieldGroup title="Budget settimanale">
-        <Field
-          label="Crediti per giornata"
-          name="weekly_budget"
-          defaultValue={v.weekly_budget}
-          step="10"
-          min="50"
-          max="10000"
-          hint="Ogni utente ha questo numero di crediti per costruire la formazione (titolari + panchina, prezzo pieno)."
-        />
-      </FieldGroup>
 
       {/* ── Ownership · MVP (trademark) ─────────────────────────────── */}
       <OwnershipSection

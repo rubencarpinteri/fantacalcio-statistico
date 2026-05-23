@@ -120,6 +120,17 @@ export function LeagueSettingsForm({ league }: { league: League }) {
         hint="Numero di giocatori in panchina per formazione (1–12)"
       />
 
+      <Input
+        label="Budget settimanale (crediti)"
+        name="weekly_budget"
+        type="number"
+        min={50}
+        max={10000}
+        step={10}
+        defaultValue={league.weekly_budget}
+        hint="Crediti che ogni manager spende per giornata Serie A (titolari + panchina, prezzo pieno). FantaMondiale ha il suo budget nelle Regole della singola competizione."
+      />
+
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.success && (
         <Alert variant="success">Impostazioni salvate correttamente.</Alert>

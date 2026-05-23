@@ -25,9 +25,6 @@ const EngineConfigSchema = z.object({
   pivot_rating: z.coerce.number().min(3).max(10),
   pivot_vote:   z.coerce.number().min(1).max(10),
 
-  // Phase 2 — weekly draft
-  weekly_budget: z.coerce.number().int().min(50).max(10000),
-
   // Goal bonuses
   goal_bonus_gk:  z.coerce.number().min(0).max(10),
   goal_bonus_def: z.coerce.number().min(0).max(10),
