@@ -28,8 +28,8 @@ import type { ResultRulesConfig } from '@/domain/competitions/resultRules'
 import {
   recomputeOneMatchday,
   recomputeCompetitionRounds,
-  parseResultRules,
 } from '@/lib/engine/retroactiveRecompute'
+import { loadGameRules } from '@/lib/engine/loadGameRules'
 import type { Database, Json } from '@/types/database.types'
 import type { ScoringConfig } from '@/domain/competitions/computeRound'
 
@@ -168,51 +168,29 @@ export async function POST(req: Request) {
 
   // ---- 2. Save new configs to DB --------------------------
 
-  // 2a. Engine config — update only the keys specified in overrides
-  if (parsed.engine_config_overrides && Object.keys(parsed.engine_config_overrides).length > 0) {
-    await supabase
-      .from('league_engine_config')
-      .update(parsed.engine_config_overrides)
-      .eq('league_id', leagueId)
-  }
-
-  // 2b. Result rules — merge onto current leagues.result_rules
-  const { data: leagueRaw } = await supabase
-    .from('leagues')
-    .select('*')
-    .eq('id', leagueId)
-    .maybeSingle()
-
-  const leagueAny = leagueRaw as unknown as { result_rules?: unknown } | null
-  const currentRules = parseResultRules(leagueAny?.result_rules)
+  // 2a. Engine config — update engine knobs and unified game rules in one row
+  const currentRules = await loadGameRules(supabase, leagueId)
   const newResultRules: ResultRulesConfig = {
     thresholds: parsed.result_rules_overrides?.thresholds ?? currentRules.thresholds,
     smoothing: parsed.result_rules_overrides?.smoothing ?? currentRules.smoothing,
     points: parsed.result_rules_overrides?.points ?? currentRules.points,
   }
 
+  const engineUpdate: Database['public']['Tables']['league_engine_config']['Update'] = {
+    ...(parsed.engine_config_overrides ?? {}),
+  }
   if (parsed.result_rules_overrides) {
+    engineUpdate.goal_thresholds = newResultRules.thresholds as unknown as Json
+    engineUpdate.smoothing       = newResultRules.smoothing   as unknown as Json
+    engineUpdate.result_points   = newResultRules.points      as unknown as Json
+  }
+
+  if (Object.keys(engineUpdate).length > 0) {
     await supabase
-      .from('leagues')
-      .update(
-        { result_rules: newResultRules } as unknown as Database['public']['Tables']['leagues']['Update']
-      )
-      .eq('id', leagueId)
+      .from('league_engine_config')
+      .update(engineUpdate)
+      .eq('league_id', leagueId)
   }
-
-  // 2c. Update all active competitions' scoring_config to match new result rules
-  const scoringConfig: ScoringConfig = {
-    method: 'goal_thresholds',
-    thresholds: newResultRules.thresholds,
-    smoothing: newResultRules.smoothing,
-    points: newResultRules.points,
-  }
-
-  await supabase
-    .from('competitions')
-    .update({ scoring_config: scoringConfig as unknown as Json })
-    .eq('league_id', leagueId)
-    .eq('status', 'active')
 
   // ---- 3. Load fresh engine config from DB ----------------
   const { data: freshEngineRow } = await supabase
@@ -266,6 +244,12 @@ export async function POST(req: Request) {
   let roundsRecomputed = 0
 
   if (recomputedMatchdayIds.length > 0) {
+    const scoringConfig: ScoringConfig = {
+      method: 'goal_thresholds',
+      thresholds: newResultRules.thresholds,
+      smoothing: newResultRules.smoothing,
+      points: newResultRules.points,
+    }
     roundsRecomputed = await recomputeCompetitionRounds({
       supabase,
       leagueId,

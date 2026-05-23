@@ -9,14 +9,11 @@
 //     matchday's snapshot and persists the result.
 //   - recomputeCompetitionRounds(): for each affected matchday,
 //     re-runs the competition engine on every linked round.
-//
-// Plus a couple of internal helpers (loadPriorStandings,
-// parseResultRules) that live here for the same reason.
 
 import { loadMatchdaySnapshot } from '@/lib/playground/loadSnapshot'
 import { recomputeMatchday } from '@/domain/engine/v1/recomputeMatchday'
 import { computeRound } from '@/domain/competitions/computeRound'
-import { DEFAULT_RESULT_RULES, type ResultRulesConfig } from '@/domain/competitions/resultRules'
+import { type ResultRulesConfig } from '@/domain/competitions/resultRules'
 import type { CompetitionRoundInput } from '@/domain/engine/v1/recomputeMatchday'
 import type { FixtureInput, TeamStandingRow, ScoringConfig } from '@/domain/competitions/computeRound'
 import type { EngineConfig, PlayerCalculationResult } from '@/domain/engine/v1/types'
@@ -456,14 +453,3 @@ async function loadPriorStandings(
   return []
 }
 
-// ---- Helpers -----------------------------------------------
-
-export function parseResultRules(raw: unknown): ResultRulesConfig {
-  if (!raw || typeof raw !== 'object') return DEFAULT_RESULT_RULES
-  const r = raw as Partial<ResultRulesConfig>
-  return {
-    thresholds: Array.isArray(r.thresholds) ? r.thresholds : DEFAULT_RESULT_RULES.thresholds,
-    smoothing: r.smoothing ?? DEFAULT_RESULT_RULES.smoothing,
-    points: r.points ?? DEFAULT_RESULT_RULES.points,
-  }
-}

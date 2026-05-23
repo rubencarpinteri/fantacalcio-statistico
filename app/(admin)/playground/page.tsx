@@ -1,6 +1,6 @@
 import { requireLeagueAdmin } from '@/lib/league'
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_RESULT_RULES, type ResultRulesConfig } from '@/domain/competitions/resultRules'
+import { parseGameRulesFromConfigRow } from '@/lib/engine/loadGameRules'
 import { PlaygroundClient } from './PlaygroundClient'
 
 export const metadata = { title: 'Playground' }
@@ -16,22 +16,14 @@ export default async function PlaygroundPage() {
     .eq('league_id', ctx.league.id)
     .order('matchday_number', { ascending: false })
 
-  // Engine config row
+  // Engine config row — owns unified game rules + engine knobs
   const { data: engineConfig } = await supabase
     .from('league_engine_config')
     .select('*')
     .eq('league_id', ctx.league.id)
     .maybeSingle()
 
-  // Result rules — cast through unknown until DB types regenerated
-  const { data: leagueRaw } = await supabase
-    .from('leagues')
-    .select('*')
-    .eq('id', ctx.league.id)
-    .maybeSingle()
-
-  const leagueAny = leagueRaw as unknown as { result_rules?: unknown } | null
-  const baseResultRules: ResultRulesConfig = parseRules(leagueAny?.result_rules)
+  const baseResultRules = parseGameRulesFromConfigRow(engineConfig ?? null)
 
   const matchdayList = (matchdays ?? []).map((m) => ({
     id: m.id,
@@ -65,14 +57,4 @@ export default async function PlaygroundPage() {
       />
     </div>
   )
-}
-
-function parseRules(raw: unknown): ResultRulesConfig {
-  if (!raw || typeof raw !== 'object') return DEFAULT_RESULT_RULES
-  const r = raw as Partial<ResultRulesConfig>
-  return {
-    thresholds: Array.isArray(r.thresholds) ? r.thresholds : DEFAULT_RESULT_RULES.thresholds,
-    smoothing: r.smoothing ?? DEFAULT_RESULT_RULES.smoothing,
-    points: r.points ?? DEFAULT_RESULT_RULES.points,
-  }
 }

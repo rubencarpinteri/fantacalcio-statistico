@@ -3,8 +3,8 @@
 // ============================================================
 // Loads everything needed to recompute a matchday into memory.
 // Returns the inputs in the shape recomputeMatchday() expects,
-// plus the live DB engine_config and result_rules so the API
-// layer can apply user overrides on top.
+// plus the live DB engine_config and unified game rules so the
+// API layer can apply user overrides on top.
 //
 // Pure read-only: never writes.
 // ============================================================
@@ -15,7 +15,7 @@ import type { EnginePlayerInput } from '@/domain/engine/v1/types'
 import type { LineupPlayer, SlotRoles } from '@/lib/engine/teamScores'
 import type { ResultRulesConfig } from '@/domain/competitions/resultRules'
 import type { ScoreOverrideInput } from '@/domain/engine/v1/recomputeMatchday'
-import { DEFAULT_RESULT_RULES } from '@/domain/competitions/resultRules'
+import { parseGameRulesFromConfigRow } from '@/lib/engine/loadGameRules'
 
 type Supabase = SupabaseClient<Database>
 
@@ -48,24 +48,14 @@ export async function loadMatchdaySnapshot(
   matchdayId: string,
   leagueId: string
 ): Promise<{ snapshot: MatchdaySnapshot | null; error: string | null }> {
-  // 1. League — for result_rules.
-  // result_rules is added in migration 034 — not yet in generated DB types.
-  // Cast through unknown to access it; regenerate types post-deploy to remove cast.
-  const { data: leagueRaw } = await supabase
-    .from('leagues')
-    .select('*')
-    .eq('id', leagueId)
-    .maybeSingle()
-
-  const league = leagueRaw as unknown as { result_rules?: unknown } | null
-  const baseResultRules = parseResultRules(league?.result_rules)
-
-  // 2. Engine config row
+  // 1. Engine config row — owns unified game rules + engine knobs
   const { data: engineConfigRow } = await supabase
     .from('league_engine_config')
     .select('*')
     .eq('league_id', leagueId)
     .maybeSingle()
+
+  const baseResultRules = parseGameRulesFromConfigRow(engineConfigRow ?? null)
 
   // 3. Active league players (for rating_class lookup)
   const { data: leaguePlayers } = await supabase
@@ -246,14 +236,3 @@ export async function loadMatchdaySnapshot(
   }
 }
 
-// ---- Helpers ------------------------------------------------
-
-function parseResultRules(raw: unknown): ResultRulesConfig {
-  if (!raw || typeof raw !== 'object') return DEFAULT_RESULT_RULES
-  const r = raw as Partial<ResultRulesConfig>
-  return {
-    thresholds: Array.isArray(r.thresholds) ? r.thresholds : DEFAULT_RESULT_RULES.thresholds,
-    smoothing: r.smoothing ?? DEFAULT_RESULT_RULES.smoothing,
-    points: r.points ?? DEFAULT_RESULT_RULES.points,
-  }
-}
