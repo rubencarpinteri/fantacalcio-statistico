@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/app/(auth)/login/actions'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-type IconName = 'calendar' | 'trophy' | 'user' | 'beaker' | 'gear' | 'logout' | 'ball' | 'globe'
+type IconName = 'calendar' | 'trophy' | 'user' | 'beaker' | 'gear' | 'logout' | 'ball' | 'globe' | 'book'
 
 interface NavItem {
   href: string
@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
     matchPaths: ['/competitions'],
   },
   { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe' },
+  { href: '/regole-di-gioco', label: 'Regole di gioco', icon: 'book',   adminOnly: true },
   { href: '/playground',    label: 'Playground',    icon: 'beaker', adminOnly: true },
   { href: '/league',        label: 'Impostazioni',  icon: 'gear',   adminOnly: true },
 ]
@@ -108,6 +109,14 @@ function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {
           <path d="M12 3c-2.5 2.5-4 5.5-4 9s1.5 6.5 4 9M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9" />
           <path d="M3 12h18" />
           <path d="M3.6 8h16.8M3.6 16h16.8" />
+        </svg>
+      )
+    case 'book':
+      return (
+        <svg {...props}>
+          <path d="M4 4h11a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z" />
+          <path d="M4 4v14" />
+          <path d="M7 8h7M7 12h7" />
         </svg>
       )
   }

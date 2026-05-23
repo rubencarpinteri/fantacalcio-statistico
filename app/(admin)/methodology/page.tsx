@@ -492,7 +492,7 @@ export default async function MethodologyPage() {
               <span className="shrink-0 text-indigo-300">·</span>
               <span>
                 Pivot, bonus, malus e gate minuti sono <strong className="text-ink-2">personalizzabili per lega</strong> dalla sezione{' '}
-                <a href="/league/engine-config" className="text-indigo-300 hover:underline">Configurazione motore</a>.
+                <a href="/regole-di-gioco" className="text-indigo-300 hover:underline">Regole di gioco</a>.
               </span>
             </li>
           </ul>

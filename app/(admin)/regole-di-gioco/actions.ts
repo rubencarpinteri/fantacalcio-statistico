@@ -15,6 +15,11 @@ const bracketSchema = z.object({
   pct:     z.number().min(0).max(100),
 })
 
+const goalThresholdSchema = z.object({
+  min:   z.number().min(0).max(200),
+  goals: z.number().int().min(0).max(20),
+})
+
 const EngineConfigSchema = z.object({
   // Pivot anchor — rating → voto_base
   pivot_rating: z.coerce.number().min(3).max(10),
@@ -55,6 +60,14 @@ const EngineConfigSchema = z.object({
   popularity_brackets_json: z.string(),
   mvp_bonus_brackets_json:  z.string(),
   calc_order:               z.enum(['mvp_then_penalty', 'penalty_then_mvp']),
+
+  // Unified game rules — goal thresholds, smoothing, W/D/L points
+  goal_thresholds_json:                z.string(),
+  smoothing_drawIfDiffBelow:             z.coerce.number().min(0).max(10),
+  smoothing_drawIf1GoalLeadAndDiffBelow: z.coerce.number().min(0).max(10),
+  points_win:  z.coerce.number().int().min(0).max(10),
+  points_draw: z.coerce.number().int().min(0).max(10),
+  points_loss: z.coerce.number().int().min(0).max(10),
 })
 
 export interface SaveEngineConfigResult {
@@ -71,6 +84,17 @@ function parseBracketsField(json: string, label: string): { ok: true; value: Jso
   }
   // Sort by min_pct ascending so DB always sees ordered ladder
   const sorted = [...parsed.data].sort((a, b) => a.min_pct - b.min_pct)
+  return { ok: true, value: sorted as unknown as Json }
+}
+
+function parseThresholdsField(json: string): { ok: true; value: Json } | { ok: false; error: string } {
+  let raw: unknown
+  try { raw = JSON.parse(json) } catch { return { ok: false, error: 'Soglie gol: JSON non valido.' } }
+  const parsed = z.array(goalThresholdSchema).min(1).safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, error: `Soglie gol: ${parsed.error.errors[0]?.message ?? 'forma non valida'}.` }
+  }
+  const sorted = [...parsed.data].sort((a, b) => a.min - b.min)
   return { ok: true, value: sorted as unknown as Json }
 }
 
@@ -99,14 +123,39 @@ export async function saveEngineConfigAction(
   if (!popParsed.ok) return { error: popParsed.error, success: false }
   const mvpParsed = parseBracketsField(parsed.data.mvp_bonus_brackets_json,  'Fasce MVP')
   if (!mvpParsed.ok) return { error: mvpParsed.error, success: false }
+  const thrParsed = parseThresholdsField(parsed.data.goal_thresholds_json)
+  if (!thrParsed.ok) return { error: thrParsed.error, success: false }
 
-  const { popularity_brackets_json: _p, mvp_bonus_brackets_json: _m, ...flat } = parsed.data
-  void _p; void _m
+  const {
+    popularity_brackets_json: _p,
+    mvp_bonus_brackets_json: _m,
+    goal_thresholds_json: _t,
+    smoothing_drawIfDiffBelow,
+    smoothing_drawIf1GoalLeadAndDiffBelow,
+    points_win,
+    points_draw,
+    points_loss,
+    ...flat
+  } = parsed.data
+  void _p; void _m; void _t
+
+  const smoothing: Json = {
+    drawIfDiffBelow: smoothing_drawIfDiffBelow,
+    drawIf1GoalLeadAndDiffBelow: smoothing_drawIf1GoalLeadAndDiffBelow,
+  }
+  const result_points: Json = {
+    win: points_win,
+    draw: points_draw,
+    loss: points_loss,
+  }
 
   const values = {
     ...flat,
     popularity_brackets: popParsed.value,
     mvp_bonus_brackets:  mvpParsed.value,
+    goal_thresholds:     thrParsed.value,
+    smoothing,
+    result_points,
     league_id:  ctx.league.id,
     updated_at: new Date().toISOString(),
   }
@@ -127,7 +176,7 @@ export async function saveEngineConfigAction(
     afterJson: values as unknown as Json,
   })
 
-  revalidatePath('/league/engine-config')
+  revalidatePath('/regole-di-gioco')
   revalidatePath('/methodology')
 
   return { error: null, success: true }

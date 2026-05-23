@@ -3,9 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { EngineConfigForm } from './EngineConfigForm'
 
-export const metadata = { title: 'Configurazione Motore — Fantacalcio Statistico' }
+export const metadata = { title: 'Regole di gioco — Fantacalcio Statistico' }
 
-export default async function EngineConfigPage() {
+export default async function GameRulesPage() {
   const ctx = await requireLeagueAdmin()
   const supabase = await createClient()
 
@@ -17,20 +17,12 @@ export default async function EngineConfigPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <a
-          href="/league"
-          className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink-1 transition-colors"
-        >
-          ← Impostazioni lega
-        </a>
-      </div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-ink-1">Configurazione motore di calcolo</h1>
+          <h1 className="text-xl font-bold text-ink-1">Regole di gioco</h1>
           <p className="mt-0.5 text-sm text-ink-3">
-            Personalizza bonus, malus e fattore minuti per la tua lega.
-            I valori predefiniti corrispondono alla configurazione standard Mantra.
+            Unico punto di configurazione del motore di calcolo, dei bonus/malus,
+            delle soglie gol e dei criteri di risultato.
           </p>
         </div>
         <a
@@ -41,10 +33,21 @@ export default async function EngineConfigPage() {
         </a>
       </div>
 
+      <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 px-4 py-3">
+        <p className="text-[13px] font-semibold text-indigo-300">
+          Queste regole valgono per ogni competizione
+        </p>
+        <p className="mt-0.5 text-[12px] text-ink-3 leading-relaxed">
+          Campionato, Battle Royale, Coppa e Fantamondiale (Trial Scottish League, Main FM,
+          futuro Mondiale) utilizzano tutti i parametri qui sotto. Ogni modifica si applica
+          all&apos;intera lega a partire dal prossimo calcolo.
+        </p>
+      </div>
+
       <Card>
         <CardHeader
-          title="Parametri motore v3.0 — Pivot + Bonus"
-          description="Pivot della scala voto + bonus/malus. Modifica i valori e salva. Le modifiche hanno effetto dal prossimo calcolo."
+          title="Parametri motore v3.1 — Pivot + Bonus + Ownership"
+          description="Pivot, bonus/malus, popolarità, MVP e soglie gol. Modifica i valori e salva."
         />
         <CardContent>
           <EngineConfigForm current={current ?? null} />

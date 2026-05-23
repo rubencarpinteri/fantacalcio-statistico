@@ -60,13 +60,13 @@ export default async function LeagueSettingsPage() {
                   <span className="text-ink-4">→</span>
                 </a>
                 <a
-                  href="/league/engine-config"
+                  href="/regole-di-gioco"
                   className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-glass-1"
                 >
                   <div>
-                    <p className="font-medium text-ink-1">Motore di calcolo</p>
+                    <p className="font-medium text-ink-1">Regole di gioco</p>
                     <p className="text-xs text-ink-3">
-                      Bonus, malus e fattore minuti personalizzabili
+                      Motore, bonus/malus, soglie gol — valgono per ogni competizione
                     </p>
                   </div>
                   <span className="text-ink-4">→</span>

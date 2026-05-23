@@ -6,6 +6,9 @@ import { saveEngineConfigAction } from './actions'
 import type { LeagueEngineConfig, Json } from '@/types/database.types'
 import { DEFAULT_ENGINE_CONFIG, deriveSlope } from '@/domain/engine/v1/config'
 import type { OwnershipBracket, CalcOrder } from '@/domain/engine/v1/types'
+import type { GoalThreshold } from '@/domain/competitions/goalThresholds'
+import type { SmoothingConfig, PointsConfig } from '@/domain/competitions/resultRules'
+import { DEFAULT_RESULT_RULES } from '@/domain/competitions/resultRules'
 
 // ── Submit button ────────────────────────────────────────────────────────────
 
@@ -408,6 +411,203 @@ function OwnershipSection({
   )
 }
 
+// ── Game Rules section (thresholds + smoothing + points) ───────────────────
+
+function parseThresholdsJson(raw: Json | null | undefined, fallback: GoalThreshold[]): GoalThreshold[] {
+  if (!Array.isArray(raw)) return fallback
+  const out: GoalThreshold[] = []
+  for (const item of raw) {
+    if (
+      item && typeof item === 'object' && !Array.isArray(item) &&
+      typeof (item as Record<string, unknown>).min === 'number' &&
+      typeof (item as Record<string, unknown>).goals === 'number'
+    ) {
+      const o = item as Record<string, number>
+      out.push({ min: o.min!, goals: o.goals! })
+    }
+  }
+  return out.length > 0 ? out : fallback
+}
+
+function parseSmoothingJson(raw: Json | null | undefined, fallback: SmoothingConfig): SmoothingConfig {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return fallback
+  const r = raw as Record<string, unknown>
+  return {
+    drawIfDiffBelow:
+      typeof r.drawIfDiffBelow === 'number' ? r.drawIfDiffBelow : fallback.drawIfDiffBelow,
+    drawIf1GoalLeadAndDiffBelow:
+      typeof r.drawIf1GoalLeadAndDiffBelow === 'number'
+        ? r.drawIf1GoalLeadAndDiffBelow
+        : fallback.drawIf1GoalLeadAndDiffBelow,
+  }
+}
+
+function parsePointsJson(raw: Json | null | undefined, fallback: PointsConfig): PointsConfig {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return fallback
+  const r = raw as Record<string, unknown>
+  return {
+    win:  typeof r.win  === 'number' ? r.win  : fallback.win,
+    draw: typeof r.draw === 'number' ? r.draw : fallback.draw,
+    loss: typeof r.loss === 'number' ? r.loss : fallback.loss,
+  }
+}
+
+function GameRulesSection({
+  defaultThresholds,
+  defaultSmoothing,
+  defaultPoints,
+}: {
+  defaultThresholds: GoalThreshold[]
+  defaultSmoothing: SmoothingConfig
+  defaultPoints: PointsConfig
+}) {
+  const [thresholds, setThresholds] = useState<GoalThreshold[]>(defaultThresholds)
+  const [smoothing, setSmoothing]   = useState<SmoothingConfig>(defaultSmoothing)
+  const [points, setPoints]         = useState<PointsConfig>(defaultPoints)
+
+  const updateThreshold = (i: number, field: keyof GoalThreshold, value: number) => {
+    setThresholds((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: value } : t))
+  }
+
+  const thresholdsJson = JSON.stringify(
+    [...thresholds].sort((a, b) => a.min - b.min)
+  )
+
+  return (
+    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-5 space-y-5">
+      <div>
+        <p className="text-sm font-semibold text-emerald-300">Soglie gol e risultato</p>
+        <p className="mt-1 text-xs text-ink-3 leading-relaxed">
+          Conversione del totale fantavoto di una squadra in gol fantasy, regole di smussamento
+          per pareggi al limite, e punti assegnati a vittoria/pareggio/sconfitta.
+        </p>
+      </div>
+
+      {/* Hidden inputs serialize state for submit */}
+      <input type="hidden" name="goal_thresholds_json" value={thresholdsJson} />
+
+      {/* Thresholds editor */}
+      <div>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">
+          Soglie fantavoto → gol fantasy
+        </p>
+        <p className="mb-3 text-[11px] text-ink-4">
+          Una soglia indica: se il fantavoto della squadra è ≥ <span className="font-mono">min</span>,
+          assegna <span className="font-mono">goals</span> gol. Vince l&apos;ultima soglia raggiunta.
+        </p>
+        <div className="space-y-1.5">
+          {thresholds.map((t, i) => (
+            <div key={i} className="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-2 items-center">
+              <span className="text-[10px] text-ink-4">da</span>
+              <input
+                type="number" step={0.5} min={0} max={200}
+                value={t.min}
+                onChange={(e) => updateThreshold(i, 'min', Number(e.target.value))}
+                className="rounded border border-hairline bg-transparent px-2 py-1 text-xs text-ink-1 focus:outline-none focus:border-emerald-400/60"
+              />
+              <span className="text-[10px] text-ink-4">→</span>
+              <input
+                type="number" step={1} min={0} max={20}
+                value={t.goals}
+                onChange={(e) => updateThreshold(i, 'goals', Number(e.target.value))}
+                className="rounded border border-hairline bg-transparent px-2 py-1 text-xs text-ink-1 focus:outline-none focus:border-emerald-400/60"
+              />
+              <button
+                type="button"
+                onClick={() => setThresholds(thresholds.filter((_, j) => j !== i))}
+                className="text-[10px] text-ink-4 hover:text-rose-400"
+                aria-label="Rimuovi soglia"
+              >✕</button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setThresholds([...thresholds, { min: 0, goals: 0 }])}
+            className="text-[11px] text-emerald-300 hover:text-emerald-200"
+          >+ Aggiungi soglia</button>
+        </div>
+      </div>
+
+      {/* Smoothing */}
+      <div>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">
+          Smussamento (pareggio forzato sui distacchi minimi)
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-ink-3" htmlFor="smoothing_drawIfDiffBelow">
+              Pareggio se differenza fantavoto &lt;
+            </label>
+            <input
+              id="smoothing_drawIfDiffBelow"
+              name="smoothing_drawIfDiffBelow"
+              type="number" step={0.1} min={0} max={10}
+              value={smoothing.drawIfDiffBelow}
+              onChange={(e) => setSmoothing({ ...smoothing, drawIfDiffBelow: Number(e.target.value) })}
+              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-emerald-400/60 focus:outline-none"
+            />
+            <p className="text-[11px] text-ink-4">
+              Distacco fantavoto troppo piccolo → pareggio alla fascia media.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-ink-3" htmlFor="smoothing_drawIf1GoalLeadAndDiffBelow">
+              Pareggio se vantaggio 1 gol e differenza &lt;
+            </label>
+            <input
+              id="smoothing_drawIf1GoalLeadAndDiffBelow"
+              name="smoothing_drawIf1GoalLeadAndDiffBelow"
+              type="number" step={0.1} min={0} max={10}
+              value={smoothing.drawIf1GoalLeadAndDiffBelow}
+              onChange={(e) => setSmoothing({ ...smoothing, drawIf1GoalLeadAndDiffBelow: Number(e.target.value) })}
+              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-emerald-400/60 focus:outline-none"
+            />
+            <p className="text-[11px] text-ink-4">
+              1 gol di scarto ma distacco fantavoto sottile → pareggio.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Result points */}
+      <div>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-4">
+          Punti per risultato
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-emerald-400" htmlFor="points_win">Vittoria</label>
+            <input
+              id="points_win" name="points_win" type="number" step={1} min={0} max={10}
+              value={points.win}
+              onChange={(e) => setPoints({ ...points, win: Number(e.target.value) })}
+              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-emerald-400/60 focus:outline-none"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-ink-3" htmlFor="points_draw">Pareggio</label>
+            <input
+              id="points_draw" name="points_draw" type="number" step={1} min={0} max={10}
+              value={points.draw}
+              onChange={(e) => setPoints({ ...points, draw: Number(e.target.value) })}
+              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-emerald-400/60 focus:outline-none"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-rose-400" htmlFor="points_loss">Sconfitta</label>
+            <input
+              id="points_loss" name="points_loss" type="number" step={1} min={0} max={10}
+              value={points.loss}
+              onChange={(e) => setPoints({ ...points, loss: Number(e.target.value) })}
+              className="rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 focus:border-emerald-400/60 focus:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -460,6 +660,10 @@ export function EngineConfigForm({ current }: Props) {
     calc_order: (src?.calc_order === 'mvp_then_penalty' || src?.calc_order === 'penalty_then_mvp')
       ? (src.calc_order as CalcOrder)
       : DEFAULT_ENGINE_CONFIG.calc_order,
+
+    goal_thresholds: parseThresholdsJson(src?.goal_thresholds ?? null, DEFAULT_RESULT_RULES.thresholds),
+    smoothing:       parseSmoothingJson(src?.smoothing       ?? null, DEFAULT_RESULT_RULES.smoothing),
+    result_points:   parsePointsJson(src?.result_points      ?? null, DEFAULT_RESULT_RULES.points),
   }
 
   // Acknowledge unused import in some code paths
@@ -492,6 +696,13 @@ export function EngineConfigForm({ current }: Props) {
         defaultPopularity={v.popularity_brackets}
         defaultMvp={v.mvp_bonus_brackets}
         defaultCalcOrder={v.calc_order}
+      />
+
+      {/* ── Soglie gol e risultato (globale) ─────────────────────────── */}
+      <GameRulesSection
+        defaultThresholds={v.goal_thresholds}
+        defaultSmoothing={v.smoothing}
+        defaultPoints={v.result_points}
       />
 
       {/* ── Gol per ruolo ───────────────────────────────────────────── */}
