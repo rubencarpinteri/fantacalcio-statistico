@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { updateLeagueSettingsAction, type LeagueSettingsState } from './actions'
 import type { League } from '@/types/database.types'
 
@@ -15,20 +16,9 @@ const TIMEZONES = [
   { value: 'UTC', label: 'UTC' },
 ]
 
-const SCORING_MODES = [
-  { value: 'head_to_head', label: 'Testa a testa' },
-  { value: 'points_only', label: 'Solo punti' },
-  { value: 'both', label: 'Entrambe' },
-]
-
 const ROUNDING_MODES = [
   { value: 'one_decimal', label: '1 decimale (es. 7.3)' },
   { value: 'nearest_half', label: 'Mezzo punto (es. 7.5)' },
-]
-
-const LOCK_BEHAVIORS = [
-  { value: 'auto', label: 'Automatico (alla scadenza)' },
-  { value: 'manual', label: 'Manuale (admin conferma)' },
 ]
 
 function SubmitButton() {
@@ -40,96 +30,87 @@ function SubmitButton() {
   )
 }
 
+function ScopeBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] uppercase tracking-widest text-ink-4 font-semibold">
+      {children}
+    </p>
+  )
+}
+
 const initialState: LeagueSettingsState = { error: null, success: false }
 
 export function LeagueSettingsForm({ league }: { league: League }) {
   const [state, formAction] = useActionState(updateLeagueSettingsAction, initialState)
 
   return (
-    <form action={formAction} className="space-y-4">
-      <Input
-        label="Nome lega"
-        name="name"
-        defaultValue={league.name}
-        required
-        minLength={2}
-        maxLength={80}
-      />
-
-      <Input
-        label="Nome stagione"
-        name="season_name"
-        defaultValue={league.season_name}
-        required
-        placeholder="es. 2025/26"
-      />
-
-      <Select
-        label="Fuso orario"
-        name="timezone"
-        options={TIMEZONES}
-        defaultValue={league.timezone}
-      />
-
-      <Select
-        label="Modalità punteggio"
-        name="scoring_mode"
-        options={SCORING_MODES}
-        defaultValue={league.scoring_mode}
-      />
-
-      <Select
-        label="Arrotondamento voti"
-        name="display_rounding"
-        options={ROUNDING_MODES}
-        defaultValue={league.display_rounding}
-      />
-
-      <Select
-        label="Blocco formazioni"
-        name="lock_behavior"
-        options={LOCK_BEHAVIORS}
-        defaultValue={league.lock_behavior}
-      />
-
-      <div className="flex items-center gap-3">
-        <input
-          type="hidden"
-          name="advanced_bonuses_enabled"
-          value="false"
+    <form action={formAction} className="space-y-6">
+      {/* ── Section: Lega (truly league-wide) ──────────────────────────── */}
+      <Card>
+        <CardHeader
+          title="Identità lega"
+          description="Nome, fuso orario e arrotondamento voti. Valgono per ogni competizione."
         />
-        <label className="flex cursor-pointer items-center gap-2.5">
-          <input
-            type="checkbox"
-            name="advanced_bonuses_enabled"
-            value="true"
-            defaultChecked={league.advanced_bonuses_enabled}
-            className="h-4 w-4 rounded border-hairline bg-glass-1 accent-indigo-500"
+        <CardContent className="space-y-4">
+          <ScopeBanner>Ambito: tutta la lega</ScopeBanner>
+
+          <Input
+            label="Nome lega"
+            name="name"
+            defaultValue={league.name}
+            required
+            minLength={2}
+            maxLength={80}
           />
-          <span className="text-sm text-ink-1">Abilita bonus avanzati</span>
-        </label>
-      </div>
 
-      <Input
-        label="Riserve in panchina"
-        name="bench_size"
-        type="number"
-        min={1}
-        max={12}
-        defaultValue={league.bench_size}
-        hint="Numero di giocatori in panchina per formazione (1–12)"
-      />
+          <Select
+            label="Fuso orario"
+            name="timezone"
+            options={TIMEZONES}
+            defaultValue={league.timezone}
+            hint="Usato per orari di kickoff, scadenze formazioni e cron"
+          />
 
-      <Input
-        label="Budget settimanale (crediti)"
-        name="weekly_budget"
-        type="number"
-        min={50}
-        max={10000}
-        step={10}
-        defaultValue={league.weekly_budget}
-        hint="Crediti che ogni manager spende per giornata Serie A (titolari + panchina, prezzo pieno). FantaMondiale ha il suo budget nelle Regole della singola competizione."
-      />
+          <Select
+            label="Arrotondamento voti"
+            name="display_rounding"
+            options={ROUNDING_MODES}
+            defaultValue={league.display_rounding}
+            hint="Solo presentazionale — i calcoli interni mantengono la precisione piena"
+          />
+        </CardContent>
+      </Card>
+
+      {/* ── Section: Serie A (Campionato side only) ────────────────────── */}
+      <Card>
+        <CardHeader
+          title="Serie A — Campionato"
+          description="Etichetta stagione e budget del draft settimanale. Riguardano solo Campionato, Battle Royale e Coppa di Serie A."
+        />
+        <CardContent className="space-y-4">
+          <ScopeBanner>Ambito: solo lato Serie A</ScopeBanner>
+
+          <Input
+            label="Etichetta stagione"
+            name="season_name"
+            defaultValue={league.season_name}
+            required
+            placeholder="es. 2025/26"
+            hint="Mostrata negli header del lato Serie A. Puramente decorativa — ogni competizione Battle Royale o Fantamondiale ha la sua stagione/edizione."
+          />
+
+          <Input
+            label="Budget settimanale (crediti)"
+            name="weekly_budget"
+            type="number"
+            min={50}
+            max={10000}
+            step={10}
+            defaultValue={league.weekly_budget}
+            hint="Crediti che ogni manager spende per giornata Serie A (titolari + panchina, prezzo pieno). Fantamondiale usa i budget per fase definiti nel Setup della singola competizione."
+          />
+        </CardContent>
+      </Card>
 
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.success && (

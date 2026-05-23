@@ -33,9 +33,8 @@ const NAV_ITEMS: NavItem[] = [
     matchPaths: ['/competitions'],
   },
   { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe' },
-  { href: '/regole-di-gioco', label: 'Regole di gioco', icon: 'book',   adminOnly: true },
   { href: '/playground',    label: 'Playground',    icon: 'beaker', adminOnly: true },
-  { href: '/league',        label: 'Impostazioni',  icon: 'gear',   adminOnly: true },
+  { href: '/league',        label: 'Impostazioni',  icon: 'gear',   adminOnly: true, matchPaths: ['/regole-di-gioco'] },
 ]
 
 function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {

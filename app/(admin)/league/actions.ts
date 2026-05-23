@@ -6,15 +6,17 @@ import { createClient } from '@/lib/supabase/server'
 import { requireLeagueAdmin } from '@/lib/league'
 import { writeAuditLog } from '@/lib/audit'
 
+// League-level settings form. Only the fields actually consumed by the
+// rest of the app are accepted here. Dead columns (scoring_mode,
+// lock_behavior, advanced_bonuses_enabled, bench_size) are intentionally
+// not surfaced — they were never wired and only added noise.
 const leagueSettingsSchema = z.object({
+  // Identity (truly league-wide)
   name: z.string().min(2, 'Il nome deve avere almeno 2 caratteri').max(80),
-  season_name: z.string().min(1, 'Il nome stagione è obbligatorio').max(40),
   timezone: z.string().min(1, 'Il fuso orario è obbligatorio'),
-  scoring_mode: z.enum(['head_to_head', 'points_only', 'both']),
   display_rounding: z.enum(['one_decimal', 'nearest_half']),
-  lock_behavior: z.enum(['auto', 'manual']),
-  advanced_bonuses_enabled: z.coerce.boolean(),
-  bench_size: z.coerce.number().int().min(1).max(12),
+  // Serie A side
+  season_name: z.string().min(1, 'L\'etichetta stagione è obbligatoria').max(40),
   weekly_budget: z.coerce.number().int().min(50).max(10000),
 })
 
@@ -32,13 +34,9 @@ export async function updateLeagueSettingsAction(
 
   const raw = {
     name: formData.get('name'),
-    season_name: formData.get('season_name'),
     timezone: formData.get('timezone'),
-    scoring_mode: formData.get('scoring_mode'),
     display_rounding: formData.get('display_rounding'),
-    lock_behavior: formData.get('lock_behavior'),
-    advanced_bonuses_enabled: formData.get('advanced_bonuses_enabled') === 'true',
-    bench_size: formData.get('bench_size'),
+    season_name: formData.get('season_name'),
     weekly_budget: formData.get('weekly_budget'),
   }
 
