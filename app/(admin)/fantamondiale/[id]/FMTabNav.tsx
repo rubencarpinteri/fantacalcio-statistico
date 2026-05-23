@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation'
 
 const TABS = [
   { label: 'Overview',   suffix: '' },
-  { label: 'Fasi',       suffix: '/phases' },
-  { label: 'Gironi',     suffix: '/rounds' },
+  { label: 'Fasi fantasy', suffix: '/phases' },
+  { label: 'Turni',      suffix: '/rounds' },
   { label: 'Nazioni',    suffix: '/teams' },
   { label: 'Giocatori',  suffix: '/campionato/giocatori' },
   { label: 'Allenatori', suffix: '/coaches' },

@@ -44,7 +44,13 @@ export default async function RoundsPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-5">
-      <h2 className="text-[16px] font-semibold text-ink-1">Giornate di gara</h2>
+      <div>
+        <h2 className="text-[16px] font-semibold text-ink-1">Turni fantasy</h2>
+        <p className="mt-0.5 text-[11.5px] text-ink-4 leading-relaxed">
+          Una giornata di gioco fantasy = una scadenza per il draft, un set di match reali da seguire,
+          e un calcolo punteggi. Sono i &ldquo;turni&rdquo; del Battle Royale, NON i gironi del torneo reale.
+        </p>
+      </div>
 
       {phases.map((phase) => {
         const phaseRounds = rounds.filter((r: FMScoringRound) => r.phase_id === phase.id)

@@ -81,14 +81,14 @@ export function LeagueSettingsForm({ league }: { league: League }) {
         </CardContent>
       </Card>
 
-      {/* ── Section: Serie A (Campionato side only) ────────────────────── */}
+      {/* ── Section: Serie A side (Campionato + BR + Coppa) ─────────────── */}
       <Card>
         <CardHeader
-          title="Serie A — Campionato"
-          description="Etichetta stagione e budget del draft settimanale. Riguardano solo Campionato, Battle Royale e Coppa di Serie A."
+          title="Draft settimanale Serie A"
+          description="Etichetta stagione e budget del draft Serie A, condiviso tra Campionato, Battle Royale e Coppa. Fantamondiale non usa questi valori."
         />
         <CardContent className="space-y-4">
-          <ScopeBanner>Ambito: solo lato Serie A</ScopeBanner>
+          <ScopeBanner>Ambito: tutte le competizioni Serie A (Campionato, Battle Royale, Coppa)</ScopeBanner>
 
           <Input
             label="Etichetta stagione"

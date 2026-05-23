@@ -36,7 +36,14 @@ export default async function PhasesPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-4">
-      <h2 className="text-[16px] font-semibold text-ink-1">Fasi del torneo</h2>
+      <div>
+        <h2 className="text-[16px] font-semibold text-ink-1">Fasi fantasy</h2>
+        <p className="mt-0.5 text-[11.5px] text-ink-4 leading-relaxed">
+          Suddivisioni del gioco fantasy (NON le fasi del torneo reale). Definiscono budget,
+          eventuali re-draft e modalità di distribuzione crediti. In modalità Battle Royale
+          pura — draft settimanale, tutti contro tutti — basta una singola fase.
+        </p>
+      </div>
 
       {phases.map((phase: FMPhase) => {
         const phaseRounds = rounds.filter((r) => r.phase_id === phase.id)
