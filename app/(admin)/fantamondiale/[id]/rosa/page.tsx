@@ -19,8 +19,36 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
 
   if (!activePhase) {
     return (
-      <div className="rounded-xl border border-hairline bg-glass-1 p-8 text-center">
-        <p className="text-[14px] text-ink-3">Nessuna fase disponibile.</p>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-[16px] font-semibold text-ink-1">Mia Rosa</h2>
+          <p className="mt-0.5 text-[11px] text-ink-4">
+            La rosa si costruisce a inizio di ogni Fase, con il budget di quella fase.
+          </p>
+        </div>
+        <div className="rounded-xl border border-hairline bg-glass-1 p-8 text-center space-y-2">
+          <p className="text-[14px] text-ink-3">Nessuna fase disponibile.</p>
+          <p className="text-[11px] text-ink-5">
+            La rosa non può essere creata finché un&apos;amministratrice non apre una fase
+            (status &ldquo;open&rdquo;) con i prezzi caricati.
+          </p>
+          {ctx.isSuperAdmin && (
+            <div className="pt-2 flex items-center justify-center gap-2">
+              <a
+                href={`/fantamondiale/${id}/phases`}
+                className="rounded-lg border border-hairline bg-glass-2 px-3 py-1.5 text-[12px] text-ink-2 hover:bg-glass-3 transition-colors"
+              >
+                Vai a Fasi fantasy →
+              </a>
+              <a
+                href={`/fantamondiale/${id}/prices`}
+                className="rounded-lg border border-hairline bg-glass-2 px-3 py-1.5 text-[12px] text-ink-2 hover:bg-glass-3 transition-colors"
+              >
+                Carica prezzi →
+              </a>
+            </div>
+          )}
+        </div>
       </div>
     )
   }

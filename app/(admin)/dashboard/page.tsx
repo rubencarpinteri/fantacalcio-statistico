@@ -10,15 +10,17 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const user = await getAuthUser()
 
-  const { data: latestComp } = await supabase
-    .from('fm_competition')
-    .select('id, name, edition, starts_at, status')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
   let userTeamId: string | null = null
   let userDisplayName: string | null = null
+
+  // Pick the competition to surface for this user:
+  //   1. Any FM competition they already have a team in (most recent first)
+  //   2. Else the most recently created FM competition
+  // Without (1) a trial / secondary competition (e.g. Scottish Premiership)
+  // shadows the real one in "latest by created_at" ordering and the user
+  // gets prompted to enrol again even when their team exists elsewhere.
+  let latestComp: { id: string; name: string; edition: string; starts_at: string | null; status: string } | null = null
+
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -28,15 +30,32 @@ export default async function DashboardPage() {
     const fullName = profile?.full_name?.trim() ?? ''
     userDisplayName = fullName || profile?.username || null
 
-    if (latestComp) {
-      const { data: team } = await supabase
-        .from('fm_fantasy_team')
-        .select('id')
-        .eq('competition_id', latestComp.id)
-        .eq('manager_id', user.id)
-        .maybeSingle()
-      userTeamId = team?.id ?? null
+    const { data: myTeam } = await supabase
+      .from('fm_fantasy_team')
+      .select('id, competition_id, fm_competition!inner(id, name, edition, starts_at, status)')
+      .eq('manager_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (myTeam) {
+      userTeamId = myTeam.id
+      // The select uses an inline join. Relationships: never[] in our generated
+      // types means we widen-then-narrow.
+      latestComp = (myTeam as unknown as {
+        fm_competition: { id: string; name: string; edition: string; starts_at: string | null; status: string }
+      }).fm_competition
     }
+  }
+
+  if (!latestComp) {
+    const { data: comp } = await supabase
+      .from('fm_competition')
+      .select('id, name, edition, starts_at, status')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    latestComp = comp
   }
 
   // Show only the first name in the greeting — "Ciao Mario" reads more
