@@ -1915,6 +1915,7 @@ export type Database = {
           goal_bonus_def: number
           goal_bonus_gk: number
           goal_bonus_mid: number
+          goal_thresholds: Json
           goals_conceded_def: number
           goals_conceded_def_min_minutes: number
           goals_conceded_gk: number
@@ -1930,6 +1931,8 @@ export type Database = {
           pivot_vote: number
           popularity_brackets: Json
           red_card: number
+          result_points: Json
+          smoothing: Json
           updated_at: string
           weekly_budget: number
           yellow_card: number
@@ -1946,6 +1949,7 @@ export type Database = {
           goal_bonus_def?: number
           goal_bonus_gk?: number
           goal_bonus_mid?: number
+          goal_thresholds?: Json
           goals_conceded_def?: number
           goals_conceded_def_min_minutes?: number
           goals_conceded_gk?: number
@@ -1961,6 +1965,8 @@ export type Database = {
           pivot_vote?: number
           popularity_brackets?: Json
           red_card?: number
+          result_points?: Json
+          smoothing?: Json
           updated_at?: string
           weekly_budget?: number
           yellow_card?: number
@@ -1977,6 +1983,7 @@ export type Database = {
           goal_bonus_def?: number
           goal_bonus_gk?: number
           goal_bonus_mid?: number
+          goal_thresholds?: Json
           goals_conceded_def?: number
           goals_conceded_def_min_minutes?: number
           goals_conceded_gk?: number
@@ -1992,6 +1999,8 @@ export type Database = {
           pivot_vote?: number
           popularity_brackets?: Json
           red_card?: number
+          result_points?: Json
+          smoothing?: Json
           updated_at?: string
           weekly_budget?: number
           yellow_card?: number
