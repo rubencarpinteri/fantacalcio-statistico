@@ -2,6 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { loadFMUnifiedConfig } from '@/lib/fantamondiale/loadUnifiedConfig'
+import type { FMPlayerRole } from '@/domain/fantamondiale/config/schema'
+
+const ROLE_LABEL: Record<FMPlayerRole, string> = {
+  P: 'portieri',
+  D: 'difensori',
+  C: 'centrocampisti',
+  A: 'attaccanti',
+}
 
 async function getTeamId(competitionId: string, userId: string): Promise<string | null> {
   const supabase = await createClient()
@@ -85,11 +94,37 @@ export async function toggleSquadPlayerAction(fd: FormData) {
     await supabase.from('fm_phase_squad_player').delete().eq('id', existing.id)
     await recalcBudgetSpent(supabase, squadId)
   } else {
-    const { count } = await supabase
+    const config = await loadFMUnifiedConfig(supabase, competitionId)
+    const { pool_size, role_quotas } = config.squad
+
+    const { data: roster } = await supabase
       .from('fm_phase_squad_player')
-      .select('id', { count: 'exact', head: true })
+      .select('player_id, fm_player:player_id(role)')
       .eq('phase_squad_id', squadId)
-    if ((count ?? 0) >= 25) throw new Error('Rosa piena (massimo 25 giocatori)')
+    const currentCount = roster?.length ?? 0
+    if (currentCount >= pool_size) {
+      throw new Error(`Rosa piena (massimo ${pool_size} giocatori)`)
+    }
+
+    const { data: pickedPlayer } = await supabase
+      .from('fm_player')
+      .select('role')
+      .eq('id', playerId)
+      .single()
+    if (!pickedPlayer) throw new Error('Giocatore non trovato')
+    const pickedRole = pickedPlayer.role as FMPlayerRole
+
+    const roleCount = (roster ?? []).filter((r) => {
+      const fp = r.fm_player as { role: FMPlayerRole } | { role: FMPlayerRole }[] | null
+      const role = Array.isArray(fp) ? fp[0]?.role : fp?.role
+      return role === pickedRole
+    }).length
+    const roleQuota = role_quotas[pickedRole]
+    if (roleCount >= roleQuota) {
+      throw new Error(
+        `Quota ${ROLE_LABEL[pickedRole]} piena (${roleQuota} massimo)`,
+      )
+    }
 
     const { data: squad } = await supabase
       .from('fm_phase_squad')

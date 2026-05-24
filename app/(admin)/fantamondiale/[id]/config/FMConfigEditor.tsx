@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { saveConfigAction } from './actions'
-import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
+import type { FMCompetitionConfig, FMRoleQuota } from '@/domain/fantamondiale/config/schema'
 
 // ── FantaMondiale competition shape editor ──────────────────────────────────
 //
@@ -26,6 +26,13 @@ const TIER_LABELS = {
   tier_4: 'Tier 4 (sfavorito)',
 } as const
 
+const ROLE_LABELS: Record<keyof FMRoleQuota, string> = {
+  P: 'Portieri',
+  D: 'Difensori',
+  C: 'Centrocampisti',
+  A: 'Attaccanti',
+}
+
 export function FMConfigEditor({
   competitionId,
   initialConfig,
@@ -38,10 +45,19 @@ export function FMConfigEditor({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  function updateSquad<K extends keyof FMCompetitionConfig['squad']>(
+  function updateSquad<K extends Exclude<keyof FMCompetitionConfig['squad'], 'role_quotas'>>(
     key: K, value: FMCompetitionConfig['squad'][K]
   ) {
     setCfg((prev) => ({ ...prev, squad: { ...prev.squad, [key]: value } }))
+    setSaved(false)
+  }
+
+  function updateRoleQuota(role: keyof FMRoleQuota, value: number) {
+    setCfg((prev) => {
+      const role_quotas = { ...prev.squad.role_quotas, [role]: value }
+      const pool_size = role_quotas.P + role_quotas.D + role_quotas.C + role_quotas.A
+      return { ...prev, squad: { ...prev.squad, role_quotas, pool_size } }
+    })
     setSaved(false)
   }
 
@@ -124,14 +140,13 @@ export function FMConfigEditor({
       </div>
 
       {/* ── Squad & budget ── */}
-      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-3">
+      <div className="rounded-xl border border-hairline bg-glass-1 p-5 space-y-4">
         <p className="text-[13px] font-semibold text-ink-1">Rosa e budget</p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {(
             [
-              ['pool_size', 'Giocatori in rosa', 1],
-              ['starters',  'Titolari',          1],
-              ['bench',     'Panchina',          1],
+              ['starters',  'Titolari',                1],
+              ['bench',     'Panchina',                1],
               ['budget_default', 'Budget default (crediti)', 10],
             ] as const
           ).map(([key, label, step]) => (
@@ -146,6 +161,32 @@ export function FMConfigEditor({
               />
             </div>
           ))}
+        </div>
+
+        <div className="space-y-2 pt-2 border-t border-hairline">
+          <div className="flex items-baseline justify-between">
+            <p className="text-[12px] font-semibold text-ink-2">Composizione per ruolo</p>
+            <p className="text-[11px] text-ink-4 tabular-nums">
+              Totale rosa: <span className="font-medium text-ink-1">{cfg.squad.pool_size}</span>
+            </p>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {(['P', 'D', 'C', 'A'] as const).map((role) => (
+              <div key={role}>
+                <label className="block text-[9px] uppercase tracking-wider text-ink-5 mb-1 font-semibold">
+                  {ROLE_LABELS[role]}
+                </label>
+                <input
+                  type="number"
+                  step={1}
+                  min={0}
+                  value={cfg.squad.role_quotas[role]}
+                  onChange={(e) => updateRoleQuota(role, Number(e.target.value))}
+                  className="w-full rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -106,8 +106,19 @@ function parseCompetitionShape(raw: Json | null | undefined): {
   const r = raw as Record<string, unknown>
   // Defensively project each sub-field; fall back to defaults on shape mismatch.
   // The full Zod schema is still applied downstream by callers that need it.
+  const rawSquad = (r.squad as Record<string, unknown> | undefined) ?? undefined
+  const squad: FMCompetitionConfig['squad'] = rawSquad
+    ? {
+        ...DEFAULT_FM_CONFIG.squad,
+        ...(rawSquad as Partial<FMCompetitionConfig['squad']>),
+        role_quotas: {
+          ...DEFAULT_FM_CONFIG.squad.role_quotas,
+          ...((rawSquad.role_quotas as Partial<FMCompetitionConfig['squad']['role_quotas']>) ?? {}),
+        },
+      }
+    : DEFAULT_FM_CONFIG.squad
   return {
-    squad: (r.squad as FMCompetitionConfig['squad']) ?? DEFAULT_FM_CONFIG.squad,
+    squad,
     formations: Array.isArray(r.formations) ? (r.formations as string[]) : DEFAULT_FM_CONFIG.formations,
     coach_tier_matrix:
       (r.coach_tier_matrix as FMCompetitionConfig['coach_tier_matrix']) ?? DEFAULT_FM_CONFIG.coach_tier_matrix,

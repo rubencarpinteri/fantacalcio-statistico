@@ -41,7 +41,12 @@ export default async function RegolePage({ params }: { params: Promise<{ id: str
         <div className="space-y-2 text-[13px] text-ink-2">
           <div className="flex justify-between">
             <span className="text-ink-4">Giocatori per rosa</span>
-            <span className="font-medium text-ink-1">{config.squad.pool_size}</span>
+            <span className="font-medium text-ink-1 tabular-nums">
+              {config.squad.pool_size}
+              <span className="ml-2 text-ink-4">
+                ({config.squad.role_quotas.P}P · {config.squad.role_quotas.D}D · {config.squad.role_quotas.C}C · {config.squad.role_quotas.A}A)
+              </span>
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-ink-4">Budget</span>

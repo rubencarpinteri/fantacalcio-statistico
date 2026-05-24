@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import { toggleSquadPlayerAction, setSquadCoachAction } from './actions'
 import type { FMPhase, FMNationalTeam, FMPlayer, FMCoach } from '@/types/database.types'
+import type { FMRoleQuota, FMPlayerRole } from '@/domain/fantamondiale/config/schema'
 
 const ROLE_COLORS: Record<string, string> = {
   P: 'text-amber-400',
@@ -36,6 +37,8 @@ interface Props {
   selectedCoachId: string | null
   budgetTotal: number
   budgetSpent: number
+  poolSize: number
+  roleQuotas: FMRoleQuota
   isReadOnly: boolean
   isSuperAdmin: boolean
 }
@@ -51,6 +54,8 @@ export function SquadBuilder({
   selectedCoachId: initialCoach,
   budgetTotal,
   budgetSpent: initialSpent,
+  poolSize,
+  roleQuotas,
   isReadOnly,
 }: Props) {
   const [selected, setSelected] = useState<Set<string>>(initialSelected)
@@ -78,14 +83,27 @@ export function SquadBuilder({
   const myPlayers = useMemo(() => players.filter((p) => selected.has(p.id)), [players, selected])
   const myCoach = coaches.find((c) => c.id === coachId) ?? null
 
+  const roleCounts = useMemo(() => {
+    const counts: Record<FMPlayerRole, number> = { P: 0, D: 0, C: 0, A: 0 }
+    for (const p of myPlayers) counts[p.role as FMPlayerRole]++
+    return counts
+  }, [myPlayers])
+
   function handleToggle(player: PlayerWithTeam) {
     if (isReadOnly) return
     const price = priceMap.get(player.id) ?? 0
     const isIn = selected.has(player.id)
 
-    if (!isIn && selected.size >= 25) {
-      setError('Rosa piena (massimo 25 giocatori)')
+    if (!isIn && selected.size >= poolSize) {
+      setError(`Rosa piena (massimo ${poolSize} giocatori)`)
       return
+    }
+    if (!isIn) {
+      const role = player.role as FMPlayerRole
+      if (roleCounts[role] >= roleQuotas[role]) {
+        setError(`Quota ${role} piena (${roleQuotas[role]} massimo)`)
+        return
+      }
     }
     if (!isIn && spent + price > budgetTotal) {
       setError(`Budget insufficiente (rimasti ${budgetTotal - spent} cr)`)
@@ -161,11 +179,15 @@ export function SquadBuilder({
         </div>
         <div className="mt-2 grid grid-cols-4 gap-1 text-center">
           {(['P', 'D', 'C', 'A'] as const).map((role) => {
-            const count = myPlayers.filter((p) => p.role === role).length
+            const count = roleCounts[role]
+            const quota = roleQuotas[role]
+            const full = count >= quota
             return (
               <div key={role} className="rounded-lg bg-glass-2 py-1">
                 <p className={`text-[10px] font-bold ${ROLE_COLORS[role]}`}>{role}</p>
-                <p className="text-[13px] font-light text-ink-1">{count}</p>
+                <p className={`text-[13px] font-light tabular-nums ${full ? 'text-emerald-400' : 'text-ink-1'}`}>
+                  {count}<span className="text-ink-5">/{quota}</span>
+                </p>
               </div>
             )
           })}
@@ -221,7 +243,7 @@ export function SquadBuilder({
                 : 'text-ink-3 hover:text-ink-1'
             }`}
           >
-            {t === 'pool' ? `Pool giocatori (${filteredPlayers.length})` : `Mia rosa (${selected.size}/25)`}
+            {t === 'pool' ? `Pool giocatori (${filteredPlayers.length})` : `Mia rosa (${selected.size}/${poolSize})`}
           </button>
         ))}
       </div>
@@ -265,7 +287,9 @@ export function SquadBuilder({
               {filteredPlayers.map((player) => {
                 const price = priceMap.get(player.id) ?? 0
                 const isIn = selected.has(player.id)
-                const canAdd = !isIn && selected.size < 25 && spent + price <= budgetTotal
+                const role = player.role as FMPlayerRole
+                const roleFull = roleCounts[role] >= roleQuotas[role]
+                const canAdd = !isIn && selected.size < poolSize && !roleFull && spent + price <= budgetTotal
                 return (
                   <button
                     key={player.id}

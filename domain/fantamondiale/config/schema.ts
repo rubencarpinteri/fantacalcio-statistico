@@ -46,12 +46,24 @@ export type FMTieBreaker = z.infer<typeof fmTieBreakerSchema>
 
 // ---- squad & budget ----------------------------------------
 
+export const fmRoleQuotaSchema = z.object({
+  P: z.number().int().min(0).max(10),
+  D: z.number().int().min(0).max(15),
+  C: z.number().int().min(0).max(15),
+  A: z.number().int().min(0).max(15),
+})
+export type FMRoleQuota = z.infer<typeof fmRoleQuotaSchema>
+
 export const fmSquadConfigSchema = z.object({
   pool_size: z.number().int().min(11).max(40),
   starters: z.number().int().min(7).max(11),
   bench: z.number().int().min(0).max(30),
   budget_default: z.number().int().min(50).max(10_000),
-})
+  role_quotas: fmRoleQuotaSchema,
+}).refine(
+  (s) => s.role_quotas.P + s.role_quotas.D + s.role_quotas.C + s.role_quotas.A === s.pool_size,
+  { message: 'role_quotas P+D+C+A must equal pool_size', path: ['role_quotas'] },
+)
 export type FMSquadConfig = z.infer<typeof fmSquadConfigSchema>
 
 // ---- formations --------------------------------------------

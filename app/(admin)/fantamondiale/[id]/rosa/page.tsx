@@ -1,8 +1,7 @@
 import { requireFMContext, getFMPhases, getFMTeams, getFMPlayers, getFMCoaches } from '@/lib/fantamondiale/server'
 import { createClient } from '@/lib/supabase/server'
+import { loadFMUnifiedConfig } from '@/lib/fantamondiale/loadUnifiedConfig'
 import { SquadBuilder } from './SquadBuilder'
-import type { FMCompetitionConfig } from '@/domain/fantamondiale/config/schema'
-import { DEFAULT_FM_CONFIG } from '@/domain/fantamondiale/config/defaults'
 
 export default async function RosaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -53,7 +52,7 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
     )
   }
 
-  const config = (ctx.config?.config as FMCompetitionConfig | null) ?? DEFAULT_FM_CONFIG
+  const config = await loadFMUnifiedConfig(supabase, id)
   const budgetTotal = config.squad.budget_default
 
   // Load fantasy team for this user in the active phase
@@ -120,7 +119,7 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
             <span className="ml-1 text-[11px] text-ink-4">cr rimasti</span>
           </p>
           <p className="text-[10px] text-ink-5">
-            {budgetSpent} / {budgetTotal} spesi · {squadPlayerIds.size} / 25 giocatori
+            {budgetSpent} / {budgetTotal} spesi · {squadPlayerIds.size} / {config.squad.pool_size} giocatori
           </p>
         </div>
       </div>
@@ -142,6 +141,8 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
         selectedCoachId={coachId}
         budgetTotal={budgetTotal}
         budgetSpent={budgetSpent}
+        poolSize={config.squad.pool_size}
+        roleQuotas={config.squad.role_quotas}
         isReadOnly={isReadOnly}
         isSuperAdmin={ctx.isSuperAdmin}
       />
