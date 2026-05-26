@@ -43,14 +43,18 @@ function StatCard({ label, value, href }: { label: string; value: number | strin
 
 export default async function FMOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [ctx, phases, rounds, teams, fantasyTeams] = await Promise.all([
-    requireFMContext(id),
-    getFMPhases(id),
-    getFMRounds(id),
-    getFMTeams(id),
-    getFMFantasyTeams(id),
+  // requireFMContext resolves the URL [id] (Lega instance) into both the
+  // Lega instance and the global tournament template. Tournament-template
+  // helpers (getFMPhases/Rounds/Teams/Players) take the global template id.
+  // getFMFantasyTeams stays Lega-scoped, so it takes the URL id verbatim.
+  const ctx = await requireFMContext(id)
+  const [phases, rounds, teams, fantasyTeams, players] = await Promise.all([
+    getFMPhases(ctx.competition.id),
+    getFMRounds(ctx.competition.id),
+    getFMTeams(ctx.competition.id),
+    getFMFantasyTeams(ctx.legaCompetition.id),
+    getFMPlayers(ctx.competition.id),
   ])
-  const players = await getFMPlayers(id)
 
   const { competition } = ctx
 

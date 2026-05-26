@@ -4,9 +4,9 @@ import { DeleteTeamButton } from './DeleteTeamButton'
 
 export default async function TeamsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const _ctx = await requireFMContext(id)
-  assertSuperAdmin(_ctx)
-  const teams = await getFMTeams(id)
+  const ctx = await requireFMContext(id)
+  assertSuperAdmin(ctx)
+  const teams = await getFMTeams(ctx.competition.id)
 
   const active = teams.filter((t) => t.status === 'active')
   const eliminated = teams.filter((t) => t.status === 'eliminated')

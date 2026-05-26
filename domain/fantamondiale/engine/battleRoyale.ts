@@ -4,6 +4,7 @@ import type { FMTeamRoundScoreResult, FMBattleRoyaleMatchupResult } from './type
 export function computeBattleRoyale(
   teamScores: FMTeamRoundScoreResult[],
   scoringRoundId: string,
+  legaCompetitionId: string,
   config: FMCompetitionConfig,
 ): FMBattleRoyaleMatchupResult[] {
   const { win_points, draw_points, loss_points } = config.battle_royale
@@ -43,6 +44,7 @@ export function computeBattleRoyale(
       }
 
       matchups.push({
+        league_competition_id: legaCompetitionId,
         scoring_round_id: scoringRoundId,
         team_a_id: a.fantasy_team_id,
         team_b_id: b.fantasy_team_id,

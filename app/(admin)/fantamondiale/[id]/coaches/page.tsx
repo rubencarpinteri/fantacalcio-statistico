@@ -11,12 +11,12 @@ const TIER_LABELS: Record<string, { label: string; cls: string }> = {
 
 export default async function CoachesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const _ctx = await requireFMContext(id)
-  assertSuperAdmin(_ctx)
+  const ctx = await requireFMContext(id)
+  assertSuperAdmin(ctx)
   const [coaches, teams, phases] = await Promise.all([
-    getFMCoaches(id),
-    getFMTeams(id),
-    getFMPhases(id),
+    getFMCoaches(ctx.competition.id),
+    getFMTeams(ctx.competition.id),
+    getFMPhases(ctx.competition.id),
   ])
 
   const supabase = await createClient()

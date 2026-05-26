@@ -30,9 +30,9 @@ function fmt(dt: string | null) {
 
 export default async function PhasesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const _ctx = await requireFMContext(id)
-  assertSuperAdmin(_ctx)
-  const [phases, rounds] = await Promise.all([getFMPhases(id), getFMRounds(id)])
+  const ctx = await requireFMContext(id)
+  assertSuperAdmin(ctx)
+  const [phases, rounds] = await Promise.all([getFMPhases(ctx.competition.id), getFMRounds(ctx.competition.id)])
 
   return (
     <div className="space-y-4">

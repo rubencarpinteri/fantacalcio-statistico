@@ -29,7 +29,6 @@ export type FMEnginePlayerInput = {
     home_score: number
     away_score: number
   }
-  ownershipPct: number
 }
 
 export type FMEngineCoachInput = {
@@ -48,6 +47,10 @@ export type FMEngineCoachInput = {
 
 // ---- outputs ---------------------------------------------------------------
 
+// Lega-agnostic per-(player, match) row. Popularity penalty and MVP bonus
+// are not part of this output — they depend on which Lega's ownership applies
+// to the player, and are computed at team-aggregation time via
+// `finalizePlayerForLega`.
 export type FMPlayerMatchScoreResult = {
   scoring_round_id: string
   real_match_id: string
@@ -58,13 +61,18 @@ export type FMPlayerMatchScoreResult = {
   football_bonus: number
   football_malus: number
   raw_subtotal: number
-  ownership_pct: number
-  mvp_bonus_pct: number
-  mvp_bonus_amount: number
+  is_mvp: boolean
+  calc_snapshot: FMCompetitionConfig
+}
+
+// Per-Lega finalization: takes a player's raw subtotal + MVP flag and applies
+// THIS Lega's ownership-derived popularity penalty and MVP bonus.
+export type FMPlayerLegaFinalScore = {
   popularity_penalty_pct: number
   popularity_penalty_amount: number
+  mvp_bonus_pct: number
+  mvp_bonus_amount: number
   final_score: number
-  calc_snapshot: FMCompetitionConfig
 }
 
 export type FMCoachMatchScoreResult = {
@@ -88,6 +96,7 @@ export type FMTeamRoundScoreResult = {
 }
 
 export type FMBattleRoyaleMatchupResult = {
+  league_competition_id: string
   scoring_round_id: string
   team_a_id: string
   team_b_id: string

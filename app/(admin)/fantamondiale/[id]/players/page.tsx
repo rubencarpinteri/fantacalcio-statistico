@@ -10,12 +10,12 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default async function PlayersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const _ctx = await requireFMContext(id)
-  assertSuperAdmin(_ctx)
+  const ctx = await requireFMContext(id)
+  assertSuperAdmin(ctx)
 
   const [teams, players] = await Promise.all([
-    getFMTeams(id),
-    getFMPlayers(id),
+    getFMTeams(ctx.competition.id),
+    getFMPlayers(ctx.competition.id),
   ])
 
   const activeTeams = teams.filter((t) => t.status === 'active')

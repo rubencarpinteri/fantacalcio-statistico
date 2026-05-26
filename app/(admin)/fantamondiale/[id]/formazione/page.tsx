@@ -10,8 +10,8 @@ export default async function FormazionePage({ params }: { params: Promise<{ id:
   const supabase = await createClient()
 
   const [phases, rounds] = await Promise.all([
-    getFMPhases(id),
-    getFMRounds(id),
+    getFMPhases(ctx.competition.id),
+    getFMRounds(ctx.competition.id),
   ])
 
   // Find active round (open or locked)

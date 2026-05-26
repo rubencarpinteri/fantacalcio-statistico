@@ -69,7 +69,9 @@ async function snapshotOwnership(
   supabase: Awaited<ReturnType<typeof createClient>>,
   roundId: string
 ) {
-  // Fetch all submitted lineups for this round with their starters
+  // Per-Lega ownership: count which players are starters in each Lega's own
+  // pool of teams, separately. Same player in two different Leghe can have
+  // very different popularity penalties — that's the trademark mechanic.
   const { data: lineups, error: lineupsErr } = await supabase
     .from('fm_matchday_lineup')
     .select('id, fantasy_team_id, fm_matchday_lineup_player(player_id, is_starter)')
@@ -79,30 +81,66 @@ async function snapshotOwnership(
   if (lineupsErr) throw new Error(`Ownership snapshot failed: ${lineupsErr.message}`)
   if (!lineups || lineups.length === 0) return
 
-  const totalTeams = lineups.length
+  const teamIds = lineups.map((l) => l.fantasy_team_id)
+  const { data: teamRows, error: teamErr } = await supabase
+    .from('fm_fantasy_team')
+    .select('id, league_competition_id')
+    .in('id', teamIds)
+  if (teamErr) throw new Error(`Ownership snapshot failed: ${teamErr.message}`)
 
-  // Count how many teams field each player as a starter
-  const ownershipMap = new Map<string, number>()
-  for (const lineup of lineups) {
-    for (const lp of lineup.fm_matchday_lineup_player) {
-      if (!lp.is_starter) continue
-      ownershipMap.set(lp.player_id, (ownershipMap.get(lp.player_id) ?? 0) + 1)
+  const legaByTeam = new Map<string, string>(
+    (teamRows ?? []).map((t) => [t.id, t.league_competition_id])
+  )
+
+  // Group submitted lineups by Lega instance
+  type LineupRow = (typeof lineups)[number]
+  const lineupsByLega = new Map<string, LineupRow[]>()
+  for (const l of lineups) {
+    const legaCompId = legaByTeam.get(l.fantasy_team_id)
+    if (!legaCompId) continue
+    const list = lineupsByLega.get(legaCompId) ?? []
+    list.push(l)
+    lineupsByLega.set(legaCompId, list)
+  }
+
+  const rows: {
+    league_competition_id: string
+    scoring_round_id: string
+    player_id: string
+    teams_owning: number
+    teams_total: number
+    ownership_pct: number
+  }[] = []
+
+  for (const [legaCompId, legaLineups] of lineupsByLega) {
+    const totalTeams = legaLineups.length
+    if (totalTeams === 0) continue
+
+    const counts = new Map<string, number>()
+    for (const l of legaLineups) {
+      for (const lp of l.fm_matchday_lineup_player) {
+        if (!lp.is_starter) continue
+        counts.set(lp.player_id, (counts.get(lp.player_id) ?? 0) + 1)
+      }
+    }
+
+    for (const [player_id, teams_owning] of counts) {
+      rows.push({
+        league_competition_id: legaCompId,
+        scoring_round_id: roundId,
+        player_id,
+        teams_owning,
+        teams_total: totalTeams,
+        ownership_pct: parseFloat(((teams_owning / totalTeams) * 100).toFixed(3)),
+      })
     }
   }
 
-  if (ownershipMap.size === 0) return
-
-  const rows = Array.from(ownershipMap.entries()).map(([player_id, teams_owning]) => ({
-    scoring_round_id: roundId,
-    player_id,
-    teams_owning,
-    teams_total: totalTeams,
-    ownership_pct: parseFloat(((teams_owning / totalTeams) * 100).toFixed(3)),
-  }))
+  if (rows.length === 0) return
 
   const { error: upsertErr } = await supabase
     .from('fm_round_player_ownership')
-    .upsert(rows, { onConflict: 'scoring_round_id,player_id' })
+    .upsert(rows, { onConflict: 'league_competition_id,scoring_round_id,player_id' })
 
   if (upsertErr) throw new Error(`Ownership upsert failed: ${upsertErr.message}`)
 }

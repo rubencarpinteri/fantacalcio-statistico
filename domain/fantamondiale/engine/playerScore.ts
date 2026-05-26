@@ -1,18 +1,23 @@
 // ============================================================
 // FantaMondiale — Player score (engine v3.0 "Pivot + Bonus")
 // ============================================================
-// Aligned 1:1 with the Serie A engine. Same pivot anchors, same
-// <15 min gate + decisive-event exception, same 1–10 clamp on
-// voto_base, same football B/M structure.
+// Two-stage scoring, split so popularity / MVP can be applied per-Lega:
+//
+//   Stage 1 (Lega-agnostic):  scorePlayerRaw
+//     voto_base, football_bonus, football_malus, raw_subtotal
+//
+//   Stage 2 (per-Lega):       finalizePlayerForLega
+//     popularity_penalty (from THIS Lega's ownership_pct)
+//     mvp_bonus (gated by ownership and is_mvp)
+//     final_score (combines the two per calc_order)
 //
 // Final score formula (game trademark):
-//   raw_subtotal = voto_base + bonus − malus       // no clamp
-//   penalty      = |raw_subtotal| × popularity_pct/100   // absolute
-//   final_score  = (raw_subtotal − penalty) × (1 + mvp_pct/100)
+//   penalty     = |raw_subtotal| × popularity_pct/100      // absolute
+//   final_score = (raw_subtotal − penalty) × (1 + mvp_pct/100)
 //
-// Popularity penalty hits absolute value so a popular bad-game
-// player is punished more, not less. MVP bonus compounds on the
-// post-penalty score, so a popular MVP suffers double.
+// Popularity penalty hits absolute value so a popular bad-game player is
+// punished more, not less. MVP bonus compounds on the post-penalty score,
+// so a popular MVP suffers double.
 // ============================================================
 
 import type {
@@ -20,7 +25,11 @@ import type {
   FMBracket,
   FMEngineConfig,
 } from '@/domain/fantamondiale/config/schema'
-import type { FMEnginePlayerInput, FMPlayerMatchScoreResult } from './types'
+import type {
+  FMEnginePlayerInput,
+  FMPlayerMatchScoreResult,
+  FMPlayerLegaFinalScore,
+} from './types'
 
 function findBracket(brackets: FMBracket[], pct: number): FMBracket | null {
   return brackets.find((b) => pct >= b.min_pct && pct <= b.max_pct) ?? null
@@ -61,12 +70,17 @@ function computeCleanSheet(input: FMEnginePlayerInput, minMinutes: number): bool
   return conceded === 0
 }
 
-export function scorePlayer(
+/**
+ * Stage 1: Lega-agnostic per-(player, match) score. Computes voto_base,
+ * football bonuses/maluses, and raw_subtotal. Does NOT apply popularity
+ * penalty or MVP bonus — those depend on which Lega's ownership applies.
+ */
+export function scorePlayerRaw(
   input: FMEnginePlayerInput,
   config: FMCompetitionConfig,
 ): FMPlayerMatchScoreResult {
-  const { engine, football, calc_order, mvp_bonus_brackets, popularity_brackets } = config
-  const { stats, role, matchContext, ownershipPct } = input
+  const { engine, football } = config
+  const { stats, role } = input
 
   // ---- voto_base (pivot formula + minutes gate) --------------------------
   let voto_base: number | null = null
@@ -134,39 +148,11 @@ export function scorePlayer(
     }
   }
 
-  // ---- raw subtotal (NOT clamped) ---------------------------------------
   const raw_subtotal = (voto_base ?? 0) + football_bonus - football_malus
 
-  // ---- MVP + popularity (the trademark) ---------------------------------
-  // Bracket lookup. Popularity always applies; MVP only when is_mvp.
-  const mvp_bonus_pct = stats.is_mvp
-    ? (findBracket(mvp_bonus_brackets, ownershipPct)?.pct ?? 0)
-    : 0
-  const popularity_penalty_pct = findBracket(popularity_brackets, ownershipPct)?.pct ?? 0
-
-  // Option C: popularity penalty on ABSOLUTE value of raw_subtotal,
-  // always subtracted (popular bad players hurt MORE, not less).
-  const popularity_penalty_amount = (Math.abs(raw_subtotal) * popularity_penalty_pct) / 100
-
-  // Option B: popularity first, MVP compounded on the reduced score.
-  // calc_order 'mvp_then_penalty' = legacy additive interpretation,
-  // kept editable so admins can experiment.
-  let final_score: number
-  let mvp_bonus_amount: number
-
-  if (calc_order === 'penalty_then_mvp') {
-    const afterPenalty = raw_subtotal - popularity_penalty_amount
-    mvp_bonus_amount = afterPenalty * mvp_bonus_pct / 100
-    final_score = afterPenalty + mvp_bonus_amount
-  } else {
-    // 'mvp_then_penalty' — additive on the original raw_subtotal.
-    mvp_bonus_amount = raw_subtotal * mvp_bonus_pct / 100
-    final_score = raw_subtotal + mvp_bonus_amount - popularity_penalty_amount
-  }
-
   return {
-    scoring_round_id: matchContext.scoring_round_id,
-    real_match_id: matchContext.real_match_id,
+    scoring_round_id: input.matchContext.scoring_round_id,
+    real_match_id: input.matchContext.real_match_id,
     player_id: input.playerId,
     base_rating: stats.rating,
     z_rating: null, // legacy column — engine v3.0 does not compute a z-score
@@ -174,13 +160,51 @@ export function scorePlayer(
     football_bonus,
     football_malus,
     raw_subtotal,
-    ownership_pct: ownershipPct,
-    mvp_bonus_pct,
-    mvp_bonus_amount,
+    is_mvp: stats.is_mvp,
+    calc_snapshot: config,
+  }
+}
+
+/**
+ * Stage 2: per-Lega finalization. Takes a player's Lega-agnostic raw subtotal
+ * + MVP flag and applies THIS Lega's ownership-derived popularity penalty
+ * and MVP bonus. Same player on the same match produces different final
+ * scores in different Leghe — that's the whole point of the refactor.
+ */
+export function finalizePlayerForLega(
+  raw: { raw_subtotal: number; is_mvp: boolean },
+  ownershipPct: number,
+  config: FMCompetitionConfig,
+): FMPlayerLegaFinalScore {
+  const { calc_order, mvp_bonus_brackets, popularity_brackets } = config
+
+  const mvp_bonus_pct = raw.is_mvp
+    ? (findBracket(mvp_bonus_brackets, ownershipPct)?.pct ?? 0)
+    : 0
+  const popularity_penalty_pct = findBracket(popularity_brackets, ownershipPct)?.pct ?? 0
+
+  // Popularity penalty on absolute value — popular bad players hurt MORE.
+  const popularity_penalty_amount = (Math.abs(raw.raw_subtotal) * popularity_penalty_pct) / 100
+
+  let final_score: number
+  let mvp_bonus_amount: number
+
+  if (calc_order === 'penalty_then_mvp') {
+    const afterPenalty = raw.raw_subtotal - popularity_penalty_amount
+    mvp_bonus_amount = (afterPenalty * mvp_bonus_pct) / 100
+    final_score = afterPenalty + mvp_bonus_amount
+  } else {
+    // 'mvp_then_penalty' — additive on the original raw_subtotal.
+    mvp_bonus_amount = (raw.raw_subtotal * mvp_bonus_pct) / 100
+    final_score = raw.raw_subtotal + mvp_bonus_amount - popularity_penalty_amount
+  }
+
+  return {
     popularity_penalty_pct,
     popularity_penalty_amount,
+    mvp_bonus_pct,
+    mvp_bonus_amount,
     final_score,
-    calc_snapshot: config,
   }
 }
 

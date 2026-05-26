@@ -3,18 +3,18 @@ import { createClient } from '@/lib/supabase/server'
 
 export default async function ClassificaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await requireFMContext(id)
+  const ctx = await requireFMContext(id)
   const supabase = await createClient()
 
   const [phases, rounds] = await Promise.all([
-    getFMPhases(id),
-    getFMRounds(id),
+    getFMPhases(ctx.competition.id),
+    getFMRounds(ctx.competition.id),
   ])
 
   const { data: standings } = await supabase
     .from('fm_competition_standing')
     .select('fantasy_team_id, br_points_total, round_wins, raw_score_total, rank')
-    .eq('competition_id', id)
+    .eq('league_competition_id', ctx.legaCompetition.id)
     .order('rank', { ascending: true })
 
   const teamIds = (standings ?? []).map((s) => s.fantasy_team_id)

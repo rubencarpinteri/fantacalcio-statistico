@@ -8,7 +8,7 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
   const ctx = await requireFMContext(id)
   const supabase = await createClient()
 
-  const phases = await getFMPhases(id)
+  const phases = await getFMPhases(ctx.competition.id)
 
   // Find the active phase (open) or most recent completed phase
   const activePhase =
@@ -52,7 +52,7 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
     )
   }
 
-  const config = await loadFMUnifiedConfig(supabase, id)
+  const config = await loadFMUnifiedConfig(supabase, ctx.competition.id)
   const budgetTotal = config.squad.budget_default
 
   // Load fantasy team for this user in the active phase
@@ -87,9 +87,9 @@ export default async function RosaPage({ params }: { params: Promise<{ id: strin
   const isReadOnly = !ctx.fantasyTeamId || activePhase.status !== 'open'
 
   const [teams, players, coaches] = await Promise.all([
-    getFMTeams(id),
-    getFMPlayers(id),
-    getFMCoaches(id),
+    getFMTeams(ctx.competition.id),
+    getFMPlayers(ctx.competition.id),
+    getFMCoaches(ctx.competition.id),
   ])
 
   // Load price map for active phase

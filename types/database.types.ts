@@ -602,7 +602,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          league_competition_id: string | null
+          league_competition_id: string
           result: Database["public"]["Enums"]["fm_match_result"]
           scoring_round_id: string
           team_a_goals: number
@@ -617,7 +617,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          league_competition_id?: string | null
+          league_competition_id: string
           result: Database["public"]["Enums"]["fm_match_result"]
           scoring_round_id: string
           team_a_goals: number
@@ -632,7 +632,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          league_competition_id?: string | null
+          league_competition_id?: string
           result?: Database["public"]["Enums"]["fm_match_result"]
           scoring_round_id?: string
           team_a_goals?: number
@@ -1549,16 +1549,11 @@ export type Database = {
           base_rating: number | null
           calc_snapshot: Json | null
           created_at: string
-          final_score: number
           football_bonus: number
           football_malus: number
           id: string
-          mvp_bonus_amount: number
-          mvp_bonus_pct: number
-          ownership_pct: number
+          is_mvp: boolean
           player_id: string
-          popularity_penalty_amount: number
-          popularity_penalty_pct: number
           raw_subtotal: number
           real_match_id: string
           scoring_round_id: string
@@ -1570,16 +1565,11 @@ export type Database = {
           base_rating?: number | null
           calc_snapshot?: Json | null
           created_at?: string
-          final_score?: number
           football_bonus?: number
           football_malus?: number
           id?: string
-          mvp_bonus_amount?: number
-          mvp_bonus_pct?: number
-          ownership_pct?: number
+          is_mvp?: boolean
           player_id: string
-          popularity_penalty_amount?: number
-          popularity_penalty_pct?: number
           raw_subtotal?: number
           real_match_id: string
           scoring_round_id: string
@@ -1591,16 +1581,11 @@ export type Database = {
           base_rating?: number | null
           calc_snapshot?: Json | null
           created_at?: string
-          final_score?: number
           football_bonus?: number
           football_malus?: number
           id?: string
-          mvp_bonus_amount?: number
-          mvp_bonus_pct?: number
-          ownership_pct?: number
+          is_mvp?: boolean
           player_id?: string
-          popularity_penalty_amount?: number
-          popularity_penalty_pct?: number
           raw_subtotal?: number
           real_match_id?: string
           scoring_round_id?: string
@@ -1790,7 +1775,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          league_competition_id: string | null
+          league_competition_id: string
           ownership_pct: number
           player_id: string
           scoring_round_id: string
@@ -1800,7 +1785,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          league_competition_id?: string | null
+          league_competition_id: string
           ownership_pct: number
           player_id: string
           scoring_round_id: string
@@ -1810,7 +1795,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          league_competition_id?: string | null
+          league_competition_id?: string
           ownership_pct?: number
           player_id?: string
           scoring_round_id?: string
@@ -4141,6 +4126,8 @@ export const Constants = {
     },
   },
 } as const
+
+
 
 
 export type AuditAction = Database["public"]["Enums"]["audit_action"]

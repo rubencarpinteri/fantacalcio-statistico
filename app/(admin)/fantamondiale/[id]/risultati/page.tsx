@@ -2,6 +2,9 @@ import Link from 'next/link'
 import type { Route } from 'next'
 import { requireFMContext, getFMRounds } from '@/lib/fantamondiale/server'
 import { createClient } from '@/lib/supabase/server'
+import { finalizePlayerForLega } from '@/domain/fantamondiale/engine/playerScore'
+import { fmCompetitionConfigSchema } from '@/domain/fantamondiale/config/schema'
+import { loadFMUnifiedConfig } from '@/lib/fantamondiale/loadUnifiedConfig'
 
 const ROLE_LABEL: Record<string, string> = { P: 'POR', D: 'DIF', C: 'CEN', A: 'ATT' }
 const ROLE_COLOR: Record<string, string> = {
@@ -41,7 +44,7 @@ export default async function RisultatiPage({
   const ctx = await requireFMContext(id)
   const supabase = await createClient()
 
-  const rounds = await getFMRounds(id)
+  const rounds = await getFMRounds(ctx.competition.id)
   const publishedRounds = rounds.filter((r) => r.status === 'published' || r.status === 'scoring')
 
   const selectedRound =
@@ -134,14 +137,27 @@ export default async function RisultatiPage({
       const starterIds = (lineupPlayers ?? []).map((lp) => lp.player_id)
 
       if (starterIds.length > 0) {
-        const [playersRes, scoresRes] = await Promise.all([
+        // Score columns split: fm_player_match_score holds Lega-agnostic raw
+        // values (voto_base, football_bonus/malus, raw_subtotal, is_mvp);
+        // per-Lega popularity penalty + MVP bonus are derived on the fly
+        // using fm_round_player_ownership for THIS Lega instance.
+        const composed = await loadFMUnifiedConfig(supabase, ctx.competition.id)
+        const config = fmCompetitionConfigSchema.parse(composed)
+
+        const [playersRes, scoresRes, ownershipRes] = await Promise.all([
           supabase
             .from('fm_player')
             .select('id, name, role, national_team_id, fm_national_team(name, flag_emoji)')
             .in('id', starterIds),
           supabase
             .from('fm_player_match_score')
-            .select('player_id, voto_base, football_bonus, football_malus, mvp_bonus_amount, popularity_penalty_amount, ownership_pct, final_score')
+            .select('player_id, voto_base, football_bonus, football_malus, raw_subtotal, is_mvp')
+            .eq('scoring_round_id', roundId)
+            .in('player_id', starterIds),
+          supabase
+            .from('fm_round_player_ownership')
+            .select('player_id, ownership_pct')
+            .eq('league_competition_id', ctx.legaCompetition.id)
             .eq('scoring_round_id', roundId)
             .in('player_id', starterIds),
         ])
@@ -149,8 +165,12 @@ export default async function RisultatiPage({
         const playerMeta = new Map(
           (playersRes.data ?? []).map((p) => [p.id, p])
         )
+        const ownershipByPlayer = new Map(
+          (ownershipRes.data ?? []).map((o) => [o.player_id, Number(o.ownership_pct)])
+        )
 
-        // Aggregate per player (sum across multiple matches in the round)
+        // Aggregate per player across matches, finalizing each match-row
+        // using THIS Lega's ownership.
         const scoreAgg = new Map<string, {
           voto_base: number | null
           football_bonus: number
@@ -163,23 +183,29 @@ export default async function RisultatiPage({
         }>()
 
         for (const s of scoresRes.data ?? []) {
+          const own = ownershipByPlayer.get(s.player_id) ?? 0
+          const finals = finalizePlayerForLega(
+            { raw_subtotal: Number(s.raw_subtotal), is_mvp: s.is_mvp },
+            own,
+            config,
+          )
           const existing = scoreAgg.get(s.player_id)
           if (existing) {
             existing.football_bonus += Number(s.football_bonus)
             existing.football_malus += Number(s.football_malus)
-            existing.mvp_bonus_amount += Number(s.mvp_bonus_amount)
-            existing.popularity_penalty_amount += Number(s.popularity_penalty_amount)
-            existing.final_score += Number(s.final_score)
+            existing.mvp_bonus_amount += finals.mvp_bonus_amount
+            existing.popularity_penalty_amount += finals.popularity_penalty_amount
+            existing.final_score += finals.final_score
             existing.count++
           } else {
             scoreAgg.set(s.player_id, {
               voto_base: s.voto_base != null ? Number(s.voto_base) : null,
               football_bonus: Number(s.football_bonus),
               football_malus: Number(s.football_malus),
-              mvp_bonus_amount: Number(s.mvp_bonus_amount),
-              popularity_penalty_amount: Number(s.popularity_penalty_amount),
-              ownership_pct: Number(s.ownership_pct),
-              final_score: Number(s.final_score),
+              mvp_bonus_amount: finals.mvp_bonus_amount,
+              popularity_penalty_amount: finals.popularity_penalty_amount,
+              ownership_pct: own,
+              final_score: finals.final_score,
               count: 1,
             })
           }

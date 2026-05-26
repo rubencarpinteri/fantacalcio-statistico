@@ -5,13 +5,13 @@ import { PriceGrid } from './PriceGrid'
 
 export default async function PricesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const _ctx = await requireFMContext(id)
-  assertSuperAdmin(_ctx)
+  const ctx = await requireFMContext(id)
+  assertSuperAdmin(ctx)
 
   const [phases, teams, players] = await Promise.all([
-    getFMPhases(id),
-    getFMTeams(id),
-    getFMPlayers(id),
+    getFMPhases(ctx.competition.id),
+    getFMTeams(ctx.competition.id),
+    getFMPlayers(ctx.competition.id),
   ])
 
   const supabase = await createClient()
