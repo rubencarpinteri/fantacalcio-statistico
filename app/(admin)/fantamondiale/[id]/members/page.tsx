@@ -29,7 +29,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
         <div className="rounded-xl border border-hairline bg-glass-1 p-4">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-4">Aggiungi iscritto</p>
           <form action={addMemberAction} className="flex gap-2">
-            <input type="hidden" name="competition_id" value={id} />
+            <input type="hidden" name="league_competition_id" value={id} />
             <select
               name="user_id" required
               className="flex-1 rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-[13px] text-ink-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"

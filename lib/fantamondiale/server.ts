@@ -6,6 +6,7 @@ import type { Route } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import type {
   FMCompetition,
+  FMLeagueCompetition,
   FMPhase,
   FMScoringRound,
   FMNationalTeam,
@@ -16,6 +17,9 @@ import type {
 } from '@/types/database.types'
 
 export interface FMContext {
+  // The Lega's per-instance row — what the URL [id] resolves to.
+  legaCompetition: FMLeagueCompetition
+  // The global tournament template (fixtures, players, etc) the Lega is playing.
   competition: FMCompetition
   config: FMCompetitionConfigRow | null
   isSuperAdmin: boolean
@@ -23,9 +27,14 @@ export interface FMContext {
   fantasyTeamId: string | null
 }
 
-// Allows both super_admin and enrolled FM members.
-// Super admins get fantasyTeamId=null (they can look up any team).
-export async function requireFMContext(competitionId: string): Promise<FMContext> {
+/**
+ * Resolves a Lega-scoped FantaMondiale context.
+ *
+ * `legaCompId` is `fm_league_competition.id` — the Lega's instance of a global
+ * tournament. Access is gated to enrolled managers in this Lega's instance
+ * (super admins get a free pass).
+ */
+export async function requireFMContext(legaCompId: string): Promise<FMContext> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -38,36 +47,45 @@ export async function requireFMContext(competitionId: string): Promise<FMContext
 
   const isSuperAdmin = profile?.is_super_admin ?? false
 
-  // Look up the user's fantasy team in this competition (if any).
-  // Super-admins may also be enrolled as managers — they get the same
-  // user-side tabs (Mia Rosa, Formazione, …) when they have a team here.
+  // The Lega instance — joins template (fm_competition) + Lega (leagues) ids.
+  const { data: legaComp } = await supabase
+    .from('fm_league_competition')
+    .select('*')
+    .eq('id', legaCompId)
+    .maybeSingle()
+
+  if (!legaComp) redirect('/dashboard' as Route)
+
+  // User's team in this Lega instance (if any).
   const { data: team } = await supabase
     .from('fm_fantasy_team')
     .select('id')
-    .eq('competition_id', competitionId)
+    .eq('league_competition_id', legaCompId)
     .eq('manager_id', user.id)
     .maybeSingle()
 
   // Non-admin viewers must be enrolled to access the competition pages.
-  if (!isSuperAdmin && !team) redirect('/' as Route)
+  if (!isSuperAdmin && !team) redirect('/dashboard' as Route)
 
   const fantasyTeamId: string | null = team?.id ?? null
 
+  // Global tournament template (fm_competition row the Lega is playing).
   const { data: competition } = await supabase
     .from('fm_competition')
     .select('*')
-    .eq('id', competitionId)
+    .eq('id', legaComp.fm_competition_id)
     .single()
 
-  if (!competition) redirect('/fantamondiale' as Route)
+  if (!competition) redirect('/dashboard' as Route)
 
   const { data: config } = await supabase
     .from('fm_competition_config')
     .select('*')
-    .eq('competition_id', competitionId)
+    .eq('competition_id', competition.id)
     .single()
 
   return {
+    legaCompetition: legaComp,
     competition,
     config: config ?? null,
     isSuperAdmin,
@@ -78,9 +96,10 @@ export async function requireFMContext(competitionId: string): Promise<FMContext
 
 // Call at the top of admin page.tsx files to gate non-admins.
 export function assertSuperAdmin(ctx: FMContext) {
-  if (!ctx.isSuperAdmin) redirect('/' as Route)
+  if (!ctx.isSuperAdmin) redirect('/dashboard' as Route)
 }
 
+// Lists every global tournament template (super-admin-facing).
 export async function getFMCompetitions(): Promise<FMCompetition[]> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -89,6 +108,10 @@ export async function getFMCompetitions(): Promise<FMCompetition[]> {
     .order('created_at', { ascending: false })
   return data ?? []
 }
+
+// Tournament-template helpers — these query global tables scoped by the
+// underlying fm_competition.id, NOT the Lega instance. Callers should pass
+// `ctx.competition.id` (the template), not `ctx.legaCompetition.id`.
 
 export async function getFMPhases(competitionId: string): Promise<FMPhase[]> {
   const supabase = await createClient()
@@ -148,12 +171,14 @@ export async function getFMCoaches(
   return (data ?? []) as unknown as (FMCoach & { fm_national_team: Pick<FMNationalTeam, 'name' | 'fifa_code' | 'flag_emoji'> })[]
 }
 
-export async function getFMFantasyTeams(competitionId: string): Promise<FMFantasyTeam[]> {
+// Lega-scoped — pass the Lega instance id (ctx.legaCompetition.id), NOT the
+// global tournament id.
+export async function getFMFantasyTeams(legaCompId: string): Promise<FMFantasyTeam[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('fm_fantasy_team')
     .select('*')
-    .eq('competition_id', competitionId)
+    .eq('league_competition_id', legaCompId)
     .order('name', { ascending: true })
   return data ?? []
 }

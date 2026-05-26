@@ -602,6 +602,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          league_competition_id: string | null
           result: Database["public"]["Enums"]["fm_match_result"]
           scoring_round_id: string
           team_a_goals: number
@@ -616,6 +617,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          league_competition_id?: string | null
           result: Database["public"]["Enums"]["fm_match_result"]
           scoring_round_id: string
           team_a_goals: number
@@ -630,6 +632,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          league_competition_id?: string | null
           result?: Database["public"]["Enums"]["fm_match_result"]
           scoring_round_id?: string
           team_a_goals?: number
@@ -642,6 +645,13 @@ export type Database = {
           team_b_score?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fm_battle_royale_matchup_league_competition_id_fkey"
+            columns: ["league_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_league_competition"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fm_battle_royale_matchup_scoring_round_id_fkey"
             columns: ["scoring_round_id"]
@@ -784,6 +794,7 @@ export type Database = {
           edition: string
           ends_at: string | null
           id: string
+          kind: Database["public"]["Enums"]["fm_competition_kind"]
           name: string
           starts_at: string | null
           status: Database["public"]["Enums"]["fm_competition_status"]
@@ -796,6 +807,7 @@ export type Database = {
           edition: string
           ends_at?: string | null
           id?: string
+          kind?: Database["public"]["Enums"]["fm_competition_kind"]
           name: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["fm_competition_status"]
@@ -808,6 +820,7 @@ export type Database = {
           edition?: string
           ends_at?: string | null
           id?: string
+          kind?: Database["public"]["Enums"]["fm_competition_kind"]
           name?: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["fm_competition_status"]
@@ -856,10 +869,10 @@ export type Database = {
         Row: {
           best_round_score: number
           br_points_total: number
-          competition_id: string
           computed_at: string
           fantasy_team_id: string
           id: string
+          league_competition_id: string
           mvp_bonus_total: number
           popularity_penalty_total: number
           rank: number | null
@@ -869,10 +882,10 @@ export type Database = {
         Insert: {
           best_round_score?: number
           br_points_total?: number
-          competition_id: string
           computed_at?: string
           fantasy_team_id: string
           id?: string
+          league_competition_id: string
           mvp_bonus_total?: number
           popularity_penalty_total?: number
           rank?: number | null
@@ -882,10 +895,10 @@ export type Database = {
         Update: {
           best_round_score?: number
           br_points_total?: number
-          competition_id?: string
           computed_at?: string
           fantasy_team_id?: string
           id?: string
+          league_competition_id?: string
           mvp_bonus_total?: number
           popularity_penalty_total?: number
           rank?: number | null
@@ -894,52 +907,52 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fm_competition_standing_competition_id_fkey"
-            columns: ["competition_id"]
-            isOneToOne: false
-            referencedRelation: "fm_competition"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fm_competition_standing_fantasy_team_id_fkey"
             columns: ["fantasy_team_id"]
             isOneToOne: false
             referencedRelation: "fm_fantasy_team"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fm_competition_standing_league_competition_id_fkey"
+            columns: ["league_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_league_competition"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fm_fantasy_team: {
         Row: {
-          competition_id: string
           created_at: string
           id: string
+          league_competition_id: string
           manager_id: string
           name: string
           updated_at: string
         }
         Insert: {
-          competition_id: string
           created_at?: string
           id?: string
+          league_competition_id: string
           manager_id: string
           name: string
           updated_at?: string
         }
         Update: {
-          competition_id?: string
           created_at?: string
           id?: string
+          league_competition_id?: string
           manager_id?: string
           name?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fm_fantasy_team_competition_id_fkey"
-            columns: ["competition_id"]
+            foreignKeyName: "fm_fantasy_team_league_competition_id_fkey"
+            columns: ["league_competition_id"]
             isOneToOne: false
-            referencedRelation: "fm_competition"
+            referencedRelation: "fm_league_competition"
             referencedColumns: ["id"]
           },
           {
@@ -1013,6 +1026,55 @@ export type Database = {
             columns: ["scoring_round_id"]
             isOneToOne: false
             referencedRelation: "fm_scoring_round"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fm_league_competition: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fm_competition_id: string
+          id: string
+          league_id: string
+          status: Database["public"]["Enums"]["fm_league_competition_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fm_competition_id: string
+          id?: string
+          league_id: string
+          status?: Database["public"]["Enums"]["fm_league_competition_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fm_competition_id?: string
+          id?: string
+          league_id?: string
+          status?: Database["public"]["Enums"]["fm_league_competition_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_league_competition_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_league_competition_fm_competition_id_fkey"
+            columns: ["fm_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_league_competition_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
             referencedColumns: ["id"]
           },
         ]
@@ -1728,6 +1790,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          league_competition_id: string | null
           ownership_pct: number
           player_id: string
           scoring_round_id: string
@@ -1737,6 +1800,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          league_competition_id?: string | null
           ownership_pct: number
           player_id: string
           scoring_round_id: string
@@ -1746,6 +1810,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          league_competition_id?: string | null
           ownership_pct?: number
           player_id?: string
           scoring_round_id?: string
@@ -1753,6 +1818,13 @@ export type Database = {
           teams_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fm_round_player_ownership_league_competition_id_fkey"
+            columns: ["league_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_league_competition"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fm_round_player_ownership_player_id_fkey"
             columns: ["player_id"]
@@ -3690,11 +3762,11 @@ export type Database = {
     }
     Functions: {
       fm_get_user_team_id: {
-        Args: { p_competition_id: string }
+        Args: { p_league_competition_id: string }
         Returns: string
       }
       fm_is_competition_member: {
-        Args: { p_competition_id: string }
+        Args: { p_league_competition_id: string }
         Returns: boolean
       }
       fm_phase_is_revealed: { Args: { p_phase_id: string }; Returns: boolean }
@@ -3790,12 +3862,14 @@ export type Database = {
         | "config_change"
       fm_budget_mode: "fixed" | "reward_leaders" | "comeback"
       fm_calc_order: "mvp_then_penalty" | "penalty_then_mvp"
+      fm_competition_kind: "national_team" | "club_international"
       fm_competition_status:
         | "draft"
         | "open"
         | "in_progress"
         | "completed"
         | "archived"
+      fm_league_competition_status: "active" | "archived"
       fm_lineup_status: "draft" | "submitted" | "locked"
       fm_match_result: "home_win" | "draw" | "away_win"
       fm_match_status: "scheduled" | "in_progress" | "finished" | "cancelled"
@@ -4023,6 +4097,7 @@ export const Constants = {
       ],
       fm_budget_mode: ["fixed", "reward_leaders", "comeback"],
       fm_calc_order: ["mvp_then_penalty", "penalty_then_mvp"],
+      fm_competition_kind: ["national_team", "club_international"],
       fm_competition_status: [
         "draft",
         "open",
@@ -4030,6 +4105,7 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      fm_league_competition_status: ["active", "archived"],
       fm_lineup_status: ["draft", "submitted", "locked"],
       fm_match_result: ["home_win", "draw", "away_win"],
       fm_match_status: ["scheduled", "in_progress", "finished", "cancelled"],
@@ -4090,6 +4166,7 @@ export type SerieAPlayer = Database["public"]["Tables"]["serie_a_players"]["Row"
 // FantaMondiale Statistico aliases
 
 export type FMCompetition = Database["public"]["Tables"]["fm_competition"]["Row"]
+export type FMLeagueCompetition = Database["public"]["Tables"]["fm_league_competition"]["Row"]
 export type FMCompetitionConfigRow = Database["public"]["Tables"]["fm_competition_config"]["Row"]
 export type FMNationalTeam = Database["public"]["Tables"]["fm_national_team"]["Row"]
 export type FMPlayer = Database["public"]["Tables"]["fm_player"]["Row"]
@@ -4114,6 +4191,8 @@ export type FMCompetitionStanding = Database["public"]["Tables"]["fm_competition
 export type FMAuditLog = Database["public"]["Tables"]["fm_audit_log"]["Row"]
 
 export type FMCompetitionStatus = Database["public"]["Enums"]["fm_competition_status"]
+export type FMCompetitionKind = Database["public"]["Enums"]["fm_competition_kind"]
+export type FMLeagueCompetitionStatus = Database["public"]["Enums"]["fm_league_competition_status"]
 export type FMPhaseKind = Database["public"]["Enums"]["fm_phase_kind"]
 export type FMPhaseStatus = Database["public"]["Enums"]["fm_phase_status"]
 export type FMRoundStatus = Database["public"]["Enums"]["fm_round_status"]

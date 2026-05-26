@@ -301,11 +301,15 @@ export async function runRoundEngine(roundId: string, supabase: Supabase): Promi
   // COMPUTE — TEAM ROUND SCORES
   // ============================================================
 
-  // Fetch all fantasy teams now (reused for zero-score padding and standings)
+  // Fetch all fantasy teams across every Lega instance of this global tournament.
+  // TODO(lega-scoped-engine): downstream standings/BR/ownership must bucket by
+  // league_competition_id so each Lega has its own private pool. Currently the
+  // aggregations below mix Leghe — safe to ship because no Lega has submitted a
+  // scored lineup yet, but the per-Lega bucketing must land before WC2026 kicks off.
   const { data: allTeams, error: teamsErr } = await supabase
     .from('fm_fantasy_team')
-    .select('id')
-    .eq('competition_id', round.competition_id)
+    .select('id, league_competition_id, fm_league_competition!inner(fm_competition_id)')
+    .eq('fm_league_competition.fm_competition_id', round.competition_id)
   if (teamsErr) throw new Error(`Teams load failed: ${teamsErr.message}`)
 
   const teamScores: ReturnType<typeof aggregateTeamRoundScore>[] = lineups.map((lineup) => {
@@ -492,21 +496,32 @@ export async function runRoundEngine(roundId: string, supabase: Supabase): Promi
     return b.raw_score_total - a.raw_score_total
   })
 
-  const standingRows = ranked.map(([fantasyTeamId, agg], idx) => ({
-    competition_id: round.competition_id,
-    fantasy_team_id: fantasyTeamId,
-    br_points_total: agg.br_points_total,
-    raw_score_total: agg.raw_score_total,
-    round_wins: agg.round_wins,
-    best_round_score: agg.best_round_score,
-    rank: idx + 1,
-    computed_at: new Date().toISOString(),
-  }))
+  // Map fantasy_team_id → league_competition_id (each team belongs to exactly
+  // one Lega instance — see fm_fantasy_team.league_competition_id).
+  const legaCompByTeam = new Map<string, string>()
+  for (const t of allTeams ?? []) {
+    legaCompByTeam.set(t.id, t.league_competition_id)
+  }
+
+  const standingRows = ranked.flatMap(([fantasyTeamId, agg], idx) => {
+    const legaCompId = legaCompByTeam.get(fantasyTeamId)
+    if (!legaCompId) return []
+    return [{
+      league_competition_id: legaCompId,
+      fantasy_team_id: fantasyTeamId,
+      br_points_total: agg.br_points_total,
+      raw_score_total: agg.raw_score_total,
+      round_wins: agg.round_wins,
+      best_round_score: agg.best_round_score,
+      rank: idx + 1,
+      computed_at: new Date().toISOString(),
+    }]
+  })
 
   if (standingRows.length > 0) {
     const { error } = await supabase
       .from('fm_competition_standing')
-      .upsert(standingRows, { onConflict: 'competition_id,fantasy_team_id' })
+      .upsert(standingRows, { onConflict: 'league_competition_id,fantasy_team_id' })
     if (error) throw new Error(`Standing upsert failed: ${error.message}`)
   }
 

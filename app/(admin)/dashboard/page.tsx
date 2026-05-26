@@ -3,6 +3,7 @@ import type { Route } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthUser } from '@/lib/auth'
 import { requireLeagueContext, isSuperAdmin } from '@/lib/league'
+import { optLegaIntoFMCompetitionAction } from './actions'
 
 export const metadata = { title: 'La tua Lega' }
 
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
 
   const isAdmin = ctx.role === 'league_admin' || (await isSuperAdmin())
 
-  const [profileRes, serieARes, fmRes, mySerieATeamRes, myFMTeamsRes] = await Promise.all([
+  const [profileRes, serieARes, fmRes, mySerieATeamRes, myFMTeamsRes, legaInstancesRes] = await Promise.all([
     supabase.from('profiles').select('full_name, username').eq('id', ctx.userId).maybeSingle(),
     supabase
       .from('competitions')
@@ -98,8 +99,14 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from('fm_fantasy_team')
-      .select('id, competition_id, name')
+      .select('id, name, league_competition_id, fm_league_competition!inner(fm_competition_id)')
       .eq('manager_id', ctx.userId),
+    // Which global tournaments has THIS Lega opted into?
+    supabase
+      .from('fm_league_competition')
+      .select('id, fm_competition_id')
+      .eq('league_id', ctx.league.id)
+      .eq('status', 'active'),
   ])
 
   const profile = profileRes.data
@@ -117,8 +124,31 @@ export default async function DashboardPage() {
     mySerieAEnrolments = new Set((enrolments ?? []).map((r) => r.competition_id))
   }
 
-  const myFMTeams = new Map<string, { id: string; name: string }>(
-    (myFMTeamsRes.data ?? []).map((r) => [r.competition_id, { id: r.id, name: r.name }])
+  // Map fm_competition_id → user's team in this Lega's instance of that tournament.
+  type MyFMTeamRow = {
+    id: string
+    name: string
+    league_competition_id: string
+    fm_league_competition: { fm_competition_id: string } | { fm_competition_id: string }[]
+  }
+  const myFMTeams = new Map<string, { id: string; name: string; legaCompId: string }>()
+  for (const r of (myFMTeamsRes.data ?? []) as MyFMTeamRow[]) {
+    const join = Array.isArray(r.fm_league_competition)
+      ? r.fm_league_competition[0]
+      : r.fm_league_competition
+    if (!join) continue
+    myFMTeams.set(join.fm_competition_id, {
+      id: r.id,
+      name: r.name,
+      legaCompId: r.league_competition_id,
+    })
+  }
+
+  // fm_competition_id → this Lega's instance id (so cards link to the Lega's
+  // private game state, not the global tournament). Missing entry means the
+  // Lega hasn't opted in yet.
+  const legaInstanceByCompId = new Map<string, string>(
+    (legaInstancesRes.data ?? []).map((r) => [r.fm_competition_id, r.id])
   )
 
   const firstName =
@@ -260,16 +290,13 @@ export default async function DashboardPage() {
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {fmList.map((c) => {
               const myTeam = myFMTeams.get(c.id)
+              const legaInstanceId = legaInstanceByCompId.get(c.id) ?? null
               const status = fmStatusBadge(c.status)
               const startsLabel = formatDate(c.starts_at)
               const enrollmentClosed = c.status === 'completed' || c.status === 'archived'
-              const cta = myTeam ? 'Vai →' : enrollmentClosed ? 'Vedi →' : 'Iscriviti →'
-              return (
-                <Link
-                  key={c.id}
-                  href={`/fantamondiale/${c.id}` as Route}
-                  className="group rounded-2xl border border-hairline bg-glass-1 p-5 backdrop-blur-xl transition-all hover:border-indigo-400/40 hover:bg-glass-2"
-                >
+
+              const head = (
+                <>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2.5">
                       <span className="text-xl text-indigo-600 dark:text-indigo-300" aria-hidden>🌍</span>
@@ -286,22 +313,64 @@ export default async function DashboardPage() {
                       {status.label}
                     </span>
                   </div>
+                </>
+              )
 
-                  <div className="mt-4 flex items-center justify-between text-[12px] text-ink-4">
+              const cardCls =
+                'group rounded-2xl border border-hairline bg-glass-1 p-5 backdrop-blur-xl transition-all hover:border-indigo-400/40 hover:bg-glass-2'
+
+              // Lega already plays this tournament — link straight to the instance.
+              if (legaInstanceId) {
+                const cta = myTeam ? 'Vai →' : enrollmentClosed ? 'Vedi →' : 'Iscriviti →'
+                return (
+                  <Link key={c.id} href={`/fantamondiale/${legaInstanceId}` as Route} className={cardCls}>
+                    {head}
+                    <div className="mt-4 flex items-center justify-between text-[12px] text-ink-4">
+                      <span className="min-w-0 truncate">
+                        {myTeam ? (
+                          <><span className="text-ink-5">Squadra:</span> <span className="text-ink-2">{myTeam.name}</span></>
+                        ) : startsLabel ? (
+                          <span>Inizio {startsLabel}</span>
+                        ) : (
+                          <span>&nbsp;</span>
+                        )}
+                      </span>
+                      <span className="shrink-0 text-ink-3 transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-300">
+                        {cta}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              }
+
+              // Lega has NOT opted in. Admin sees a one-click "Iscrivi la Lega"
+              // button; managers see a passive message.
+              const optIn = optLegaIntoFMCompetitionAction.bind(null, c.id)
+              return (
+                <div key={c.id} className={cardCls}>
+                  {head}
+                  <div className="mt-4 flex items-center justify-between gap-2 text-[12px] text-ink-4">
                     <span className="min-w-0 truncate">
-                      {myTeam ? (
-                        <><span className="text-ink-5">Squadra:</span> <span className="text-ink-2">{myTeam.name}</span></>
-                      ) : startsLabel ? (
-                        <span>Inizio {startsLabel}</span>
-                      ) : (
-                        <span>&nbsp;</span>
-                      )}
+                      {enrollmentClosed
+                        ? <span>Iscrizioni chiuse</span>
+                        : startsLabel
+                          ? <span>Inizio {startsLabel}</span>
+                          : <span>La tua Lega non gioca ancora questa competizione</span>}
                     </span>
-                    <span className="shrink-0 text-ink-3 transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-300">
-                      {cta}
-                    </span>
+                    {isAdmin && !enrollmentClosed ? (
+                      <form action={optIn} className="shrink-0">
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-indigo-400/30 bg-gradient-to-b from-indigo-500 to-indigo-600 px-2.5 py-1 text-[11.5px] font-semibold tracking-tight text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset] transition-all hover:from-indigo-400 hover:to-indigo-500 active:translate-y-px"
+                        >
+                          Iscrivi la Lega
+                        </button>
+                      </form>
+                    ) : (
+                      <span className="shrink-0 text-ink-5">In attesa dell&apos;admin</span>
+                    )}
                   </div>
-                </Link>
+                </div>
               )
             })}
           </div>

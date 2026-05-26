@@ -66,22 +66,33 @@ async function joinLeagueAndFM(opts: {
     if (ftError) throw new Error(`fantasy_teams: ${ftError.message}`)
   }
 
-  // 3. FantaMondiale auto-enrollment (only if a non-archived comp exists and
-  //    the user isn't already enrolled in it).
+  // 3. FantaMondiale auto-enrollment.
+  // Only auto-enrolls if the Lega has already opted into the latest tournament.
+  // If the Lega isn't opted in, the manager waits for the admin to click
+  // "Iscrivi la Lega" on the dashboard.
   const comp = await latestFMCompetition()
   if (comp && comp.status !== 'archived' && comp.status !== 'completed') {
-    const { data: existingFM } = await supabase
-      .from('fm_fantasy_team')
+    const { data: legaInstance } = await supabase
+      .from('fm_league_competition')
       .select('id')
-      .eq('competition_id', comp.id)
-      .eq('manager_id', userId)
+      .eq('league_id', leagueId)
+      .eq('fm_competition_id', comp.id)
       .maybeSingle()
 
-    if (!existingFM) {
-      const { error: fmError } = await supabase
+    if (legaInstance) {
+      const { data: existingFM } = await supabase
         .from('fm_fantasy_team')
-        .insert({ competition_id: comp.id, manager_id: userId, name: teamName })
-      if (fmError) throw new Error(`fm_fantasy_team: ${fmError.message}`)
+        .select('id')
+        .eq('league_competition_id', legaInstance.id)
+        .eq('manager_id', userId)
+        .maybeSingle()
+
+      if (!existingFM) {
+        const { error: fmError } = await supabase
+          .from('fm_fantasy_team')
+          .insert({ league_competition_id: legaInstance.id, manager_id: userId, name: teamName })
+        if (fmError) throw new Error(`fm_fantasy_team: ${fmError.message}`)
+      }
     }
   }
 }

@@ -29,15 +29,15 @@ export default async function FantaMondialePage() {
   if (!superAdmin) {
     const { data: team } = await supabase
       .from('fm_fantasy_team')
-      .select('competition_id')
+      .select('league_competition_id')
       .eq('manager_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (team?.competition_id) {
-      redirect(`/fantamondiale/${team.competition_id}` as Route)
+    if (team?.league_competition_id) {
+      redirect(`/fantamondiale/${team.league_competition_id}` as Route)
     }
-    redirect('/')
+    redirect('/dashboard')
   }
 
   const competitions = await getFMCompetitions()
