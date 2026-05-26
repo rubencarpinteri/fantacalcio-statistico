@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // /api/cron/* is reached by external cron callers (GitHub Actions) that
 // authenticate with a Bearer token validated inside each route handler.
 const PUBLIC_PATHS = ['/login', '/reset-password', '/api/cron', '/join']
+const PUBLIC_EXACT = new Set<string>(['/'])
 
 export async function middleware(request: NextRequest) {
   // Build a mutable response that we may modify for cookie forwarding
@@ -40,7 +41,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
+  const isPublicPath =
+    PUBLIC_EXACT.has(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p))
 
   // Unauthenticated user trying to access a protected route
   if (!user && !isPublicPath) {
