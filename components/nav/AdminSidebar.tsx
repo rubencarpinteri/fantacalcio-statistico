@@ -21,20 +21,25 @@ interface NavItem {
   matchPaths?: string[]
 }
 
-// Top-level IA: one entry per competition (Campionato, FantaMondiale) plus
-// admin tools. Giornate/Giocatori/Competizioni live inside the Campionato
-// detail page as sub-nav — they're properties of a competition, not
-// standalone destinations.
+// Top-level IA: one "Lega" entry that points to the Lega home (/dashboard),
+// where all competitions across Serie A and international are listed. Per-
+// competition surfaces are reached by clicking through from there.
 const NAV_ITEMS: NavItem[] = [
   {
-    href: '/campionato',
-    label: 'Campionato',
+    href: '/dashboard',
+    label: 'Lega',
     icon: 'trophy',
-    matchPaths: ['/competitions'],
+    matchPaths: [
+      '/campionato',
+      '/competitions',
+      '/fantamondiale',
+      '/standings',
+      '/roster',
+      '/formations',
+    ],
   },
-  { href: '/fantamondiale', label: 'FantaMondiale', icon: 'globe' },
-  { href: '/playground',    label: 'Playground',    icon: 'beaker', adminOnly: true },
-  { href: '/league',        label: 'Impostazioni',  icon: 'gear',   adminOnly: true, matchPaths: ['/regole-di-gioco'] },
+  { href: '/playground', label: 'Playground',   icon: 'beaker', adminOnly: true },
+  { href: '/league',     label: 'Impostazioni', icon: 'gear',   adminOnly: true, matchPaths: ['/regole-di-gioco'] },
 ]
 
 function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -133,9 +138,13 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
   const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
 
   function isActive(item: NavItem) {
+    // /dashboard owns a lot of nested surfaces (campionato, competitions,
+    // fantamondiale, …) via matchPaths — so we can't early-return on exact
+    // match. Check matchPaths first, then fall back to prefix match for
+    // simpler items like /league or /playground.
+    if (item.matchPaths?.some((p) => pathname.startsWith(p))) return true
     if (item.href === '/dashboard') return pathname === '/dashboard'
-    if (pathname.startsWith(item.href)) return true
-    return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
+    return pathname.startsWith(item.href)
   }
 
   return (
