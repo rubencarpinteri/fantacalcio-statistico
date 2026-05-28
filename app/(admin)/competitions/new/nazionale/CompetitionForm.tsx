@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { createCompetitionAction } from '../actions'
+import { createCompetitionAction } from '../../actions'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
