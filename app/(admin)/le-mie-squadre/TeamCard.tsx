@@ -7,6 +7,8 @@ import {
   renameFMTeamAction,
   offerTeamTransferAction,
   cancelTeamTransferAction,
+  offerFMTeamTransferAction,
+  cancelFMTeamTransferAction,
   type RenameTeamState,
   type TransferActionState,
 } from './actions'
@@ -26,7 +28,7 @@ interface Props {
   level: Level
   competitionLabel: string
   competitionSubLabel?: string | null
-  /** Other members of the Lega available as transfer targets (Serie A only). */
+  /** Other members of the Lega available as transfer targets. */
   members?: MemberPickerOption[]
   /** A pending outgoing offer on this team, if one exists. */
   pendingOffer?: {
@@ -87,17 +89,20 @@ export function TeamCard({
   members,
   pendingOffer,
 }: Props) {
-  const renameAction = level === 'nazionale' ? renameSerieATeamAction : renameFMTeamAction
+  const isNazionale = level === 'nazionale'
+  const renameAction = isNazionale ? renameSerieATeamAction : renameFMTeamAction
+  const offerAction = isNazionale ? offerTeamTransferAction : offerFMTeamTransferAction
+  const cancelAction = isNazionale ? cancelTeamTransferAction : cancelFMTeamTransferAction
+
   const [renameState, renameFormAction] = useActionState(renameAction, renameInitial)
-  const [offerState, offerFormAction] = useActionState(offerTeamTransferAction, transferInitial)
-  const [cancelState, cancelFormAction] = useActionState(cancelTeamTransferAction, transferInitial)
+  const [offerState, offerFormAction] = useActionState(offerAction, transferInitial)
+  const [cancelState, cancelFormAction] = useActionState(cancelAction, transferInitial)
 
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const [assigning, setAssigning] = useState(false)
 
-  const isNazionale = level === 'nazionale'
-  const transferEnabled = isNazionale && Array.isArray(members)
+  const transferEnabled = Array.isArray(members)
 
   const accentBar = isNazionale ? 'bg-emerald-500' : 'bg-indigo-500'
   const eyebrowText = isNazionale
@@ -107,6 +112,9 @@ export function TeamCard({
     ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30'
     : 'bg-indigo-500/10 ring-1 ring-indigo-500/30'
   const icon = isNazionale ? '🇮🇹' : '🌍'
+  const transferCtaText = isNazionale
+    ? 'Assegna a un allenatore'
+    : 'Assegna squadra CFM a un allenatore'
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-hairline bg-glass-1 backdrop-blur-xl">
@@ -119,7 +127,7 @@ export function TeamCard({
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] ${eyebrowBg} ${eyebrowText}`}
               >
                 <span aria-hidden>{icon}</span>
-                {isNazionale ? 'Livello nazionale' : 'Livello internazionale'}
+                {isNazionale ? 'Livello nazionale' : 'Livello internazionale · CFM'}
               </span>
             </div>
             <p className="mt-1 text-[11.5px] font-medium text-ink-3">
@@ -183,7 +191,7 @@ export function TeamCard({
           <p className="mt-2 text-[11px] text-rose-500">{renameState.error}</p>
         )}
 
-        {/* Transfer surface (Serie A only) */}
+        {/* Transfer surface */}
         {transferEnabled && (
           <div className="mt-4 border-t border-hairline pt-3">
             {pendingOffer ? (
@@ -267,7 +275,7 @@ export function TeamCard({
                 onClick={() => setAssigning(true)}
                 className="inline-flex items-center gap-1.5 rounded-md border border-indigo-400/30 bg-indigo-500/5 px-2.5 py-1 text-[12px] font-semibold text-indigo-700 hover:bg-indigo-500/10 dark:text-indigo-300"
               >
-                <span aria-hidden>➜</span> Assegna a un allenatore
+                <span aria-hidden>➜</span> {transferCtaText}
               </button>
             )}
           </div>

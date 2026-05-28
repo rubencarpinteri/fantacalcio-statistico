@@ -440,3 +440,266 @@ export async function acceptTeamTransferAction(
   revalidatePath('/league/members')
   return { error: null, success: true }
 }
+
+// ─── FM (ControFanta Mondiale) team transfer ─────────────────────────────────
+
+const offerFMSchema = z.object({
+  team_id:    z.string().uuid('ID squadra non valido'),
+  to_user_id: z.string().uuid('Allenatore non valido'),
+  message:    z.string().trim().max(280).optional(),
+})
+
+/**
+ * Offer to hand a CFM (FM) fantasy team you currently manage to another
+ * member of the same Lega. Same consent-required flow as Serie A.
+ */
+export async function offerFMTeamTransferAction(
+  _prev: TransferActionState,
+  formData: FormData
+): Promise<TransferActionState> {
+  const ctx = await requireLeagueContext()
+  const supabase = await createClient()
+
+  const parsed = offerFMSchema.safeParse({
+    team_id:    formData.get('team_id'),
+    to_user_id: formData.get('to_user_id'),
+    message:    (formData.get('message') as string | null)?.trim() || undefined,
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Dati non validi', success: false }
+  }
+  const { team_id, to_user_id, message } = parsed.data
+
+  if (to_user_id === ctx.userId) {
+    return { error: 'Non puoi assegnare una squadra a te stesso.', success: false }
+  }
+
+  // Resolve the team + its league_competition + verify same Lega.
+  const { data: team } = await supabase
+    .from('fm_fantasy_team')
+    .select(`
+      id,
+      name,
+      manager_id,
+      league_competition_id,
+      fm_league_competition!inner ( league_id )
+    `)
+    .eq('id', team_id)
+    .maybeSingle()
+  if (!team) return { error: 'Squadra non trovata.', success: false }
+  if (team.manager_id !== ctx.userId) {
+    return { error: 'Puoi assegnare solo le squadre che gestisci.', success: false }
+  }
+  const join = Array.isArray(team.fm_league_competition)
+    ? team.fm_league_competition[0]
+    : team.fm_league_competition
+  if (!join || join.league_id !== ctx.league.id) {
+    return { error: 'La squadra non appartiene a questa Lega.', success: false }
+  }
+
+  const { data: targetMember } = await supabase
+    .from('league_users')
+    .select('user_id')
+    .eq('league_id', ctx.league.id)
+    .eq('user_id', to_user_id)
+    .maybeSingle()
+  if (!targetMember) {
+    return { error: "L'allenatore scelto non è membro di questa Lega.", success: false }
+  }
+
+  const { error } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .insert({
+      league_id:              ctx.league.id,
+      league_competition_id:  team.league_competition_id,
+      team_id,
+      from_user_id:           ctx.userId,
+      to_user_id,
+      message:                message ?? null,
+    })
+
+  if (error) {
+    const msg = error.message.toLowerCase().includes('unique')
+      ? 'Esiste già una richiesta in attesa per questa squadra.'
+      : error.message
+    return { error: msg, success: false }
+  }
+
+  await writeAuditLog({
+    supabase,
+    leagueId:    ctx.league.id,
+    actorUserId: ctx.userId,
+    actionType:  'user_role_change',
+    entityType:  'fm_fantasy_team',
+    entityId:    team_id,
+    afterJson:   {
+      action:     'transfer_offered',
+      team_name:  team.name,
+      to_user_id,
+    },
+  })
+
+  revalidatePath('/le-mie-squadre')
+  return { error: null, success: true }
+}
+
+export async function cancelFMTeamTransferAction(
+  _prev: TransferActionState,
+  formData: FormData
+): Promise<TransferActionState> {
+  const ctx = await requireLeagueContext()
+  const supabase = await createClient()
+
+  const parsed = requestIdSchema.safeParse({ request_id: formData.get('request_id') })
+  if (!parsed.success) return { error: 'Richiesta non valida.', success: false }
+
+  const { data: req } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .select('id, from_user_id, status')
+    .eq('id', parsed.data.request_id)
+    .maybeSingle()
+  if (!req) return { error: 'Richiesta non trovata.', success: false }
+  if (req.from_user_id !== ctx.userId) {
+    return { error: 'Puoi annullare solo le richieste che hai inviato.', success: false }
+  }
+  if (req.status !== 'pending') {
+    return { error: 'Questa richiesta non è più in attesa.', success: false }
+  }
+
+  const { error } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .update({ status: 'cancelled', responded_at: new Date().toISOString() })
+    .eq('id', req.id)
+
+  if (error) return { error: error.message, success: false }
+
+  revalidatePath('/le-mie-squadre')
+  return { error: null, success: true }
+}
+
+export async function rejectFMTeamTransferAction(
+  _prev: TransferActionState,
+  formData: FormData
+): Promise<TransferActionState> {
+  const ctx = await requireLeagueContext()
+  const supabase = await createClient()
+
+  const parsed = requestIdSchema.safeParse({ request_id: formData.get('request_id') })
+  if (!parsed.success) return { error: 'Richiesta non valida.', success: false }
+
+  const { data: req } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .select('id, to_user_id, status')
+    .eq('id', parsed.data.request_id)
+    .maybeSingle()
+  if (!req) return { error: 'Richiesta non trovata.', success: false }
+  if (req.to_user_id !== ctx.userId) {
+    return { error: 'Solo il destinatario può rifiutare la richiesta.', success: false }
+  }
+  if (req.status !== 'pending') {
+    return { error: 'Questa richiesta non è più in attesa.', success: false }
+  }
+
+  const { error } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .update({ status: 'rejected', responded_at: new Date().toISOString() })
+    .eq('id', req.id)
+
+  if (error) return { error: error.message, success: false }
+
+  revalidatePath('/le-mie-squadre')
+  return { error: null, success: true }
+}
+
+export async function acceptFMTeamTransferAction(
+  _prev: TransferActionState,
+  formData: FormData
+): Promise<TransferActionState> {
+  const ctx = await requireLeagueContext()
+  const supabase = await createClient()
+
+  const parsed = requestIdSchema.safeParse({ request_id: formData.get('request_id') })
+  if (!parsed.success) return { error: 'Richiesta non valida.', success: false }
+
+  const { data: req } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .select('id, team_id, from_user_id, to_user_id, league_id, league_competition_id, status')
+    .eq('id', parsed.data.request_id)
+    .maybeSingle()
+  if (!req) return { error: 'Richiesta non trovata.', success: false }
+  if (req.to_user_id !== ctx.userId) {
+    return { error: 'Solo il destinatario può accettare la richiesta.', success: false }
+  }
+  if (req.status !== 'pending') {
+    return { error: 'Questa richiesta non è più in attesa.', success: false }
+  }
+
+  // Re-confirm the team is still managed by the sender within the same tournament.
+  const { data: team } = await supabase
+    .from('fm_fantasy_team')
+    .select('id, name, manager_id, league_competition_id')
+    .eq('id', req.team_id)
+    .maybeSingle()
+  if (!team) return { error: 'Squadra non trovata.', success: false }
+  if (team.league_competition_id !== req.league_competition_id) {
+    return { error: 'Inconsistenza: la squadra non appartiene più a questa competizione.', success: false }
+  }
+  if (team.manager_id !== req.from_user_id) {
+    return {
+      error: 'Il mittente non gestisce più questa squadra. La richiesta non è più valida.',
+      success: false,
+    }
+  }
+
+  // Reject if the recipient already has a CFM team in this competition.
+  const { data: existing } = await supabase
+    .from('fm_fantasy_team')
+    .select('id')
+    .eq('league_competition_id', req.league_competition_id)
+    .eq('manager_id', ctx.userId)
+    .maybeSingle()
+  if (existing) {
+    return {
+      error: 'Hai già una squadra in questa competizione internazionale. Non puoi gestirne due.',
+      success: false,
+    }
+  }
+
+  // Service client moves manager_id (recipient is not the current manager,
+  // so the user-scoped client cannot write fm_fantasy_team under RLS).
+  const service = createServiceClient()
+  const { error: teamError } = await service
+    .from('fm_fantasy_team')
+    .update({ manager_id: ctx.userId })
+    .eq('id', team.id)
+  if (teamError) return { error: `Trasferimento fallito: ${teamError.message}`, success: false }
+
+  const { error: reqError } = await supabase
+    .from('fm_fantasy_team_transfer_request')
+    .update({ status: 'accepted', responded_at: new Date().toISOString() })
+    .eq('id', req.id)
+  if (reqError) {
+    return {
+      error: `Squadra trasferita ma chiusura richiesta fallita: ${reqError.message}.`,
+      success: false,
+    }
+  }
+
+  await writeAuditLog({
+    supabase,
+    leagueId:    req.league_id,
+    actorUserId: ctx.userId,
+    actionType:  'user_role_change',
+    entityType:  'fm_fantasy_team',
+    entityId:    team.id,
+    afterJson:   {
+      action:       'transfer_accepted',
+      team_name:    team.name,
+      from_user_id: req.from_user_id,
+      to_user_id:   ctx.userId,
+    },
+  })
+
+  revalidatePath('/le-mie-squadre')
+  return { error: null, success: true }
+}

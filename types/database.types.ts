@@ -1081,6 +1081,67 @@ export type Database = {
           },
         ]
       }
+      fm_fantasy_team_transfer_request: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          league_competition_id: string
+          league_id: string
+          message: string | null
+          responded_at: string | null
+          status: string
+          team_id: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          league_competition_id: string
+          league_id: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          team_id: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          league_competition_id?: string
+          league_id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          team_id?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fm_fantasy_team_transfer_request_league_competition_id_fkey"
+            columns: ["league_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fm_league_competition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_fantasy_team_transfer_request_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fm_fantasy_team_transfer_request_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fm_fantasy_team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fm_league_competition: {
         Row: {
           created_at: string

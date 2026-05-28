@@ -5,13 +5,19 @@ import { useFormStatus } from 'react-dom'
 import {
   acceptTeamTransferAction,
   rejectTeamTransferAction,
+  acceptFMTeamTransferAction,
+  rejectFMTeamTransferAction,
   type TransferActionState,
 } from './actions'
+
+export type OfferLevel = 'nazionale' | 'internazionale'
 
 export interface IncomingOffer {
   request_id: string
   team_id: string
   team_name: string
+  level: OfferLevel
+  context_label: string
   from_username: string
   from_full_name: string | null
   message: string | null
@@ -47,20 +53,39 @@ function RejectSubmit() {
 }
 
 function OfferRow({ offer }: { offer: IncomingOffer }) {
-  const [acceptState, acceptAction] = useActionState(acceptTeamTransferAction, initial)
-  const [rejectState, rejectAction] = useActionState(rejectTeamTransferAction, initial)
+  const isNazionale = offer.level === 'nazionale'
+  const acceptActionFn = isNazionale ? acceptTeamTransferAction : acceptFMTeamTransferAction
+  const rejectActionFn = isNazionale ? rejectTeamTransferAction : rejectFMTeamTransferAction
+
+  const [acceptState, acceptAction] = useActionState(acceptActionFn, initial)
+  const [rejectState, rejectAction] = useActionState(rejectActionFn, initial)
+
+  const levelChipBg = isNazionale
+    ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+    : 'bg-indigo-500/10 ring-1 ring-indigo-500/30 text-indigo-700 dark:text-indigo-300'
+  const levelLabel = isNazionale ? 'Livello nazionale' : 'Livello internazionale · CFM'
+  const levelIcon = isNazionale ? '🇮🇹' : '🌍'
 
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
-            Richiesta in arrivo
-          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+              Richiesta in arrivo
+            </span>
+            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em] ${levelChipBg}`}>
+              <span aria-hidden>{levelIcon}</span>
+              {levelLabel}
+            </span>
+          </div>
           <p className="mt-1 text-[14px] font-semibold tracking-tight text-ink-1">
             {offer.team_name}
           </p>
-          <p className="mt-0.5 text-[12px] text-ink-3">
+          <p className="mt-0.5 text-[11.5px] text-ink-4">
+            {offer.context_label}
+          </p>
+          <p className="mt-1 text-[12px] text-ink-3">
             da{' '}
             <span className="text-ink-1 font-medium">
               {offer.from_full_name || `@${offer.from_username}`}

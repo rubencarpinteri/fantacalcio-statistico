@@ -24,6 +24,7 @@ export default async function MyTeamsPage() {
     membersRes,
     serieACompsRes,
     pendingOffersRes,
+    fmPendingOffersRes,
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -73,6 +74,20 @@ export default async function MyTeamsPage() {
       `)
       .eq('league_id', ctx.league.id)
       .eq('status', 'pending'),
+    supabase
+      .from('fm_fantasy_team_transfer_request')
+      .select(`
+        id,
+        team_id,
+        from_user_id,
+        to_user_id,
+        league_competition_id,
+        message,
+        created_at,
+        status
+      `)
+      .eq('league_id', ctx.league.id)
+      .eq('status', 'pending'),
   ])
 
   type CompetitionTeam = { team_id: string; competition_id: string }
@@ -112,6 +127,10 @@ export default async function MyTeamsPage() {
     status: string
   }
 
+  type FMPendingRow = PendingRow & {
+    league_competition_id: string
+  }
+
   const profile = profileRes.data
   const serieATeams = serieARes.data ?? []
   const fmTeamsRaw = (fmRes.data ?? []) as FMTeamRow[]
@@ -119,6 +138,7 @@ export default async function MyTeamsPage() {
   const enrolments = (enrolmentsRes ?? []) as CompetitionTeam[]
   const memberRows = (membersRes.data ?? []) as unknown as MemberRow[]
   const pendingRows = (pendingOffersRes.data ?? []) as PendingRow[]
+  const fmPendingRows = (fmPendingOffersRes.data ?? []) as FMPendingRow[]
 
   // Build the member lookup table once.
   type MemberLookup = { user_id: string; username: string; full_name: string | null; email: string | null }
@@ -188,28 +208,79 @@ export default async function MyTeamsPage() {
   }
 
   // Outgoing pending offers keyed by team_id (for the owner's TeamCard).
+  // Two maps because Serie A and FM team IDs share no namespace logically.
   const outgoingByTeam = new Map<string, PendingRow>()
   for (const r of pendingRows) {
-    if (r.from_user_id === ctx.userId) {
-      outgoingByTeam.set(r.team_id, r)
-    }
+    if (r.from_user_id === ctx.userId) outgoingByTeam.set(r.team_id, r)
+  }
+  const outgoingFMByTeam = new Map<string, FMPendingRow>()
+  for (const r of fmPendingRows) {
+    if (r.from_user_id === ctx.userId) outgoingFMByTeam.set(r.team_id, r)
   }
 
-  // Incoming pending offers for the inbox.
+  // Resolve team + context labels for incoming offers (both kinds).
   const teamNameById = new Map<string, string>()
   for (const t of serieATeams) teamNameById.set(t.id, t.name)
-  const incomingTeamIds = pendingRows
+
+  const incomingSerieATeamIds = pendingRows
     .filter((r) => r.to_user_id === ctx.userId)
     .map((r) => r.team_id)
-  if (incomingTeamIds.length > 0) {
+  if (incomingSerieATeamIds.length > 0) {
     const { data: incomingTeams } = await supabase
       .from('fantasy_teams')
       .select('id, name')
-      .in('id', incomingTeamIds)
+      .in('id', incomingSerieATeamIds)
     for (const t of incomingTeams ?? []) teamNameById.set(t.id, t.name)
   }
 
-  const incomingOffers: IncomingOffer[] = pendingRows
+  const fmTeamNameById = new Map<string, string>()
+  const fmTeamCompetitionLabel = new Map<string, string>()
+  for (const t of fmTeams) {
+    fmTeamNameById.set(t.id, t.name)
+    fmTeamCompetitionLabel.set(
+      t.id,
+      `${t.competitionName}${t.competitionEdition ? ' ' + t.competitionEdition : ''}`,
+    )
+  }
+  const incomingFMTeamIds = fmPendingRows
+    .filter((r) => r.to_user_id === ctx.userId && !fmTeamNameById.has(r.team_id))
+    .map((r) => r.team_id)
+  if (incomingFMTeamIds.length > 0) {
+    const { data: incomingFM } = await supabase
+      .from('fm_fantasy_team')
+      .select(`
+        id,
+        name,
+        fm_league_competition!inner (
+          fm_competition:fm_competition_id ( name, edition )
+        )
+      `)
+      .in('id', incomingFMTeamIds)
+    type IncomingFMRow = {
+      id: string
+      name: string
+      fm_league_competition: {
+        fm_competition: { name: string; edition: string } | { name: string; edition: string }[] | null
+      } | {
+        fm_competition: { name: string; edition: string } | { name: string; edition: string }[] | null
+      }[]
+    }
+    for (const t of (incomingFM ?? []) as IncomingFMRow[]) {
+      fmTeamNameById.set(t.id, t.name)
+      const join = Array.isArray(t.fm_league_competition)
+        ? t.fm_league_competition[0]
+        : t.fm_league_competition
+      const comp = join
+        ? (Array.isArray(join.fm_competition) ? join.fm_competition[0] : join.fm_competition)
+        : null
+      fmTeamCompetitionLabel.set(
+        t.id,
+        comp ? `${comp.name}${comp.edition ? ' ' + comp.edition : ''}` : 'Competizione internazionale',
+      )
+    }
+  }
+
+  const incomingSerieAOffers: IncomingOffer[] = pendingRows
     .filter((r) => r.to_user_id === ctx.userId)
     .map((r) => {
       const sender = memberMap.get(r.from_user_id)
@@ -217,12 +288,34 @@ export default async function MyTeamsPage() {
         request_id:     r.id,
         team_id:        r.team_id,
         team_name:      teamNameById.get(r.team_id) ?? 'Squadra',
+        level:          'nazionale' as const,
+        context_label:  'Serie A',
         from_username:  sender?.username ?? '—',
         from_full_name: sender?.full_name ?? null,
         message:        r.message,
         created_at:     r.created_at,
       }
     })
+
+  const incomingFMOffers: IncomingOffer[] = fmPendingRows
+    .filter((r) => r.to_user_id === ctx.userId)
+    .map((r) => {
+      const sender = memberMap.get(r.from_user_id)
+      return {
+        request_id:     r.id,
+        team_id:        r.team_id,
+        team_name:      fmTeamNameById.get(r.team_id) ?? 'Squadra CFM',
+        level:          'internazionale' as const,
+        context_label:  fmTeamCompetitionLabel.get(r.team_id) ?? 'Competizione internazionale',
+        from_username:  sender?.username ?? '—',
+        from_full_name: sender?.full_name ?? null,
+        message:        r.message,
+        created_at:     r.created_at,
+      }
+    })
+
+  const incomingOffers: IncomingOffer[] = [...incomingSerieAOffers, ...incomingFMOffers]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
 
   const totalTeams = serieATeams.length + fmTeams.length
 
@@ -314,16 +407,28 @@ export default async function MyTeamsPage() {
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {fmTeams.map((t) => (
-              <TeamCard
-                key={t.id}
-                teamId={t.id}
-                name={t.name}
-                level="internazionale"
-                competitionLabel={t.competitionName}
-                competitionSubLabel={t.competitionEdition}
-              />
-            ))}
+            {fmTeams.map((t) => {
+              const pending = outgoingFMByTeam.get(t.id)
+              const recipient = pending ? memberMap.get(pending.to_user_id) : null
+              return (
+                <TeamCard
+                  key={t.id}
+                  teamId={t.id}
+                  name={t.name}
+                  level="internazionale"
+                  competitionLabel={t.competitionName}
+                  competitionSubLabel={t.competitionEdition}
+                  members={transferTargets}
+                  pendingOffer={pending && recipient
+                    ? {
+                        request_id:   pending.id,
+                        to_username:  recipient.username,
+                        to_full_name: recipient.full_name,
+                      }
+                    : null}
+                />
+              )
+            })}
           </div>
         )}
       </section>
