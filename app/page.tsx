@@ -191,7 +191,7 @@ function SignatureMechanic() {
         <p className="mt-5 flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-rose-600 dark:text-rose-300">
           <span aria-hidden className="text-[18px]">⚠️</span>
           <span>
-            <span className="uppercase tracking-[0.12em]">Ma occhio!</span>{' '}
+            <span className="serif italic uppercase tracking-[0.12em]">Ma occhio!</span>{' '}
             <span className="font-normal text-ink-2">Non è facile come sembra.</span>
           </span>
         </p>
