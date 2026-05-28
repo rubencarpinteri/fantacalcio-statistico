@@ -35,7 +35,7 @@ export default async function NewCompetitionPage() {
           eyebrowTint="text-indigo-600 dark:text-indigo-300"
           hoverRing="hover:border-indigo-400/40"
           title="Competizioni Internazionali"
-          description="Iscrivi la Lega a un Mondiale, Europeo o Nations League in formato Battle Royal."
+          description="Iscrivi la Lega a un Mondiale, Europeo o Nations League. Sono tornei globali con calendario e rose ufficiali — la tua Lega gioca la sua versione privata."
           cta="Scegli torneo →"
         />
       </div>
