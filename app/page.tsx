@@ -20,7 +20,6 @@ export default async function HomePage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pt-5 pb-24 sm:px-8">
       <TopBar />
-      <Hero />
       <SignatureMechanic />
       <HowItWorks />
       <Competitions />
@@ -61,38 +60,6 @@ function TopBar() {
         Accedi
       </Link>
     </header>
-  )
-}
-
-function Hero() {
-  return (
-    <section className="mt-14 sm:mt-20">
-      <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-4">
-        Lega privata · Voti statistici
-      </p>
-      <h1
-        className="max-w-3xl font-light tracking-tight text-ink-1"
-        style={{ fontSize: 'clamp(32px, 5.4vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.035em' }}
-      >
-        Il fantacalcio dove vincono <span className="serif italic font-normal text-indigo-500 dark:text-indigo-300">i dati</span>,
-        <br className="hidden sm:block" /> non le sensazioni.
-      </h1>
-      <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-ink-3">
-        Una lega tra amici, voti veri da un provider statistico professionale,
-        e una scelta che brucia: prendi il fuoriclasse che hanno preso tutti, o scopri tu
-        il prossimo crack prima degli altri?
-      </p>
-
-      <div className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <Link
-          href="/leagues/new"
-          className="inline-flex items-center justify-center rounded-xl border border-indigo-400/30 bg-gradient-to-b from-indigo-500 to-indigo-600 px-6 py-3 text-[14px] font-semibold tracking-tight text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_8px_22px_-6px_rgba(99,102,241,0.55),0_1px_2px_rgba(0,0,0,0.4)] transition-all hover:from-indigo-400 hover:to-indigo-500 active:translate-y-px"
-        >
-          Crea una Lega
-        </Link>
-        <JoinLeagueCTA />
-      </div>
-    </section>
   )
 }
 
@@ -203,7 +170,7 @@ function Competitions() {
 
 function SignatureMechanic() {
   return (
-    <section className="mt-24 sm:mt-32">
+    <section className="mt-14 sm:mt-20">
       <div className="glass-strong overflow-hidden rounded-3xl border border-hairline-strong p-7 sm:p-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-600 dark:text-rose-300">
           La meccanica che cambia tutto
@@ -215,7 +182,14 @@ function SignatureMechanic() {
           Tutti i giocatori, un budget: <span className="serif italic">ad ogni turno, scegli chi vuoi.</span>
         </h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-3">
-          Gli altri scoprono la tua squadra solo al calcio d&apos;inizio. Ma occhio!
+          Gli altri scoprono la tua squadra solo al calcio d&apos;inizio.
+        </p>
+        <p className="mt-5 flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-rose-600 dark:text-rose-300">
+          <span aria-hidden className="text-[18px]">⚠️</span>
+          <span>
+            <span className="uppercase tracking-[0.12em]">Ma occhio!</span>{' '}
+            <span className="font-normal text-ink-2">Non è facile come sembra.</span>
+          </span>
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -246,6 +220,16 @@ function SignatureMechanic() {
           che nessuno conosce?</em> Vince chi sa quando rischiare. O chi inganna in settimana bluffando
           sulle sue scelte. Vale tutto.
         </p>
+
+        <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <Link
+            href="/leagues/new"
+            className="inline-flex items-center justify-center rounded-xl border border-indigo-400/30 bg-gradient-to-b from-indigo-500 to-indigo-600 px-6 py-3 text-[14px] font-semibold tracking-tight text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_8px_22px_-6px_rgba(99,102,241,0.55),0_1px_2px_rgba(0,0,0,0.4)] transition-all hover:from-indigo-400 hover:to-indigo-500 active:translate-y-px"
+          >
+            Crea una Lega
+          </Link>
+          <JoinLeagueCTA />
+        </div>
       </div>
     </section>
   )
