@@ -197,7 +197,7 @@ function SignatureMechanic() {
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-hairline bg-glass-1 p-5 backdrop-blur-xl">
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-600/[0.07] p-5 backdrop-blur-xl">
             <h3 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink-1">
               <span aria-hidden>⚠️</span> Penalità di popolarità
             </h3>
