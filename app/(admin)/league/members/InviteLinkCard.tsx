@@ -33,8 +33,9 @@ export function InviteLinkCard({ joinUrl, leagueName }: Props) {
           <p className="mt-1 text-[12px] text-ink-3">
             Condividi questo link per far iscrivere nuovi membri a{' '}
             <span className="text-ink-1 font-medium">{leagueName}</span>. Chi lo apre crea
-            un account (se necessario), entra in lega come manager e viene iscritto
-            automaticamente al FantaMondiale.
+            un account (se necessario) ed entra in Lega come manager. Le iscrizioni
+            alle singole competizioni (Serie A, Mondiali, Europei, Nations League)
+            restano una scelta del manager dalla dashboard.
           </p>
         </div>
       </div>

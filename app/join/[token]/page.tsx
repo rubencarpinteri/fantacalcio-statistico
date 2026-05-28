@@ -20,13 +20,6 @@ export default async function JoinPage({
     .eq('invite_token', token)
     .maybeSingle()
 
-  const { data: latestComp } = await supabase
-    .from('fm_competition')
-    .select('id, name, edition')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -91,12 +84,10 @@ export default async function JoinPage({
               <p className="text-[12px] text-ink-4">{league.season_name}</p>
             </div>
 
-            {latestComp && (
-              <p className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-3 py-2 text-center text-[12px] text-indigo-200">
-                Verrai iscritto automaticamente al{' '}
-                <span className="font-semibold">{latestComp.name} {latestComp.edition}</span>
-              </p>
-            )}
+            <p className="rounded-lg border border-hairline bg-glass-2 px-3 py-2 text-center text-[12px] text-ink-3">
+              Diventerai manager della Lega. Sceglierai poi tu a quali competizioni
+              (Serie A, Mondiali, Europei, Nations League) iscriverti.
+            </p>
 
             {alreadyMember ? (
               <div className="space-y-3 text-center">

@@ -162,6 +162,142 @@ export async function inviteMemberAction(
   return { error: null, success: true }
 }
 
+// ─── Assign / unassign team ──────────────────────────────────────────────────
+
+const assignTeamSchema = z.object({
+  team_id:        z.string().uuid('ID squadra non valido'),
+  target_user_id: z.string().uuid('Membro non valido'),
+})
+
+export interface AssignTeamState {
+  error: string | null
+  success: boolean
+}
+
+/**
+ * Reassign a Serie A fantasy team to another league member. Admin-only.
+ * Used to hand a placeholder team from the admin's pool to a manager,
+ * or to move a team between managers.
+ */
+export async function assignTeamToMemberAction(
+  _prev: AssignTeamState,
+  formData: FormData
+): Promise<AssignTeamState> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const parsed = assignTeamSchema.safeParse({
+    team_id:        formData.get('team_id'),
+    target_user_id: formData.get('target_user_id'),
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Dati non validi', success: false }
+  }
+  const { team_id, target_user_id } = parsed.data
+
+  // Verify the team is in this league
+  const { data: team } = await supabase
+    .from('fantasy_teams')
+    .select('id, name, manager_id')
+    .eq('id', team_id)
+    .eq('league_id', ctx.league.id)
+    .maybeSingle()
+  if (!team) return { error: 'Squadra non trovata.', success: false }
+
+  // Verify the target is a member of this league
+  const { data: lu } = await supabase
+    .from('league_users')
+    .select('id')
+    .eq('league_id', ctx.league.id)
+    .eq('user_id', target_user_id)
+    .maybeSingle()
+  if (!lu) return { error: 'Il destinatario non è membro della Lega.', success: false }
+
+  if (team.manager_id === target_user_id) {
+    return { error: 'La squadra è già assegnata a questo membro.', success: false }
+  }
+
+  const previousManagerId = team.manager_id
+  const { error } = await supabase
+    .from('fantasy_teams')
+    .update({ manager_id: target_user_id })
+    .eq('id', team_id)
+
+  if (error) return { error: error.message, success: false }
+
+  await writeAuditLog({
+    supabase,
+    leagueId:    ctx.league.id,
+    actorUserId: ctx.userId,
+    actionType:  'user_role_change',
+    entityType:  'fantasy_team',
+    entityId:    team_id,
+    afterJson:   {
+      action:           'team_reassigned',
+      team_name:        team.name,
+      from_user_id:     previousManagerId,
+      to_user_id:       target_user_id,
+    },
+  })
+
+  revalidatePath('/league/members')
+  return { error: null, success: true }
+}
+
+/**
+ * Revert a Serie A fantasy team back to the current admin's pool of
+ * unassigned placeholder teams. Admin-only.
+ */
+export async function unassignTeamAction(
+  _prev: AssignTeamState,
+  formData: FormData
+): Promise<AssignTeamState> {
+  const ctx = await requireLeagueAdmin()
+  const supabase = await createClient()
+
+  const parsed = z.object({ team_id: z.string().uuid() }).safeParse({
+    team_id: formData.get('team_id'),
+  })
+  if (!parsed.success) return { error: 'Dati non validi', success: false }
+  const { team_id } = parsed.data
+
+  const { data: team } = await supabase
+    .from('fantasy_teams')
+    .select('id, name, manager_id')
+    .eq('id', team_id)
+    .eq('league_id', ctx.league.id)
+    .maybeSingle()
+  if (!team) return { error: 'Squadra non trovata.', success: false }
+
+  if (team.manager_id === ctx.userId) {
+    return { error: 'La squadra è già nel tuo pool.', success: false }
+  }
+
+  const { error } = await supabase
+    .from('fantasy_teams')
+    .update({ manager_id: ctx.userId })
+    .eq('id', team_id)
+
+  if (error) return { error: error.message, success: false }
+
+  await writeAuditLog({
+    supabase,
+    leagueId:    ctx.league.id,
+    actorUserId: ctx.userId,
+    actionType:  'user_role_change',
+    entityType:  'fantasy_team',
+    entityId:    team_id,
+    afterJson:   {
+      action:       'team_unassigned',
+      team_name:    team.name,
+      from_user_id: team.manager_id,
+    },
+  })
+
+  revalidatePath('/league/members')
+  return { error: null, success: true }
+}
+
 // ─── Remove member ────────────────────────────────────────────────────────────
 
 export interface MemberActionState {

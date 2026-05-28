@@ -51,7 +51,7 @@ export function CompetitionForm() {
         <input
           name="name"
           required
-          placeholder="es. Campionato 2025-26"
+          placeholder="es. ControFanta Serie A 2026/2027"
           className="w-full rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
         />
       </div>
@@ -79,7 +79,7 @@ export function CompetitionForm() {
         </label>
         <input
           name="season"
-          placeholder="es. 2025-26"
+          placeholder="es. 2026/2027"
           className="w-full rounded-lg border border-hairline bg-transparent px-3 py-2 text-sm text-ink-1 placeholder-ink-4 focus:border-indigo-400/60 focus:outline-none"
         />
       </div>

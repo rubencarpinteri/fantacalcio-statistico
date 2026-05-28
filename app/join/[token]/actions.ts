@@ -17,84 +17,29 @@ async function resolveLeagueByToken(token: string) {
   return data
 }
 
-async function latestFMCompetition() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('fm_competition')
-    .select('id, status')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  return data
-}
-
-async function joinLeagueAndFM(opts: {
+// Invite link adds the user to the Lega only. Competition enrollment
+// (Serie A campionato/coppa/BR, FM tournaments) is a deliberate choice
+// the joiner makes from the dashboard afterwards.
+async function joinLeagueAsMember(opts: {
   userId: string
   leagueId: string
-  teamName: string
 }) {
   const supabase = await createClient()
-  const { userId, leagueId, teamName } = opts
+  const { userId, leagueId } = opts
 
-  // 1. League membership (idempotent: skip if already a member)
-  const { data: existingLU } = await supabase
+  const { data: existing } = await supabase
     .from('league_users')
     .select('id')
     .eq('league_id', leagueId)
     .eq('user_id', userId)
     .maybeSingle()
 
-  if (!existingLU) {
-    const { error: luError } = await supabase
-      .from('league_users')
-      .insert({ league_id: leagueId, user_id: userId, role: 'manager' })
-    if (luError) throw new Error(`league_users: ${luError.message}`)
-  }
+  if (existing) return
 
-  // 2. Serie A fantasy team (create only if the user has none in this league)
-  const { data: existingFT } = await supabase
-    .from('fantasy_teams')
-    .select('id')
-    .eq('league_id', leagueId)
-    .eq('manager_id', userId)
-    .maybeSingle()
-
-  if (!existingFT) {
-    const { error: ftError } = await supabase
-      .from('fantasy_teams')
-      .insert({ league_id: leagueId, manager_id: userId, name: teamName })
-    if (ftError) throw new Error(`fantasy_teams: ${ftError.message}`)
-  }
-
-  // 3. FantaMondiale auto-enrollment.
-  // Only auto-enrolls if the Lega has already opted into the latest tournament.
-  // If the Lega isn't opted in, the manager waits for the admin to click
-  // "Iscrivi la Lega" on the dashboard.
-  const comp = await latestFMCompetition()
-  if (comp && comp.status !== 'archived' && comp.status !== 'completed') {
-    const { data: legaInstance } = await supabase
-      .from('fm_league_competition')
-      .select('id')
-      .eq('league_id', leagueId)
-      .eq('fm_competition_id', comp.id)
-      .maybeSingle()
-
-    if (legaInstance) {
-      const { data: existingFM } = await supabase
-        .from('fm_fantasy_team')
-        .select('id')
-        .eq('league_competition_id', legaInstance.id)
-        .eq('manager_id', userId)
-        .maybeSingle()
-
-      if (!existingFM) {
-        const { error: fmError } = await supabase
-          .from('fm_fantasy_team')
-          .insert({ league_competition_id: legaInstance.id, manager_id: userId, name: teamName })
-        if (fmError) throw new Error(`fm_fantasy_team: ${fmError.message}`)
-      }
-    }
-  }
+  const { error } = await supabase
+    .from('league_users')
+    .insert({ league_id: leagueId, user_id: userId, role: 'manager' })
+  if (error) throw new Error(`league_users: ${error.message}`)
 }
 
 // ─── Signup + join (unauthenticated user) ────────────────────────────────────
@@ -137,7 +82,6 @@ export async function signUpAndJoinAction(
 
   const supabase = await createClient()
 
-  // Username uniqueness pre-check (same as the admin invite flow)
   const { data: existingUsername } = await supabase
     .from('profiles')
     .select('id')
@@ -166,15 +110,8 @@ export async function signUpAndJoinAction(
     return { error: `Iscrizione fallita: ${msg}`, awaitingEmail: false }
   }
 
-  // Profile is created by the on_auth_user_created trigger from raw_user_meta_data.
-  // Pre-attach the user to the league + FM so that when they confirm their email
-  // they land already enrolled.
   try {
-    await joinLeagueAndFM({
-      userId: data.user.id,
-      leagueId: league.id,
-      teamName: full_name,
-    })
+    await joinLeagueAsMember({ userId: data.user.id, leagueId: league.id })
   } catch (err) {
     return {
       error: `Account creato ma iscrizione lega fallita: ${err instanceof Error ? err.message : 'errore'}. Contatta l'admin.`,
@@ -182,9 +119,6 @@ export async function signUpAndJoinAction(
     }
   }
 
-  // Email confirmation is on by default in Supabase: signUp returns a user
-  // but no session. If confirmation is off, a session is set immediately —
-  // in that case we can redirect straight to the dashboard.
   if (data.session) {
     redirect('/dashboard' as Route)
   }
@@ -202,22 +136,7 @@ export async function acceptJoinAction(token: string) {
   const league = await resolveLeagueByToken(token)
   if (!league) throw new Error('Link di invito non valido o revocato.')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, username')
-    .eq('id', user.id)
-    .single()
-
-  const teamName =
-    (profile?.full_name && profile.full_name.trim()) ||
-    profile?.username ||
-    'Squadra'
-
-  await joinLeagueAndFM({
-    userId: user.id,
-    leagueId: league.id,
-    teamName,
-  })
+  await joinLeagueAsMember({ userId: user.id, leagueId: league.id })
 
   redirect('/dashboard' as Route)
 }

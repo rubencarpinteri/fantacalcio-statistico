@@ -5,6 +5,7 @@ import { InviteMemberForm } from './InviteMemberForm'
 import { CreateTeamForm } from './CreateTeamForm'
 import { ChangeRoleForm, RemoveMemberButton } from './MemberActions'
 import { InviteLinkCard } from './InviteLinkCard'
+import { TeamAssignmentCell } from './TeamAssignmentCell'
 
 export const metadata = { title: 'Membri lega' }
 
@@ -53,14 +54,15 @@ export default async function LeagueMembersPage() {
   const memberList = (members ?? []) as unknown as Member[]
   const teamList   = (allTeams ?? []) as Team[]
 
-  // Build a map: manager_id → team names (admin may own multiple)
-  const teamsByManager = new Map<string, string[]>()
+  // Build a map: manager_id → teams (full row, admin may own multiple)
+  const teamsByManager = new Map<string, Team[]>()
   for (const t of teamList) {
     const existing = teamsByManager.get(t.manager_id) ?? []
-    teamsByManager.set(t.manager_id, [...existing, t.name])
+    teamsByManager.set(t.manager_id, [...existing, t])
   }
 
   // Teams whose manager is the admin — used as "placeholder" teams in the invite form
+  // and as the pool for inline assignment to other members.
   const adminOwnedTeams = teamList.filter((t) => t.manager_id === ctx.userId)
 
   const fmt = (dt: string) =>
@@ -128,10 +130,13 @@ export default async function LeagueMembersPage() {
                         </div>
                         <div className="text-xs text-ink-4">@{m.profiles?.username ?? '—'}</div>
                       </td>
-                      <td className="px-4 py-3 text-ink-3 text-xs">
-                        {teams.length === 0
-                          ? <span className="text-ink-5">—</span>
-                          : teams.join(', ')}
+                      <td className="px-4 py-3">
+                        <TeamAssignmentCell
+                          memberUserId={m.user_id}
+                          isSelf={isSelf}
+                          teams={teams.map((t) => ({ id: t.id, name: t.name }))}
+                          availablePlaceholders={adminOwnedTeams.map((t) => ({ id: t.id, name: t.name }))}
+                        />
                       </td>
                       <td className="px-4 py-3">
                         {isSelf ? (

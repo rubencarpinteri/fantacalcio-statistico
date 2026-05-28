@@ -64,7 +64,7 @@ export default async function FantaMondialePage() {
               type="submit"
               className="rounded-lg bg-indigo-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-indigo-500 transition-colors"
             >
-              🌍 Inizializza WC 2026
+              🌍 Inizializza ControFanta Mondiale 2026
             </button>
           </form>
         )}
@@ -75,7 +75,7 @@ export default async function FantaMondialePage() {
         <div className="rounded-xl border border-hairline bg-glass-1 px-6 py-12 text-center">
           <p className="text-[13px] text-ink-4">Nessuna competizione FantaMondiale.</p>
           <p className="mt-1 text-[11px] text-ink-5">
-            Usa il pulsante in alto per creare il FantaMondiale Statistico 2026.
+            Usa il pulsante in alto per creare ControFanta Mondiale 2026.
           </p>
         </div>
       ) : (

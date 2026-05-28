@@ -38,8 +38,9 @@ const NAV_ITEMS: NavItem[] = [
       '/formations',
     ],
   },
-  { href: '/playground', label: 'Playground',   icon: 'beaker', adminOnly: true },
-  { href: '/league',     label: 'Impostazioni', icon: 'gear',   adminOnly: true, matchPaths: ['/regole-di-gioco'] },
+  { href: '/le-mie-squadre', label: 'Le mie squadre', icon: 'user' },
+  { href: '/playground',     label: 'Playground',     icon: 'beaker', adminOnly: true },
+  { href: '/league',         label: 'Impostazioni',   icon: 'gear',   adminOnly: true, matchPaths: ['/regole-di-gioco'] },
 ]
 
 function NavIcon({ name, size = 16 }: { name: IconName; size?: number }) {

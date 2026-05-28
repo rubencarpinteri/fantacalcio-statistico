@@ -16,7 +16,7 @@ export async function bootstrapWC2026Action() {
   const { data: comp, error: compErr } = await supabase
     .from('fm_competition')
     .insert({
-      name: 'FantaMondiale Statistico',
+      name: 'ControFanta Mondiale',
       edition: '2026',
       timezone: 'Europe/Rome',
       status: 'draft',
