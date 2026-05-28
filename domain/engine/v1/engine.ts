@@ -1,5 +1,5 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v3.1 — Core Logic
+// CONTROFANTA — Rating Engine v3.1 — Core Logic
 // ============================================================
 // Pure TypeScript — no Supabase, no Next.js, no side effects.
 //

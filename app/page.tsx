@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { JoinLeagueCTA } from './_landing/JoinLeagueCTA'
 
 export const metadata = {
-  title: 'Fantacalcio Statistico — il fantacalcio basato sui voti veri',
+  title: 'CONTROFANTA — il fantacalcio basato sui voti veri',
   description:
     'Una lega privata in stile Mantra, con voti statistici da provider professionale. Scegli con un budget, ma occhio alla popolarità: più un calciatore è scelto, più ti penalizza.',
 }
@@ -49,9 +49,9 @@ function TopBar() {
             <path d="M12 12l5 3-2 5M12 12l-5 3 2 5M12 12l4-7M12 12l-4-7" />
           </svg>
         </span>
-        <span className="flex items-baseline gap-1.5 tracking-tight">
-          <span className="text-[15px] font-semibold text-ink-1">Fantacalcio</span>
-          <span className="serif text-[15px] text-ink-3">Statistico</span>
+        <span className="flex items-baseline tracking-tight">
+          <span className="text-[15px] font-semibold text-ink-1">CONTRO</span>
+          <span className="serif text-[15px] text-ink-3">FANTA</span>
         </span>
       </Link>
 
@@ -289,7 +289,7 @@ function Footer() {
   return (
     <footer className="mt-24 flex flex-col items-start justify-between gap-4 border-t border-hairline pt-6 sm:flex-row sm:items-center">
       <p className="text-[12px] text-ink-4">
-        © {new Date().getFullYear()} Fantacalcio Statistico · Lega privata
+        © {new Date().getFullYear()} CONTROFANTA · Lega privata
       </p>
       <div className="flex items-center gap-5">
         <Link href="/login" className="text-[12.5px] text-ink-3 transition-colors hover:text-ink-1">

@@ -99,7 +99,7 @@ export async function inviteMemberAction(
 
   // Send invite via Admin API — triggers handle_new_user which creates the profile
   const adminClient = createServiceClient()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fantacalcio-statistico.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://controfanta.vercel.app'
 
   const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
     email,

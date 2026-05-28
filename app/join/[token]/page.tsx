@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SignupForm } from './SignupForm'
 import { AcceptButton } from './AcceptButton'
 
-export const metadata = { title: 'Invito · Fantacalcio Statistico' }
+export const metadata = { title: 'Invito · CONTROFANTA' }
 
 export default async function JoinPage({
   params,
@@ -62,8 +62,8 @@ export default async function JoinPage({
             className="font-light tracking-tight text-ink-1"
             style={{ fontSize: 'clamp(22px, 2.4vw, 28px)', letterSpacing: '-0.03em' }}
           >
-            <span className="font-semibold">Fantacalcio</span>{' '}
-            <span className="serif font-normal text-ink-3">Statistico</span>
+            <span className="font-semibold">CONTRO</span>
+            <span className="serif font-normal text-ink-3">FANTA</span>
           </h1>
         </div>
 

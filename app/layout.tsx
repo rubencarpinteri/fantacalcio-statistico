@@ -21,8 +21,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'Fantacalcio Statistico',
-    template: '%s — Fantacalcio Statistico',
+    default: 'CONTROFANTA',
+    template: '%s — CONTROFANTA',
   },
   description: 'Private Mantra-style fantasy football league with statistics-based scoring.',
 }

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CreateLeagueForm } from './CreateLeagueForm'
 
-export const metadata = { title: 'Crea lega · Fantacalcio Statistico' }
+export const metadata = { title: 'Crea lega · CONTROFANTA' }
 
 export default async function NewLeaguePage() {
   const supabase = await createClient()

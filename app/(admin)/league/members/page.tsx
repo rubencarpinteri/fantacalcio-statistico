@@ -19,7 +19,7 @@ export default async function LeagueMembersPage() {
     .eq('id', ctx.league.id)
     .single()
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fantacalcio-statistico.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://controfanta.vercel.app'
   const joinUrl = leagueRow?.invite_token ? `${appUrl}/join/${leagueRow.invite_token}` : null
 
   // Fetch all members with profile info

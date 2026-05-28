@@ -52,7 +52,7 @@ pulls full squads.
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  https://fantacalcio-statistico.vercel.app/api/cron/sportmonks-fixtures-sync
+  https://controfanta.vercel.app/api/cron/sportmonks-fixtures-sync
 ```
 
 This populates `sportmonks_fixtures` + auto-creates `fm_scoring_round`

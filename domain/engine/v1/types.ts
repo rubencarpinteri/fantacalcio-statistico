@@ -1,5 +1,5 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v3.1 — Types
+// CONTROFANTA — Rating Engine v3.1 — Types
 // ============================================================
 // Single-source: SportMonks. "Pivot + Bonus + Ownership/MVP" engine.
 //

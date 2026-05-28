@@ -1,5 +1,5 @@
 // ============================================================
-// Fantacalcio Statistico — Rating Engine v3.1 — Config
+// CONTROFANTA — Rating Engine v3.1 — Config
 // ============================================================
 // Pivot + Bonus + Ownership/MVP. Identical structure on FM
 // (domain/fantamondiale/config/defaults.ts).

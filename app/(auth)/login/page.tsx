@@ -49,11 +49,11 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1
-            className="flex flex-wrap items-baseline justify-center gap-x-2 font-light tracking-tight text-ink-1"
+            className="flex flex-wrap items-baseline justify-center font-light tracking-tight text-ink-1"
             style={{ fontSize: 'clamp(22px, 2.4vw, 28px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
           >
-            <span className="font-semibold">Fantacalcio</span>
-            <span className="serif font-normal text-ink-3">Statistico</span>
+            <span className="font-semibold">CONTRO</span>
+            <span className="serif font-normal text-ink-3">FANTA</span>
           </h1>
           <p className="mt-1.5 text-[12px] text-ink-4">Lega privata · Accesso riservato</p>
         </div>

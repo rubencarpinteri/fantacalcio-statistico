@@ -5,7 +5,7 @@ import { DEFAULT_ENGINE_CONFIG, buildEngineConfig, deriveSlope } from '@/domain/
 import { ratingToVotoBase } from '@/domain/engine/v1/engine'
 import type { LeagueEngineConfig } from '@/types/database.types'
 
-export const metadata = { title: 'Metodologia — Fantacalcio Statistico' }
+export const metadata = { title: 'Metodologia — CONTROFANTA' }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

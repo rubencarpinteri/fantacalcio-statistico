@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { EngineConfigForm } from './EngineConfigForm'
 
-export const metadata = { title: 'Regole di gioco — Fantacalcio Statistico' }
+export const metadata = { title: 'Regole di gioco — CONTROFANTA' }
 
 export default async function GameRulesPage() {
   const ctx = await requireLeagueAdmin()

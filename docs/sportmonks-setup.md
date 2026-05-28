@@ -59,7 +59,7 @@ pnpm tsx scripts/seed-sportmonks-trial.ts
 
 # 3. Trigger fixtures-sync manually to confirm the wiring
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  https://fantacalcio-statistico.vercel.app/api/cron/sportmonks-fixtures-sync
+  https://controfanta.vercel.app/api/cron/sportmonks-fixtures-sync
 ```
 
 The seed is idempotent — safe to re-run.

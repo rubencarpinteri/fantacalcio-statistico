@@ -172,7 +172,7 @@ export function AdminSidebar({ isAdmin, username, leagueName }: AdminSidebarProp
                 {leagueName}
               </p>
               <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-ink-4">
-                Fantacalcio Stat.
+                CONTROFANTA
               </p>
             </div>
           </div>

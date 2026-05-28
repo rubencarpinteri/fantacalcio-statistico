@@ -147,7 +147,7 @@ export async function signUpAndJoinAction(
     return { error: `Lo username "${username}" è già in uso.`, awaitingEmail: false }
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fantacalcio-statistico.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://controfanta.vercel.app'
 
   const { data, error } = await supabase.auth.signUp({
     email,

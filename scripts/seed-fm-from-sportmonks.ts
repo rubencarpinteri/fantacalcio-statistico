@@ -285,7 +285,7 @@ async function main() {
   console.log(`  league_id:      ${LEAGUE_ID}`)
   console.log(`\nNext: trigger fixtures-sync to populate fm_real_match rows:`)
   console.log(`  curl -H 'Authorization: Bearer $CRON_SECRET' \\`)
-  console.log(`       https://fantacalcio-statistico.vercel.app/api/cron/sportmonks-fixtures-sync`)
+  console.log(`       https://controfanta.vercel.app/api/cron/sportmonks-fixtures-sync`)
 }
 
 main().catch((e) => {

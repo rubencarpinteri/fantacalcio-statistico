@@ -1,12 +1,12 @@
-# Fantacalcio Statistico — Claude Context
+# CONTROFANTA — Claude Context
 
 Full-stack Italian Mantra-style fantasy football app. Private league, statistics-based scoring.
 
 ## Stack
 - Next.js 15 App Router, React 19.2, TypeScript strict (`noUncheckedIndexedAccess: true`)
 - Tailwind CSS v4, Supabase (`@supabase/ssr` exclusively), Zod for server validation
-- Deployment: Vercel (`https://fantacalcio-statistico.vercel.app`) + Supabase project `yqaxcpkjqvtroxinjjvw` (fantamorto-league)
-- GitHub: `https://github.com/rubencarpinteri/fantacalcio-statistico`
+- Deployment: Vercel (`https://controfanta.vercel.app`) + Supabase project `yqaxcpkjqvtroxinjjvw` (controfanta)
+- GitHub: `https://github.com/rubencarpinteri/controfanta`
 
 ## Key Rules
 - Always write code in English (comments, variables, types). UI strings stay Italian.
