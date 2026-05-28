@@ -31,9 +31,13 @@ export default async function HomePage() {
 function TopBar() {
   return (
     <header className="flex items-center justify-between">
-      <Link href="/" className="flex items-center gap-2.5">
+      <Link
+        href="/"
+        aria-label="CONTROFANTA — home"
+        className="-mx-1 flex items-center gap-3 rounded-2xl px-1 py-1 transition-opacity hover:opacity-80"
+      >
         <span
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-indigo-200"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-indigo-200"
           style={{
             background:
               'linear-gradient(135deg, rgba(99,102,241,0.30), rgba(139,111,225,0.20))',
@@ -41,15 +45,15 @@ function TopBar() {
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="9" />
             <path d="M12 3l3 5-3 4-3-4z" />
             <path d="M12 12l5 3-2 5M12 12l-5 3 2 5M12 12l4-7M12 12l-4-7" />
           </svg>
         </span>
         <span className="flex items-baseline tracking-tight">
-          <span className="text-[15px] font-semibold text-ink-1">CONTRO</span>
-          <span className="serif text-[15px] text-ink-3">FANTA</span>
+          <span className="text-[22px] font-semibold text-ink-1 sm:text-[26px]">CONTRO</span>
+          <span className="serif text-[22px] text-ink-3 sm:text-[26px]">FANTA</span>
         </span>
       </Link>
 
