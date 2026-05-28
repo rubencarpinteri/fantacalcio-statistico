@@ -1,8 +1,10 @@
-import { requireLeagueContext } from '@/lib/league'
+import { requireLeagueContext, isSuperAdmin } from '@/lib/league'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { TeamCard } from './TeamCard'
+import { TeamCard, type MemberPickerOption } from './TeamCard'
 import { ProfileEditor } from './ProfileEditor'
+import { TransferInbox, type IncomingOffer } from './TransferInbox'
 
 export const metadata = { title: 'Le mie squadre' }
 
@@ -10,9 +12,19 @@ export default async function MyTeamsPage() {
   const ctx = await requireLeagueContext()
   const supabase = await createClient()
 
-  // Profile + Serie A teams (in this league) + FM teams (any tournament,
-  // joined to fm_league_competition + fm_competition for the display label).
-  const [profileRes, serieARes, fmRes] = await Promise.all([
+  const isAdmin = ctx.role === 'league_admin' || (await isSuperAdmin())
+
+  // Parallel: profile + Serie A teams (this Lega) + FM teams (joined for
+  // competition label) + Lega membership list + Serie A competitions
+  // (for per-team enrolment labels) + pending transfer requests.
+  const [
+    profileRes,
+    serieARes,
+    fmRes,
+    membersRes,
+    serieACompsRes,
+    pendingOffersRes,
+  ] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name, username')
@@ -36,23 +48,40 @@ export default async function MyTeamsPage() {
         )
       `)
       .eq('manager_id', ctx.userId),
+    supabase
+      .from('league_users')
+      .select(`
+        user_id,
+        profiles ( username, full_name )
+      `)
+      .eq('league_id', ctx.league.id),
+    supabase
+      .from('competitions')
+      .select('id, name, type, status')
+      .eq('league_id', ctx.league.id)
+      .neq('status', 'cancelled'),
+    supabase
+      .from('fantasy_team_transfer_request')
+      .select(`
+        id,
+        team_id,
+        from_user_id,
+        to_user_id,
+        message,
+        created_at,
+        status
+      `)
+      .eq('league_id', ctx.league.id)
+      .eq('status', 'pending'),
   ])
 
-  // Competitions the league participates in (Serie A list — to label each
-  // Serie A fantasy team with the competitions it's enrolled in).
-  const { data: serieACompsRes } = await supabase
-    .from('competitions')
-    .select('id, name, type, status')
-    .eq('league_id', ctx.league.id)
-    .neq('status', 'cancelled')
-
   type CompetitionTeam = { team_id: string; competition_id: string }
-  const teamIds = (serieARes.data ?? []).map((t) => t.id)
-  const { data: enrolmentsRes } = teamIds.length > 0
+  const ownedSerieATeamIds = (serieARes.data ?? []).map((t) => t.id)
+  const { data: enrolmentsRes } = ownedSerieATeamIds.length > 0
     ? await supabase
         .from('competition_teams')
         .select('team_id, competition_id')
-        .in('team_id', teamIds)
+        .in('team_id', ownedSerieATeamIds)
     : { data: [] as CompetitionTeam[] }
 
   type FMTeamRow = {
@@ -68,13 +97,63 @@ export default async function MyTeamsPage() {
     }[]
   }
 
+  type MemberRow = {
+    user_id: string
+    profiles: { username: string; full_name: string | null } | { username: string; full_name: string | null }[] | null
+  }
+
+  type PendingRow = {
+    id: string
+    team_id: string
+    from_user_id: string
+    to_user_id: string
+    message: string | null
+    created_at: string
+    status: string
+  }
+
   const profile = profileRes.data
   const serieATeams = serieARes.data ?? []
   const fmTeamsRaw = (fmRes.data ?? []) as FMTeamRow[]
-  const serieAComps = serieACompsRes ?? []
+  const serieAComps = serieACompsRes.data ?? []
   const enrolments = (enrolmentsRes ?? []) as CompetitionTeam[]
+  const memberRows = (membersRes.data ?? []) as unknown as MemberRow[]
+  const pendingRows = (pendingOffersRes.data ?? []) as PendingRow[]
 
-  // Only FM teams whose parent fm_league_competition belongs to THIS Lega.
+  // Build the member lookup table once.
+  type MemberLookup = { user_id: string; username: string; full_name: string | null; email: string | null }
+  const memberMap = new Map<string, MemberLookup>()
+  for (const m of memberRows) {
+    const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles
+    memberMap.set(m.user_id, {
+      user_id:   m.user_id,
+      username:  p?.username ?? '—',
+      full_name: p?.full_name ?? null,
+      email:     null,
+    })
+  }
+
+  // Emails are PII — only fetch and expose when the viewer is a Lega admin.
+  if (isAdmin) {
+    const service = createServiceClient()
+    const memberIds = Array.from(memberMap.keys())
+    await Promise.all(memberIds.map(async (uid) => {
+      const { data } = await service.auth.admin.getUserById(uid)
+      const entry = memberMap.get(uid)
+      if (entry && data?.user?.email) entry.email = data.user.email
+    }))
+  }
+
+  // Pickable transfer targets: every other member of the Lega.
+  const transferTargets: MemberPickerOption[] = Array.from(memberMap.values())
+    .filter((m) => m.user_id !== ctx.userId)
+    .sort((a, b) => {
+      const an = a.full_name || a.username
+      const bn = b.full_name || b.username
+      return an.localeCompare(bn, 'it')
+    })
+
+  // FM teams in this Lega only.
   const fmTeams = fmTeamsRaw
     .map((r) => {
       const join = Array.isArray(r.fm_league_competition)
@@ -93,7 +172,6 @@ export default async function MyTeamsPage() {
     })
     .filter((t): t is { id: string; name: string; competitionName: string; competitionEdition: string | null } => t !== null)
 
-  // Map team_id → list of Serie A competition labels it's enrolled in.
   const SERIE_A_TYPE_LABEL: Record<string, string> = {
     campionato:    'Campionato',
     battle_royale: 'Battle Royal',
@@ -109,25 +187,67 @@ export default async function MyTeamsPage() {
     enrolmentsByTeam.set(e.team_id, [...arr, label])
   }
 
+  // Outgoing pending offers keyed by team_id (for the owner's TeamCard).
+  const outgoingByTeam = new Map<string, PendingRow>()
+  for (const r of pendingRows) {
+    if (r.from_user_id === ctx.userId) {
+      outgoingByTeam.set(r.team_id, r)
+    }
+  }
+
+  // Incoming pending offers for the inbox.
+  const teamNameById = new Map<string, string>()
+  for (const t of serieATeams) teamNameById.set(t.id, t.name)
+  const incomingTeamIds = pendingRows
+    .filter((r) => r.to_user_id === ctx.userId)
+    .map((r) => r.team_id)
+  if (incomingTeamIds.length > 0) {
+    const { data: incomingTeams } = await supabase
+      .from('fantasy_teams')
+      .select('id, name')
+      .in('id', incomingTeamIds)
+    for (const t of incomingTeams ?? []) teamNameById.set(t.id, t.name)
+  }
+
+  const incomingOffers: IncomingOffer[] = pendingRows
+    .filter((r) => r.to_user_id === ctx.userId)
+    .map((r) => {
+      const sender = memberMap.get(r.from_user_id)
+      return {
+        request_id:     r.id,
+        team_id:        r.team_id,
+        team_name:      teamNameById.get(r.team_id) ?? 'Squadra',
+        from_username:  sender?.username ?? '—',
+        from_full_name: sender?.full_name ?? null,
+        message:        r.message,
+        created_at:     r.created_at,
+      }
+    })
+
   const totalTeams = serieATeams.length + fmTeams.length
 
   return (
     <div className="space-y-7">
       <div>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-ink-4">
+          Lega · {ctx.league.name ?? 'Lega'}
+        </p>
         <h1
-          className="font-light tracking-tight text-ink-1"
+          className="mt-1 font-light tracking-tight text-ink-1"
           style={{ fontSize: 'clamp(22px, 2.6vw, 30px)', lineHeight: 1.15, letterSpacing: '-0.03em' }}
         >
           <span className="font-semibold">Le mie squadre</span>
         </h1>
         <p className="mt-1 text-[13px] text-ink-3">
           {totalTeams === 0
-            ? 'Non hai ancora squadre. Iscriviti a una competizione dalla dashboard.'
-            : `${totalTeams} ${totalTeams === 1 ? 'squadra' : 'squadre'} in ${ctx.league.name}.`}
+            ? 'Non hai ancora squadre in questa Lega. Iscriviti a una competizione dalla dashboard.'
+            : `${totalTeams} ${totalTeams === 1 ? 'squadra' : 'squadre'} in questa Lega.`}
         </p>
       </div>
 
-      {/* Legend — establishes the color code up front */}
+      <TransferInbox offers={incomingOffers} />
+
+      {/* Legend */}
       <div className="flex flex-wrap items-center gap-3 text-[11.5px]">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 font-semibold uppercase tracking-[0.14em] text-emerald-700 ring-1 ring-emerald-500/30 dark:text-emerald-300">
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Livello nazionale
@@ -156,6 +276,8 @@ export default async function MyTeamsPage() {
               const subLabel = enrolledIn.length > 0
                 ? enrolledIn.join(' · ')
                 : 'Non ancora iscritta a competizioni'
+              const pending = outgoingByTeam.get(t.id)
+              const recipient = pending ? memberMap.get(pending.to_user_id) : null
               return (
                 <TeamCard
                   key={t.id}
@@ -164,6 +286,14 @@ export default async function MyTeamsPage() {
                   level="nazionale"
                   competitionLabel="Serie A"
                   competitionSubLabel={subLabel}
+                  members={transferTargets}
+                  pendingOffer={pending && recipient
+                    ? {
+                        request_id:   pending.id,
+                        to_username:  recipient.username,
+                        to_full_name: recipient.full_name,
+                      }
+                    : null}
                 />
               )
             })}

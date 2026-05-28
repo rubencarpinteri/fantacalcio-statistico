@@ -508,6 +508,57 @@ export type Database = {
           },
         ]
       }
+      fantasy_team_transfer_request: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          league_id: string
+          message: string | null
+          responded_at: string | null
+          status: string
+          team_id: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          league_id: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          team_id: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          league_id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          team_id?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_team_transfer_request_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_team_transfer_request_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fantasy_teams: {
         Row: {
           created_at: string
@@ -4126,10 +4177,6 @@ export const Constants = {
     },
   },
 } as const
-
-
-
-
 export type AuditAction = Database["public"]["Enums"]["audit_action"]
 export type RatingClass = Database["public"]["Enums"]["rating_class"]
 export type MatchdayStatus = Database["public"]["Enums"]["matchday_status"]
