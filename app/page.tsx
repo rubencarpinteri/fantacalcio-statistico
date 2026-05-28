@@ -6,7 +6,7 @@ import { JoinLeagueCTA } from './_landing/JoinLeagueCTA'
 export const metadata = {
   title: 'CONTROFANTA — il fantacalcio basato sui voti veri',
   description:
-    'Una lega privata in stile Mantra, con voti statistici da provider professionale. Scegli con un budget, ma occhio alla popolarità: più un calciatore è scelto, più ti penalizza.',
+    'Una lega privata con voti statistici da provider professionale. Scegli con un budget, ma occhio alla popolarità: più un calciatore è scelto, più ti penalizza.',
 }
 
 export default async function HomePage() {
@@ -21,10 +21,9 @@ export default async function HomePage() {
     <main className="mx-auto w-full max-w-6xl px-5 pt-5 pb-24 sm:px-8">
       <TopBar />
       <Hero />
+      <SignatureMechanic />
       <HowItWorks />
       <Competitions />
-      <SignatureMechanic />
-      <RatingsNote />
       <Footer />
     </main>
   )
@@ -69,7 +68,7 @@ function Hero() {
   return (
     <section className="mt-14 sm:mt-20">
       <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-4">
-        Lega privata · Mantra · Voti statistici
+        Lega privata · Voti statistici
       </p>
       <h1
         className="max-w-3xl font-light tracking-tight text-ink-1"
@@ -102,22 +101,22 @@ function HowItWorks() {
     {
       n: '01',
       title: 'Crea o unisciti a una Lega',
-      body: 'La Lega è il tuo club: 10 squadre, gli stessi amici, più competizioni che girano in parallelo.',
+      body: 'Il vostro spazio, la vostra arena: squadre, dati, curiosità; più competizioni che girano in parallelo, nel tuo format preferito. Soglie e bonus completamente personalizzabili.',
     },
     {
       n: '02',
       title: 'Scegli con il budget',
-      body: 'Niente asta-fiume. Hai un budget, hai una lista, hai un cervello. Costruisci la rosa migliore al miglior prezzo.',
+      body: 'Niente asta-fiume. Hai un budget, hai una lista, hai una testa. Costruisci la tua rosa, ma attento! Trovare le perle nascoste, o prendere il rischio di pickare il top che avranno tutti gli altri? La gloria, o una inevitabile maxi-penalità.',
     },
     {
       n: '03',
-      title: 'I voti li danno gli analisti',
-      body: 'Voti statistici da un provider professionale. Non li scriviamo noi, non li scrive un giornalista in fretta: arrivano dai dati della partita.',
+      title: 'I voti, qui, li danno i dati',
+      body: 'Rating statistico da un provider mondiale. Nessun intervento umano, nessun giornalista, nessuno contro cui prendersela: i voti arrivano in automatico, frutto SOLO di ciò che succede sul campo.',
     },
     {
       n: '04',
-      title: 'Vinci la giornata',
-      body: 'Più i tuoi giocatori performano, più sali in classifica. Più li hanno presi anche gli altri, più la festa si paga.',
+      title: 'Fai il colpaccio',
+      body: 'Trova quel giocatore che non sceglieranno gli altri, nella partita giusta. Goditi il mega bonus percentuale e guarda gli altri dall’alto.',
     },
   ]
 
@@ -160,7 +159,7 @@ function Competitions() {
         Una Lega, <span className="serif italic text-ink-3">tante competizioni</span>
       </h2>
       <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-ink-3">
-        La Lega resta sempre la stessa — sono le competizioni che cambiano. Si gioca tutto
+        La Lega resta sempre la tua, la vostra. Sono le competizioni che cambiano. Si gioca tutto
         l&apos;anno, anche durante le soste delle nazionali.
       </p>
 
@@ -176,8 +175,8 @@ function Competitions() {
             Serie A
           </h3>
           <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-            Campionato, Coppa, Battle Royal. Tre modi diversi di vivere la stessa stagione di Serie A —
-            tutti in parallelo, tutti dentro la tua Lega.
+            Campionato, Coppa, Battle Royal. Tre modi diversi di vivere la stessa stagione di Serie A;
+            solo una, due, o tutte in parallelo, dentro la vostra Lega.
           </p>
         </div>
 
@@ -192,8 +191,9 @@ function Competitions() {
             Mondiali · Europei · Nations League
           </h3>
           <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-            Le grandi competizioni internazionali in formato Battle Royal. Quando il campionato si ferma,
-            la Lega no.
+            Le grandi competizioni internazionali. Quando il campionato si ferma, la Lega no. E anche lì,
+            tocca a te scoprire le gemme nascoste, o rischiare quel votaccio dimezzato dalla Penalità di
+            Polarità.
           </p>
         </div>
       </div>
@@ -212,10 +212,11 @@ function SignatureMechanic() {
           className="mt-3 font-light tracking-tight text-ink-1"
           style={{ fontSize: 'clamp(26px, 4.2vw, 42px)', lineHeight: 1.1, letterSpacing: '-0.03em' }}
         >
-          Tutti vogliono <span className="serif italic">il fenomeno</span>.
-          <br className="hidden sm:block" />
-          <span className="text-ink-3">Ma se lo prendono tutti, lo perdi tu.</span>
+          Tutti i giocatori, un budget: <span className="serif italic">ad ogni turno, scegli chi vuoi.</span>
         </h2>
+        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-3">
+          Gli altri scoprono la tua squadra solo al calcio d&apos;inizio. Ma occhio!
+        </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-hairline bg-glass-1 p-5 backdrop-blur-xl">
@@ -223,8 +224,8 @@ function SignatureMechanic() {
               <span aria-hidden>⚠️</span> Penalità di popolarità
             </h3>
             <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-              Più un calciatore viene scelto in Lega, più costa caro tenerlo: i suoi voti
-              valgono meno punti per chi lo schiera. Il fuoriclasse è di tutti? Allora segna per nessuno.
+              Più un giocatore verrà scelto nelle squadre della tua Lega, più il suo voto
+              riceverà un malus percentuale!
             </p>
           </div>
 
@@ -233,53 +234,18 @@ function SignatureMechanic() {
               <span aria-hidden>🎯</span> Bonus MVP solitario
             </h3>
             <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-              Hai pescato l&apos;MVP della giornata e nessun altro l&apos;aveva preso?
-              Bonus pesante. Lo scout vero paga, sempre.
+              Hai pescato l&apos;MVP della giornata e nessun altro l&apos;aveva scelto?
+              Bonus pesantissimo. Lo scouting vero e la strategia pagano, sempre.
             </p>
           </div>
         </div>
 
         <p className="mt-7 max-w-2xl text-[14px] leading-relaxed text-ink-3">
-          Ogni giornata diventa una scelta: <em className="serif not-italic text-ink-2">vai sul sicuro col big che hanno tutti, o scommetti
-          sul nome che nessuno conosce?</em> Vince chi sa quando rischiare.
+          Ogni giornata sei davanti a una scelta: <em className="serif not-italic text-ink-2">vai sul sicuro
+          col big che (forse) sceglieranno tutti contro la terzultima in classifica? O scommetti sul nome
+          che nessuno conosce?</em> Vince chi sa quando rischiare. O chi inganna in settimana bluffando
+          sulle sue scelte. Vale tutto.
         </p>
-      </div>
-    </section>
-  )
-}
-
-function RatingsNote() {
-  return (
-    <section className="mt-20 sm:mt-28">
-      <div className="rounded-2xl border border-hairline bg-glass-1 p-6 backdrop-blur-xl sm:p-8">
-        <div className="flex items-start gap-4">
-          <span
-            className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-indigo-500 dark:text-indigo-300"
-            style={{
-              background: 'rgba(99,102,241,0.10)',
-              border: '1px solid rgba(99,102,241,0.30)',
-            }}
-            aria-hidden
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3v18h18" />
-              <path d="M7 14l4-4 3 3 5-6" />
-            </svg>
-          </span>
-          <div>
-            <h3 className="text-[15px] font-semibold tracking-tight text-ink-1">
-              I voti arrivano dai dati, non dal giornalista.
-            </h3>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-              Le pagelle vengono da un provider statistico professionale di livello internazionale,
-              lo stesso usato dagli analisti del calcio vero. Niente bias, niente squadra del cuore:
-              solo quello che il giocatore ha effettivamente fatto in campo.
-              <span className="block mt-2 text-[12.5px] text-ink-4">
-                Il nome del provider lo annunceremo a breve.
-              </span>
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   )
@@ -289,7 +255,7 @@ function Footer() {
   return (
     <footer className="mt-24 flex flex-col items-start justify-between gap-4 border-t border-hairline pt-6 sm:flex-row sm:items-center">
       <p className="text-[12px] text-ink-4">
-        © {new Date().getFullYear()} CONTROFANTA · Lega privata
+        © {new Date().getFullYear()} CONTROFANTA · A project by Ruben Carpinteri
       </p>
       <div className="flex items-center gap-5">
         <Link href="/login" className="text-[12.5px] text-ink-3 transition-colors hover:text-ink-1">
